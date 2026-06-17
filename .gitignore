@@ -2,3 +2,4 @@ node_modules/
 .recaps/
 *.tsbuildinfo
 .DS_Store
+assets/excalidraw-bundle.js
