@@ -46,6 +46,12 @@ export interface RenderOpts {
   onWarn?: (msg: string) => void;
 }
 
+/** Injectable seam for the Excalidraw browser path, so it can be unit-tested. */
+export interface RenderDeps {
+  ready?: () => Promise<boolean>;
+  convert?: (mermaid: string) => Promise<{ svg: string; scene: unknown }>;
+}
+
 // Kinds mermaid-to-excalidraw turns into native editable elements. Conservative
 // on purpose — anything not here goes to D2. (Dormant this slice.)
 const EXCALIDRAW_EDITABLE = new Set<string>(["flowchart", "architecture"]);
@@ -68,7 +74,10 @@ function placeholderSvg(title: string, message: string): string {
 export async function renderDiagram(
   block: DiagramBlock | SchemaBlock,
   opts: RenderOpts = {},
+  deps: RenderDeps = {},
 ): Promise<DiagramResult> {
+  const ready = deps.ready ?? excalidrawReady;
+  const convert = deps.convert ?? renderViaExcalidraw;
   const { id, title, kind, d2 } = block;
   const mermaid = "mermaid" in block ? block.mermaid : undefined;
   if (!d2) throw new Error(`block "${id}": every diagram block needs a d2 source (the floor)`);
@@ -86,9 +95,9 @@ export async function renderDiagram(
 
   // 2. Upgrade: editable Excalidraw, only when eligible + toolchain present (dormant).
   const eligible = !!mermaid && EXCALIDRAW_EDITABLE.has(kind) && opts.excalidraw !== false;
-  if (eligible && (await excalidrawReady())) {
+  if (eligible && (await ready())) {
     try {
-      const { svg, scene } = await renderViaExcalidraw(mermaid!);
+      const { svg, scene } = await convert(mermaid!);
       const editFile = join(opts.outDir ?? ".", `${id}.excalidraw`);
       await writeFile(editFile, JSON.stringify(scene, null, 2));
       return { id, title, svg, editable: editFile, renderer: "excalidraw" };
