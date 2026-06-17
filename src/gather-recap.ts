@@ -4,6 +4,7 @@ import { resolveScope, changedFiles } from "./git.js";
 import { parseUnifiedDiff } from "./parse-diff.js";
 import { selectAdapter, type StackAdapter } from "./adapters/stack-adapter.js";
 import { PrismaTrpcAdapter } from "./adapters/prisma-trpc.js";
+import { apiSurfaceDiagram } from "./api-diagram.js";
 
 /** Compose the ordered block array for a recap. Pure given its inputs. */
 export async function buildBlocks(
@@ -32,7 +33,10 @@ export async function buildBlocks(
   }
 
   try {
-    for (const api of await adapter.apiDiff(scope, onWarn)) blocks.push(api);
+    const apiBlocks = await adapter.apiDiff(scope, onWarn);
+    const diagram = apiSurfaceDiagram(apiBlocks.flatMap((b) => b.procedures), "api-surface", "API surface");
+    if (diagram) blocks.push(diagram);
+    for (const api of apiBlocks) blocks.push(api);
   } catch (err) {
     onWarn?.(`api diff skipped: ${err instanceof Error ? err.message : String(err)}`);
   }
