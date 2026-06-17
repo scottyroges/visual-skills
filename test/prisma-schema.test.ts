@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parsePrismaModels, diffModels, schemaDiffToBlock } from "../src/prisma-schema.js";
+import { renderDiagram } from "../src/render-diagram.js";
 
 const BEFORE = `model League {
   id              String        @id @default(uuid())
@@ -37,4 +38,24 @@ describe("prisma schema diff", () => {
     expect(block.d2).toContain("paymentSessionId");
     expect(block.d2).toContain("stripeSessionId");
   });
+
+  it("emits D2 that compiles via d2 even with relation-list and reserved-word field types", async () => {
+    const BEFORE2 = `model League {
+  id String
+  members LeagueMember[]
+  shape String
+}`;
+    const AFTER2 = `model League {
+  id String
+  members LeagueMember[]
+  shape String
+  newColumn String
+}`;
+    const block = schemaDiffToBlock(diffModels(parsePrismaModels(BEFORE2), parsePrismaModels(AFTER2)));
+    // kept fields include a relation list ("LeagueMember[]") and a field named "shape";
+    // both must be quoted or d2 fails to compile.
+    const out = await renderDiagram(block, { excalidraw: false });
+    expect(out.renderer).toBe("d2");
+    expect(out.svg).toMatch(/<svg/);
+  }, 30_000);
 });
