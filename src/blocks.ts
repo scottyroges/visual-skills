@@ -67,7 +67,6 @@ export interface ProseBlock {
   title?: string;
 }
 
-// Types defined now; renderers deferred to M2. Rendering them throws.
 export interface AnnotatedCodeBlock {
   type: "annotated-code";
   id: string;

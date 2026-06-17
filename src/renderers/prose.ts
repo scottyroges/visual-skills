@@ -2,6 +2,7 @@ import { Marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import type { ProseBlock } from "../blocks.js";
 import { highlightCode } from "../highlight.js";
+import { escapeHtml } from "../html.js";
 
 const HEX_OR_RGB = [/^#(0x)?[0-9a-f]+$/i, /^rgb\(/i];
 
@@ -39,7 +40,10 @@ export async function renderProse(
     },
     renderer: {
       code(token) {
-        return (token as { highlighted?: string }).highlighted ?? "";
+        const t = token as { text: string; highlighted?: string };
+        // walkTokens always populates `highlighted`; the fallback degrades
+        // gracefully to escaped plaintext rather than dropping the block.
+        return t.highlighted ?? `<pre class="shiki-plain">${escapeHtml(t.text)}</pre>`;
       },
     },
   });
