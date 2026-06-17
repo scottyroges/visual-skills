@@ -40,4 +40,22 @@ describe("promoteMermaidFences", () => {
     const ids = out.map((b) => b.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it("keeps an interleaved unconvertible fence inline while promoting the convertible one", () => {
+    const md =
+      "Intro.\n\n```mermaid\nsequenceDiagram\nA->>B: hi\n```\n\n" +
+      "Then:\n\n```mermaid\ngraph TD\nA-->B\n```\n\nEnd.";
+    const out = promoteMermaidFences([{ type: "prose", id: "p", markdown: md }]);
+    // exactly one diagram (the convertible graph), and the sequenceDiagram stays in prose
+    const diagrams = out.filter((b) => b.type === "diagram");
+    expect(diagrams).toHaveLength(1);
+    expect((diagrams[0] as Extract<Block, { type: "diagram" }>).mermaid).toContain("graph TD");
+    const proseText = out
+      .filter((b) => b.type === "prose")
+      .map((b) => (b as Extract<Block, { type: "prose" }>).markdown)
+      .join("\n");
+    expect(proseText).toContain("sequenceDiagram"); // unconvertible fence left inline
+    expect(proseText).toContain("Intro.");
+    expect(proseText).toContain("End.");
+  });
 });
