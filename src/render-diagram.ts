@@ -51,6 +51,19 @@ export interface RenderOpts {
 const EXCALIDRAW_EDITABLE = new Set<string>(["flowchart", "architecture"]);
 const EXCALIDRAW_PAGE = join(import.meta.dirname ?? ".", "..", "assets", "excalidraw-bundle.html");
 
+/** A minimal valid SVG shown when a diagram fails to render — keeps the document unbroken. */
+function placeholderSvg(title: string, message: string): string {
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="80" role="img">` +
+    `<rect width="420" height="80" fill="#fff8c5" stroke="#d4a72c"/>` +
+    `<text x="12" y="32" font-family="sans-serif" font-size="13" fill="#9a6700">` +
+    `&#9888; ${esc(title)}: failed to render</text>` +
+    `<text x="12" y="54" font-family="monospace" font-size="11" fill="#9a6700">${esc(message).slice(0, 70)}</text>` +
+    `</svg>`
+  );
+}
+
 /** Render a single diagram/schema block. Always produces a D2 sketch SVG floor. */
 export async function renderDiagram(
   block: DiagramBlock | SchemaBlock,
@@ -60,8 +73,16 @@ export async function renderDiagram(
   const mermaid = "mermaid" in block ? block.mermaid : undefined;
   if (!d2) throw new Error(`block "${id}": every diagram block needs a d2 source (the floor)`);
 
-  // 1. Floor: always compile the D2 sketch SVG. Guaranteed, no browser.
-  const d2Svg = await renderViaD2(d2);
+  // 1. Floor: compile the D2 sketch SVG. On failure, degrade to a placeholder
+  //    (warn + visible error box) so a single bad diagram never breaks the document.
+  let d2Svg: string;
+  try {
+    d2Svg = await renderViaD2(d2);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    opts.onWarn?.(`block "${id}": d2 failed to compile (${message}); using placeholder`);
+    return { id, title, svg: placeholderSvg(title, message), editable: null, renderer: "d2" };
+  }
 
   // 2. Upgrade: editable Excalidraw, only when eligible + toolchain present (dormant).
   const eligible = !!mermaid && EXCALIDRAW_EDITABLE.has(kind) && opts.excalidraw !== false;
