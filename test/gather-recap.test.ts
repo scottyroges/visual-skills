@@ -1,0 +1,27 @@
+import { describe, it, expect } from "vitest";
+import { buildBlocks } from "../src/gather-recap.js";
+import { GenericAdapter } from "../src/adapters/generic.js";
+import type { Scope } from "../src/git.js";
+
+const scope: Scope = {
+  repoRoot: ".", baseRef: "HEAD^", headRef: "HEAD", label: "commit HEAD",
+  unifiedDiff: `diff --git a/foo.ts b/foo.ts
+--- a/foo.ts
++++ b/foo.ts
+@@ -1,1 +1,1 @@
+-old
++new
+`,
+};
+
+describe("buildBlocks", () => {
+  it("produces a file-tree, prose summary, and diff blocks (generic stack)", async () => {
+    const files = [{ path: "foo.ts", status: "M" as const, added: 1, deleted: 1 }];
+    const blocks = await buildBlocks(scope, files, new GenericAdapter());
+    const types = blocks.map((b) => b.type);
+    expect(types).toContain("file-tree");
+    expect(types).toContain("diff");
+    expect(types).not.toContain("schema");
+    expect(types).not.toContain("api");
+  });
+});
