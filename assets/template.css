@@ -1,0 +1,38 @@
+:root { --ink:#1b1b1b; --paper:#fbfaf7; --add:#1a7f37; --del:#cf222e; --ctx:#57606a; --line:#d8d4c8; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--paper); color:var(--ink);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; line-height:1.5; }
+@font-face { font-family:"Excalifont"; src:url("excalifont") format("woff2"); font-display:swap; }
+.vs-doc { max-width: 900px; margin: 0 auto; padding: 32px; }
+.vs-header { border-bottom: 2px dashed var(--line); margin-bottom: 24px; padding-bottom: 12px; }
+.vs-header h1 { margin: 0 0 4px; }
+.vs-source { color: var(--ctx); font-size: 0.9em; }
+.vs-status { display:inline-block; padding:2px 10px; border-radius:12px; font-size:0.8em; }
+.vs-status.green { background:#dafbe1; color:var(--add); }
+.vs-status.yellow { background:#fff8c5; color:#9a6700; }
+.vs-status.red { background:#ffebe9; color:var(--del); }
+.vs-block { background:#fff; border:1.5px solid var(--line); border-radius:10px;
+  padding:16px 20px; margin:20px 0; box-shadow: 2px 3px 0 rgba(0,0,0,0.04); }
+.vs-block h2 { margin-top:0; }
+.vs-diagram svg { max-width:100%; height:auto; }
+.vs-diagram svg text { font-family:"Excalifont", "Comic Sans MS", cursive; }
+.vs-tree, .vs-tree ul { list-style:none; padding-left:18px; }
+.vs-file, .vs-dir { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:0.9em; }
+.vs-marker { display:inline-block; width:1.2em; font-weight:bold; }
+.vs-file[data-status="A"] .vs-marker { color:var(--add); }
+.vs-file[data-status="D"] .vs-marker { color:var(--del); }
+.vs-file[data-status="M"] .vs-marker { color:#9a6700; }
+.vs-badge { font-size:0.75em; margin-left:4px; }
+.vs-badge.vs-add { color:var(--add); } .vs-badge.vs-del { color:var(--del); }
+.vs-hunk-header { color:var(--ctx); font-family:ui-monospace,monospace; font-size:0.85em; margin-top:8px; }
+.vs-hunk-body { margin:0; overflow-x:auto; font-family:ui-monospace,monospace; font-size:0.85em; }
+.vs-line { white-space:pre; padding:0 6px; }
+.vs-line.vs-add { background:#e6ffec; } .vs-line.vs-del { background:#ffebe9; } .vs-line.vs-ctx { color:var(--ctx); }
+.vs-annotation { border-left:3px solid #d4a72c; padding:6px 10px; margin-top:6px; background:#fffdf3; font-size:0.9em; }
+.vs-path { color:var(--ctx); font-family:ui-monospace,monospace; font-size:0.85em; margin-bottom:6px; }
+.vs-api-table { width:100%; border-collapse:collapse; font-size:0.9em; }
+.vs-api-table th, .vs-api-table td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+.vs-api-table tr[data-change="added"] { background:#e6ffec; }
+.vs-api-table tr[data-change="removed"] { background:#ffebe9; }
+.vs-api-table tr[data-change="changed"] { background:#fffdf3; }
+.vs-proc { font-family:ui-monospace,monospace; }
