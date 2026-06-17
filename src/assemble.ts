@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Block } from "./blocks.js";
 import { isDiagramBlock } from "./blocks.js";
@@ -45,7 +45,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
         case "schema": {
           const r = svgById.get(b.id)!;
           const link = r.editable
-            ? `<div class="vs-edit"><a href="${escapeHtml(r.editable)}">open in Excalidraw</a></div>`
+            ? `<div class="vs-edit"><a href="${escapeHtml(basename(r.editable))}">open in Excalidraw</a></div>`
             : "";
           // r.svg is trusted: produced by the d2 binary (or dormant Excalidraw), which emit no <script>.
           return `<section class="vs-block vs-diagram"><h2>${escapeHtml(b.title)}</h2>${r.svg}${link}</section>`;

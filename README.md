@@ -33,6 +33,7 @@ This installs Playwright + Chromium and `@excalidraw/excalidraw` (not saved to
 not installed, diagrams fall back to the D2 sketch — nothing breaks.
 
 ## Scope
-This is the M0+M1 slice: D2 floor + assembler + recap gatherer (Prisma+tRPC
-adapter). Excalidraw upgrade (M3), Shiki highlighting (M2), and the Claude Code
-SKILL.md wiring (M4) are not yet implemented. See `docs/superpowers/specs/`.
+Implemented: D2 floor + assembler + recap gatherer (Prisma+tRPC adapter) (M0/M1),
+Shiki syntax highlighting + full renderer set (M2), and the opt-in editable
+Excalidraw upgrade with API-surface + plan-mermaid diagram producers (M3). Not yet
+implemented: the Claude Code SKILL.md wiring (M4). See `docs/superpowers/specs/`.

@@ -19,9 +19,9 @@
 //   - npm i @excalidraw/excalidraw @excalidraw/mermaid-to-excalidraw playwright
 //   - an excalidraw-bundle.html that loads the two UMD globals (see EXCALIDRAW_PAGE)
 //
-// The Excalidraw upgrade path is retained but DORMANT this slice: playwright is
-// not installed and assets/excalidraw-bundle.html does not exist, so
-// excalidrawReady() returns false and rendering always falls back to the D2 SVG.
+// The Excalidraw upgrade is OPT-IN: run `npm run setup:excalidraw` to install the
+// toolchain and build assets/excalidraw-bundle.js. Without it, excalidrawReady()
+// returns false and rendering falls back to the D2 SVG floor (no crash).
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -93,7 +93,7 @@ export async function renderDiagram(
     return { id, title, svg: placeholderSvg(title, message), editable: null, renderer: "d2" };
   }
 
-  // 2. Upgrade: editable Excalidraw, only when eligible + toolchain present (dormant).
+  // 2. Upgrade: editable Excalidraw, only when eligible + the opt-in toolchain is present.
   const eligible = !!mermaid && EXCALIDRAW_EDITABLE.has(kind) && opts.excalidraw !== false;
   if (eligible && (await ready())) {
     try {
@@ -133,7 +133,7 @@ async function renderViaD2(source: string): Promise<string> {
   }
 }
 
-// ── Excalidraw upgrade (dormant this slice) ──────────────────────────────────
+// ── Excalidraw upgrade (opt-in; see `npm run setup:excalidraw`) ───────────────
 
 let _excalidrawCache: boolean | undefined;
 async function excalidrawReady(): Promise<boolean> {
