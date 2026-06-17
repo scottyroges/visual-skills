@@ -2,7 +2,6 @@
 * { box-sizing: border-box; }
 body { margin:0; background:var(--paper); color:var(--ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; line-height:1.5; }
-@font-face { font-family:"Excalifont"; src:url("excalifont") format("woff2"); font-display:swap; }
 .vs-doc { max-width: 900px; margin: 0 auto; padding: 32px; }
 .vs-header { border-bottom: 2px dashed var(--line); margin-bottom: 24px; padding-bottom: 12px; }
 .vs-header h1 { margin: 0 0 4px; }

@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Block } from "./blocks.js";
 import { isDiagramBlock } from "./blocks.js";
 import { escapeHtml } from "./html.js";
@@ -19,7 +20,7 @@ export interface AssembleOpts {
   onWarn?: (msg: string) => void;
 }
 
-const ASSETS = join(import.meta.dirname ?? ".", "..", "assets");
+const ASSETS = fileURLToPath(new URL("../assets", import.meta.url));
 
 export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<string> {
   // Render every diagram/schema block to inline SVG up front (preserves order by id).
@@ -27,7 +28,13 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
   const rendered = await renderAll(diagramBlocks, {
     outDir: opts.outDir, excalidraw: opts.excalidraw, onWarn: opts.onWarn,
   });
-  const svgById = new Map(rendered.map((r) => [r.id, r]));
+  const svgById = new Map<string, (typeof rendered)[number]>();
+  for (const r of rendered) {
+    if (svgById.has(r.id)) {
+      throw new Error(`duplicate diagram/schema block id "${r.id}" — block ids must be unique`);
+    }
+    svgById.set(r.id, r);
+  }
 
   const fragments = blocks.map((b) => {
     switch (b.type) {
@@ -37,6 +44,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
         const link = r.editable
           ? `<div class="vs-edit"><a href="${escapeHtml(r.editable)}">open in Excalidraw</a></div>`
           : "";
+        // r.svg is trusted: produced by the d2 binary (or dormant Excalidraw), which emit no <script>.
         return `<section class="vs-block vs-diagram"><h2>${escapeHtml(b.title)}</h2>${r.svg}${link}</section>`;
       }
       case "prose": return renderProse(b);
