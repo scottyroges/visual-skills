@@ -25,7 +25,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { writeFile, readFile, mkdtemp, access } from "node:fs/promises";
+import { writeFile, readFile, mkdtemp, access, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DiagramBlock, SchemaBlock } from "./blocks.js";
@@ -73,7 +73,7 @@ export async function renderDiagram(
       return { id, title, svg, editable: editFile, renderer: "excalidraw" };
     } catch (err) {
       // Same-aesthetic fallback to the D2 svg we already have in hand.
-      opts.onWarn?.(`block "${id}": excalidraw failed (${(err as Error).message}); using d2`);
+      opts.onWarn?.(`block "${id}": excalidraw failed (${err instanceof Error ? err.message : String(err)}); using d2`);
     }
   }
   return { id, title, svg: d2Svg, editable: null, renderer: "d2" };
@@ -91,12 +91,16 @@ export async function renderAll(
 
 async function renderViaD2(source: string): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "d2-"));
-  const inFile = join(dir, "in.d2");
-  const outFile = join(dir, "out.svg");
-  await writeFile(inFile, source);
-  // --sketch = hand-drawn; theme 0 neutral; pad for breathing room.
-  await exec("d2", ["--sketch", "--theme", "0", "--pad", "24", inFile, outFile]);
-  return readFile(outFile, "utf8");
+  try {
+    const inFile = join(dir, "in.d2");
+    const outFile = join(dir, "out.svg");
+    await writeFile(inFile, source);
+    // --sketch = hand-drawn; theme 0 neutral; pad for breathing room.
+    await exec("d2", ["--sketch", "--theme", "0", "--pad", "24", inFile, outFile]);
+    return await readFile(outFile, "utf8");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }
 
 // ── Excalidraw upgrade (dormant this slice) ──────────────────────────────────
