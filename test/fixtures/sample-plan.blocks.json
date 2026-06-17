@@ -1,0 +1,7 @@
+[
+  { "type": "prose", "id": "intro", "markdown": "# Sample Plan\n\nGrounded demo." },
+  { "type": "diagram", "id": "arch", "title": "Architecture", "kind": "flowchart",
+    "d2": "spec -> blocks -> renderer -> html" },
+  { "type": "schema", "id": "erd", "title": "Data model", "kind": "erd",
+    "d2": "League: {\n  shape: sql_table\n  id: String\n  paymentSessionId: String?\n}" }
+]
