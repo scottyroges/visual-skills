@@ -56,6 +56,10 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
         case "api": return renderApi(b);
         case "annotated-code": return await renderAnnotatedCode(b, opts.onWarn);
         case "questions": return renderQuestions(b);
+        default: {
+          const _exhaustive: never = b;
+          throw new Error(`unhandled block type: ${(_exhaustive as Block).type}`);
+        }
       }
     }),
   );
