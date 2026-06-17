@@ -9,6 +9,8 @@ import { renderProse } from "./renderers/prose.js";
 import { renderFileTree } from "./renderers/file-tree.js";
 import { renderDiff } from "./renderers/diff.js";
 import { renderApi } from "./renderers/api.js";
+import { renderAnnotatedCode } from "./renderers/annotated-code.js";
+import { renderQuestions } from "./renderers/questions.js";
 
 export interface DocStatus { level: "green" | "yellow" | "red"; text: string; }
 export interface AssembleOpts {
@@ -36,26 +38,27 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
     svgById.set(r.id, r);
   }
 
-  const fragments = blocks.map((b) => {
-    switch (b.type) {
-      case "diagram":
-      case "schema": {
-        const r = svgById.get(b.id)!;
-        const link = r.editable
-          ? `<div class="vs-edit"><a href="${escapeHtml(r.editable)}">open in Excalidraw</a></div>`
-          : "";
-        // r.svg is trusted: produced by the d2 binary (or dormant Excalidraw), which emit no <script>.
-        return `<section class="vs-block vs-diagram"><h2>${escapeHtml(b.title)}</h2>${r.svg}${link}</section>`;
+  const fragments = await Promise.all(
+    blocks.map(async (b) => {
+      switch (b.type) {
+        case "diagram":
+        case "schema": {
+          const r = svgById.get(b.id)!;
+          const link = r.editable
+            ? `<div class="vs-edit"><a href="${escapeHtml(r.editable)}">open in Excalidraw</a></div>`
+            : "";
+          // r.svg is trusted: produced by the d2 binary (or dormant Excalidraw), which emit no <script>.
+          return `<section class="vs-block vs-diagram"><h2>${escapeHtml(b.title)}</h2>${r.svg}${link}</section>`;
+        }
+        case "prose": return await renderProse(b, opts.onWarn);
+        case "file-tree": return renderFileTree(b);
+        case "diff": return await renderDiff(b, opts.onWarn);
+        case "api": return renderApi(b);
+        case "annotated-code": return await renderAnnotatedCode(b, opts.onWarn);
+        case "questions": return renderQuestions(b);
       }
-      case "prose": return renderProse(b);
-      case "file-tree": return renderFileTree(b);
-      case "diff": return renderDiff(b);
-      case "api": return renderApi(b);
-      case "annotated-code":
-      case "questions":
-        throw new Error(`block "${b.id}": renderer for "${b.type}" is not implemented in this slice (M2)`);
-    }
-  });
+    }),
+  );
 
   const css = await readFile(join(ASSETS, "template.css"), "utf8");
   const status = opts.status

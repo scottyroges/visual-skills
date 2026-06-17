@@ -21,4 +21,24 @@ describe("assemble", () => {
     expect(html).toContain("<svg");
     expect(html).not.toContain("<script");
   });
+
+  it("renders annotated-code and questions blocks without throwing", async () => {
+    const blocks: Block[] = [
+      {
+        type: "annotated-code", id: "ac", title: "flow", lang: "ts",
+        code: "const a = 1;\nconst b = 2;",
+        annotations: [{ line: 1, note: "first" }],
+      },
+      {
+        type: "questions", id: "q", title: "Open questions",
+        questions: [{ question: "Ship it?", recommendedDefault: "yes" }],
+      },
+    ];
+    const html = await assemble(blocks, { title: "All Blocks", source: "spec.md" });
+    expect(html).toContain('class="vs-block vs-annotated"');
+    expect(html).toContain('class="vs-block vs-questions"');
+    expect(html).toContain("first");
+    expect(html).toContain("Ship it?");
+    expect(html).not.toContain("<script");
+  });
 });
