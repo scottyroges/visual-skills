@@ -77,26 +77,54 @@ export async function fileAtRef(path: string, ref: string, cwd: string): Promise
   catch { return ""; }
 }
 
-/** `git diff --numstat` + `--name-status` merged into FileChange-friendly rows. */
+/** `git diff --numstat -z` + `--name-status -z` merged into FileChange-friendly rows.
+ *  The -z (NUL-delimited) form expands renames into explicit old/new path tokens,
+ *  so renamed files keep their real new path and an "R" status. */
 export async function changedFiles(baseRef: string, headRef: string, cwd: string) {
   const range = headRef === "WORKTREE" ? [baseRef] : [`${baseRef}...${headRef}`];
-  const numstat = await git(["diff", "--numstat", ...range], cwd);
-  const nameStatus = await git(["diff", "--name-status", ...range], cwd);
+  const nameStatusZ = await git(["diff", "--name-status", "-z", ...range], cwd);
+  const numstatZ = await git(["diff", "--numstat", "-z", ...range], cwd);
 
-  const status = new Map<string, "A" | "M" | "D" | "R">();
-  for (const line of nameStatus.trim().split("\n").filter(Boolean)) {
-    const [s, ...rest] = line.split("\t");
-    const path = rest[rest.length - 1];
-    status.set(path, (s[0] as "A" | "M" | "D" | "R") ?? "M");
+  // name-status -z tokens: normal = [STATUS, path]; rename/copy = [Rxxx|Cxxx, old, new].
+  const nsTokens = nameStatusZ.split("\0").filter((t) => t.length > 0);
+  const statusByPath = new Map<string, "A" | "M" | "D" | "R">();
+  const order: string[] = [];
+  for (let i = 0; i < nsTokens.length; ) {
+    const code = nsTokens[i++];
+    const letter = code[0];
+    if (letter === "R" || letter === "C") {
+      i++; // old path (ignored)
+      const newPath = nsTokens[i++];
+      statusByPath.set(newPath, "R");
+      order.push(newPath);
+    } else {
+      const path = nsTokens[i++];
+      const status = letter === "A" || letter === "M" || letter === "D" ? letter : "M";
+      statusByPath.set(path, status);
+      order.push(path);
+    }
   }
 
-  return numstat.trim().split("\n").filter(Boolean).map((line) => {
-    const [added, deleted, path] = line.split("\t");
-    return {
-      path,
-      status: status.get(path) ?? "M",
-      added: added === "-" ? 0 : Number(added),
-      deleted: deleted === "-" ? 0 : Number(deleted),
-    };
-  });
+  // numstat -z tokens: normal = "added\tdeleted\tpath"; rename = "added\tdeleted\t" then old, new.
+  const numTokens = numstatZ.split("\0").filter((t) => t.length > 0);
+  const counts = new Map<string, { added: number; deleted: number }>();
+  for (let i = 0; i < numTokens.length; ) {
+    const stat = numTokens[i++];
+    const [addedS, deletedS, inlinePath] = stat.split("\t");
+    const added = addedS === "-" ? 0 : Number(addedS);
+    const deleted = deletedS === "-" ? 0 : Number(deletedS);
+    let path = inlinePath;
+    if (!path) {
+      i++; // old path (ignored)
+      path = numTokens[i++];
+    }
+    counts.set(path, { added, deleted });
+  }
+
+  return order.map((path) => ({
+    path,
+    status: statusByPath.get(path) ?? "M",
+    added: counts.get(path)?.added ?? 0,
+    deleted: counts.get(path)?.deleted ?? 0,
+  }));
 }
