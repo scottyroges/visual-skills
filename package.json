@@ -1,0 +1,26 @@
+{
+  "name": "visual-skills",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "visual-plan": "bin/plan.ts",
+    "visual-recap": "bin/recap.ts"
+  },
+  "scripts": {
+    "plan": "tsx bin/plan.ts",
+    "recap": "tsx bin/recap.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "marked": "^14.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.4"
+  }
+}
