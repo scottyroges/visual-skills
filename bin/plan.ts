@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 import type { Block } from "../src/blocks.js";
 import { assemble } from "../src/assemble.js";
+import { promoteMermaidFences } from "../src/promote-mermaid.js";
 
 async function main() {
   const { values } = parseArgs({
@@ -17,7 +18,8 @@ async function main() {
   if (!values.blocks) throw new Error("--blocks <path-to-blocks.json> is required");
 
   const blocks = JSON.parse(await readFile(values.blocks, "utf8")) as Block[];
-  const html = await assemble(blocks, {
+  const promoted = promoteMermaidFences(blocks);
+  const html = await assemble(promoted, {
     title: values.title!,
     source: values.source || values.blocks,
     outDir: dirname(values.out!),
