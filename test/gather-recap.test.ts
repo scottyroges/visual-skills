@@ -24,4 +24,23 @@ describe("buildBlocks", () => {
     expect(types).not.toContain("schema");
     expect(types).not.toContain("api");
   });
+
+  it("degrades to file-tree + diff when the adapter throws (warns, no crash)", async () => {
+    const warnings: string[] = [];
+    const throwingAdapter = {
+      name: "broken",
+      async detect() { return true; },
+      async schemaDiff() { throw new Error("boom-schema"); },
+      async apiDiff() { throw new Error("boom-api"); },
+    };
+    const files = [{ path: "foo.ts", status: "M" as const, added: 1, deleted: 1 }];
+    const blocks = await buildBlocks(scope, files, throwingAdapter, (m) => warnings.push(m));
+    const types = blocks.map((b) => b.type);
+    expect(types).toContain("file-tree");
+    expect(types).toContain("diff");
+    expect(types).not.toContain("schema");
+    expect(types).not.toContain("api");
+    expect(warnings.some((w) => w.includes("boom-schema"))).toBe(true);
+    expect(warnings.some((w) => w.includes("boom-api"))).toBe(true);
+  });
 });

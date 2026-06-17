@@ -26,7 +26,7 @@ async function main() {
   });
 
   const repoRoot = values.repo!;
-  const { scope, blocks, adapter } = await gatherRecap(parseTarget(values), repoRoot);
+  const { scope, blocks, adapter } = await gatherRecap(parseTarget(values), repoRoot, (m) => console.warn(m));
   const html = await assemble(blocks, {
     title: `Recap — ${scope.label}`,
     source: `${repoRoot} · base ${scope.baseRef.slice(0, 10)} → head ${scope.headRef.slice(0, 10)} · stack ${adapter}`,

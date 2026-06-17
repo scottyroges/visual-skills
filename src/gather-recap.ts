@@ -10,6 +10,7 @@ export async function buildBlocks(
   scope: Scope,
   files: FileChange[],
   adapter: StackAdapter,
+  onWarn?: (msg: string) => void,
 ): Promise<Block[]> {
   const blocks: Block[] = [];
 
@@ -23,10 +24,18 @@ export async function buildBlocks(
     markdown: `**${scope.label}** — ${files.length} files, +${totalAdd}/-${totalDel} (stack: ${adapter.name}).`,
   });
 
-  const schema = await adapter.schemaDiff(scope);
-  if (schema) blocks.push(schema);
+  try {
+    const schema = await adapter.schemaDiff(scope, onWarn);
+    if (schema) blocks.push(schema);
+  } catch (err) {
+    onWarn?.(`schema diff skipped: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
-  for (const api of await adapter.apiDiff(scope)) blocks.push(api);
+  try {
+    for (const api of await adapter.apiDiff(scope, onWarn)) blocks.push(api);
+  } catch (err) {
+    onWarn?.(`api diff skipped: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   for (const diff of parseUnifiedDiff(scope.unifiedDiff)) blocks.push(diff);
 
@@ -34,10 +43,14 @@ export async function buildBlocks(
 }
 
 /** Top-level: resolve a target into a full recap block array. */
-export async function gatherRecap(target: Target, repoRoot: string): Promise<{ scope: Scope; blocks: Block[]; adapter: string }> {
+export async function gatherRecap(
+  target: Target,
+  repoRoot: string,
+  onWarn?: (msg: string) => void,
+): Promise<{ scope: Scope; blocks: Block[]; adapter: string }> {
   const scope = await resolveScope(target, { repoRoot });
   const files = await changedFiles(scope.baseRef, scope.headRef, repoRoot);
   const adapter = await selectAdapter(repoRoot, [new PrismaTrpcAdapter()]);
-  const blocks = await buildBlocks(scope, files, adapter);
+  const blocks = await buildBlocks(scope, files, adapter, onWarn);
   return { scope, blocks, adapter: adapter.name };
 }

@@ -20,7 +20,7 @@ export class PrismaTrpcAdapter implements StackAdapter {
     } catch { return false; }
   }
 
-  async schemaDiff(scope: Scope): Promise<SchemaBlock | null> {
+  async schemaDiff(scope: Scope, _onWarn?: (msg: string) => void): Promise<SchemaBlock | null> {
     const before = await fileAtRef(SCHEMA_PATH, scope.baseRef, scope.repoRoot);
     const after = await fileAtRef(SCHEMA_PATH, scope.headRef, scope.repoRoot);
     if (!before && !after) return null;
@@ -29,7 +29,7 @@ export class PrismaTrpcAdapter implements StackAdapter {
     return schemaDiffToBlock(diffs);
   }
 
-  async apiDiff(scope: Scope): Promise<ApiBlock[]> {
+  async apiDiff(scope: Scope, onWarn?: (msg: string) => void): Promise<ApiBlock[]> {
     const files = await changedFiles(scope.baseRef, scope.headRef, scope.repoRoot);
     const routers = files
       .map((f) => f.path)
@@ -37,13 +37,17 @@ export class PrismaTrpcAdapter implements StackAdapter {
 
     const blocks: ApiBlock[] = [];
     for (const path of routers) {
-      const routerName = path.split("/").pop()!.replace(/\.ts$/, "");
-      const beforeSrc = await fileAtRef(path, scope.baseRef, scope.repoRoot);
-      const afterSrc = await fileAtRef(path, scope.headRef, scope.repoRoot);
-      const before = beforeSrc ? parseRouter(beforeSrc, routerName) : [];
-      const after = afterSrc ? parseRouter(afterSrc, routerName) : [];
-      const block = diffProcedures(before, after, `tRPC: ${routerName}`, `api-${routerName}`);
-      if (block.procedures.length) blocks.push(block);
+      try {
+        const routerName = path.split("/").pop()!.replace(/\.ts$/, "");
+        const beforeSrc = await fileAtRef(path, scope.baseRef, scope.repoRoot);
+        const afterSrc = await fileAtRef(path, scope.headRef, scope.repoRoot);
+        const before = beforeSrc ? parseRouter(beforeSrc, routerName) : [];
+        const after = afterSrc ? parseRouter(afterSrc, routerName) : [];
+        const block = diffProcedures(before, after, `tRPC: ${routerName}`, `api-${routerName}`);
+        if (block.procedures.length) blocks.push(block);
+      } catch (err) {
+        onWarn?.(`api diff skipped for ${path}: ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
     return blocks;
   }

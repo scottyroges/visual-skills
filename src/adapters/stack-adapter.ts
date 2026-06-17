@@ -5,8 +5,8 @@ import { GenericAdapter } from "./generic.js";
 export interface StackAdapter {
   name: string;
   detect(repoRoot: string): Promise<boolean>;
-  schemaDiff(scope: Scope): Promise<SchemaBlock | null>;
-  apiDiff(scope: Scope): Promise<ApiBlock[]>;
+  schemaDiff(scope: Scope, onWarn?: (msg: string) => void): Promise<SchemaBlock | null>;
+  apiDiff(scope: Scope, onWarn?: (msg: string) => void): Promise<ApiBlock[]>;
 }
 
 /** First adapter whose detect() passes, else GenericAdapter. */

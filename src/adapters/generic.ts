@@ -5,6 +5,6 @@ import type { Scope } from "../git.js";
 export class GenericAdapter implements StackAdapter {
   name = "generic";
   async detect(): Promise<boolean> { return true; }
-  async schemaDiff(_scope: Scope) { return null; }
-  async apiDiff(_scope: Scope) { return []; }
+  async schemaDiff(_scope: Scope, _onWarn?: (msg: string) => void) { return null; }
+  async apiDiff(_scope: Scope, _onWarn?: (msg: string) => void) { return []; }
 }
