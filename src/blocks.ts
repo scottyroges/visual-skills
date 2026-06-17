@@ -19,7 +19,7 @@ export interface SchemaBlock {
 
 export interface ApiProcedure {
   name: string;          // e.g. "league.captureOrder"
-  auth: "public" | "protected" | "unknown";
+  auth: string;          // procedure-builder label: "public" | "protected" | "admin" | ... | "unknown"
   kind: "query" | "mutation" | "subscription" | "unknown";
   input: string;         // source text of the .input(...) argument, or "" if none
   change?: "added" | "removed" | "changed";

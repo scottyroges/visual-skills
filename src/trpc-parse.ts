@@ -48,8 +48,8 @@ export function parseRouter(source: string, routerName: string): ApiProcedure[] 
       } else if (ts.isPropertyAccessExpression(expr)) {
         walk(expr.expression);
       } else if (ts.isIdentifier(expr)) {
-        if (expr.text === "publicProcedure") auth = "public";
-        else if (expr.text === "protectedProcedure") auth = "protected";
+        const m = expr.text.match(/^(.+)Procedure$/);
+        if (m) auth = m[1];
       }
     };
     walk(prop.initializer);

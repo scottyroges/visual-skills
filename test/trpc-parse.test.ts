@@ -24,4 +24,17 @@ describe("parseRouter", () => {
     expect(byName["league.captureOrder"].kind).toBe("mutation");
     expect(byName["league.captureOrder"].input).toContain("orderId");
   });
+
+  it("derives auth from any <x>Procedure builder", () => {
+    const src = `
+import { router, publicProcedure, adminProcedure } from "@/server/trpc";
+export const adminRouter = router({
+  list: adminProcedure.query(() => svc.list()),
+  ping: publicProcedure.query(() => "pong"),
+});
+`;
+    const byName = Object.fromEntries(parseRouter(src, "admin").map((p) => [p.name, p]));
+    expect(byName["admin.list"].auth).toBe("admin");
+    expect(byName["admin.ping"].auth).toBe("public");
+  });
 });
