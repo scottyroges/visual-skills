@@ -31,6 +31,15 @@ describe("mermaidFlowchartToD2", () => {
     expect(mermaidFlowchartToD2("graph TD\nA & B --> C")).toBeNull();
   });
 
+  it("handles semicolon-separated statements and rejects an empty body", () => {
+    const d2 = mermaidFlowchartToD2("graph TD;A[Start]-->B;B-->C")!;
+    expect(d2).not.toBeNull();
+    expect(d2).toContain('"A": "Start"');
+    expect(d2).toContain('"A" -> "B"');
+    expect(d2).toContain('"B" -> "C"');
+    expect(mermaidFlowchartToD2("graph TD")).toBeNull(); // header only, no body
+  });
+
   it("emits d2 that compiles via the d2 binary", async () => {
     const d2 = mermaidFlowchartToD2("graph TD\n  A[Start] --> B{Choice}\n  B -->|yes| C(Done)")!;
     const out = await renderDiagram(

@@ -21,6 +21,7 @@ function splitSeg(seg: string): { label?: string; node: string } {
 export function mermaidFlowchartToD2(mermaid: string): string | null {
   const lines = mermaid
     .split("\n")
+    .flatMap((l) => l.split(";"))
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith("%%"));
   if (lines.length === 0) return null;
@@ -61,6 +62,8 @@ export function mermaidFlowchartToD2(mermaid: string): string | null {
       prevId = curId;
     }
   }
+
+  if (order.length === 0) return null;
 
   const out: string[] = [`direction: ${direction}`];
   for (const id of order) {
