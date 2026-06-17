@@ -35,3 +35,28 @@ body { margin:0; background:var(--paper); color:var(--ink);
 .vs-api-table tr[data-change="removed"] { background:#ffebe9; }
 .vs-api-table tr[data-change="changed"] { background:#fffdf3; }
 .vs-proc { font-family:ui-monospace,monospace; }
+
+/* shiki code blocks (prose fences) */
+.shiki, .shiki-plain { margin:0; padding:12px 14px; border-radius:8px; overflow-x:auto;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:0.85em; }
+.shiki-plain { background:#f6f5f1; white-space:pre; }
+
+/* diff gutter marker (sits before the highlighted line content) */
+.vs-gutter { display:inline-block; width:1.2em; color:var(--ctx); user-select:none; }
+
+/* annotated-code: line-number | code | right-margin notes */
+.vs-arow { display:grid; grid-template-columns:2.5em 1fr 16em; gap:10px; align-items:start; }
+.vs-lineno { color:var(--ctx); text-align:right; font-family:ui-monospace,monospace;
+  font-size:0.85em; user-select:none; }
+.vs-code { font-family:ui-monospace,monospace; font-size:0.85em; white-space:pre; overflow-x:auto; }
+.vs-notes .note { display:block; font-size:0.85em; color:var(--ctx); margin-bottom:2px; }
+@media (max-width:640px) {
+  .vs-arow { grid-template-columns:2.5em 1fr; }
+  .vs-notes { grid-column:2; }
+}
+
+/* questions cards */
+.vs-question { border:1px solid var(--line); border-radius:8px; padding:10px 14px; margin:10px 0; }
+.vs-q { font-weight:600; margin:0 0 6px; }
+.vs-recommended { margin:0; font-size:0.9em; }
+.vs-rec-label { color:var(--add); font-weight:600; }
