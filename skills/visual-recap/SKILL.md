@@ -81,17 +81,22 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
            "mermaid": "sequenceDiagram\n  client->>api: capture\n  api->>paypal: capture" } }
 
    - `headline`: the main change in ONE line.
-   - `points`: 3–6 SHORT items, each `href` linking (`#id`) to its group/diff/section (no long
-     paragraphs — this is the time-crunch read).
+   - `points`: 3–6 SHORT items. Link a **keyword** inline with markdown to its detail section,
+     e.g. `new \`capture\` mutation on the [order router](#diff-0)` — do NOT rely on a bare
+     `href` that turns the whole bullet into one link (a keyword link reads far better).
    - `diagram`: the single most illuminating illustration (often the `where-it-fits` graph or the
      key behavioral diagram) — lead with the picture. Carry its `mermaid` to stay editable; don't
      point a `href` at a diagram hidden in a non-default tab.
    - For a small change, the plain prose `summary` block is enough — skip the overview.
 
-4. **Annotate each diff.** Set each diff block's `description` (markdown) to *what changes in
-   this file and why*. Cross-link related diffs by their block id, which you can see in the
-   emitted JSON, e.g. `See [the router](#diff-3).` (each block renders with `id="<its id>"`,
-   so `#diff-3` jumps to that diff).
+4. **Annotate each diff — scannably, and only when it helps.** Set a diff block's
+   `description` (markdown) to *what changes and why*. Keep it scannable: short sub-points,
+   bullet lists, inline `code`, and a small diagram when a picture beats prose — never a wall
+   of text. **Omit the description entirely for trivial one-line changes** where it would add
+   nothing. Cross-link related diffs by id, e.g. `See [the router](#diff-3).` (each block
+   renders with `id="<its id>"`, so `#diff-3` jumps to that diff). The diff's code hunks are
+   collapsed by default under a "View changes" toggle, so the title + description + any diagram
+   are what the reader scans first — make them carry the meaning.
 
 4b. **Illustrate a diff when it helps** (distinct from the top-level change diagram in step 6 —
    this one lives *inside* a single diff's card). When a single diff implements logic that's
@@ -119,6 +124,15 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
    `{ "type":"group", "id":"…", "title":"…", "blocks":[ …diff blocks… ] }` (one level deep —
    groups may not contain groups). Place the groups after the lead (the Summary or `overview`), the
    `where-it-fits` diagram, and the diagram(s).
+
+   Within each group, order the diffs **most-important-first** (the core logic change before
+   its supporting wiring; styles, tests, config, and lockfiles last). The bare CLI already
+   applies this ordering heuristically, but when you regroup, preserve importance order inside
+   each group — never lead a group with a stylesheet or test file.
+
+   Give each group a `description` (markdown) — one or two scannable lines on what the group
+   covers and why it matters — e.g.
+   `{ "type":"group", "id":"core", "title":"Core change", "description":"The capture mutation and its wiring.", "blocks":[ … ] }`.
 
 6. **Author the diagram(s)** for the change — see "Which diagram(s) to add" below. Prefer one;
    use a `tabs` block when 2–3 lenses each add value. Place them near the top (after the lead

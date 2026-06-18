@@ -73,8 +73,8 @@ Primary blocks you author for plans:
       { "type": "questions", "id": "open", "title": "Open questions", "questions": [
         { "question": "Refund window?", "recommendedDefault": "30 days" } ] }
 
-- **grouping -> `group`** — `{ "type":"group", "id":"…", "title":"…", "blocks":[ … ] }` wraps
-  blocks into a titled section (one level deep). Used mainly by recaps to order diffs into a
+- **grouping -> `group`** — a titled, collapsible set of related blocks; add an optional `description`
+  (markdown) summarizing what the group covers. Shape: `{ "type":"group", "id":"…", "title":"…", "blocks":[ … ] }` (one level deep). Used mainly by recaps to order diffs into a
   narrative; available for plans too.
 
 - **multiple views of one thing -> `tabs`** — a CSS-only tab switcher (no JS) presenting

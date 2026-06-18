@@ -80,6 +80,9 @@ Mermaid classDefs (for editable flowchart/architecture diagrams):
     classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;
     classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;
 
+A compact legend is rendered automatically beneath any diagram that applies these roles
+(listing only the roles used), so you don't need to author one — just apply the classes.
+
 Apply color where it clarifies — always mark the `changed` subject; tag actors / external systems /
 datastores by role. Don't color every node; uncolored = neutral/unchanged.
 
@@ -104,7 +107,7 @@ flowchart LR
   billing --> user
   billing --> auth
   auth --> user
-  classDef changed fill:#ffd43b,stroke:#f08c00,stroke-width:2px;
+  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;
   class billing changed;
 ```
 
@@ -126,7 +129,7 @@ flowchart TD
   ALB --> ECS[ECS service]
   ECS --> RDS[(RDS Postgres)]
   ECS --> Redis[(Redis)]
-  classDef store fill:#e5dbff,stroke:#9775fa;
+  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;
   class RDS,Redis store;
 ```
 
