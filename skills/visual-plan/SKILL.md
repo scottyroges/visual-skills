@@ -34,6 +34,9 @@ blocks — so ground every reference in the real repo.
 
 ## Content -> block mapping
 
+For diagram selection (which structural / boundary / data-flow / behavioral diagram to use) and
+compile-tested recipes, consult the shared catalog: `$VISUAL_SKILLS_DIR/skills/shared/diagrams.md`.
+
 Primary blocks you author for plans:
 
 - **narrative / sections -> `prose`** (Markdown; GitHub-flavored). A fenced `mermaid`
@@ -70,6 +73,14 @@ Primary blocks you author for plans:
 - **grouping -> `group`** — `{ "type":"group", "id":"…", "title":"…", "blocks":[ … ] }` wraps
   blocks into a titled section (one level deep). Used mainly by recaps to order diffs into a
   narrative; available for plans too.
+
+- **multiple views of one thing -> `tabs`** — a CSS-only tab switcher (no JS) presenting
+  complementary diagrams as switchable panels. Each tab holds ONE block, one level deep (a tab
+  may not contain a `group` or another `tabs`).
+
+      { "type": "tabs", "id": "views", "title": "Two views", "tabs": [
+        { "label": "Flow", "block": { "type": "diagram", "id": "v-flow", "title": "Flow", "kind": "flowchart", "d2": "a -> b" } },
+        { "label": "Seq",  "block": { "type": "diagram", "id": "v-seq", "title": "Seq", "kind": "sequence", "d2": "shape: sequence_diagram\na -> b: hi" } } ] }
 
 Other block types in the `Block` union — `schema`, `api`, `diff` — are normally produced
 automatically by the **visual-recap** flow from a real git diff, not hand-authored. Reach

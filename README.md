@@ -66,4 +66,6 @@ upgrade with API-surface + plan-mermaid diagram producers (M3), and the `visual-
 "where it fits" dependency graph + `--emit-blocks` enrichment with agent-selected
 behavioral diagrams (M6), and review-narrative recaps — agent-authored "Summary",
 per-file diff descriptions with in-page cross-links, and importance-ordered `group`s
-(M7). Deprioritized: `gh pr comment` integration (M5). See `docs/superpowers/specs/`.
+(M7), and a shared diagram catalog with a `tabs` multi-view block plus widened
+Excalidraw editability (sequence/class) (M8). Deprioritized: `gh pr comment`
+integration (M5). See `docs/superpowers/specs/`.

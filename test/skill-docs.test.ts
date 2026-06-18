@@ -27,10 +27,16 @@ describe("skill docs stay in sync", () => {
     }
   });
 
-  it("visual-recap documents the behavioral diagram selection guide", () => {
-    expect(recapSkill).toContain("sequence");
-    expect(recapSkill).toContain("state");
+  it("both skills reference the shared diagram catalog", () => {
+    for (const md of [planSkill, recapSkill]) {
+      expect(md).toContain("skills/shared/diagrams.md");
+    }
+  });
+
+  it("visual-recap documents catalog-driven, possibly-multiple diagrams via tabs", () => {
     expect(recapSkill).toContain("--emit-blocks");
+    expect(recapSkill).toContain("catalog");
+    expect(recapSkill).toContain("tabs");
   });
 
   it("visual-recap documents the review-narrative enrichment", () => {

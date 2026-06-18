@@ -81,40 +81,40 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
    groups may not contain groups). Place the groups after the Summary, the `where-it-fits`
    diagram, and the behavioral diagram.
 
-6. **Author ONE behavioral diagram** for the change (see the selection guide) and place it
-   near the top (after the Summary / where-it-fits).
+6. **Author the diagram(s)** for the change — see "Which diagram(s) to add" below. Prefer one;
+   use a `tabs` block when 2–3 lenses each add value. Place them near the top (after the Summary
+   / where-it-fits).
 
 7. Render the combined array and open it:
 
        npx tsx bin/plan.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "Recap — <label>" --out <ABSOLUTE_OUT_DIR>
        open <ABSOLUTE_OUT_DIR>/plan.html
 
-### Which behavioral diagram to pick
+### Which diagram(s) to add
 
-- **Sequence diagram** (`"kind": "sequence"`) — when the change adds or alters a
-  multi-collaborator runtime path: a new request/response flow, an external integration call
-  chain. Collaborators on lifelines, time downward, ONE scenario.
-- **State machine** (`"kind": "architecture"`) — when the change alters a bounded lifecycle:
-  statuses, subscription / checkout / signup stages — an entity in one of N states with
-  labeled transitions.
-- If the change is purely structural, the `where-it-fits` graph already covers it — skip the
-  behavioral diagram rather than force one.
+Consult the shared **diagram catalog** for the full selection guide and tested recipes:
 
-Broader diagram types (C4 context/container, DDD context maps, data-flow, event/pub-sub
-topology, CI / blast-radius, BPMN, journey maps) are **not yet in scope** — do not attempt
-them.
+    $VISUAL_SKILLS_DIR/skills/shared/diagrams.md
 
-### Authoring recipes (valid d2)
+Prefer the fewest diagrams that explain the change — often ONE. The catalog's *Behavior* and
+*Journey* lenses cover most recaps (a sequence for a new runtime path; a state machine for a
+lifecycle change). When 2–3 lenses each add distinct value (e.g. a sequence AND a state machine,
+or the `where-it-fits` graph AND a data-flow), present them in a `tabs` block instead of forcing
+one. If the change is purely structural, the mechanical `where-it-fits` graph may already be
+enough — skip adding more.
 
-Sequence:
+Use the catalog's recipes verbatim (they are compile-tested), substituting real identifiers.
 
-    { "type": "diagram", "id": "how-it-works", "title": "captureOrder flow", "kind": "sequence",
-      "d2": "shape: sequence_diagram\nclient -> api: captureOrder(id)\napi -> paypal: capture(id)\npaypal -> api: ok\napi -> client: order" }
+### Grouping multiple diagrams into tabs
 
-State machine:
+A `tabs` block presents complementary views as a CSS-only switcher (no JS):
 
-    { "type": "diagram", "id": "lifecycle", "title": "Payment states", "kind": "architecture",
-      "d2": "direction: right\nPENDING -> PAID: capture\nPENDING -> FREE: cancel" }
+    { "type": "tabs", "id": "views", "title": "How it works", "tabs": [
+      { "label": "Sequence",  "block": { "type": "diagram", "id": "seq", "title": "captureOrder flow", "kind": "sequence",
+        "d2": "shape: sequence_diagram\nclient -> api: captureOrder(id)\napi -> paypal: capture(id)" } },
+      { "label": "States",    "block": { "type": "diagram", "id": "states", "title": "Order states", "kind": "flowchart",
+        "d2": "direction: right\nPENDING -> PAID: capture\nPENDING -> CANCELLED: cancel" } }
+    ] }
 
-Quote any d2 key/value containing a dot or space. An invalid diagram degrades to a visible
-placeholder rather than breaking the document.
+Each tab holds ONE block (one level deep — a tab may not contain a `group` or another `tabs`).
+Place the tabs near the top, after the Summary and the `where-it-fits` diagram.
