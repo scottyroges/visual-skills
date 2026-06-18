@@ -91,5 +91,5 @@ body { margin:0; background:var(--paper); color:var(--ink);
 
 /* ── per-diff embedded diagram ────────────────────────────────────────────── */
 .vs-diff-diagram { margin: 12px 0; }
-.vs-diff-diagram > h3 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 600; color: #57534e; }
+.vs-diff-diagram h2, .vs-diff-diagram h3 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 600; color: #57534e; }
 .vs-diff-diagram svg { max-width: 100%; height: auto; }
