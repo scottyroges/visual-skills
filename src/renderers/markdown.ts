@@ -50,3 +50,12 @@ export async function renderMarkdown(
   const body = (await md.parse(markdown)) as string;
   return sanitizeHtml(body, SANITIZE_OPTS);
 }
+
+/** Render a short Markdown string as sanitized INLINE HTML (no <p> wrapper) — for headlines,
+ *  list items, and other one-line strings. inline `code`, **bold**, links, etc. survive;
+ *  scripts / handlers / javascript: URLs are stripped (same policy as renderMarkdown). */
+export async function renderInlineMarkdown(markdown: string): Promise<string> {
+  const md = new Marked({ async: true });
+  const body = (await md.parseInline(markdown)) as string;
+  return sanitizeHtml(body, SANITIZE_OPTS);
+}
