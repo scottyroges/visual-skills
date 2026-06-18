@@ -157,3 +157,32 @@ describe("assemble — tabs block", () => {
     await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/may not contain a group or tabs/);
   });
 });
+
+describe("assemble — per-diff diagram (collection & uniqueness)", () => {
+  it("collects a diagram embedded on a diff into the up-front render pass", async () => {
+    // A broken d2 source only produces a warning if the embedded diagram was actually
+    // collected and run through renderAll — so this proves collectDiagrams recursed into it.
+    const warnings: string[] = [];
+    const blocks: Block[] = [
+      {
+        type: "diff", id: "d0", title: "x.ts", path: "src/x.ts",
+        diagram: { type: "diagram", id: "d0-diag", title: "Flow", kind: "flowchart", d2: "x: {" },
+        hunks: [{ header: "@@", lines: ["+a"] }],
+      },
+    ];
+    await assemble(blocks, { title: "T", source: "s", onWarn: (m) => warnings.push(m) });
+    expect(warnings.some((w) => w.includes("d0-diag"))).toBe(true);
+  }, 30_000);
+
+  it("throws when a diff's embedded diagram id duplicates another block id", async () => {
+    const blocks: Block[] = [
+      { type: "prose", id: "dup", markdown: "x" },
+      {
+        type: "diff", id: "d0", title: "x.ts", path: "src/x.ts",
+        diagram: { type: "diagram", id: "dup", title: "Flow", kind: "flowchart", d2: "a -> b" },
+        hunks: [{ header: "@@", lines: ["+a"] }],
+      },
+    ];
+    await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id "dup"/);
+  });
+});

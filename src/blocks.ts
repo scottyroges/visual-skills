@@ -58,6 +58,7 @@ export interface DiffBlock {
   title: string;
   path: string;
   description?: string;  // optional markdown "what & why", rendered above the hunks
+  diagram?: DiagramBlock | TabsBlock; // optional illustration (one diagram, or a tabbed set), rendered after the description, above the hunks
   hunks: DiffHunk[];
 }
 

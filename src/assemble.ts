@@ -35,6 +35,7 @@ function assertUniqueIds(blocks: Block[], seen = new Set<string>()): void {
     seen.add(b.id);
     if (b.type === "group") assertUniqueIds(b.blocks, seen);
     else if (b.type === "tabs") assertUniqueIds(b.tabs.map((t) => t.block), seen);
+    else if (b.type === "diff" && b.diagram) assertUniqueIds([b.diagram], seen);
   }
 }
 
@@ -47,6 +48,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
       if (isDiagramBlock(b)) out.push(b);
       else if (b.type === "group") out.push(...collectDiagrams(b.blocks));
       else if (b.type === "tabs") out.push(...collectDiagrams(b.tabs.map((t) => t.block)));
+      else if (b.type === "diff" && b.diagram) out.push(...collectDiagrams([b.diagram]));
     }
     return out;
   };
