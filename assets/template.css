@@ -68,3 +68,23 @@ body { margin:0; background:var(--paper); color:var(--ink);
 .vs-group { background:#faf9f6; }
 .vs-group > h2 { margin-top:0; }
 .vs-group .vs-block { box-shadow:none; }
+/* ── tabs (pure CSS, no view-time JS) ─────────────────────────────────────── */
+.vs-tabs .vs-tabradio { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.vs-tabs .vs-tablabels { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 2px solid #d6d3cd; margin-bottom: 12px; }
+.vs-tabs .vs-tablabels label { cursor: pointer; padding: 6px 14px; border: 1px solid #d6d3cd; border-bottom: none;
+  border-radius: 8px 8px 0 0; background: #f4f2ee; font-weight: 600; margin-bottom: -2px; }
+.vs-tabs .vs-tabpanel { display: none; }
+/* Reveal the nth panel / highlight the nth label for the nth selected radio (supports up to 6 tabs). */
+.vs-tabs .vs-tabradio:nth-of-type(1):checked ~ .vs-tabpanels > .vs-tabpanel:nth-child(1),
+.vs-tabs .vs-tabradio:nth-of-type(2):checked ~ .vs-tabpanels > .vs-tabpanel:nth-child(2),
+.vs-tabs .vs-tabradio:nth-of-type(3):checked ~ .vs-tabpanels > .vs-tabpanel:nth-child(3),
+.vs-tabs .vs-tabradio:nth-of-type(4):checked ~ .vs-tabpanels > .vs-tabpanel:nth-child(4),
+.vs-tabs .vs-tabradio:nth-of-type(5):checked ~ .vs-tabpanels > .vs-tabpanel:nth-child(5),
+.vs-tabs .vs-tabradio:nth-of-type(6):checked ~ .vs-tabpanels > .vs-tabpanel:nth-child(6) { display: block; }
+.vs-tabs .vs-tabradio:nth-of-type(1):checked ~ .vs-tablabels label:nth-child(1),
+.vs-tabs .vs-tabradio:nth-of-type(2):checked ~ .vs-tablabels label:nth-child(2),
+.vs-tabs .vs-tabradio:nth-of-type(3):checked ~ .vs-tablabels label:nth-child(3),
+.vs-tabs .vs-tabradio:nth-of-type(4):checked ~ .vs-tablabels label:nth-child(4),
+.vs-tabs .vs-tabradio:nth-of-type(5):checked ~ .vs-tablabels label:nth-child(5),
+.vs-tabs .vs-tabradio:nth-of-type(6):checked ~ .vs-tablabels label:nth-child(6) { background: #fff; border-bottom: 2px solid #fff; }
+@media print { .vs-tabs .vs-tabpanel { display: block !important; } }

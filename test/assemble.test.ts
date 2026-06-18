@@ -104,3 +104,56 @@ describe("assemble", () => {
     await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id/);
   });
 });
+
+describe("assemble — tabs block", () => {
+  it("renders multiple panels with exactly one visible by default", async () => {
+    const blocks: Block[] = [
+      { type: "tabs", id: "views", title: "Two views", tabs: [
+        { label: "Flow", block: { type: "diagram", id: "d-flow", title: "Flow", kind: "flowchart", d2: "a -> b" } },
+        { label: "Seq", block: { type: "diagram", id: "d-seq", title: "Seq", kind: "sequence", d2: "shape: sequence_diagram\na -> b: hi" } },
+      ] },
+    ];
+    const html = await assemble(blocks, { title: "T", source: "s" });
+    expect(html).toContain('class="vs-block vs-tabs"');
+    expect(html).toContain('id="views"');                 // container anchor
+    expect(html).toContain('name="vs-tabs-views"');        // radio group
+    expect(html).toContain("checked");                     // first tab pre-selected
+    expect(html).toContain(">Flow<");
+    expect(html).toContain(">Seq<");
+    // both diagrams rendered into panels
+    expect((html.match(/<svg/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    // exactly one radio is checked by default
+    expect((html.match(/ checked/g) ?? []).length).toBe(1);
+    expect(html).not.toContain("<script");
+  });
+
+  it("collects a diagram nested inside a tab for the up-front render pass", async () => {
+    const blocks: Block[] = [
+      { type: "tabs", id: "v", tabs: [
+        { label: "A", block: { type: "diagram", id: "nested", title: "Nested", kind: "flowchart", d2: "a -> b" } },
+      ] },
+    ];
+    const html = await assemble(blocks, { title: "T", source: "s" });
+    expect(html).toContain('id="nested"');   // got an anchor => was rendered, not skipped
+    expect(html).toContain("<svg");
+  });
+
+  it("throws on a duplicate id nested inside a tab", async () => {
+    const blocks: Block[] = [
+      { type: "prose", id: "dup", markdown: "x" },
+      { type: "tabs", id: "v", tabs: [
+        { label: "A", block: { type: "prose", id: "dup", markdown: "y" } },
+      ] },
+    ];
+    await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id "dup"/);
+  });
+
+  it("throws when a tab contains a group or tabs (one level deep)", async () => {
+    const blocks: Block[] = [
+      { type: "tabs", id: "v", tabs: [
+        { label: "A", block: { type: "group", id: "g", title: "G", blocks: [] } },
+      ] },
+    ];
+    await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/may not contain a group or tabs/);
+  });
+});

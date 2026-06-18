@@ -91,6 +91,14 @@ export interface GroupBlock {
   blocks: Block[];   // one level of nesting — children are non-group blocks
 }
 
+export interface TabsBlock {
+  type: "tabs";
+  id: string;
+  title?: string;
+  // One level deep — each tab holds a single non-container block (typically a diagram).
+  tabs: { label: string; block: Block }[];
+}
+
 export type Block =
   | DiagramBlock
   | SchemaBlock
@@ -100,7 +108,8 @@ export type Block =
   | ProseBlock
   | AnnotatedCodeBlock
   | QuestionsBlock
-  | GroupBlock;
+  | GroupBlock
+  | TabsBlock;
 
 /** Blocks rendered through the D2 diagram renderer. */
 export function isDiagramBlock(b: Block): b is DiagramBlock | SchemaBlock {

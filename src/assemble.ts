@@ -34,6 +34,7 @@ function assertUniqueIds(blocks: Block[], seen = new Set<string>()): void {
     }
     seen.add(b.id);
     if (b.type === "group") assertUniqueIds(b.blocks, seen);
+    else if (b.type === "tabs") assertUniqueIds(b.tabs.map((t) => t.block), seen);
   }
 }
 
@@ -45,6 +46,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
     for (const b of bs) {
       if (isDiagramBlock(b)) out.push(b);
       else if (b.type === "group") out.push(...collectDiagrams(b.blocks));
+      else if (b.type === "tabs") out.push(...collectDiagrams(b.tabs.map((t) => t.block)));
     }
     return out;
   };
@@ -90,6 +92,28 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
         }
         const children = await Promise.all(b.blocks.map(renderBlock));
         html = `<section class="vs-block vs-group"><h2>${escapeHtml(b.title)}</h2>${children.join("")}</section>`;
+        break;
+      }
+      case "tabs": {
+        for (const t of b.tabs) {
+          if (t.block.type === "group" || t.block.type === "tabs") {
+            throw new Error(`tab in "${b.id}" may not contain a group or tabs — one level deep only`);
+          }
+        }
+        const heading = b.title ? `<h2>${escapeHtml(b.title)}</h2>` : "";
+        const name = `vs-tabs-${b.id}`;
+        const radios = b.tabs
+          .map((_, i) => `<input type="radio" class="vs-tabradio" name="${escapeHtml(name)}" id="${escapeHtml(b.id)}--${i}"${i === 0 ? " checked" : ""}>`)
+          .join("");
+        const labels = b.tabs
+          .map((t, i) => `<label for="${escapeHtml(b.id)}--${i}">${escapeHtml(t.label)}</label>`)
+          .join("");
+        const panelsHtml = await Promise.all(b.tabs.map((t) => renderBlock(t.block)));
+        const panels = panelsHtml.map((p) => `<div class="vs-tabpanel">${p}</div>`).join("");
+        html =
+          `<section class="vs-block vs-tabs">${heading}` +
+          `<div class="vs-tabset">${radios}<div class="vs-tablabels">${labels}</div>` +
+          `<div class="vs-tabpanels">${panels}</div></div></section>`;
         break;
       }
       default: {
