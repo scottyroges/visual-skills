@@ -46,6 +46,7 @@ async function renderHunk(
 export async function renderDiff(
   block: DiffBlock,
   onWarn?: (msg: string) => void,
+  diagramHtml = "",
 ): Promise<string> {
   const lang = langFromPath(block.path);
   const desc = block.description
@@ -57,6 +58,7 @@ export async function renderDiff(
     `<h2>${escapeHtml(block.title)}</h2>` +
     `<div class="vs-path">${escapeHtml(block.path)}</div>` +
     desc +
+    diagramHtml +
     hunks.join("") +
     `</section>`
   );

@@ -185,4 +185,40 @@ describe("assemble — per-diff diagram (collection & uniqueness)", () => {
     ];
     await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id "dup"/);
   });
+
+  it("places a single embedded diagram's svg inside the vs-diff section", async () => {
+    const blocks: Block[] = [
+      {
+        type: "diff", id: "d1", title: "x.ts", path: "src/x.ts",
+        diagram: { type: "diagram", id: "d1-diag", title: "Flow", kind: "flowchart", d2: "a -> b" },
+        hunks: [{ header: "@@", lines: ["+a"] }],
+      },
+    ];
+    const html = await assemble(blocks, { title: "T", source: "s" });
+    const sectionStart = html.indexOf('class="vs-block vs-diff"');
+    const sectionEnd = html.indexOf("</section>", sectionStart);
+    const section = html.slice(sectionStart, sectionEnd);
+    expect(section).toContain("vs-diff-diagram");
+    expect(section).toContain("<svg");
+  });
+
+  it("renders a tabs set embedded on a diff (multiple svgs, tab switcher)", async () => {
+    const blocks: Block[] = [
+      {
+        type: "diff", id: "d2", title: "x.ts", path: "src/x.ts",
+        diagram: {
+          type: "tabs", id: "d2-views", title: "Views", tabs: [
+            { label: "Flow", block: { type: "diagram", id: "d2-flow", title: "Flow", kind: "flowchart", d2: "a -> b" } },
+            { label: "Seq", block: { type: "diagram", id: "d2-seq", title: "Seq", kind: "sequence", d2: "shape: sequence_diagram\na -> b: hi" } },
+          ],
+        },
+        hunks: [{ header: "@@", lines: ["+a"] }],
+      },
+    ];
+    const html = await assemble(blocks, { title: "T", source: "s" });
+    expect(html).toContain("vs-diff-diagram");
+    expect(html).toContain('class="vs-block vs-tabs"');
+    expect((html.match(/<svg/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect(html).not.toContain("<script");
+  });
 });

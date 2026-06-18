@@ -67,22 +67,37 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
   const withAnchor = (id: string, html: string): string =>
     html.replace('<section class="vs-block', `<section id="${escapeHtml(id)}" class="vs-block`);
 
+  // svg + optional editable link, without the outer <section> — reused by diagram blocks and by
+  // a diagram embedded inside a diff.
+  const diagramInner = (r: (typeof rendered)[number]): string => {
+    const link = r.editable
+      ? `<div class="vs-edit"><a href="${escapeHtml(basename(r.editable))}">open in Excalidraw</a></div>`
+      : "";
+    return `${r.svg}${link}`;
+  };
+
   const renderBlock = async (b: Block): Promise<string> => {
     let html: string;
     switch (b.type) {
       case "diagram":
       case "schema": {
         const r = svgById.get(b.id)!;
-        const link = r.editable
-          ? `<div class="vs-edit"><a href="${escapeHtml(basename(r.editable))}">open in Excalidraw</a></div>`
-          : "";
         // r.svg is trusted: produced by the d2 binary (or Excalidraw), which emit no <script>.
-        html = `<section class="vs-block vs-diagram"><h2>${escapeHtml(b.title)}</h2>${r.svg}${link}</section>`;
+        html = `<section class="vs-block vs-diagram"><h2>${escapeHtml(b.title)}</h2>${diagramInner(r)}</section>`;
         break;
       }
       case "prose": html = await renderProse(b, opts.onWarn); break;
       case "file-tree": html = renderFileTree(b); break;
-      case "diff": html = await renderDiff(b, opts.onWarn); break;
+      case "diff": {
+        let diagramHtml = "";
+        if (b.diagram?.type === "diagram") {
+          diagramHtml = `<div class="vs-diff-diagram"><h3>${escapeHtml(b.diagram.title)}</h3>${diagramInner(svgById.get(b.diagram.id)!)}</div>`;
+        } else if (b.diagram?.type === "tabs") {
+          diagramHtml = `<div class="vs-diff-diagram">${await renderBlock(b.diagram)}</div>`;
+        }
+        html = await renderDiff(b, opts.onWarn, diagramHtml);
+        break;
+      }
       case "api": html = renderApi(b); break;
       case "annotated-code": html = await renderAnnotatedCode(b, opts.onWarn); break;
       case "questions": html = renderQuestions(b); break;

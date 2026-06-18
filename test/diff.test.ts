@@ -50,3 +50,28 @@ describe("renderDiff", () => {
     expect(html.indexOf("vs-diff-desc")).toBeLessThan(html.indexOf("vs-hunk")); // desc before hunks
   });
 });
+
+describe("renderDiff — embedded diagram fragment", () => {
+  const base: DiffBlock = {
+    type: "diff", id: "d", title: "x.ts", path: "src/x.ts",
+    description: "Changes **here**.",
+    hunks: [{ header: "@@ -1 +1 @@", lines: ["+const a = 1;"] }],
+  };
+
+  it("places the diagram fragment after the description and before the first hunk", async () => {
+    const html = await renderDiff(base, undefined, "<div class='vs-diff-diagram'>DIAG</div>");
+    const descIdx = html.indexOf("vs-diff-desc");
+    const diagIdx = html.indexOf("vs-diff-diagram");
+    const hunkIdx = html.indexOf("vs-hunk");
+    expect(descIdx).toBeGreaterThanOrEqual(0);
+    expect(diagIdx).toBeGreaterThan(descIdx);
+    expect(hunkIdx).toBeGreaterThan(diagIdx);
+  });
+
+  it("is unchanged when no diagram fragment is passed", async () => {
+    const withArg = await renderDiff(base, undefined, "");
+    const withoutArg = await renderDiff(base);
+    expect(withArg).toBe(withoutArg);
+    expect(withArg).not.toContain("vs-diff-diagram");
+  });
+});

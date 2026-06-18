@@ -88,3 +88,8 @@ body { margin:0; background:var(--paper); color:var(--ink);
 .vs-tabs .vs-tabradio:nth-of-type(5):checked ~ .vs-tablabels label:nth-child(5),
 .vs-tabs .vs-tabradio:nth-of-type(6):checked ~ .vs-tablabels label:nth-child(6) { background: #fff; border-bottom: 2px solid #fff; }
 @media print { .vs-tabs .vs-tabpanel { display: block !important; } }
+
+/* ── per-diff embedded diagram ────────────────────────────────────────────── */
+.vs-diff-diagram { margin: 12px 0; }
+.vs-diff-diagram > h3 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 600; color: #57534e; }
+.vs-diff-diagram svg { max-width: 100%; height: auto; }
