@@ -27,7 +27,9 @@ the missing per-diff case.
 
 1. **First-class on the diff.** Add an optional `diagram` to `DiffBlock`; it renders inside that
    diff's card. (Not pure composition, not group-wrapping.)
-2. **One diagram per diff** (YAGNI). A diff needing multiple views uses a `group` + `tabs`.
+2. **One diagram, or a tabbed set.** A diff's illustration is a single `DiagramBlock`, or a
+   `TabsBlock` when multiple complementary views help — reusing the M8 `tabs` construct rather than
+   a parallel multiple-diagram mechanism.
 3. **Placement: after the `description`, above the hunks** — grasp the change, then read the code.
 4. **d2 compilation stays in assemble's up-front pass** — `renderDiff` never compiles d2.
 5. **Hybrid split unchanged.** The bare recap CLI leaves `diagram` unset (it cannot judge which
@@ -44,13 +46,16 @@ export interface DiffBlock {
   title: string;
   path: string;
   description?: string;  // optional markdown "what & why", rendered above the hunks
-  diagram?: DiagramBlock; // optional illustration, rendered after the description, above the hunks
+  diagram?: DiagramBlock | TabsBlock; // optional illustration (one diagram, or a tabbed set), rendered after the description, above the hunks
   hunks: DiffHunk[];
 }
 ```
 
-`DiagramBlock` is already declared in the same file. Reusing it means per-diff diagrams get the
-M8 catalog recipes and the Excalidraw-editable path for free (own id/title/kind/d2/optional mermaid).
+`DiagramBlock` and `TabsBlock` are already declared in the same file. Reusing `DiagramBlock` means
+per-diff diagrams get the M8 catalog recipes and the Excalidraw-editable path for free (own
+id/title/kind/d2/optional mermaid); a `TabsBlock` holds several such diagrams as switchable views.
+(`DiffBlock` is declared before `TabsBlock` today; since these are TypeScript `interface`/`type`
+declarations the forward reference resolves fine — no reordering needed.)
 
 ## Component 2 — Rendering
 
@@ -71,15 +76,19 @@ const diagramInner = (r: { svg: string; editable: string | null }): string => {
 
 - `case "diagram"` / `case "schema"`: becomes
   `<section class="vs-block vs-diagram"><h2>${title}</h2>${diagramInner(r)}</section>`.
-- `case "diff"`: if `b.diagram` is present, look up its pre-rendered result and build the embed,
-  then pass it into `renderDiff`:
+- `case "diff"`: if `b.diagram` is present, build the embed — a single `DiagramBlock` uses the
+  pre-rendered svg via `diagramInner`; a `TabsBlock` is rendered through the existing `renderBlock`
+  (which already handles tabs, looking up each tab's pre-rendered diagram). Then pass it into
+  `renderDiff`:
 
   ```ts
   case "diff": {
     let diagramHtml = "";
-    if (b.diagram) {
+    if (b.diagram?.type === "diagram") {
       const r = svgById.get(b.diagram.id)!;
       diagramHtml = `<div class="vs-diff-diagram"><h3>${escapeHtml(b.diagram.title)}</h3>${diagramInner(r)}</div>`;
+    } else if (b.diagram?.type === "tabs") {
+      diagramHtml = `<div class="vs-diff-diagram">${await renderBlock(b.diagram)}</div>`;
     }
     html = await renderDiff(b, opts.onWarn, diagramHtml);
     break;
@@ -104,11 +113,13 @@ compilation — it only places a pre-rendered HTML fragment.
 In `src/assemble.ts`, both recursive walkers gain a `diff.diagram` case (they already handle
 `group`/`tabs`):
 
-- `collectDiagrams`: `else if (b.type === "diff" && b.diagram) out.push(b.diagram);` — so the
-  embedded diagram is compiled in the up-front pass and (when eligible) writes its `.excalidraw`
-  sidecar, exactly like a standalone diagram.
+- `collectDiagrams`: `else if (b.type === "diff" && b.diagram) out.push(...collectDiagrams([b.diagram]));`
+  — recursing through `b.diagram` uniformly handles both a `DiagramBlock` (gathered directly) and a
+  `TabsBlock` (gathered by recursing into its tabs), so every embedded diagram is compiled in the
+  up-front pass and (when eligible) writes its `.excalidraw` sidecar.
 - `assertUniqueIds`: `else if (b.type === "diff" && b.diagram) assertUniqueIds([b.diagram], seen);`
-  — so an embedded diagram's id must be globally unique (it shares the same anchor/sidecar namespace).
+  — recursing through `b.diagram` enforces that the embedded diagram's id (and, for a `TabsBlock`,
+  the tabs id and every nested diagram id) is globally unique (shared anchor/sidecar namespace).
 
 ## Component 4 — CSS
 
@@ -124,34 +135,40 @@ In `skills/visual-recap/SKILL.md`, extend the enrichment guidance:
   state machine, a non-obvious control/data flow, a sequence across collaborators — author a small
   catalog diagram and set it as the diff's `diagram`. Show the JSON shape
   (`"diagram": { "type": "diagram", "id": "...", "kind": "...", "d2": "..." }` inside a diff block).
+- **Multiple views:** when one diff genuinely benefits from more than one diagram (e.g. a sequence
+  *and* a state machine), set its `diagram` to a `TabsBlock` of diagrams instead of a single one.
+  Default to a single diagram; reach for tabs only when each view earns its place.
 - **Restraint:** most diffs need no diagram; attach one only when it adds understanding the code
-  alone doesn't. One per diff.
+  alone doesn't.
 - **Keep it editable:** copy the catalog recipe *including its `mermaid` sibling* for any
   editable-eligible kind (flowchart/architecture/sequence/class). The embedded diagram goes through
   the same render path as any diagram, so a paired `mermaid` makes it an editable Excalidraw scene;
   a d2-only per-diff diagram silently forfeits that. (ERD stays d2-only by design.)
-- **Grouping-level diagrams:** a `group` may lead with a diagram block to illustrate a whole
-  grouping of diffs (already supported — no new field).
-- Embedded diagrams render inline (not inside a tab), so they are safe `#cross-link` targets; the
-  diff `description` may link to the diagram by id.
+- **Grouping-level diagrams:** a `group` may lead with a diagram block — or a `tabs` block of
+  diagrams — to illustrate a whole grouping of diffs (already supported by the existing nesting
+  rules: group → diagram, or group → tabs → diagram; no new field).
+- A single embedded diagram renders inline, so it's a safe `#cross-link` target; the diff
+  `description` may link to it by id. If the embed is a `tabs` set, the inactive-tab caveat applies
+  — don't make a diagram inside a non-default tab a cross-link target.
 
 ## Component 6 — Testing
 
 - **`test/diff.test.ts`:** `renderDiff(block, undefined, "<div class='vs-diff-diagram'>DIAG</div>")`
   places the fragment after the `description` and before the first hunk; `renderDiff(block)` (no
   third arg) is byte-unchanged from today.
-- **`test/assemble.test.ts`:** a `diff` with a `.diagram` renders the diagram's real `<svg>` inside
-  the `vs-diff` section (no "failed to render" placeholder) — proving `collectDiagrams` included it
-  in the up-front pass; `assertUniqueIds` throws when a diff's embedded `diagram.id` duplicates
-  another block's id.
+- **`test/assemble.test.ts`:** a `diff` with a single-`DiagramBlock` `.diagram` renders the
+  diagram's real `<svg>` inside the `vs-diff` section (no "failed to render" placeholder) — proving
+  `collectDiagrams` included it in the up-front pass; a `diff` with a `TabsBlock` `.diagram` renders
+  the tab switcher (`vs-tabs`) with multiple `<svg>`s inside the `vs-diff` section;
+  `assertUniqueIds` throws when a diff's embedded `diagram.id` duplicates another block's id.
 - **`test/skill-docs.test.ts`:** assert `recapSkill` documents the per-diff diagram (e.g. contains
   `"diagram":`).
 
 ## Out of scope
 
-- Multiple diagrams per diff (use a `group` + `tabs`).
 - Auto-generating per-diff diagrams in the bare CLI (it stays mechanical).
 - New diagram kinds (the M8 catalog already covers the vocabulary).
+- Nesting beyond diff → tabs → diagram (a tab still may not hold a `group` or another `tabs`).
 
 ## Implementation sequencing (small commits)
 
