@@ -49,6 +49,25 @@ describe("renderDiff", () => {
     expect(html).toContain('href="#diff-1"');
     expect(html.indexOf("vs-diff-desc")).toBeLessThan(html.indexOf("vs-hunk")); // desc before hunks
   });
+
+  it("collapses the hunks under a <details>, keeping description above it", async () => {
+    const block: DiffBlock = {
+      type: "diff", id: "d", title: "x.ts", path: "src/x.ts",
+      description: "Adds a thing.",
+      hunks: [{ header: "@@ -1 +2 @@", lines: ["+a", "+b", "-c"] }],
+    };
+    const html = await renderDiff(block);
+    expect(html).toContain("<details");
+    expect(html).toContain("<summary");
+    expect(html).toContain("View changes");
+    expect(html).toContain("+2");  // added count
+    expect(html).toContain("-1");  // deleted count
+    // description sits above the <details> that holds the hunks
+    expect(html.indexOf("vs-diff-desc")).toBeLessThan(html.indexOf("<details"));
+    expect(html.indexOf("<details")).toBeLessThan(html.indexOf("vs-hunk"));
+    // collapsed by default: the details element has no `open` attribute
+    expect(html).not.toMatch(/<details[^>]*\bopen\b/);
+  });
 });
 
 describe("renderDiff — embedded diagram fragment", () => {

@@ -19,6 +19,17 @@ function stripMarker(line: string): string {
   return line.length ? line.slice(1) : line;
 }
 
+function countChanges(hunks: DiffHunk[]): { added: number; deleted: number } {
+  let added = 0, deleted = 0;
+  for (const h of hunks) {
+    for (const l of h.lines) {
+      if (l.startsWith("+")) added++;
+      else if (l.startsWith("-")) deleted++;
+    }
+  }
+  return { added, deleted };
+}
+
 async function renderHunk(
   hunk: DiffHunk,
   lang: string,
@@ -53,13 +64,18 @@ export async function renderDiff(
     ? `<div class="vs-diff-desc">${await renderMarkdown(block.description, onWarn)}</div>`
     : "";
   const hunks = await Promise.all(block.hunks.map((h) => renderHunk(h, lang, onWarn)));
+  const { added, deleted } = countChanges(block.hunks);
   return (
     `<section class="vs-block vs-diff">` +
     `<h2>${escapeHtml(block.title)}</h2>` +
     `<div class="vs-path">${escapeHtml(block.path)}</div>` +
     desc +
     diagramHtml +
+    `<details class="vs-diff-code"><summary>View changes ` +
+    `<span class="vs-diff-stat vs-add">+${added}</span> ` +
+    `<span class="vs-diff-stat vs-del">-${deleted}</span></summary>` +
     hunks.join("") +
+    `</details>` +
     `</section>`
   );
 }

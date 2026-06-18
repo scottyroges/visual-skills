@@ -115,3 +115,13 @@ body { margin:0; background:var(--paper); color:var(--ink);
   background: #fff; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
 .vs-zoom-reset { right: 96px; }
 .vs-zoom-close { right: 16px; font-weight: 700; }
+
+/* ── collapsible diff code ────────────────────────────────────────────────────── */
+.vs-diff-code > summary { cursor: pointer; color: var(--ctx); font-size: 0.85em;
+  font-family: ui-monospace, monospace; padding: 4px 0; user-select: none; }
+.vs-diff-code .vs-diff-stat { font-weight: 600; }
+.vs-diff-code .vs-diff-stat.vs-add { color: var(--add); }
+.vs-diff-code .vs-diff-stat.vs-del { color: var(--del); }
+/* scannable description lists (item #6) */
+.vs-diff-desc ul, .vs-diff-desc ol { margin: 4px 0; padding-left: 1.2rem; }
+.vs-diff-desc li { margin: 2px 0; }
