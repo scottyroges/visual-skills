@@ -20,6 +20,13 @@ Recap (from a git target):
     npx tsx bin/recap.ts --repo /path/to/repo --branch <name> --out .recaps/x/recap.html
     npx tsx bin/recap.ts --repo /path/to/repo --pr <number>   --out .recaps/x/recap.html
 
+Every recap includes a synthesized summary and a "where it fits" dependency graph. To
+enrich it with an agent-authored behavioral diagram, emit the gathered blocks as JSON,
+augment them, and render via the plan CLI (this is what the `visual-recap` skill does):
+
+    npx tsx bin/recap.ts --repo /path/to/repo --commit <sha> --emit-blocks blocks.json
+    npx tsx bin/plan.ts --blocks blocks.json --out .recaps/x/recap.html
+
 ## Optional: editable Excalidraw diagrams
 
 By default, flowchart/architecture diagrams render as static D2 sketches. To make them
@@ -52,5 +59,7 @@ invoke the CLIs above; the tool path is set in one constant near the top of each
 Implemented: D2 floor + assembler + recap gatherer (Prisma+tRPC adapter) (M0/M1),
 Shiki syntax highlighting + full renderer set (M2), the opt-in editable Excalidraw
 upgrade with API-surface + plan-mermaid diagram producers (M3), and the `visual-plan` /
-`visual-recap` Claude Code skills (M4). Deprioritized: `gh pr comment` integration (M5).
+`visual-recap` Claude Code skills (M4), and contextual recaps — synthesized summary +
+"where it fits" dependency graph + `--emit-blocks` enrichment with agent-selected
+behavioral diagrams (M6). Deprioritized: `gh pr comment` integration (M5).
 See `docs/superpowers/specs/`.
