@@ -170,5 +170,38 @@ export async function dependencyNeighborhood(
     lines.push(`  ${q(nodes.get(from)!.label)} -> ${q(nodes.get(to)!.label)}`);
   }
 
-  return { type: "diagram", id: "where-it-fits", title: "Where it fits", kind: "architecture", d2: lines.join("\n") };
+  // mermaid (editable upgrade): same nodes/edges with mermaid-safe ids + path labels.
+  const mid = new Map<string, string>();
+  const mlines: string[] = ["graph LR"];
+  const changedMids: string[] = [];
+  let mi = 0;
+  for (const [id, n] of nodes) {
+    if (!keep.has(id)) continue;
+    const m = `n${mi++}`;
+    mid.set(id, m);
+    mlines.push(`  ${m}["${n.label.replace(/"/g, "'")}"]`);
+    if (n.changed) changedMids.push(m);
+  }
+  if (dropped > 0) {
+    const m = `n${mi++}`;
+    mlines.push(`  ${m}["+${dropped} more"]`);
+  }
+  for (const e of edges) {
+    const [from, to] = e.split(" ");
+    if (!keep.has(from) || !keep.has(to)) continue;
+    mlines.push(`  ${mid.get(from)} --> ${mid.get(to)}`);
+  }
+  if (changedMids.length) {
+    mlines.push("classDef changed fill:#e6ffec;");
+    for (const m of changedMids) mlines.push(`  class ${m} changed;`);
+  }
+
+  return {
+    type: "diagram",
+    id: "where-it-fits",
+    title: "Where it fits",
+    kind: "architecture",
+    d2: lines.join("\n"),
+    mermaid: mlines.join("\n"),
+  };
 }

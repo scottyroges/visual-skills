@@ -40,6 +40,12 @@ describe("dependencyNeighborhood", () => {
       expect(block!.d2).toContain("src/util");
       expect(block!.d2).toContain("zod");
       expect(block!.d2).toContain("src/b.ts");
+      // mermaid (editable upgrade): sanitized ids, path labels, edges
+      expect(block!.mermaid).toBeDefined();
+      expect(block!.mermaid!).toContain("graph LR");
+      expect(block!.mermaid!).toContain('["src/a.ts"]'); // changed node label keeps the path
+      expect(block!.mermaid!).toMatch(/\bn\d+ --> n\d+/);  // edges use sanitized nX ids
+      expect(block!.mermaid!).not.toMatch(/"src\/a\.ts" --> /); // not raw d2-style path edges
       const out = await renderDiagram(block!, { excalidraw: false });
       expect(out.svg).toMatch(/<svg/);
       expect(out.svg).not.toContain("failed to render");
