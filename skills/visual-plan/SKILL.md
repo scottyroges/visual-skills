@@ -82,6 +82,14 @@ Primary blocks you author for plans:
         { "label": "Flow", "block": { "type": "diagram", "id": "v-flow", "title": "Flow", "kind": "flowchart", "d2": "a -> b" } },
         { "label": "Seq",  "block": { "type": "diagram", "id": "v-seq", "title": "Seq", "kind": "sequence", "d2": "shape: sequence_diagram\na -> b: hi" } } ] }
 
+- **lead summary -> `overview`** — a scannable callout placed first: a one-line `headline`, short
+  `points` (each `href` linking to a section by `#id`), and an optional lead `diagram`
+  (`DiagramBlock` or `tabs`) rendered before the points. Author it for larger plans.
+
+      { "type": "overview", "id": "overview", "headline": "Add PayPal capture",
+        "points": [ { "text": "new `capture` route", "href": "#flow" } ],
+        "diagram": { "type": "diagram", "id": "ov-flow", "title": "Flow", "kind": "flowchart", "d2": "a -> b" } }
+
 Other block types in the `Block` union — `schema`, `api`, `diff` — are normally produced
 automatically by the **visual-recap** flow from a real git diff, not hand-authored. Reach
 for visual-recap when the subject is a code change rather than a plan.

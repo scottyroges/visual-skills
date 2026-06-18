@@ -222,3 +222,40 @@ describe("assemble — per-diff diagram (collection & uniqueness)", () => {
     expect(html).not.toContain("<script");
   });
 });
+
+describe("assemble — overview block", () => {
+  it("renders an overview with an embedded diagram and a resolvable point link", async () => {
+    const blocks: Block[] = [
+      { type: "overview", id: "ov", headline: "Lead", points: [{ text: "see the diff", href: "#diff-0" }],
+        diagram: { type: "diagram", id: "ov-diag", title: "Flow", kind: "flowchart", d2: "a -> b" } },
+      { type: "diff", id: "diff-0", title: "x.ts", path: "src/x.ts", hunks: [{ header: "@@", lines: ["+a"] }] },
+    ];
+    const html = await assemble(blocks, { title: "T", source: "s" });
+    const start = html.indexOf('class="vs-block vs-overview"');
+    const end = html.indexOf("</section>", start);
+    const section = html.slice(start, end);
+    expect(section).toContain("vs-overview-diagram");
+    expect(section).toContain("<svg");
+    expect(html).toContain('<a href="#diff-0">');
+    expect(html).toContain('id="diff-0"'); // the link target exists
+  });
+
+  it("collects an overview's embedded diagram into the up-front pass (broken d2 warns)", async () => {
+    const warnings: string[] = [];
+    const blocks: Block[] = [
+      { type: "overview", id: "ov", headline: "Lead", points: [],
+        diagram: { type: "diagram", id: "ov-bad", title: "B", kind: "flowchart", d2: "x: {" } },
+    ];
+    await assemble(blocks, { title: "T", source: "s", onWarn: (m) => warnings.push(m) });
+    expect(warnings.some((w) => w.includes("ov-bad"))).toBe(true);
+  }, 30_000);
+
+  it("throws when an overview's embedded diagram id duplicates another block id", async () => {
+    const blocks: Block[] = [
+      { type: "prose", id: "dup", markdown: "x" },
+      { type: "overview", id: "ov", headline: "Lead", points: [],
+        diagram: { type: "diagram", id: "dup", title: "B", kind: "flowchart", d2: "a -> b" } },
+    ];
+    await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id "dup"/);
+  });
+});

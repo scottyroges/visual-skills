@@ -93,3 +93,11 @@ body { margin:0; background:var(--paper); color:var(--ink);
 .vs-diff-diagram { margin: 12px 0; }
 .vs-diff-diagram h2, .vs-diff-diagram h3 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 600; color: #57534e; }
 .vs-diff-diagram svg { max-width: 100%; height: auto; }
+/* ── overview (lead summary callout) ──────────────────────────────────────── */
+.vs-overview { background: #f5f3ff; border-left: 4px solid #7c5cff; border-radius: 8px; padding: 16px 20px; }
+.vs-overview-headline { margin: 0 0 12px; font-size: 1.4rem; line-height: 1.25; }
+.vs-overview-diagram { margin: 0 0 12px; }
+.vs-overview-diagram svg { max-width: 100%; height: auto; }
+.vs-overview-diagram h2, .vs-overview-diagram h3 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 600; color: #57534e; }
+.vs-overview-points { margin: 0; padding-left: 1.2rem; line-height: 1.7; }
+.vs-overview-points li > p { margin: 0; }

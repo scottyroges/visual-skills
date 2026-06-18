@@ -8,6 +8,7 @@ import { renderAll } from "./render-diagram.js";
 import { renderProse } from "./renderers/prose.js";
 import { renderFileTree } from "./renderers/file-tree.js";
 import { renderDiff } from "./renderers/diff.js";
+import { renderOverview } from "./renderers/overview.js";
 import { renderApi } from "./renderers/api.js";
 import { renderAnnotatedCode } from "./renderers/annotated-code.js";
 import { renderQuestions } from "./renderers/questions.js";
@@ -36,6 +37,7 @@ function assertUniqueIds(blocks: Block[], seen = new Set<string>()): void {
     if (b.type === "group") assertUniqueIds(b.blocks, seen);
     else if (b.type === "tabs") assertUniqueIds(b.tabs.map((t) => t.block), seen);
     else if (b.type === "diff" && b.diagram) assertUniqueIds([b.diagram], seen);
+    else if (b.type === "overview" && b.diagram) assertUniqueIds([b.diagram], seen);
   }
 }
 
@@ -49,6 +51,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
       else if (b.type === "group") out.push(...collectDiagrams(b.blocks));
       else if (b.type === "tabs") out.push(...collectDiagrams(b.tabs.map((t) => t.block)));
       else if (b.type === "diff" && b.diagram) out.push(...collectDiagrams([b.diagram]));
+      else if (b.type === "overview" && b.diagram) out.push(...collectDiagrams([b.diagram]));
     }
     return out;
   };
@@ -96,6 +99,16 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
           diagramHtml = `<div class="vs-diff-diagram">${await renderBlock(b.diagram)}</div>`;
         }
         html = await renderDiff(b, opts.onWarn, diagramHtml);
+        break;
+      }
+      case "overview": {
+        let diagramHtml = "";
+        if (b.diagram?.type === "diagram") {
+          diagramHtml = `<div class="vs-overview-diagram">${diagramInner(svgById.get(b.diagram.id)!)}</div>`;
+        } else if (b.diagram?.type === "tabs") {
+          diagramHtml = `<div class="vs-overview-diagram">${await renderBlock(b.diagram)}</div>`;
+        }
+        html = await renderOverview(b, diagramHtml);
         break;
       }
       case "api": html = renderApi(b); break;

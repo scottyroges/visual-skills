@@ -101,6 +101,14 @@ export interface TabsBlock {
   tabs: { label: string; block: Block }[];
 }
 
+export interface OverviewBlock {
+  type: "overview";
+  id: string;
+  headline: string;                            // the main change, one scannable line (inline markdown)
+  points: { text: string; href?: string }[];   // short key points; href = "#section-id" to its detail
+  diagram?: DiagramBlock | TabsBlock;           // lead illustration, rendered before the points
+}
+
 export type Block =
   | DiagramBlock
   | SchemaBlock
@@ -111,7 +119,8 @@ export type Block =
   | AnnotatedCodeBlock
   | QuestionsBlock
   | GroupBlock
-  | TabsBlock;
+  | TabsBlock
+  | OverviewBlock;
 
 /** Blocks rendered through the D2 diagram renderer. */
 export function isDiagramBlock(b: Block): b is DiagramBlock | SchemaBlock {
