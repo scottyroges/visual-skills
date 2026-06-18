@@ -51,3 +51,56 @@ Recap of a merged PR by its squash-merge SHA, into the target repo's `.recaps/`:
     npx tsx bin/recap.ts --repo /Users/me/Projects/ppgl --commit 3559f61 \
       --out /Users/me/Projects/ppgl/.recaps/pr-183.html
     open /Users/me/Projects/ppgl/.recaps/pr-183.html
+
+## Add context (smart enrichment)
+
+The bare recap already includes a summary and a "where it fits" dependency graph. To add a
+behavioral view tailored to the change, enrich it:
+
+1. Emit the gathered blocks instead of HTML:
+
+       cd "$VISUAL_SKILLS_DIR"
+       npx tsx bin/recap.ts --repo <ABSOLUTE_TARGET_REPO> <target flag> --emit-blocks <ABSOLUTE_BLOCKS_JSON>
+
+2. Read that block array (it has the summary, file-tree, where-it-fits graph, schema/API,
+   diffs) **and** read the actual diff. Optionally rewrite the `summary` prose block's
+   `markdown` to explain *why* the change was made, not just what.
+
+3. **Author ONE behavioral diagram** for the change (see the selection guide), and insert it
+   into the array right after the `where-it-fits` block. Diagrams are `diagram` blocks with a
+   `d2` source (the floor).
+
+4. Render the combined array:
+
+       npx tsx bin/plan.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "Recap — <label>" --out <ABSOLUTE_OUT>
+       open <ABSOLUTE_OUT>
+
+### Which behavioral diagram to pick
+
+- **Sequence diagram** (`"kind": "sequence"`) — when the change adds or alters a
+  multi-collaborator runtime path: a new request/response flow, an external integration call
+  chain. Collaborators on lifelines, time downward, ONE scenario.
+- **State machine** (`"kind": "architecture"`) — when the change alters a bounded lifecycle:
+  statuses, subscription / checkout / signup stages — anything where an entity is in one of N
+  states with labeled transitions.
+- If the change is purely structural (no clear runtime flow or lifecycle), the "where it
+  fits" graph already covers it — skip the behavioral diagram rather than force one.
+
+Broader diagram types (C4 context/container, DDD context maps, data-flow, event/pub-sub
+topology, CI / blast-radius, BPMN, journey maps) are **not yet in scope** — do not attempt
+them.
+
+### Authoring recipes (valid d2)
+
+Sequence:
+
+    { "type": "diagram", "id": "how-it-works", "title": "captureOrder flow", "kind": "sequence",
+      "d2": "shape: sequence_diagram\nclient -> api: captureOrder(id)\napi -> paypal: capture(id)\npaypal -> api: ok\napi -> client: order" }
+
+State machine:
+
+    { "type": "diagram", "id": "lifecycle", "title": "Payment states", "kind": "architecture",
+      "d2": "direction: right\nPENDING -> PAID: capture\nPENDING -> FREE: cancel" }
+
+Quote any d2 key/value containing a dot or space. An invalid diagram degrades to a visible
+placeholder rather than breaking the document.

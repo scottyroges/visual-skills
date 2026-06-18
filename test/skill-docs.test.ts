@@ -26,4 +26,10 @@ describe("skill docs stay in sync", () => {
       expect(md).toMatch(/\ndescription:\s*\S+/);
     }
   });
+
+  it("visual-recap documents the behavioral diagram selection guide", () => {
+    expect(recapSkill).toContain("sequence");
+    expect(recapSkill).toContain("state");
+    expect(recapSkill).toContain("--emit-blocks");
+  });
 });
