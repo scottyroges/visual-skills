@@ -74,9 +74,10 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
    emitted JSON, e.g. `See [the router](#diff-3).` (each block renders with `id="<its id>"`,
    so `#diff-3` jumps to that diff).
 
-4b. **Illustrate a diff when it helps.** When a single diff implements logic that's clearer shown
-   than read — a new state machine, a non-obvious control/data flow, a sequence across
-   collaborators — attach a small catalog diagram as that diff's `diagram`:
+4b. **Illustrate a diff when it helps** (distinct from the top-level change diagram in step 6 —
+   this one lives *inside* a single diff's card). When a single diff implements logic that's
+   clearer shown than read — a new state machine, a non-obvious control/data flow, a sequence
+   across collaborators — attach a small catalog diagram as that diff's `diagram`:
 
        "diagram": { "type": "diagram", "id": "diff-3-diag", "title": "Capture flow", "kind": "sequence",
          "d2": "shape: sequence_diagram\napi -> paypal: capture(id)\npaypal -> api: ok",
