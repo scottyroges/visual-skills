@@ -1,10 +1,12 @@
 #!/usr/bin/env tsx
-// Symlinks the repo's skill dirs into ~/.claude/skills so Claude Code discovers them
-// from any repo. Idempotent: never overwrites a real dir/file or a foreign symlink.
-// Run with: npm run skills:install
+// Symlinks the repo's skill dirs into <claude-root>/skills so Claude Code discovers
+// them from any repo. Idempotent: never overwrites a real dir/file or a foreign symlink.
+// Run with: npm run skills:install            (default claude root: ~/.claude)
+//           npm run skills:install -- --dir /custom/.claude
 import { symlink, mkdir, lstat, readlink } from "node:fs/promises";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 import { dirname, join } from "node:path";
 
 const SKILLS = ["visual-recap", "visual-plan"];
@@ -14,18 +16,20 @@ export interface SkillLink {
   target: string;
 }
 
-/** Pure mapping: each repo skill dir -> its ~/.claude/skills symlink target. */
-export function skillLinks(home: string, repoRoot: string): SkillLink[] {
+/** Pure mapping: each repo skill dir -> its <claudeRoot>/skills symlink target. */
+export function skillLinks(claudeRoot: string, repoRoot: string): SkillLink[] {
   return SKILLS.map((name) => ({
     source: join(repoRoot, "skills", name),
-    target: join(home, ".claude", "skills", name),
+    target: join(claudeRoot, "skills", name),
   }));
 }
 
 async function main(): Promise<void> {
+  const { values } = parseArgs({ options: { dir: { type: "string" } } });
+  const claudeRoot = values.dir ?? join(homedir(), ".claude");
   const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
-  const links = skillLinks(homedir(), repoRoot);
-  await mkdir(join(homedir(), ".claude", "skills"), { recursive: true });
+  const links = skillLinks(claudeRoot, repoRoot);
+  await mkdir(join(claudeRoot, "skills"), { recursive: true });
   for (const { source, target } of links) {
     const st = await lstat(target).catch(() => null);
     if (st?.isSymbolicLink()) {

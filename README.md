@@ -38,7 +38,12 @@ Install the skills once so Claude Code can discover them from any repo:
 
     npm run skills:install
 
-This symlinks `skills/visual-recap` and `skills/visual-plan` into `~/.claude/skills/`. After
+This symlinks `skills/visual-recap` and `skills/visual-plan` into `~/.claude/skills/`. To
+install into a different Claude config root, pass `--dir`:
+
+    npm run skills:install -- --dir /path/to/.claude
+
+After
 that, ask Claude Code to "visualize this PR" / "make a visual recap of <commit>" to trigger
 `visual-recap`, or "turn this spec into a visual plan" to trigger `visual-plan`. The skills
 invoke the CLIs above; the tool path is set in one constant near the top of each `SKILL.md`.
