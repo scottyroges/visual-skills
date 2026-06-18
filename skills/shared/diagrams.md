@@ -242,6 +242,7 @@ flowchart TD
 ### C4 context
 - **kind:** `architecture` — **editable:** yes
 - **Use when:** the highest zoom — the system as one box plus its users and external systems.
+- **Avoid when:** the reader needs internals — drop a zoom level to C4 container/component.
 
 ```d2
 "Customer" -> "PPGL system": uses

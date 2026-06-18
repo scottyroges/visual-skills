@@ -6,7 +6,7 @@ import type { DiagramBlock } from "../src/blocks.js";
 const catalog = readFileSync(new URL("../skills/shared/diagrams.md", import.meta.url), "utf8");
 
 const fences = (src: string, lang: string): string[] =>
-  [...src.matchAll(new RegExp("```" + lang + "\\n([\\s\\S]*?)```", "g"))].map((m) => m[1].trim());
+  [...src.matchAll(new RegExp("```" + lang + "\\s*\\n([\\s\\S]*?)```", "g"))].map((m) => m[1].trim());
 
 // Mermaid headers that convert to EDITABLE excalidraw elements. stateDiagram/erDiagram
 // rasterize, so they're forbidden in the catalog (author states as a flowchart instead).
