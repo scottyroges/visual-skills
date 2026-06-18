@@ -26,9 +26,16 @@ export interface AssembleOpts {
 const ASSETS = fileURLToPath(new URL("../assets", import.meta.url));
 
 export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<string> {
-  // Render every diagram/schema block to inline SVG up front (preserves order by id).
-  const diagramBlocks = blocks.filter(isDiagramBlock);
-  const rendered = await renderAll(diagramBlocks, {
+  // Collect diagram/schema blocks recursively (they may be nested in groups), render up front.
+  const collectDiagrams = (bs: Block[]): (import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock)[] => {
+    const out: (import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock)[] = [];
+    for (const b of bs) {
+      if (isDiagramBlock(b)) out.push(b);
+      else if (b.type === "group") out.push(...collectDiagrams(b.blocks));
+    }
+    return out;
+  };
+  const rendered = await renderAll(collectDiagrams(blocks), {
     outDir: opts.outDir, excalidraw: opts.excalidraw, onWarn: opts.onWarn,
   });
   const svgById = new Map<string, (typeof rendered)[number]>();
@@ -39,31 +46,48 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
     svgById.set(r.id, r);
   }
 
-  const fragments = await Promise.all(
-    blocks.map(async (b) => {
-      switch (b.type) {
-        case "diagram":
-        case "schema": {
-          const r = svgById.get(b.id)!;
-          const link = r.editable
-            ? `<div class="vs-edit"><a href="${escapeHtml(basename(r.editable))}">open in Excalidraw</a></div>`
-            : "";
-          // r.svg is trusted: produced by the d2 binary (or dormant Excalidraw), which emit no <script>.
-          return `<section class="vs-block vs-diagram"><h2>${escapeHtml(b.title)}</h2>${r.svg}${link}</section>`;
-        }
-        case "prose": return await renderProse(b, opts.onWarn);
-        case "file-tree": return renderFileTree(b);
-        case "diff": return await renderDiff(b, opts.onWarn);
-        case "api": return renderApi(b);
-        case "annotated-code": return await renderAnnotatedCode(b, opts.onWarn);
-        case "questions": return renderQuestions(b);
-        default: {
-          const _exhaustive: never = b;
-          throw new Error(`unhandled block type: ${(_exhaustive as Block).type}`);
-        }
+  // Inject the block id as an in-page anchor on its top-level <section>.
+  const withAnchor = (id: string, html: string): string =>
+    html.replace('<section class="vs-block', `<section id="${escapeHtml(id)}" class="vs-block`);
+
+  const renderBlock = async (b: Block): Promise<string> => {
+    let html: string;
+    switch (b.type) {
+      case "diagram":
+      case "schema": {
+        const r = svgById.get(b.id)!;
+        const link = r.editable
+          ? `<div class="vs-edit"><a href="${escapeHtml(basename(r.editable))}">open in Excalidraw</a></div>`
+          : "";
+        // r.svg is trusted: produced by the d2 binary (or Excalidraw), which emit no <script>.
+        html = `<section class="vs-block vs-diagram"><h2>${escapeHtml(b.title)}</h2>${r.svg}${link}</section>`;
+        break;
       }
-    }),
-  );
+      case "prose": html = await renderProse(b, opts.onWarn); break;
+      case "file-tree": html = renderFileTree(b); break;
+      case "diff": html = await renderDiff(b, opts.onWarn); break;
+      case "api": html = renderApi(b); break;
+      case "annotated-code": html = await renderAnnotatedCode(b, opts.onWarn); break;
+      case "questions": html = renderQuestions(b); break;
+      case "group": {
+        for (const child of b.blocks) {
+          if (child.type === "group") {
+            throw new Error(`group "${b.id}" contains a nested group "${child.id}" — groups may not nest`);
+          }
+        }
+        const children = await Promise.all(b.blocks.map(renderBlock));
+        html = `<section class="vs-block vs-group"><h2>${escapeHtml(b.title)}</h2>${children.join("")}</section>`;
+        break;
+      }
+      default: {
+        const _exhaustive: never = b;
+        throw new Error(`unhandled block type: ${(_exhaustive as Block).type}`);
+      }
+    }
+    return withAnchor(b.id, html);
+  };
+
+  const fragments = await Promise.all(blocks.map(renderBlock));
 
   const css = await readFile(join(ASSETS, "template.css"), "utf8");
   const status = opts.status

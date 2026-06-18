@@ -67,6 +67,10 @@ Primary blocks you author for plans:
       { "type": "questions", "id": "open", "title": "Open questions", "questions": [
         { "question": "Refund window?", "recommendedDefault": "30 days" } ] }
 
+- **grouping -> `group`** — `{ "type":"group", "id":"…", "title":"…", "blocks":[ … ] }` wraps
+  blocks into a titled section (one level deep). Used mainly by recaps to order diffs into a
+  narrative; available for plans too.
+
 Other block types in the `Block` union — `schema`, `api`, `diff` — are normally produced
 automatically by the **visual-recap** flow from a real git diff, not hand-authored. Reach
 for visual-recap when the subject is a code change rather than a plan.

@@ -57,4 +57,34 @@ describe("assemble", () => {
     // The .vs-generator CSS rule is always inlined; assert the footer ELEMENT is absent.
     expect(html).not.toContain('<footer class="vs-generator"');
   });
+
+  it("renders a group with nested blocks, anchors, and a nested diagram", async () => {
+    const blocks: Block[] = [
+      { type: "prose", id: "summary", title: "Summary", markdown: "hi" },
+      { type: "group", id: "g1", title: "Core change", blocks: [
+        { type: "diagram", id: "flow", title: "Flow", kind: "flowchart", d2: "a -> b" },
+        { type: "diff", id: "diff-0", title: "x.ts", path: "src/x.ts", hunks: [{ header: "@@", lines: ["+a"] }] },
+      ] },
+    ];
+    const html = await assemble(blocks, { title: "T", source: "s" });
+    expect(html).toContain('class="vs-block vs-group"');
+    expect(html).toContain("Core change");
+    expect(html).toContain('id="g1"');     // group anchor
+    expect(html).toContain('id="flow"');   // nested diagram anchor
+    expect(html).toContain('id="diff-0"'); // nested diff anchor
+    expect(html).toContain("<svg");        // nested diagram actually rendered
+    expect(html).not.toContain("<script");
+  }, 30_000);
+
+  it("stamps an id anchor on a top-level block section", async () => {
+    const html = await assemble([{ type: "prose", id: "p1", markdown: "x" }], { title: "T", source: "s" });
+    expect(html).toContain('id="p1"');
+  });
+
+  it("throws on a nested group (groups may not nest)", async () => {
+    const blocks: Block[] = [
+      { type: "group", id: "g1", title: "A", blocks: [{ type: "group", id: "g2", title: "B", blocks: [] }] },
+    ];
+    await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/nest/);
+  });
 });

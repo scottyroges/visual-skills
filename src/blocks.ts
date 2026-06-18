@@ -84,6 +84,13 @@ export interface QuestionsBlock {
   questions: { question: string; recommendedDefault: string }[];
 }
 
+export interface GroupBlock {
+  type: "group";
+  id: string;
+  title: string;
+  blocks: Block[];   // one level of nesting — children are non-group blocks
+}
+
 export type Block =
   | DiagramBlock
   | SchemaBlock
@@ -92,7 +99,8 @@ export type Block =
   | DiffBlock
   | ProseBlock
   | AnnotatedCodeBlock
-  | QuestionsBlock;
+  | QuestionsBlock
+  | GroupBlock;
 
 /** Blocks rendered through the D2 diagram renderer. */
 export function isDiagramBlock(b: Block): b is DiagramBlock | SchemaBlock {
