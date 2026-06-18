@@ -6,7 +6,7 @@ export interface DiagramBlock {
   title: string;
   kind: DiagramKind;
   d2: string;            // REQUIRED — the floor + fallback
-  mermaid?: string;      // OPTIONAL — only for editable-eligible kinds (flowchart/architecture)
+  mermaid?: string;      // OPTIONAL — only for editable-eligible kinds (flowchart/architecture/sequence/class)
 }
 
 export interface SchemaBlock {

@@ -10,9 +10,10 @@
 //                so a block is never broken and never changes aesthetic.
 //
 // Routing is by diagram KIND, not by "is the toolchain available" — because
-// mermaid-to-excalidraw silently rasterizes ERDs/sequence diagrams instead of
-// failing, which is worse than D2's native sketch. So only the kinds it
-// converts to native editable elements are eligible for the upgrade.
+// mermaid-to-excalidraw silently rasterizes unsupported types (ERD, stateDiagram)
+// into a non-editable image instead of failing, which is worse than D2's native
+// sketch. So only the kinds it converts to native editable elements (flowchart,
+// architecture, sequence, class) are eligible for the upgrade.
 //
 // Prereqs in your env:
 //   - `d2` on PATH                         (https://d2lang.com, single Go binary)
@@ -52,9 +53,11 @@ export interface RenderDeps {
   convert?: (mermaid: string) => Promise<{ svg: string; scene: unknown }>;
 }
 
-// Kinds mermaid-to-excalidraw turns into native editable elements. Conservative
-// on purpose — anything not here goes to D2. (Dormant this slice.)
-const EXCALIDRAW_EDITABLE = new Set<string>(["flowchart", "architecture"]);
+// Kinds mermaid-to-excalidraw converts to native EDITABLE elements: flowchart, sequence,
+// class (and our "architecture", authored as a mermaid flowchart). Everything else (erd,
+// and any stateDiagram-authored mermaid) rasterizes to a non-editable image, so it stays
+// on the D2 floor. State machines are authored as flowcharts precisely to remain editable.
+const EXCALIDRAW_EDITABLE = new Set<string>(["flowchart", "architecture", "sequence", "class"]);
 const EXCALIDRAW_PAGE = join(import.meta.dirname ?? ".", "..", "assets", "excalidraw-bundle.html");
 
 /** A minimal valid SVG shown when a diagram fails to render — keeps the document unbroken. */

@@ -34,4 +34,36 @@ describe("renderDiagram (D2 floor)", () => {
     await expect(renderDiagram({ type: "diagram", id: "x", title: "x", kind: "flowchart" }, {}))
       .rejects.toThrow(/d2 source/);
   });
+
+  it("routes an eligible sequence block (with mermaid) to the excalidraw upgrade", async () => {
+    const block: DiagramBlock = {
+      type: "diagram", id: "seq", title: "Seq", kind: "sequence",
+      d2: "shape: sequence_diagram\na -> b: hi",
+      mermaid: "sequenceDiagram\n  a->>b: hi",
+    };
+    let converted = false;
+    const out = await renderDiagram(
+      block,
+      {},
+      { ready: async () => true, convert: async () => { converted = true; return { svg: "<svg id='x'/>", scene: {} }; } },
+    );
+    expect(converted).toBe(true);
+    expect(out.renderer).toBe("excalidraw");
+  }, 30_000);
+
+  it("routes an eligible class block (with mermaid) to the excalidraw upgrade", async () => {
+    const block: DiagramBlock = {
+      type: "diagram", id: "cls", title: "Cls", kind: "class",
+      d2: "A -> B",
+      mermaid: "classDiagram\n  A <|-- B",
+    };
+    let converted = false;
+    const out = await renderDiagram(
+      block,
+      {},
+      { ready: async () => true, convert: async () => { converted = true; return { svg: "<svg id='x'/>", scene: {} }; } },
+    );
+    expect(converted).toBe(true);
+    expect(out.renderer).toBe("excalidraw");
+  }, 30_000);
 });
