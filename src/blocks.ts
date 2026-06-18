@@ -89,6 +89,7 @@ export interface GroupBlock {
   type: "group";
   id: string;
   title: string;
+  description?: string;  // optional markdown shown under the group title
   blocks: Block[];   // one level of nesting — children are non-group blocks
 }
 

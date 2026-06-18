@@ -12,6 +12,7 @@ import { renderOverview } from "./renderers/overview.js";
 import { renderApi } from "./renderers/api.js";
 import { renderAnnotatedCode } from "./renderers/annotated-code.js";
 import { renderQuestions } from "./renderers/questions.js";
+import { renderMarkdown } from "./renderers/markdown.js";
 
 export interface DocStatus { level: "green" | "yellow" | "red"; text: string; }
 export interface AssembleOpts {
@@ -124,7 +125,13 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
           }
         }
         const children = await Promise.all(b.blocks.map(renderBlock));
-        html = `<section class="vs-block vs-group"><h2>${escapeHtml(b.title)}</h2>${children.join("")}</section>`;
+        const desc = b.description
+          ? `<div class="vs-group-desc">${await renderMarkdown(b.description, opts.onWarn)}</div>`
+          : "";
+        html =
+          `<section class="vs-block vs-group"><details open>` +
+          `<summary class="vs-group-summary"><span class="vs-group-title">${escapeHtml(b.title)}</span></summary>` +
+          `${desc}${children.join("")}</details></section>`;
         break;
       }
       case "tabs": {

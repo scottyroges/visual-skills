@@ -66,7 +66,11 @@ body { margin:0; background:var(--paper); color:var(--ink);
   margin:6px 0 10px; font-size:0.92em; }
 .vs-diff-desc p { margin:4px 0; }
 .vs-group { background:#faf9f6; }
-.vs-group > h2 { margin-top:0; }
+.vs-group > details > summary { cursor: pointer; list-style: none; user-select: none; }
+.vs-group-title { font-size: 1.3rem; font-weight: 700; }
+.vs-group-desc { margin: 8px 0 12px; font-size: 0.95em; color: #44403c; }
+.vs-group-desc p { margin: 4px 0; }
+.vs-group-desc ul, .vs-group-desc ol { margin: 4px 0; padding-left: 1.2rem; }
 .vs-group .vs-block { box-shadow:none; }
 /* ── tabs (pure CSS, no view-time JS) ─────────────────────────────────────── */
 .vs-tabs .vs-tabradio { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }

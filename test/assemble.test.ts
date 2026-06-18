@@ -58,6 +58,22 @@ describe("assemble", () => {
     expect(html).not.toContain('<footer class="vs-generator"');
   });
 
+  it("renders a group as an open collapsible details with a markdown description", async () => {
+    const blocks: Block[] = [
+      { type: "group", id: "g1", title: "Core change", description: "The **heart** of it.",
+        blocks: [
+          { type: "diff", id: "diff-0", title: "x.ts", path: "src/x.ts",
+            hunks: [{ header: "@@", lines: ["+a"] }] },
+        ] },
+    ];
+    const html = await assemble(blocks, { title: "T", source: "s" });
+    expect(html).toContain('class="vs-block vs-group"');
+    expect(html).toMatch(/<details[^>]*\bopen\b/);        // groups start open
+    expect(html).toContain('class="vs-group-desc"');
+    expect(html).toContain("<strong>heart</strong>");      // description is markdown
+    expect(html).toContain('id="g1"');                     // anchor preserved
+  }, 30_000);
+
   it("renders a group with nested blocks, anchors, and a nested diagram", async () => {
     const blocks: Block[] = [
       { type: "prose", id: "summary", title: "Summary", markdown: "hi" },
