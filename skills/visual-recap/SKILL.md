@@ -65,9 +65,27 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
 2. **Read the diff AND the changed code.** Open the changed files in the target repo to
    understand *what the change does and why* — don't work from the diff text alone.
 
-3. **Rewrite the `summary` block** (keep `"id": "summary"`, `"title": "Summary"`). Its
-   `markdown` should explain the change in prose: what it does, why, and the user-facing
-   effect — not file/line counts.
+3. **Lead with a summary.** Rewrite the `summary` prose block to explain the change (what it does,
+   why, the user-facing effect — not file/line counts). For a *larger* change, go further: replace
+   it with an `overview` block placed FIRST — a scannable lead the reader groks in seconds:
+
+       { "type": "overview", "id": "overview",
+         "headline": "Add PayPal capture to the checkout flow",
+         "points": [
+           { "text": "new `capture` mutation on the order router", "href": "#diff-0" },
+           { "text": "checkout calls it after buyer approval", "href": "#diff-1" }
+         ],
+         "diagram": { "type": "diagram", "id": "ov-flow", "title": "Capture flow", "kind": "sequence",
+           "d2": "shape: sequence_diagram\nclient -> api: capture\napi -> paypal: capture",
+           "mermaid": "sequenceDiagram\n  client->>api: capture\n  api->>paypal: capture" } }
+
+   - `headline`: the main change in ONE line.
+   - `points`: 3–6 SHORT items, each `href` linking (`#id`) to its group/diff/section (no long
+     paragraphs — this is the time-crunch read).
+   - `diagram`: the single most illuminating illustration (often the `where-it-fits` graph or the
+     key behavioral diagram) — lead with the picture. Carry its `mermaid` to stay editable; don't
+     point a `href` at a diagram hidden in a non-default tab.
+   - For a small change, the plain prose `summary` block is enough — skip the overview.
 
 4. **Annotate each diff.** Set each diff block's `description` (markdown) to *what changes in
    this file and why*. Cross-link related diffs by their block id, which you can see in the

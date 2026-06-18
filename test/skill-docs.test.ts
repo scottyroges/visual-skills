@@ -48,4 +48,8 @@ describe("skill docs stay in sync", () => {
   it("visual-recap documents attaching a diagram to a diff", () => {
     expect(recapSkill).toContain('"diagram":');
   });
+
+  it("visual-recap documents leading with an overview block", () => {
+    expect(recapSkill).toContain('"type": "overview"');
+  });
 });
