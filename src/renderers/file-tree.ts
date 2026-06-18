@@ -25,22 +25,26 @@ function buildTree(files: FileChange[]): TreeNode {
   return root;
 }
 
-function renderFile(f: FileChange, name: string): string {
+function renderFile(f: FileChange, name: string, pathToId: Map<string, string>): string {
   const badge =
     `<span class="vs-badge vs-add">+${f.added}</span>` +
     `<span class="vs-badge vs-del">-${f.deleted}</span>`;
+  const id = pathToId.get(f.path);
+  const label = id
+    ? `<a class="vs-name vs-file-link" href="#${escapeHtml(id)}">${escapeHtml(name)}</a>`
+    : `<span class="vs-name">${escapeHtml(name)}</span>`;
   return (
     `<li class="vs-file" data-status="${f.status}">` +
     `<span class="vs-marker">${f.status}</span> ` +
-    `<span class="vs-name">${escapeHtml(name)}</span> ${badge}</li>`
+    `${label} ${badge}</li>`
   );
 }
 
-function renderNode(node: TreeNode): string {
+function renderNode(node: TreeNode, pathToId: Map<string, string>): string {
   const items: string[] = [];
   for (const child of node.children.values()) {
     if (child.file) {
-      items.push(renderFile(child.file, child.name));
+      items.push(renderFile(child.file, child.name, pathToId));
       continue;
     }
     // Collapse single-child directory chains: src -> lib becomes "src/lib".
@@ -54,14 +58,14 @@ function renderNode(node: TreeNode): string {
     }
     items.push(
       `<li class="vs-dir"><span class="vs-name">${escapeHtml(display)}</span>` +
-        `<ul>${renderNode(dir)}</ul></li>`,
+        `<ul>${renderNode(dir, pathToId)}</ul></li>`,
     );
   }
   return items.join("");
 }
 
-export function renderFileTree(block: FileTreeBlock): string {
-  const tree = renderNode(buildTree(block.files));
+export function renderFileTree(block: FileTreeBlock, pathToId: Map<string, string> = new Map()): string {
+  const tree = renderNode(buildTree(block.files), pathToId);
   return (
     `<section class="vs-block vs-file-tree">` +
     `<h2>${escapeHtml(block.title)}</h2>` +

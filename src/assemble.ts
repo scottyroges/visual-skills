@@ -56,6 +56,15 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
     }
     return out;
   };
+  // Map each diff block's file path to its block id, so the file tree can link filenames to diffs.
+  const collectDiffPaths = (bs: Block[], map = new Map<string, string>()): Map<string, string> => {
+    for (const b of bs) {
+      if (b.type === "diff") map.set(b.path, b.id);
+      else if (b.type === "group") collectDiffPaths(b.blocks, map);
+    }
+    return map;
+  };
+  const pathToId = collectDiffPaths(blocks);
   const rendered = await renderAll(collectDiagrams(blocks), {
     outDir: opts.outDir, excalidraw: opts.excalidraw, onWarn: opts.onWarn,
   });
@@ -92,7 +101,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
         break;
       }
       case "prose": html = await renderProse(b, opts.onWarn); break;
-      case "file-tree": html = renderFileTree(b); break;
+      case "file-tree": html = renderFileTree(b, pathToId); break;
       case "diff": {
         let diagramHtml = "";
         if (b.diagram?.type === "diagram") {

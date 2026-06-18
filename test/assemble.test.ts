@@ -112,6 +112,17 @@ describe("assemble", () => {
     await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id/);
   });
 
+  it("links a file-tree entry to its diff block by path", async () => {
+    const blocks: Block[] = [
+      { type: "file-tree", id: "files", title: "Files changed",
+        files: [{ path: "src/x.ts", status: "M", added: 1, deleted: 0 }] },
+      { type: "diff", id: "diff-0", title: "x.ts", path: "src/x.ts",
+        hunks: [{ header: "@@", lines: ["+a"] }] },
+    ];
+    const html = await assemble(blocks, { title: "T", source: "s" });
+    expect(html).toContain('href="#diff-0"');
+  });
+
   it("throws on a duplicate id nested in a group", async () => {
     const blocks: Block[] = [
       { type: "prose", id: "x", markdown: "a" },

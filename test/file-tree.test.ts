@@ -21,4 +21,19 @@ describe("renderFileTree", () => {
     expect(html).toContain('data-status="D"');
     expect(html).toContain("src/lib");
   });
+
+  it("links a filename to its diff when a path->id map entry exists; leaves others plain", () => {
+    const block: FileTreeBlock = {
+      type: "file-tree", id: "ft", title: "Files",
+      files: [
+        { path: "src/lib/paypal.ts", status: "A", added: 10, deleted: 0 },
+        { path: "src/lib/stripe.ts", status: "D", added: 0, deleted: 4 },
+      ],
+    };
+    const html = renderFileTree(block, new Map([["src/lib/paypal.ts", "diff-7"]]));
+    expect(html).toContain('href="#diff-7"');         // linked file
+    expect(html).toContain("paypal.ts");
+    // stripe.ts has no map entry -> plain name, not a link to a diff
+    expect(html).not.toContain('href="#stripe');
+  });
 });
