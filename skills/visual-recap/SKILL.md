@@ -38,8 +38,8 @@ hand-drawn-styled HTML document and open it.
 - **`--pr` fails / no `gh`:** the CLI prints "PR scope needs the gh CLI". Resolve the PR's
   merge or head commit SHA (e.g. via `gh`, the GitHub UI, or `git log`) and re-run with
   `--commit <sha>` instead.
-- **`d2` missing:** the CLI needs `d2` on PATH for diagrams — tell the user to
-  `brew install d2`.
+- **`d2` missing:** diagrams degrade to visible placeholders (the recap still produces) —
+  tell the user to `brew install d2` for proper hand-drawn sketches.
 - Editable Excalidraw diagrams are an optional upgrade — see the tool's README
   (`npm run setup:excalidraw`). Without it, diagrams render as static D2 sketches.
 
