@@ -54,6 +54,9 @@ async function main() {
     generator,
   });
   await writeFile(htmlPath, html);
+  // Keep the source grouped with the doc: persist the gathered blocks inside the folder so it is
+  // self-contained (enrich them and re-render with plan --blocks <dir>/blocks.json --out <dir>).
+  await writeFile(join(outDir, "blocks.json"), JSON.stringify(blocks, null, 2));
   console.log(`wrote ${htmlPath} (adapter: ${adapter})`);
 }
 

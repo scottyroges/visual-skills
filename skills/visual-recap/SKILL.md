@@ -57,10 +57,11 @@ Recap of a merged PR by its squash-merge SHA, into a per-PR folder under `.recap
 
 The bare recap is mechanical. To turn it into a presentation of the change, enrich it:
 
-1. Emit the gathered blocks instead of HTML:
+1. Emit the gathered blocks instead of HTML — write them **into the doc folder** (so the source
+   stays grouped with the rendered doc), e.g. `<ABSOLUTE_OUT_DIR>/blocks.json`:
 
        cd "$VISUAL_SKILLS_DIR"
-       npx tsx bin/recap.ts --repo <ABSOLUTE_TARGET_REPO> <target flag> --emit-blocks <ABSOLUTE_BLOCKS_JSON>
+       npx tsx bin/recap.ts --repo <ABSOLUTE_TARGET_REPO> <target flag> --emit-blocks <ABSOLUTE_OUT_DIR>/blocks.json
 
 2. **Read the diff AND the changed code.** Open the changed files in the target repo to
    understand *what the change does and why* — don't work from the diff text alone.
@@ -123,9 +124,11 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
    use a `tabs` block when 2–3 lenses each add value. Place them near the top (after the lead
    Summary / `overview` and the where-it-fits graph).
 
-7. Render the combined array and open it:
+7. Render the combined array (edited in place at `<ABSOLUTE_OUT_DIR>/blocks.json`) and open it. The
+   render also writes `blocks.json` back into the folder, so the doc folder stays self-contained and
+   re-renders in place:
 
-       npx tsx bin/plan.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "Recap — <label>" --out <ABSOLUTE_OUT_DIR>
+       npx tsx bin/plan.ts --blocks <ABSOLUTE_OUT_DIR>/blocks.json --title "Recap — <label>" --out <ABSOLUTE_OUT_DIR>
        open <ABSOLUTE_OUT_DIR>/plan.html
 
 ### Which diagram(s) to add
