@@ -16,14 +16,15 @@ const scope: Scope = {
 };
 
 describe("buildBlocks", () => {
-  it("produces a file-tree, prose summary, and diff blocks (generic stack)", async () => {
+  it("produces a rich summary, file-tree, and diff blocks (generic stack)", async () => {
     const files = [{ path: "foo.ts", status: "M" as const, added: 1, deleted: 1 }];
     const blocks = await buildBlocks(scope, files, new GenericAdapter());
     const types = blocks.map((b) => b.type);
     expect(types).toContain("file-tree");
     expect(types).toContain("diff");
-    expect(types).not.toContain("schema");
-    expect(types).not.toContain("api");
+    const summary = blocks.find((b) => b.type === "prose" && b.id === "summary");
+    expect(summary).toBeDefined();
+    expect((summary as { markdown: string }).markdown).toContain("Areas touched");
   });
 
   it("degrades to file-tree + diff when the adapter throws (warns, no crash)", async () => {

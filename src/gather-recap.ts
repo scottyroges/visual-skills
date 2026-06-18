@@ -5,6 +5,8 @@ import { parseUnifiedDiff } from "./parse-diff.js";
 import { selectAdapter, type StackAdapter } from "./adapters/stack-adapter.js";
 import { PrismaTrpcAdapter } from "./adapters/prisma-trpc.js";
 import { apiSurfaceDiagram } from "./api-diagram.js";
+import { summaryMarkdown } from "./recap-summary.js";
+import { dependencyNeighborhood } from "./dep-graph.js";
 
 /** Compose the ordered block array for a recap. Pure given its inputs. */
 export async function buildBlocks(
@@ -14,32 +16,44 @@ export async function buildBlocks(
   onWarn?: (msg: string) => void,
 ): Promise<Block[]> {
   const blocks: Block[] = [];
+  blocks.push({ type: "file-tree", id: "files", title: "Files changed", files });
 
-  const fileTree: FileTreeBlock = { type: "file-tree", id: "files", title: "Files changed", files };
-  blocks.push(fileTree);
-
-  const totalAdd = files.reduce((n, f) => n + f.added, 0);
-  const totalDel = files.reduce((n, f) => n + f.deleted, 0);
-  blocks.push({
-    type: "prose", id: "summary",
-    markdown: `**${scope.label}** — ${files.length} files, +${totalAdd}/-${totalDel} (stack: ${adapter.name}).`,
-  });
-
+  let schemaBlock = null as Awaited<ReturnType<StackAdapter["schemaDiff"]>>;
   try {
-    const schema = await adapter.schemaDiff(scope, onWarn);
-    if (schema) blocks.push(schema);
+    schemaBlock = await adapter.schemaDiff(scope, onWarn);
   } catch (err) {
     onWarn?.(`schema diff skipped: ${err instanceof Error ? err.message : String(err)}`);
   }
 
+  let procedures: import("./blocks.js").ApiProcedure[] = [];
+  let apiBlocks: import("./blocks.js").ApiBlock[] = [];
   try {
-    const apiBlocks = await adapter.apiDiff(scope, onWarn);
-    const diagram = apiSurfaceDiagram(apiBlocks.flatMap((b) => b.procedures), "api-surface", "API surface");
-    if (diagram) blocks.push(diagram);
-    for (const api of apiBlocks) blocks.push(api);
+    apiBlocks = await adapter.apiDiff(scope, onWarn);
+    procedures = apiBlocks.flatMap((b) => b.procedures);
   } catch (err) {
     onWarn?.(`api diff skipped: ${err instanceof Error ? err.message : String(err)}`);
   }
+
+  // Rich summary (mechanical), placed first.
+  blocks.unshift({
+    type: "prose",
+    id: "summary",
+    markdown: summaryMarkdown(scope, files, procedures, schemaBlock != null),
+  });
+
+  // "Where it fits" dependency-neighborhood diagram (mechanical, TS/JS only).
+  try {
+    const fits = await dependencyNeighborhood(files.map((f) => f.path), scope.repoRoot);
+    if (fits) blocks.push(fits);
+  } catch (err) {
+    onWarn?.(`where-it-fits skipped: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  if (schemaBlock) blocks.push(schemaBlock);
+
+  const diagram = apiSurfaceDiagram(procedures, "api-surface", "API surface");
+  if (diagram) blocks.push(diagram);
+  for (const api of apiBlocks) blocks.push(api);
 
   for (const diff of parseUnifiedDiff(scope.unifiedDiff)) blocks.push(diff);
 
