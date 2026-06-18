@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 import { writeFile, mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import type { Target } from "../src/git.js";
 import { gatherRecap } from "../src/gather-recap.js";
@@ -39,21 +39,22 @@ async function main() {
   // emit-only: blocks requested and --out genuinely not passed; skip HTML.
   if (emitPath && values.out === undefined) return;
 
-  const outPath = values.out ?? ".recaps/recap.html";
-  // Create the output dir before assemble: diagram blocks may write .excalidraw
-  // sidecars into it during rendering.
-  await mkdir(dirname(outPath), { recursive: true });
+  // --out is a directory (a trailing .html is stripped for convenience). The HTML
+  // and any .excalidraw sidecars are written together inside it.
+  const outDir = (values.out ?? ".recaps/recap").replace(/\.html?$/i, "");
+  const htmlPath = join(outDir, "recap.html");
+  await mkdir(outDir, { recursive: true });
   const generator = await generatorStamp();
   const html = await assemble(blocks, {
     title: `Recap — ${scope.label}`,
     source: `${repoRoot} · base ${scope.baseRef.slice(0, 10)} → head ${scope.headRef.slice(0, 10)} · stack ${adapter}`,
     status: { level: "green", text: `${blocks.length} blocks` },
-    outDir: dirname(outPath),
+    outDir,
     onWarn: (m) => console.warn(m),
     generator,
   });
-  await writeFile(outPath, html);
-  console.log(`wrote ${outPath} (adapter: ${adapter})`);
+  await writeFile(htmlPath, html);
+  console.log(`wrote ${htmlPath} (adapter: ${adapter})`);
 }
 
 main().catch((e) => { console.error(e.message); process.exit(1); });

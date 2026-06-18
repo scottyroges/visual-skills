@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
+import { join } from "node:path";
 import { parseArgs } from "node:util";
 import type { Block } from "../src/blocks.js";
 import { assemble } from "../src/assemble.js";
@@ -13,26 +13,28 @@ async function main() {
       blocks: { type: "string" },
       title: { type: "string", default: "Plan" },
       source: { type: "string", default: "" },
-      out: { type: "string", default: "plan.html" },
+      out: { type: "string", default: "plan" },
     },
   });
   if (!values.blocks) throw new Error("--blocks <path-to-blocks.json> is required");
 
   const blocks = JSON.parse(await readFile(values.blocks, "utf8")) as Block[];
   const promoted = promoteMermaidFences(blocks);
-  // Create the output dir before assemble: diagram blocks may write .excalidraw
-  // sidecars into it during rendering.
-  await mkdir(dirname(values.out!), { recursive: true });
+  // --out is a directory (a trailing .html is stripped for convenience). The HTML
+  // and any .excalidraw sidecars are written together inside it.
+  const outDir = values.out!.replace(/\.html?$/i, "");
+  const htmlPath = join(outDir, "plan.html");
+  await mkdir(outDir, { recursive: true });
   const generator = await generatorStamp();
   const html = await assemble(promoted, {
     title: values.title!,
     source: values.source || values.blocks,
-    outDir: dirname(values.out!),
+    outDir,
     onWarn: (m) => console.warn(m),
     generator,
   });
-  await writeFile(values.out!, html);
-  console.log(`wrote ${values.out}`);
+  await writeFile(htmlPath, html);
+  console.log(`wrote ${htmlPath}`);
 }
 
 main().catch((e) => { console.error(e.message); process.exit(1); });
