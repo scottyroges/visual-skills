@@ -25,6 +25,7 @@ describe("buildBlocks", () => {
     const summary = blocks.find((b) => b.type === "prose" && b.id === "summary");
     expect(summary).toBeDefined();
     expect((summary as { markdown: string }).markdown).toContain("Areas touched");
+    expect((summary as { title?: string }).title).toBe("Summary");
   });
 
   it("degrades to file-tree + diff when the adapter throws (warns, no crash)", async () => {

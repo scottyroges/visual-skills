@@ -38,6 +38,7 @@ export async function buildBlocks(
   blocks.unshift({
     type: "prose",
     id: "summary",
+    title: "Summary",
     markdown: summaryMarkdown(scope, files, procedures, schemaBlock != null),
   });
 
