@@ -287,7 +287,7 @@ describe("assemble — overview block", () => {
     const section = html.slice(start, end);
     expect(section).toContain("vs-overview-diagram");
     expect(section).toContain("<svg");
-    expect(html).toContain('<a href="#diff-0">');
+    expect(html).toContain('class="vs-point-link" href="#diff-0"'); // trailing arrow link
     expect(html).toContain('id="diff-0"'); // the link target exists
   });
 

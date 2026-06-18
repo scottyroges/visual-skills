@@ -20,11 +20,22 @@ describe("renderOverview", () => {
     expect(html).not.toContain("<p>");
   });
 
-  it("links a point with a safe #fragment href, renders inline code, leaves no-href plain", async () => {
+  it("appends a trailing arrow link for an href (not a whole-bullet wrap), renders inline code, leaves no-href plain", async () => {
     const html = await renderOverview(base);
-    expect(html).toContain('<a href="#diff-0">');
+    expect(html).toContain('class="vs-point-link" href="#diff-0"'); // trailing link, not the whole li
+    expect(html).toContain("→");                               // the arrow glyph
     expect(html).toContain("<code>capture</code>");
     expect(html).toContain("<li>no link here</li>");
+  });
+
+  it("uses the author's inline markdown link and adds NO trailing arrow when text already links", async () => {
+    const html = await renderOverview({
+      type: "overview", id: "ov2", headline: "H",
+      points: [{ text: "see the [router](#diff-3)", href: "#diff-0" }],
+    });
+    expect(html).toContain('href="#diff-3"');     // author's inline link is used
+    expect(html).not.toContain('href="#diff-0"'); // no redundant trailing arrow
+    expect(html).not.toContain("vs-point-link");
   });
 
   it("does NOT linkify an unsafe javascript: href (renders plain text)", async () => {

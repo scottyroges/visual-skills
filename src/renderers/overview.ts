@@ -14,9 +14,12 @@ export async function renderOverview(
   const items = await Promise.all(
     block.points.map(async (p) => {
       const inner = await renderInlineMarkdown(p.text);
-      const body = p.href && SAFE_HREF.test(p.href)
-        ? `<a href="${escapeHtml(p.href)}">${inner}</a>`
-        : inner;
+      // Author can link a keyword inline via markdown. If they didn't and an href is given,
+      // append a small trailing arrow link instead of wrapping the entire bullet.
+      const body =
+        p.href && SAFE_HREF.test(p.href) && !/<a[\s>]/i.test(inner)
+          ? `${inner} <a class="vs-point-link" href="${escapeHtml(p.href)}">→</a>`
+          : inner;
       return `<li>${body}</li>`;
     }),
   );

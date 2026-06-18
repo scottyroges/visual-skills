@@ -140,3 +140,6 @@ body { margin:0; background:var(--paper); color:var(--ink);
 .vs-legend-item { display: inline-flex; align-items: center; gap: 6px; }
 .vs-legend-swatch { display: inline-block; width: 14px; height: 14px;
   border-radius: 3px; border: 1.5px solid; }
+
+.vs-point-link { text-decoration: none; color: #7c5cff; font-weight: 700; }
+.vs-point-link:hover { text-decoration: underline; }
