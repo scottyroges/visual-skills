@@ -53,25 +53,38 @@ Recap of a merged PR by its squash-merge SHA, into a per-PR folder under `.recap
       --out /Users/me/Projects/ppgl/.recaps/pr-183
     open /Users/me/Projects/ppgl/.recaps/pr-183/recap.html
 
-## Add context (smart enrichment)
+## Add context (make it a review narrative)
 
-The bare recap already includes a summary and a "where it fits" dependency graph. To add a
-behavioral view tailored to the change, enrich it:
+The bare recap is mechanical. To turn it into a presentation of the change, enrich it:
 
 1. Emit the gathered blocks instead of HTML:
 
        cd "$VISUAL_SKILLS_DIR"
        npx tsx bin/recap.ts --repo <ABSOLUTE_TARGET_REPO> <target flag> --emit-blocks <ABSOLUTE_BLOCKS_JSON>
 
-2. Read that block array (it has the summary, file-tree, where-it-fits graph, schema/API,
-   diffs) **and** read the actual diff. Optionally rewrite the `summary` prose block's
-   `markdown` to explain *why* the change was made, not just what.
+2. **Read the diff AND the changed code.** Open the changed files in the target repo to
+   understand *what the change does and why* — don't work from the diff text alone.
 
-3. **Author ONE behavioral diagram** for the change (see the selection guide), and insert it
-   into the array right after the `where-it-fits` block. Diagrams are `diagram` blocks with a
-   `d2` source (the floor).
+3. **Rewrite the `summary` block** (keep `"id": "summary"`, `"title": "Summary"`). Its
+   `markdown` should explain the change in prose: what it does, why, and the user-facing
+   effect — not file/line counts.
 
-4. Render the combined array:
+4. **Annotate each diff.** Set each diff block's `description` (markdown) to *what changes in
+   this file and why*. Cross-link related diffs by their block id, which you can see in the
+   emitted JSON, e.g. `See [the router](#diff-3).` (each block renders with `id="<its id>"`,
+   so `#diff-3` jumps to that diff).
+
+5. **Order and group the diffs.** Wrap the diff blocks in `group` blocks, ordered by
+   importance, so reading top-to-bottom is a narrative — e.g. *The core change* →
+   *Supporting wiring* → *Tests & config*. A group is
+   `{ "type":"group", "id":"…", "title":"…", "blocks":[ …diff blocks… ] }` (one level deep —
+   groups may not contain groups). Place the groups after the Summary, the `where-it-fits`
+   diagram, and the behavioral diagram.
+
+6. **Author ONE behavioral diagram** for the change (see the selection guide) and place it
+   near the top (after the Summary / where-it-fits).
+
+7. Render the combined array and open it:
 
        npx tsx bin/plan.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "Recap — <label>" --out <ABSOLUTE_OUT_DIR>
        open <ABSOLUTE_OUT_DIR>/plan.html
@@ -82,10 +95,10 @@ behavioral view tailored to the change, enrich it:
   multi-collaborator runtime path: a new request/response flow, an external integration call
   chain. Collaborators on lifelines, time downward, ONE scenario.
 - **State machine** (`"kind": "architecture"`) — when the change alters a bounded lifecycle:
-  statuses, subscription / checkout / signup stages — anything where an entity is in one of N
-  states with labeled transitions.
-- If the change is purely structural (no clear runtime flow or lifecycle), the "where it
-  fits" graph already covers it — skip the behavioral diagram rather than force one.
+  statuses, subscription / checkout / signup stages — an entity in one of N states with
+  labeled transitions.
+- If the change is purely structural, the `where-it-fits` graph already covers it — skip the
+  behavioral diagram rather than force one.
 
 Broader diagram types (C4 context/container, DDD context maps, data-flow, event/pub-sub
 topology, CI / blast-radius, BPMN, journey maps) are **not yet in scope** — do not attempt

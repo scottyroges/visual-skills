@@ -32,4 +32,10 @@ describe("skill docs stay in sync", () => {
     expect(recapSkill).toContain("state");
     expect(recapSkill).toContain("--emit-blocks");
   });
+
+  it("visual-recap documents the review-narrative enrichment", () => {
+    expect(recapSkill).toContain("Summary");
+    expect(recapSkill).toContain("description");
+    expect(recapSkill).toContain("group");
+  });
 });
