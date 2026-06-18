@@ -3,6 +3,7 @@ import { join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Block } from "./blocks.js";
 import { isDiagramBlock } from "./blocks.js";
+import { lintBlocks } from "./lint-blocks.js";
 import { escapeHtml } from "./html.js";
 import { renderAll } from "./render-diagram.js";
 import { rolesInSource } from "./diagram-colors.js";
@@ -46,6 +47,8 @@ function assertUniqueIds(blocks: Block[], seen = new Set<string>()): void {
 
 export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<string> {
   assertUniqueIds(blocks);
+  // Authoring lints (non-blocking): nudge toward described groups and scannable diff descriptions.
+  if (opts.onWarn) for (const w of lintBlocks(blocks)) opts.onWarn(w);
   // Collect diagram/schema blocks recursively (they may be nested in groups), render up front.
   const collectDiagrams = (bs: Block[]): (import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock)[] => {
     const out: (import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock)[] = [];
