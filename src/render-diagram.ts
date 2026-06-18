@@ -30,7 +30,7 @@ import { writeFile, readFile, mkdtemp, access, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DiagramBlock, SchemaBlock } from "./blocks.js";
-import { D2_CLASS_PRELUDE } from "./diagram-colors.js";
+import { D2_CLASS_PRELUDE, INK } from "./diagram-colors.js";
 
 const exec = promisify(execFile);
 
@@ -161,7 +161,7 @@ async function renderViaExcalidraw(mermaidSource: string): Promise<{ svg: string
   try {
     const page = await browser.newPage();
     await page.goto("file://" + EXCALIDRAW_PAGE);
-    return await page.evaluate(async (src: string) => {
+    return await page.evaluate(async ({ src, ink }: { src: string; ink: string }) => {
       const win = globalThis as any; // browser `window` in the evaluate context
       const { parseMermaidToExcalidraw } = win.MermaidToExcalidrawLib;
       const { convertToExcalidrawElements, exportToSvg } = win.ExcalidrawLib;
@@ -170,6 +170,13 @@ async function renderViaExcalidraw(mermaidSource: string): Promise<{ svg: string
         themeVariables: { fontSize: "20px" },
       });
       const elements = convertToExcalidrawElements(skeleton);
+      // mermaid-to-excalidraw colors a label's text with its node's STROKE color (e.g. a `changed`
+      // node gets orange text on a yellow fill — unreadable). Excalidraw uses an element's
+      // strokeColor as its text color, so force every text element to dark ink for legibility.
+      // This carries into both the inline SVG and the editable .excalidraw scene.
+      for (const el of elements) {
+        if (el && el.type === "text") el.strokeColor = ink;
+      }
       // The editable artifact you can reopen in excalidraw.com / VS Code.
       const scene = {
         type: "excalidraw", version: 2, source: "visual-skill",
@@ -181,7 +188,7 @@ async function renderViaExcalidraw(mermaidSource: string): Promise<{ svg: string
         appState: { exportWithDarkMode: false, exportBackground: true, viewBackgroundColor: "#ffffff" },
       });
       return { svg: (svgEl as any).outerHTML, scene };
-    }, mermaidSource);
+    }, { src: mermaidSource, ink: INK });
   } finally {
     await browser.close();
   }
