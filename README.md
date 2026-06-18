@@ -45,6 +45,7 @@ invoke the CLIs above; the tool path is set in one constant near the top of each
 
 ## Scope
 Implemented: D2 floor + assembler + recap gatherer (Prisma+tRPC adapter) (M0/M1),
-Shiki syntax highlighting + full renderer set (M2), and the opt-in editable
-Excalidraw upgrade with API-surface + plan-mermaid diagram producers (M3). Not yet
-implemented: the Claude Code SKILL.md wiring (M4). See `docs/superpowers/specs/`.
+Shiki syntax highlighting + full renderer set (M2), the opt-in editable Excalidraw
+upgrade with API-surface + plan-mermaid diagram producers (M3), and the `visual-plan` /
+`visual-recap` Claude Code skills (M4). Deprioritized: `gh pr comment` integration (M5).
+See `docs/superpowers/specs/`.
