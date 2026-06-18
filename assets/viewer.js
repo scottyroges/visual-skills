@@ -55,6 +55,7 @@
       lastX = e.clientX; lastY = e.clientY; apply();
     });
     stage.addEventListener("pointerup", function () { dragging = false; });
+    stage.addEventListener("pointercancel", function () { dragging = false; });
   }
 
   function show(svg) {
