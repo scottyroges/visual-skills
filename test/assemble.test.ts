@@ -123,7 +123,7 @@ describe("assemble — tabs block", () => {
     // both diagrams rendered into panels
     expect((html.match(/<svg/g) ?? []).length).toBeGreaterThanOrEqual(2);
     // exactly one radio is checked by default
-    expect((html.match(/ checked/g) ?? []).length).toBe(1);
+    expect((html.match(/type="radio"[^>]*\schecked/g) ?? []).length).toBe(1);
     expect(html).not.toContain("<script");
   });
 

@@ -100,6 +100,9 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
             throw new Error(`tab in "${b.id}" may not contain a group or tabs — one level deep only`);
           }
         }
+        if (b.tabs.length > 6) {
+          opts.onWarn?.(`tabs "${b.id}" has ${b.tabs.length} tabs; only the first 6 are render-visible (CSS cap)`);
+        }
         const heading = b.title ? `<h2>${escapeHtml(b.title)}</h2>` : "";
         const name = `vs-tabs-${b.id}`;
         const radios = b.tabs

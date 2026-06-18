@@ -96,6 +96,7 @@ export interface TabsBlock {
   id: string;
   title?: string;
   // One level deep — each tab holds a single non-container block (typically a diagram).
+  // Max 6 tabs are render-visible (the CSS switcher defines :nth selectors for n=1..6).
   tabs: { label: string; block: Block }[];
 }
 
