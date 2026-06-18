@@ -89,14 +89,25 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
      point a `href` at a diagram hidden in a non-default tab.
    - For a small change, the plain prose `summary` block is enough — skip the overview.
 
-4. **Annotate each diff — scannably, and only when it helps.** Set a diff block's
-   `description` (markdown) to *what changes and why*. Keep it scannable: short sub-points,
-   bullet lists, inline `code`, and a small diagram when a picture beats prose — never a wall
-   of text. **Omit the description entirely for trivial one-line changes** where it would add
-   nothing. Cross-link related diffs by id, e.g. `See [the router](#diff-3).` (each block
-   renders with `id="<its id>"`, so `#diff-3` jumps to that diff). The diff's code hunks are
-   collapsed by default under a "View changes" toggle, so the title + description + any diagram
-   are what the reader scans first — make them carry the meaning.
+4. **Annotate each diff — as a bullet list, not a paragraph.** Set a diff block's `description`
+   to **markdown that leads with a one-line bold takeaway, then 2–5 `-` bullets** of the specific
+   changes, with inline `code` for identifiers. A multi-sentence paragraph (≈300+ chars of prose)
+   is a FAILURE — break it into bullets. **Omit the description entirely for a trivial one-line
+   change.** The code hunks are collapsed by default under a "View changes" toggle, so the
+   description is the primary read — make it carry the meaning.
+
+   Author every description in this shape (note the literal `\n` and `- ` bullets in the JSON
+   string):
+
+       "description": "**Two new queries — the data foundation.**\n\n- `findStandings` joins members → picks → results, so a member who didn't pick still yields a row\n- ordered by earnings DESC, then a stable tiebreak\n- `countStandings` counts active members — the pagination denominator\n\nConsumed by [the service](#diff-service)."
+
+   ❌ Do NOT write it as one run-on string: `"Two new queries. findStandings joins members to
+   picks to results so a member who didn't pick still yields a row, ordered by earnings desc…
+   and countStandings counts active members which is the denominator…"` — that is the wall of
+   text this format exists to prevent.
+
+   Cross-link related diffs by id, e.g. `[the router](#diff-router)` (each block renders with
+   `id="<its id>"`, so `#diff-router` jumps to that diff).
 
 4b. **Illustrate a diff when it helps** (distinct from the top-level change diagram in step 6 —
    this one lives *inside* a single diff's card). When a single diff implements logic that's
@@ -118,21 +129,23 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
    - A `group` of diffs can likewise lead with a `diagram` (or a `tabs`) block to illustrate the
      whole grouping.
 
-5. **Order and group the diffs.** Wrap the diff blocks in `group` blocks, ordered by
-   importance, so reading top-to-bottom is a narrative — e.g. *The core change* →
-   *Supporting wiring* → *Tests & config*. A group is
-   `{ "type":"group", "id":"…", "title":"…", "blocks":[ …diff blocks… ] }` (one level deep —
-   groups may not contain groups). Place the groups after the lead (the Summary or `overview`), the
-   `where-it-fits` diagram, and the diagram(s).
+5. **Order and group the diffs.** Wrap the diff blocks in `group` blocks, ordered by importance,
+   so reading top-to-bottom is a narrative — e.g. *The core change* → *Supporting wiring* →
+   *Tests & config*. **Every group MUST include a `description`** (markdown, one or two scannable
+   lines on what the group covers and why it matters). The shape — copy it including the
+   `description` field:
+
+       { "type": "group", "id": "grp-core", "title": "The core change — query, shape, expose",
+         "description": "The SQL query, the service that guards and shapes it, and the tRPC procedure that exposes it.",
+         "blocks": [ …diff blocks… ] }
+
+   (one level deep — groups may not contain groups). Place the groups after the lead (the Summary
+   or `overview`), the `where-it-fits` diagram, and the diagram(s).
 
    Within each group, order the diffs **most-important-first** (the core logic change before
    its supporting wiring; styles, tests, config, and lockfiles last). The bare CLI already
    applies this ordering heuristically, but when you regroup, preserve importance order inside
    each group — never lead a group with a stylesheet or test file.
-
-   Give each group a `description` (markdown) — one or two scannable lines on what the group
-   covers and why it matters — e.g.
-   `{ "type":"group", "id":"core", "title":"Core change", "description":"The capture mutation and its wiring.", "blocks":[ … ] }`.
 
 6. **Author the diagram(s)** for the change — see "Which diagram(s) to add" below. Prefer one;
    use a `tabs` block when 2–3 lenses each add value. Place them near the top (after the lead
