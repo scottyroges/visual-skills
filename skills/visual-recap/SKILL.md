@@ -79,7 +79,7 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
    *Supporting wiring* → *Tests & config*. A group is
    `{ "type":"group", "id":"…", "title":"…", "blocks":[ …diff blocks… ] }` (one level deep —
    groups may not contain groups). Place the groups after the Summary, the `where-it-fits`
-   diagram, and the behavioral diagram.
+   diagram, and the diagram(s).
 
 6. **Author the diagram(s)** for the change — see "Which diagram(s) to add" below. Prefer one;
    use a `tabs` block when 2–3 lenses each add value. Place them near the top (after the Summary

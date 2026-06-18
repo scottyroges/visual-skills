@@ -36,7 +36,7 @@ describe("skill docs stay in sync", () => {
   it("visual-recap documents catalog-driven, possibly-multiple diagrams via tabs", () => {
     expect(recapSkill).toContain("--emit-blocks");
     expect(recapSkill).toContain("catalog");
-    expect(recapSkill).toContain("tabs");
+    expect(recapSkill).toContain('"type": "tabs"');
   });
 
   it("visual-recap documents the review-narrative enrichment", () => {
