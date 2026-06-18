@@ -19,7 +19,7 @@ describe("recap blocks round-trip", () => {
     expect(Array.isArray(restored)).toBe(true);
     const html = await assemble(restored, { title: "Recap", source: "x" });
     expect(html).toMatch(/^<!doctype html>/i);
-    expect(html).not.toContain("<script");
+    expect(html).not.toMatch(/<script[^>]*\ssrc=/i); // only the inlined viewer, never external
     expect(html).toContain("Areas touched");
   }, 30000);
 });

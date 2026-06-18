@@ -18,7 +18,7 @@ describe("bin/plan.ts", () => {
       expect(html).toMatch(/^<!doctype html>/i);
       expect(html).toContain("Sample Plan");
       expect(html.match(/<svg/g)?.length).toBeGreaterThanOrEqual(2);
-      expect(html).not.toContain("<script");
+      expect(html).not.toMatch(/<script[^>]*\ssrc=/i); // only the inlined viewer, never external
     } finally {
       await rm(out, { recursive: true, force: true });
     }

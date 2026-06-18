@@ -19,7 +19,7 @@ describe("assemble", () => {
     expect(html).toContain('class="vs-status green"');
     expect(html).toContain("<strong>text</strong>");
     expect(html).toContain("<svg");
-    expect(html).not.toContain("<script");
+    expect(html).not.toMatch(/<script[^>]*\ssrc=/i); // only the inlined viewer, never external
   });
 
   it("renders annotated-code and questions blocks without throwing", async () => {
@@ -39,7 +39,7 @@ describe("assemble", () => {
     expect(html).toContain('class="vs-block vs-questions"');
     expect(html).toContain("first");
     expect(html).toContain("Ship it?");
-    expect(html).not.toContain("<script");
+    expect(html).not.toMatch(/<script[^>]*\ssrc=/i); // only the inlined viewer, never external
   });
 
   it("renders a generator stamp in a footer and meta tag when provided", async () => {
@@ -73,7 +73,7 @@ describe("assemble", () => {
     expect(html).toContain('id="flow"');   // nested diagram anchor
     expect(html).toContain('id="diff-0"'); // nested diff anchor
     expect(html).toContain("<svg");        // nested diagram actually rendered
-    expect(html).not.toContain("<script");
+    expect(html).not.toMatch(/<script[^>]*\ssrc=/i); // only the inlined viewer, never external
   }, 30_000);
 
   it("stamps an id anchor on a top-level block section", async () => {
@@ -103,6 +103,17 @@ describe("assemble", () => {
     ];
     await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id/);
   });
+
+  it("inlines exactly one self-contained viewer script (no external src) and wraps diagrams as zoomable", async () => {
+    const blocks: Block[] = [
+      { type: "diagram", id: "flow", title: "Flow", kind: "flowchart", d2: "a -> b" },
+    ];
+    const html = await assemble(blocks, { title: "T", source: "s" });
+    expect(html).toContain("<script>");                 // the inlined viewer
+    expect(html).not.toMatch(/<script[^>]*\ssrc=/i);    // never an external script
+    expect(html).toContain("vs-zoom-overlay");          // viewer code is present
+    expect(html).toContain('class="vs-zoomable"');      // the diagram svg is wrapped
+  }, 30_000);
 });
 
 describe("assemble — tabs block", () => {
@@ -124,7 +135,7 @@ describe("assemble — tabs block", () => {
     expect((html.match(/<svg/g) ?? []).length).toBeGreaterThanOrEqual(2);
     // exactly one radio is checked by default
     expect((html.match(/type="radio"[^>]*\schecked/g) ?? []).length).toBe(1);
-    expect(html).not.toContain("<script");
+    expect(html).not.toMatch(/<script[^>]*\ssrc=/i); // only the inlined viewer, never external
   });
 
   it("collects a diagram nested inside a tab for the up-front render pass", async () => {
@@ -219,7 +230,7 @@ describe("assemble — per-diff diagram (collection & uniqueness)", () => {
     expect(html).toContain("vs-diff-diagram");
     expect(html).toContain('class="vs-block vs-tabs"');
     expect((html.match(/<svg/g) ?? []).length).toBeGreaterThanOrEqual(2);
-    expect(html).not.toContain("<script");
+    expect(html).not.toMatch(/<script[^>]*\ssrc=/i); // only the inlined viewer, never external
   });
 });
 

@@ -101,3 +101,17 @@ body { margin:0; background:var(--paper); color:var(--ink);
 .vs-overview-diagram h2, .vs-overview-diagram h3 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 600; color: #57534e; }
 .vs-overview-points { margin: 0; padding-left: 1.2rem; line-height: 1.7; }
 .vs-overview-points li > p { margin: 0; }
+
+/* ── zoomable diagrams + full-screen overlay (viewer.js) ──────────────────────── */
+.vs-zoomable { cursor: zoom-in; }
+.vs-zoom-overlay { display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(20,18,16,0.82); }
+.vs-zoom-overlay.open { display: block; }
+.vs-zoom-stage { position: absolute; inset: 0; overflow: hidden; cursor: grab;
+  display: flex; align-items: center; justify-content: center; touch-action: none; }
+.vs-zoom-stage:active { cursor: grabbing; }
+.vs-zoom-svg { transform-origin: center center; max-width: 92vw; max-height: 92vh; }
+.vs-zoom-reset, .vs-zoom-close { position: absolute; top: 16px; border: 1px solid #d6d3cd;
+  background: #fff; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
+.vs-zoom-reset { right: 96px; }
+.vs-zoom-close { right: 16px; font-weight: 700; }
