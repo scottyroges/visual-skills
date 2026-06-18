@@ -1,4 +1,4 @@
-import type { Block, FileChange, FileTreeBlock } from "./blocks.js";
+import type { ApiBlock, ApiProcedure, Block, FileChange } from "./blocks.js";
 import type { Scope, Target } from "./git.js";
 import { resolveScope, changedFiles } from "./git.js";
 import { parseUnifiedDiff } from "./parse-diff.js";
@@ -25,8 +25,8 @@ export async function buildBlocks(
     onWarn?.(`schema diff skipped: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  let procedures: import("./blocks.js").ApiProcedure[] = [];
-  let apiBlocks: import("./blocks.js").ApiBlock[] = [];
+  let procedures: ApiProcedure[] = [];
+  let apiBlocks: ApiBlock[] = [];
   try {
     apiBlocks = await adapter.apiDiff(scope, onWarn);
     procedures = apiBlocks.flatMap((b) => b.procedures);
