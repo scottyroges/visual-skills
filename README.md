@@ -64,5 +64,6 @@ Shiki syntax highlighting + full renderer set (M2), the opt-in editable Excalidr
 upgrade with API-surface + plan-mermaid diagram producers (M3), and the `visual-plan` /
 `visual-recap` Claude Code skills (M4), and contextual recaps — synthesized summary +
 "where it fits" dependency graph + `--emit-blocks` enrichment with agent-selected
-behavioral diagrams (M6). Deprioritized: `gh pr comment` integration (M5).
-See `docs/superpowers/specs/`.
+behavioral diagrams (M6), and review-narrative recaps — agent-authored "Summary",
+per-file diff descriptions with in-page cross-links, and importance-ordered `group`s
+(M7). Deprioritized: `gh pr comment` integration (M5). See `docs/superpowers/specs/`.
