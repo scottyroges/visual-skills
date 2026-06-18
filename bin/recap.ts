@@ -22,11 +22,24 @@ async function main() {
       branch: { type: "string" },
       base: { type: "string" },
       out: { type: "string", default: ".recaps/recap.html" },
+      "emit-blocks": { type: "string" },
     },
   });
 
   const repoRoot = values.repo!;
   const { scope, blocks, adapter } = await gatherRecap(parseTarget(values), repoRoot, (m) => console.warn(m));
+  const emitPath = values["emit-blocks"];
+  if (emitPath) {
+    await mkdir(dirname(emitPath), { recursive: true });
+    await writeFile(emitPath, JSON.stringify(blocks, null, 2));
+    console.log(`wrote ${emitPath} (${blocks.length} blocks, adapter: ${adapter})`);
+  }
+
+  if (emitPath && values.out === ".recaps/recap.html") {
+    // emit-only: blocks requested and --out not overridden; skip HTML.
+    return;
+  }
+
   const html = await assemble(blocks, {
     title: `Recap — ${scope.label}`,
     source: `${repoRoot} · base ${scope.baseRef.slice(0, 10)} → head ${scope.headRef.slice(0, 10)} · stack ${adapter}`,
