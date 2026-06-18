@@ -39,6 +39,9 @@ async function main() {
   if (emitPath && values.out === undefined) return;
 
   const outPath = values.out ?? ".recaps/recap.html";
+  // Create the output dir before assemble: diagram blocks may write .excalidraw
+  // sidecars into it during rendering.
+  await mkdir(dirname(outPath), { recursive: true });
   const html = await assemble(blocks, {
     title: `Recap — ${scope.label}`,
     source: `${repoRoot} · base ${scope.baseRef.slice(0, 10)} → head ${scope.headRef.slice(0, 10)} · stack ${adapter}`,
@@ -46,7 +49,6 @@ async function main() {
     outDir: dirname(outPath),
     onWarn: (m) => console.warn(m),
   });
-  await mkdir(dirname(outPath), { recursive: true });
   await writeFile(outPath, html);
   console.log(`wrote ${outPath} (adapter: ${adapter})`);
 }

@@ -19,13 +19,15 @@ async function main() {
 
   const blocks = JSON.parse(await readFile(values.blocks, "utf8")) as Block[];
   const promoted = promoteMermaidFences(blocks);
+  // Create the output dir before assemble: diagram blocks may write .excalidraw
+  // sidecars into it during rendering.
+  await mkdir(dirname(values.out!), { recursive: true });
   const html = await assemble(promoted, {
     title: values.title!,
     source: values.source || values.blocks,
     outDir: dirname(values.out!),
     onWarn: (m) => console.warn(m),
   });
-  await mkdir(dirname(values.out!), { recursive: true });
   await writeFile(values.out!, html);
   console.log(`wrote ${values.out}`);
 }
