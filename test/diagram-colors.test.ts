@@ -19,6 +19,14 @@ describe("diagram colors", () => {
     }
   });
 
+  it("sets a dark ink font color on every role in both representations (readable text)", () => {
+    // d2 classes use font-color; mermaid classDefs use color
+    expect((D2_CLASS_PRELUDE.match(/font-color:\s*"#1b1b1b"/g) || []).length)
+      .toBe(Object.keys(PALETTE).length);
+    expect((MERMAID_CLASSDEFS.match(/color:#1b1b1b/g) || []).length)
+      .toBe(Object.keys(PALETTE).length);
+  });
+
   it("the injected prelude makes a `class: changed` diagram render the role's fill", async () => {
     const block: DiagramBlock = {
       type: "diagram", id: "c", title: "c", kind: "flowchart", d2: "x: { class: changed }",

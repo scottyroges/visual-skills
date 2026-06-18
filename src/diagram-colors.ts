@@ -12,6 +12,9 @@ export const PALETTE: Record<ColorRole, { fill: string; stroke: string; bold?: b
   store: { fill: "#e5dbff", stroke: "#9775fa" },
 };
 
+/** Dark ink for diagram label text — guarantees readable contrast on every role's fill. */
+export const INK = "#1b1b1b";
+
 const ROLES = Object.keys(PALETTE) as ColorRole[];
 
 /** d2 `classes {}` block prepended to every diagram so recipes can apply `class: <role>`. */
@@ -20,7 +23,7 @@ export const D2_CLASS_PRELUDE: string = [
   ...ROLES.map((r) => {
     const { fill, stroke, bold } = PALETTE[r];
     const sw = bold ? "; stroke-width: 2" : "";
-    return `  ${r}: { style: { fill: "${fill}"; stroke: "${stroke}"${sw} } }`;
+    return `  ${r}: { style: { fill: "${fill}"; stroke: "${stroke}"; font-color: "${INK}"${sw} } }`;
   }),
   "}",
 ].join("\n");
@@ -30,5 +33,5 @@ export const D2_CLASS_PRELUDE: string = [
 export const MERMAID_CLASSDEFS: string = ROLES.map((r) => {
   const { fill, stroke, bold } = PALETTE[r];
   const sw = bold ? ",stroke-width:2px" : "";
-  return `classDef ${r} fill:${fill},stroke:${stroke}${sw};`;
+  return `classDef ${r} fill:${fill},stroke:${stroke},color:${INK}${sw};`;
 }).join("\n");

@@ -73,12 +73,12 @@ coloring is d2-floor only (mermaid sequence has no class mechanism).
 
 Mermaid classDefs (for editable flowchart/architecture diagrams):
 
-    classDef changed fill:#ffd43b,stroke:#f08c00,stroke-width:2px;
-    classDef added fill:#d3f9d8,stroke:#37b24d;
-    classDef removed fill:#ffe3e3,stroke:#f03e3e;
-    classDef actor fill:#d0ebff,stroke:#4dabf7;
-    classDef external fill:#f1f3f5,stroke:#adb5bd;
-    classDef store fill:#e5dbff,stroke:#9775fa;
+    classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;
+    classDef added fill:#d3f9d8,stroke:#37b24d,color:#1b1b1b;
+    classDef removed fill:#ffe3e3,stroke:#f03e3e,color:#1b1b1b;
+    classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;
+    classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;
+    classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;
 
 Apply color where it clarifies — always mark the `changed` subject; tag actors / external systems /
 datastores by role. Don't color every node; uncolored = neutral/unchanged.
