@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { renderDiagram } from "../src/render-diagram.js";
+import { PALETTE } from "../src/diagram-colors.js";
 import type { DiagramBlock } from "../src/blocks.js";
 
 const catalog = readFileSync(new URL("../skills/shared/diagrams.md", import.meta.url), "utf8");
@@ -40,6 +41,15 @@ describe("diagram catalog", () => {
   it("documents the color vocabulary and applies a class in at least one recipe", () => {
     expect(catalog).toContain("Color vocabulary");
     expect(catalog).toMatch(/class:\s*(changed|added|removed|actor|external|store)/);
+  });
+
+  it("documents each role's classDef with the canonical PALETTE hex (no drift)", () => {
+    for (const [role, { fill, stroke }] of Object.entries(PALETTE)) {
+      // Matches the catalog's mermaid classDef line regardless of code-block indentation or a
+      // trailing stroke-width — so a PALETTE hex edit not mirrored in the catalog fails here.
+      expect(catalog, `catalog must document classDef ${role} with PALETTE hex`)
+        .toContain(`classDef ${role} fill:${fill},stroke:${stroke}`);
+    }
   });
 
   it("every editable:yes entry pairs d2 with mermaid", () => {
