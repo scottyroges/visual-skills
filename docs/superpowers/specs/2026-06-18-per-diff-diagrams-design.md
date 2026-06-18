@@ -126,6 +126,10 @@ In `skills/visual-recap/SKILL.md`, extend the enrichment guidance:
   (`"diagram": { "type": "diagram", "id": "...", "kind": "...", "d2": "..." }` inside a diff block).
 - **Restraint:** most diffs need no diagram; attach one only when it adds understanding the code
   alone doesn't. One per diff.
+- **Keep it editable:** copy the catalog recipe *including its `mermaid` sibling* for any
+  editable-eligible kind (flowchart/architecture/sequence/class). The embedded diagram goes through
+  the same render path as any diagram, so a paired `mermaid` makes it an editable Excalidraw scene;
+  a d2-only per-diff diagram silently forfeits that. (ERD stays d2-only by design.)
 - **Grouping-level diagrams:** a `group` may lead with a diagram block to illustrate a whole
   grouping of diffs (already supported — no new field).
 - Embedded diagrams render inline (not inside a tab), so they are safe `#cross-link` targets; the
