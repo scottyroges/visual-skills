@@ -44,4 +44,8 @@ describe("skill docs stay in sync", () => {
     expect(recapSkill).toContain("description");
     expect(recapSkill).toContain("group");
   });
+
+  it("visual-recap documents attaching a diagram to a diff", () => {
+    expect(recapSkill).toContain('"diagram":');
+  });
 });

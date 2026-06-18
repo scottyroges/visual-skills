@@ -74,6 +74,25 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
    emitted JSON, e.g. `See [the router](#diff-3).` (each block renders with `id="<its id>"`,
    so `#diff-3` jumps to that diff).
 
+4b. **Illustrate a diff when it helps.** When a single diff implements logic that's clearer shown
+   than read — a new state machine, a non-obvious control/data flow, a sequence across
+   collaborators — attach a small catalog diagram as that diff's `diagram`:
+
+       "diagram": { "type": "diagram", "id": "diff-3-diag", "title": "Capture flow", "kind": "sequence",
+         "d2": "shape: sequence_diagram\napi -> paypal: capture(id)\npaypal -> api: ok",
+         "mermaid": "sequenceDiagram\n  api->>paypal: capture(id)\n  paypal-->>api: ok" }
+
+   - **Restraint:** most diffs need none — attach one only when it adds understanding the code
+     alone doesn't.
+   - **Keep it editable:** copy the catalog recipe *including its `mermaid` sibling* for any
+     editable-eligible kind (flowchart/architecture/sequence/class), so the diagram renders as an
+     editable Excalidraw scene; a d2-only diagram forfeits that (ERD stays d2-only by design).
+   - **Multiple views:** if one diff genuinely needs more than one diagram, set `diagram` to a
+     `tabs` block of diagrams instead (default to a single diagram). A diagram inside a non-default
+     tab is hidden until clicked, so don't make it a `#cross-link` target.
+   - A `group` of diffs can likewise lead with a `diagram` (or a `tabs`) block to illustrate the
+     whole grouping.
+
 5. **Order and group the diffs.** Wrap the diff blocks in `group` blocks, ordered by
    importance, so reading top-to-bottom is a narrative — e.g. *The core change* →
    *Supporting wiring* → *Tests & config*. A group is
