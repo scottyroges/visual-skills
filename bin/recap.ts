@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 import type { Target } from "../src/git.js";
 import { gatherRecap } from "../src/gather-recap.js";
 import { assemble } from "../src/assemble.js";
+import { generatorStamp } from "../src/version.js";
 
 function parseTarget(values: Record<string, string | undefined>): Target {
   if (values.pr) return { kind: "pr", number: Number(values.pr) };
@@ -42,12 +43,14 @@ async function main() {
   // Create the output dir before assemble: diagram blocks may write .excalidraw
   // sidecars into it during rendering.
   await mkdir(dirname(outPath), { recursive: true });
+  const generator = await generatorStamp();
   const html = await assemble(blocks, {
     title: `Recap — ${scope.label}`,
     source: `${repoRoot} · base ${scope.baseRef.slice(0, 10)} → head ${scope.headRef.slice(0, 10)} · stack ${adapter}`,
     status: { level: "green", text: `${blocks.length} blocks` },
     outDir: dirname(outPath),
     onWarn: (m) => console.warn(m),
+    generator,
   });
   await writeFile(outPath, html);
   console.log(`wrote ${outPath} (adapter: ${adapter})`);

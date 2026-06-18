@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 import type { Block } from "../src/blocks.js";
 import { assemble } from "../src/assemble.js";
+import { generatorStamp } from "../src/version.js";
 import { promoteMermaidFences } from "../src/promote-mermaid.js";
 
 async function main() {
@@ -22,11 +23,13 @@ async function main() {
   // Create the output dir before assemble: diagram blocks may write .excalidraw
   // sidecars into it during rendering.
   await mkdir(dirname(values.out!), { recursive: true });
+  const generator = await generatorStamp();
   const html = await assemble(promoted, {
     title: values.title!,
     source: values.source || values.blocks,
     outDir: dirname(values.out!),
     onWarn: (m) => console.warn(m),
+    generator,
   });
   await writeFile(values.out!, html);
   console.log(`wrote ${values.out}`);
