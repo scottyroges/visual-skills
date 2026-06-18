@@ -60,8 +60,10 @@ export function apiSurfaceDiagram(
     }
     m.push("  end");
   }
-  m.push(MERMAID_CLASSDEFS);
-  m.push(...classes);
+  if (classes.length) {
+    m.push(MERMAID_CLASSDEFS);
+    m.push(...classes);
+  }
 
   return { type: "diagram", id, kind: "architecture", title, d2: d2.join("\n"), mermaid: m.join("\n") };
 }

@@ -22,6 +22,8 @@ describe("apiSurfaceDiagram", () => {
     expect(block.d2).toContain('"league"');
     expect(block.d2).toContain('"captureOrder"');
     expect(block.d2).toContain("class:");
+    // specific change->role mapping: the added procedure carries class: added
+    expect(block.d2).toContain("class: added");
     expect(block.mermaid).toContain("classDef");
     expect(block.d2).toContain('client -> "league"');
     // mermaid upgrade: dot-free ids, labels keep names, change classes
