@@ -23,15 +23,16 @@ hand-drawn-styled HTML document and open it.
    - a branch → `--branch <name>` (optionally `--base <ref>` to set the comparison base)
    - uncommitted working changes → no target flag
 
-3. **Choose an output path** — default `<target-repo>/.recaps/<short-label>.html` (use an
-   absolute path).
+3. **Choose an output folder** — `--out` is a *directory*, e.g.
+   `<target-repo>/.recaps/<short-label>` (use an absolute path). The HTML (`recap.html`)
+   and any editable `.excalidraw` sidecars are written together inside it.
 
 4. **Run the recap** from the tool directory so its dependencies resolve:
 
        cd "$VISUAL_SKILLS_DIR"
-       npx tsx bin/recap.ts --repo <ABSOLUTE_TARGET_REPO> <target flag> --out <ABSOLUTE_OUT>
+       npx tsx bin/recap.ts --repo <ABSOLUTE_TARGET_REPO> <target flag> --out <ABSOLUTE_OUT_DIR>
 
-5. **Open it:** `open <ABSOLUTE_OUT>` on macOS, otherwise tell the user the path.
+5. **Open it:** `open <ABSOLUTE_OUT_DIR>/recap.html` on macOS, otherwise tell the user the path.
 
 ## Fallbacks
 
@@ -45,12 +46,12 @@ hand-drawn-styled HTML document and open it.
 
 ## Example
 
-Recap of a merged PR by its squash-merge SHA, into the target repo's `.recaps/`:
+Recap of a merged PR by its squash-merge SHA, into a per-PR folder under `.recaps/`:
 
     cd "$VISUAL_SKILLS_DIR"
     npx tsx bin/recap.ts --repo /Users/me/Projects/ppgl --commit 3559f61 \
-      --out /Users/me/Projects/ppgl/.recaps/pr-183.html
-    open /Users/me/Projects/ppgl/.recaps/pr-183.html
+      --out /Users/me/Projects/ppgl/.recaps/pr-183
+    open /Users/me/Projects/ppgl/.recaps/pr-183/recap.html
 
 ## Add context (smart enrichment)
 
@@ -72,8 +73,8 @@ behavioral view tailored to the change, enrich it:
 
 4. Render the combined array:
 
-       npx tsx bin/plan.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "Recap — <label>" --out <ABSOLUTE_OUT>
-       open <ABSOLUTE_OUT>
+       npx tsx bin/plan.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "Recap — <label>" --out <ABSOLUTE_OUT_DIR>
+       open <ABSOLUTE_OUT_DIR>/plan.html
 
 ### Which behavioral diagram to pick
 

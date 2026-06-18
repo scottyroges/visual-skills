@@ -25,9 +25,12 @@ blocks — so ground every reference in the real repo.
 
        cd "$VISUAL_SKILLS_DIR"
        npx tsx bin/plan.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "<Title>" \
-         --source "<source path or label>" --out <ABSOLUTE_OUT>
+         --source "<source path or label>" --out <ABSOLUTE_OUT_DIR>
 
-6. **Open it:** `open <ABSOLUTE_OUT>` (macOS), else report the path.
+   `--out` is a *directory*; the HTML (`plan.html`) and any `.excalidraw` sidecars are
+   written together inside it.
+
+6. **Open it:** `open <ABSOLUTE_OUT_DIR>/plan.html` (macOS), else report the path.
 
 ## Content -> block mapping
 
@@ -79,5 +82,5 @@ for visual-recap when the subject is a code change rather than a plan.
 
     cd "$VISUAL_SKILLS_DIR"
     npx tsx bin/plan.ts --blocks /tmp/plan-blocks.json --title "Payments migration" \
-      --source docs/specs/payments.md --out /tmp/payments-plan.html
-    open /tmp/payments-plan.html
+      --source docs/specs/payments.md --out /tmp/payments-plan
+    open /tmp/payments-plan/plan.html

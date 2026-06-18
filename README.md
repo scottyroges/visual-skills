@@ -10,22 +10,25 @@ self-contained, hand-drawn-styled HTML document grounded in the real repo.
 
 ## Usage
 
+`--out` is a per-doc **folder**: the tool writes `plan.html` / `recap.html` plus any
+`.excalidraw` sidecars together inside it (a trailing `.html` is stripped for convenience).
+
 Plan (hand-authored blocks):
 
-    npx tsx bin/plan.ts --blocks blocks.json --title "My Plan" --out plans/x/plan.html
+    npx tsx bin/plan.ts --blocks blocks.json --title "My Plan" --out plans/x   # -> plans/x/plan.html
 
 Recap (from a git target):
 
-    npx tsx bin/recap.ts --repo /path/to/repo --commit <sha>  --out .recaps/x/recap.html
-    npx tsx bin/recap.ts --repo /path/to/repo --branch <name> --out .recaps/x/recap.html
-    npx tsx bin/recap.ts --repo /path/to/repo --pr <number>   --out .recaps/x/recap.html
+    npx tsx bin/recap.ts --repo /path/to/repo --commit <sha>  --out .recaps/x  # -> .recaps/x/recap.html
+    npx tsx bin/recap.ts --repo /path/to/repo --branch <name> --out .recaps/x
+    npx tsx bin/recap.ts --repo /path/to/repo --pr <number>   --out .recaps/x
 
 Every recap includes a synthesized summary and a "where it fits" dependency graph. To
 enrich it with an agent-authored behavioral diagram, emit the gathered blocks as JSON,
 augment them, and render via the plan CLI (this is what the `visual-recap` skill does):
 
     npx tsx bin/recap.ts --repo /path/to/repo --commit <sha> --emit-blocks blocks.json
-    npx tsx bin/plan.ts --blocks blocks.json --out .recaps/x/recap.html
+    npx tsx bin/plan.ts --blocks blocks.json --out .recaps/x   # -> .recaps/x/plan.html
 
 ## Optional: editable Excalidraw diagrams
 
