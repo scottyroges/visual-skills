@@ -64,4 +64,20 @@ describe("dependencyNeighborhood", () => {
       await rm(root, { recursive: true, force: true });
     }
   }, 30_000);
+
+  it("resolves tsconfig path aliases (e.g. @/...) to in-repo modules", async () => {
+    const root = await tempRepo({
+      "tsconfig.json": JSON.stringify({ compilerOptions: { baseUrl: ".", paths: { "@/*": ["./src/*"] } } }),
+      "src/lib/a.ts": `export const a = 1;`,
+      "src/b.ts": `import { a } from "@/lib/a.js";\nexport const b = a;`,
+    });
+    try {
+      const block = await dependencyNeighborhood(["src/lib/a.ts"], root);
+      expect(block).not.toBeNull();
+      expect(block!.d2).toContain("src/b.ts");    // importer resolved via the @/ alias
+      expect(block!.d2).not.toContain("@/lib/a"); // NOT a floating package node
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30_000);
 });

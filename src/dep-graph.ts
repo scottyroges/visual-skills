@@ -1,5 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { join, dirname, relative, normalize } from "node:path";
+import ts from "typescript";
 import type { DiagramBlock } from "./blocks.js";
 import { importsOf } from "./imports.js";
 
@@ -20,6 +22,51 @@ function resolveRel(fromRepoRel: string, spec: string): string | null {
   if (!spec.startsWith(".")) return null;
   const joined = normalize(join(dirname(fromRepoRel), spec)).replace(/\\/g, "/");
   return moduleKey(joined);
+}
+
+interface AliasMatcher { prefix: string; suffix: string; star: boolean; target: string; }
+interface Aliases { baseUrl: string; matchers: AliasMatcher[]; }
+
+/** Load tsconfig compilerOptions.paths/baseUrl from repoRoot; empty matchers if absent. */
+function loadAliases(repoRoot: string): Aliases {
+  const res = ts.readConfigFile(join(repoRoot, "tsconfig.json"), (p) => {
+    try { return readFileSync(p, "utf8"); } catch { return undefined; }
+  });
+  const co = (res.config?.compilerOptions ?? {}) as { baseUrl?: string; paths?: Record<string, string[]> };
+  const baseUrl = co.baseUrl ?? ".";
+  const matchers: AliasMatcher[] = [];
+  for (const [pattern, targets] of Object.entries(co.paths ?? {})) {
+    if (!Array.isArray(targets) || targets.length === 0) continue;
+    const target = targets[0];
+    if (pattern.includes("*")) {
+      const [prefix, suffix] = pattern.split("*");
+      matchers.push({ prefix, suffix, star: true, target });
+    } else {
+      matchers.push({ prefix: pattern, suffix: "", star: false, target });
+    }
+  }
+  return { baseUrl, matchers };
+}
+
+/** Resolve a non-relative specifier through tsconfig path aliases to a module key; null if no alias matches. */
+function resolveAlias(spec: string, aliases: Aliases): string | null {
+  for (const m of aliases.matchers) {
+    if (m.star) {
+      if (spec.length < m.prefix.length + m.suffix.length) continue;
+      if (!spec.startsWith(m.prefix) || !spec.endsWith(m.suffix)) continue;
+      const star = spec.slice(m.prefix.length, spec.length - m.suffix.length);
+      const substituted = m.target.includes("*") ? m.target.replace("*", star) : m.target;
+      return moduleKey(normalize(join(aliases.baseUrl, substituted)).replace(/\\/g, "/"));
+    } else if (spec === m.prefix) {
+      return moduleKey(normalize(join(aliases.baseUrl, m.target)).replace(/\\/g, "/"));
+    }
+  }
+  return null;
+}
+
+/** Resolve any specifier (relative OR tsconfig-alias) to an in-repo module key; null for bare packages. */
+function resolveModule(fromRepoRel: string, spec: string, aliases: Aliases): string | null {
+  return spec.startsWith(".") ? resolveRel(fromRepoRel, spec) : resolveAlias(spec, aliases);
 }
 
 /** Recursively list repo-relative source files, skipping vendor/build dirs. */
@@ -55,6 +102,7 @@ export async function dependencyNeighborhood(
   const sources = changedPaths.filter((p) => SOURCE_RE.test(p));
   if (sources.length === 0) return null;
 
+  const aliases = loadAliases(repoRoot);
   const changedKeys = new Set(sources.map(moduleKey));
   const nodes = new Map<string, Node>();
   const edges = new Set<string>();
@@ -72,8 +120,8 @@ export async function dependencyNeighborhood(
     const src = await readFile(join(repoRoot, p), "utf8").catch(() => null);
     if (!src) continue;
     for (const spec of importsOf(src)) {
-      const rel = resolveRel(p, spec);
-      if (rel) { addNode(keyId(rel), rel); edges.add(`${keyId(moduleKey(p))} ${keyId(rel)}`); }
+      const mod = resolveModule(p, spec, aliases);
+      if (mod) { addNode(keyId(mod), mod); edges.add(`${keyId(moduleKey(p))} ${keyId(mod)}`); }
       else { addNode(pkgId(spec), spec); edges.add(`${keyId(moduleKey(p))} ${pkgId(spec)}`); }
     }
   }
@@ -83,7 +131,7 @@ export async function dependencyNeighborhood(
     const src = await readFile(join(repoRoot, rel), "utf8").catch(() => null);
     if (!src) continue;
     for (const spec of importsOf(src)) {
-      const target = resolveRel(rel, spec);
+      const target = resolveModule(rel, spec, aliases);
       if (target && changedKeys.has(target)) {
         addNode(keyId(moduleKey(rel)), rel);
         edges.add(`${keyId(moduleKey(rel))} ${keyId(target)}`);
