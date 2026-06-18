@@ -30,6 +30,7 @@ import { writeFile, readFile, mkdtemp, access, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DiagramBlock, SchemaBlock } from "./blocks.js";
+import { D2_CLASS_PRELUDE } from "./diagram-colors.js";
 
 const exec = promisify(execFile);
 
@@ -127,7 +128,8 @@ async function renderViaD2(source: string): Promise<string> {
   try {
     const inFile = join(dir, "in.d2");
     const outFile = join(dir, "out.svg");
-    await writeFile(inFile, source);
+    // Prepend the shared semantic-color classes so any diagram can apply `class: <role>`.
+    await writeFile(inFile, `${D2_CLASS_PRELUDE}\n${source}`);
     // --sketch = hand-drawn; theme 0 neutral; pad for breathing room.
     await exec("d2", ["--sketch", "--theme", "0", "--pad", "24", inFile, outFile]);
     return await readFile(outFile, "utf8");

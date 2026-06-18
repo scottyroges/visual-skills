@@ -79,4 +79,17 @@ describe("renderDiagram (D2 floor)", () => {
       await rm(dir, { recursive: true, force: true });
     }
   }, 30_000);
+
+  it("injects the color prelude so a class resolves, and leaves class-less diagrams intact", async () => {
+    const colored = await renderDiagram(
+      { type: "diagram", id: "k", title: "k", kind: "flowchart", d2: "n: { class: external }" },
+      { excalidraw: false },
+    );
+    expect(colored.svg.toLowerCase()).toContain("f1f3f5"); // external fill
+    const plain = await renderDiagram(
+      { type: "diagram", id: "p", title: "p", kind: "flowchart", d2: "a -> b" },
+      { excalidraw: false },
+    );
+    expect(plain.svg).toMatch(/<svg/); // prelude is harmless when unused
+  }, 30_000);
 });
