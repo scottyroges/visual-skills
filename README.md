@@ -32,6 +32,17 @@ This installs Playwright + Chromium and `@excalidraw/excalidraw` (not saved to
 `package.json`) and builds an offline bundle. It is heavy (~hundreds of MB). When it is
 not installed, diagrams fall back to the D2 sketch — nothing breaks.
 
+## Invoking from Claude Code
+
+Install the skills once so Claude Code can discover them from any repo:
+
+    npm run skills:install
+
+This symlinks `skills/visual-recap` and `skills/visual-plan` into `~/.claude/skills/`. After
+that, ask Claude Code to "visualize this PR" / "make a visual recap of <commit>" to trigger
+`visual-recap`, or "turn this spec into a visual plan" to trigger `visual-plan`. The skills
+invoke the CLIs above; the tool path is set in one constant near the top of each `SKILL.md`.
+
 ## Scope
 Implemented: D2 floor + assembler + recap gatherer (Prisma+tRPC adapter) (M0/M1),
 Shiki syntax highlighting + full renderer set (M2), and the opt-in editable

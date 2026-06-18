@@ -1,0 +1,27 @@
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+
+const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
+const blocks = read("../src/blocks.ts");
+const planSkill = read("../skills/visual-plan/SKILL.md");
+const recapSkill = read("../skills/visual-recap/SKILL.md");
+
+// Discriminant literals like `type: "diagram"` across the Block interfaces.
+const blockTypes = [...new Set([...blocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))];
+
+describe("skill docs stay in sync", () => {
+  it("documents every Block type in the visual-plan skill", () => {
+    expect(blockTypes.length).toBeGreaterThanOrEqual(8);
+    for (const t of blockTypes) {
+      expect(planSkill, `visual-plan SKILL.md must mention block type "${t}"`).toContain(t);
+    }
+  });
+
+  it("both skills have name + description frontmatter", () => {
+    for (const md of [planSkill, recapSkill]) {
+      expect(md.startsWith("---")).toBe(true);
+      expect(md).toMatch(/\nname:\s*\S+/);
+      expect(md).toMatch(/\ndescription:\s*\S+/);
+    }
+  });
+});
