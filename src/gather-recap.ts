@@ -7,6 +7,7 @@ import { PrismaTrpcAdapter } from "./adapters/prisma-trpc.js";
 import { apiSurfaceDiagram } from "./api-diagram.js";
 import { summaryMarkdown } from "./recap-summary.js";
 import { dependencyNeighborhood } from "./dep-graph.js";
+import { sortByImportance } from "./diff-order.js";
 
 /** Compose the ordered block array for a recap. Pure given its inputs. */
 export async function buildBlocks(
@@ -56,7 +57,7 @@ export async function buildBlocks(
   if (diagram) blocks.push(diagram);
   for (const api of apiBlocks) blocks.push(api);
 
-  for (const diff of parseUnifiedDiff(scope.unifiedDiff)) blocks.push(diff);
+  for (const diff of sortByImportance(parseUnifiedDiff(scope.unifiedDiff))) blocks.push(diff);
 
   return blocks;
 }
