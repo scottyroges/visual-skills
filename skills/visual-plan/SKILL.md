@@ -37,6 +37,9 @@ blocks — so ground every reference in the real repo.
 For diagram selection (which structural / boundary / data-flow / behavioral diagram to use) and
 compile-tested recipes, consult the shared catalog: `$VISUAL_SKILLS_DIR/skills/shared/diagrams.md`.
 
+Color diagrams with the catalog's semantic palette (the "Color vocabulary" section) — mark the
+`changed`/subject node and tag actors / external systems / datastores by role.
+
 Primary blocks you author for plans:
 
 - **narrative / sections -> `prose`** (Markdown; GitHub-flavored). A fenced `mermaid`

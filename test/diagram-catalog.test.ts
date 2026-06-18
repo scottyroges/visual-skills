@@ -37,6 +37,11 @@ describe("diagram catalog", () => {
     }
   });
 
+  it("documents the color vocabulary and applies a class in at least one recipe", () => {
+    expect(catalog).toContain("Color vocabulary");
+    expect(catalog).toMatch(/class:\s*(changed|added|removed|actor|external|store)/);
+  });
+
   it("every editable:yes entry pairs d2 with mermaid", () => {
     const body = catalog.slice(catalog.indexOf("<!-- catalog-entries-start -->"));
     const entries = body.split(/\n### /).slice(1); // drop preamble before first entry

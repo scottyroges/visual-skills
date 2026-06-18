@@ -143,6 +143,9 @@ enough — skip adding more.
 
 Use the catalog's recipes verbatim (they are compile-tested), substituting real identifiers.
 
+Apply the catalog's **color vocabulary** — always mark the `changed` subject, and tag actors /
+external systems / datastores by role so the diagram reads at a glance.
+
 ### Grouping multiple diagrams into tabs
 
 A `tabs` block presents complementary views as a CSS-only switcher (no JS):

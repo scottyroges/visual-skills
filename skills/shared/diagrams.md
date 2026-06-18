@@ -54,6 +54,35 @@ journey maps (UX phases/emotions), BPMN gateway notation, event storming sticky-
   a mermaid `flowchart`** (states as nodes, transitions as labeled edges), never `stateDiagram`.
 - An invalid diagram degrades to a visible placeholder rather than breaking the document.
 
+## Color vocabulary
+
+Diagrams carry a shared semantic palette (auto-injected — recipes only *apply* classes, never
+define a `classes {}` block). Apply a role with `nodeName.class: <role>` (d2). For an
+editable-eligible **flowchart/architecture** diagram, also color the editable Excalidraw scene by
+adding the matching mermaid `classDef` + `class X <role>;` (copy from below). Sequence-diagram
+coloring is d2-floor only (mermaid sequence has no class mechanism).
+
+| role | meaning | d2 |
+|---|---|---|
+| `changed` | modified / the subject (bold amber) | `n.class: changed` |
+| `added` | new (green) | `n.class: added` |
+| `removed` | deleted (red) | `n.class: removed` |
+| `actor` | user / initiator (blue) | `n.class: actor` |
+| `external` | third-party system (gray) | `n.class: external` |
+| `store` | datastore — db/cache/queue (violet) | `n.class: store` |
+
+Mermaid classDefs (for editable flowchart/architecture diagrams):
+
+    classDef changed fill:#ffd43b,stroke:#f08c00,stroke-width:2px;
+    classDef added fill:#d3f9d8,stroke:#37b24d;
+    classDef removed fill:#ffe3e3,stroke:#f03e3e;
+    classDef actor fill:#d0ebff,stroke:#4dabf7;
+    classDef external fill:#f1f3f5,stroke:#adb5bd;
+    classDef store fill:#e5dbff,stroke:#9775fa;
+
+Apply color where it clarifies — always mark the `changed` subject; tag actors / external systems /
+datastores by role. Don't color every node; uncolored = neutral/unchanged.
+
 <!-- catalog-entries-start -->
 
 ### Dependency graph
@@ -64,6 +93,7 @@ journey maps (UX phases/emotions), BPMN gateway notation, event storming sticky-
 
 ```d2
 direction: right
+billing: { class: changed }
 billing -> user
 billing -> auth
 auth -> user
@@ -74,6 +104,8 @@ flowchart LR
   billing --> user
   billing --> auth
   auth --> user
+  classDef changed fill:#ffd43b,stroke:#f08c00,stroke-width:2px;
+  class billing changed;
 ```
 
 ### Deployment / infra
@@ -82,6 +114,8 @@ flowchart LR
 - **Avoid when:** nothing about the topology changed.
 
 ```d2
+"RDS (Postgres)": { class: store }
+"Redis": { class: store }
 "ALB" -> "ECS service": HTTPS
 "ECS service" -> "RDS (Postgres)": SQL
 "ECS service" -> "Redis": cache
@@ -92,6 +126,8 @@ flowchart TD
   ALB --> ECS[ECS service]
   ECS --> RDS[(RDS Postgres)]
   ECS --> Redis[(Redis)]
+  classDef store fill:#e5dbff,stroke:#9775fa;
+  class RDS,Redis store;
 ```
 
 ### Sequence
@@ -101,6 +137,8 @@ flowchart TD
 
 ```d2
 shape: sequence_diagram
+client: { class: actor }
+paypal: { class: external }
 client -> api: captureOrder(id)
 api -> paypal: capture(id)
 paypal -> api: ok
