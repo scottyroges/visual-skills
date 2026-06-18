@@ -131,6 +131,19 @@ describe("assemble", () => {
     await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id/);
   });
 
+  it("renders a legend under a diagram that applies roles, and none for a plain diagram", async () => {
+    const colored = await assemble(
+      [{ type: "diagram", id: "c", title: "C", kind: "flowchart", d2: "x: { class: changed }" }],
+      { title: "T", source: "s" });
+    expect(colored).toContain('class="vs-legend"');
+    expect(colored).toContain("Changed");
+
+    const plain = await assemble(
+      [{ type: "diagram", id: "p", title: "P", kind: "flowchart", d2: "a -> b" }],
+      { title: "T", source: "s" });
+    expect(plain).not.toContain('class="vs-legend"');
+  }, 30_000);
+
   it("inlines exactly one self-contained viewer script (no external src) and wraps diagrams as zoomable", async () => {
     const blocks: Block[] = [
       { type: "diagram", id: "flow", title: "Flow", kind: "flowchart", d2: "a -> b" },

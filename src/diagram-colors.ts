@@ -35,3 +35,34 @@ export const MERMAID_CLASSDEFS: string = ROLES.map((r) => {
   const sw = bold ? ",stroke-width:2px" : "";
   return `classDef ${r} fill:${fill},stroke:${stroke},color:${INK}${sw};`;
 }).join("\n");
+
+/** Human-readable legend labels per role. */
+export const ROLE_LABELS: Record<ColorRole, string> = {
+  changed: "Changed",
+  added: "Added",
+  removed: "Removed",
+  actor: "Actor",
+  external: "External",
+  store: "Datastore",
+};
+
+/** Detect which palette roles a diagram APPLIES (not merely defines), so a legend can list
+ *  only the roles actually used. Scans d2 (`class: role`) and mermaid (`x:::role`, `class a,b role;`),
+ *  excluding mermaid `classDef role` definitions. Returns roles in canonical PALETTE order. */
+export function rolesInSource(d2?: string, mermaid?: string): ColorRole[] {
+  const found = new Set<string>();
+  const add = (name: string) => { if ((ROLES as string[]).includes(name)) found.add(name); };
+  const scan = (src?: string) => {
+    if (!src) return;
+    let m: RegExpExecArray | null;
+    const reD2 = /class:\s*([a-zA-Z]+)/g;                 // d2: `class: changed`
+    while ((m = reD2.exec(src))) add(m[1]);
+    const reTriple = /:::([a-zA-Z]+)/g;                   // mermaid: `node:::changed`
+    while ((m = reTriple.exec(src))) add(m[1]);
+    const reClass = /(?<!Def)\bclass\s+[^\n]+?\s+([a-zA-Z]+)\s*;?\s*$/gm; // mermaid: `class a,b changed;` (not classDef)
+    while ((m = reClass.exec(src))) add(m[1]);
+  };
+  scan(d2);
+  scan(mermaid);
+  return ROLES.filter((r) => found.has(r));
+}

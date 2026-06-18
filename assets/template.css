@@ -132,3 +132,11 @@ body { margin:0; background:var(--paper); color:var(--ink);
 /* scannable description lists (item #6) */
 .vs-diff-desc ul, .vs-diff-desc ol { margin: 4px 0; padding-left: 1.2rem; }
 .vs-diff-desc li { margin: 2px 0; }
+
+/* ── diagram color legend ─────────────────────────────────────────────────────── */
+.vs-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; list-style: none;
+  margin: 8px 0 0; padding: 8px 0 0; border-top: 1px dashed var(--line);
+  font-size: 0.82em; color: var(--ctx); }
+.vs-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.vs-legend-swatch { display: inline-block; width: 14px; height: 14px;
+  border-radius: 3px; border: 1.5px solid; }
