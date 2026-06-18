@@ -21,7 +21,7 @@ async function main() {
       commit: { type: "string" },
       branch: { type: "string" },
       base: { type: "string" },
-      out: { type: "string", default: ".recaps/recap.html" },
+      out: { type: "string" },
       "emit-blocks": { type: "string" },
     },
   });
@@ -35,21 +35,20 @@ async function main() {
     console.log(`wrote ${emitPath} (${blocks.length} blocks, adapter: ${adapter})`);
   }
 
-  if (emitPath && values.out === ".recaps/recap.html") {
-    // emit-only: blocks requested and --out not overridden; skip HTML.
-    return;
-  }
+  // emit-only: blocks requested and --out genuinely not passed; skip HTML.
+  if (emitPath && values.out === undefined) return;
 
+  const outPath = values.out ?? ".recaps/recap.html";
   const html = await assemble(blocks, {
     title: `Recap — ${scope.label}`,
     source: `${repoRoot} · base ${scope.baseRef.slice(0, 10)} → head ${scope.headRef.slice(0, 10)} · stack ${adapter}`,
     status: { level: "green", text: `${blocks.length} blocks` },
-    outDir: dirname(values.out!),
+    outDir: dirname(outPath),
     onWarn: (m) => console.warn(m),
   });
-  await mkdir(dirname(values.out!), { recursive: true });
-  await writeFile(values.out!, html);
-  console.log(`wrote ${values.out} (adapter: ${adapter})`);
+  await mkdir(dirname(outPath), { recursive: true });
+  await writeFile(outPath, html);
+  console.log(`wrote ${outPath} (adapter: ${adapter})`);
 }
 
 main().catch((e) => { console.error(e.message); process.exit(1); });
