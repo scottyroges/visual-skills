@@ -118,3 +118,8 @@ A `tabs` block presents complementary views as a CSS-only switcher (no JS):
 
 Each tab holds ONE block (one level deep — a tab may not contain a `group` or another `tabs`).
 Place the tabs near the top, after the Summary and the `where-it-fits` diagram.
+
+Tabs use a no-JS CSS switcher, so an inactive tab's panel is hidden until clicked. Keep
+`#`-cross-link *targets* (e.g. a diff a Summary links to) OUT of tabs — a jump to a block in an
+inactive tab lands on a hidden panel. Put alternate *views* in tabs; keep linkable content in
+groups or top-level blocks.
