@@ -101,7 +101,7 @@ export async function dependencyNeighborhood(
   }
   const changedIds = [...nodes].filter(([, n]) => n.changed).map(([id]) => id);
   const neighborIds = [...nodes.keys()].filter((id) => !nodes.get(id)!.changed);
-  neighborIds.sort((a, b) => (degree.get(b) ?? 0) - (degree.get(a) ?? 0));
+  neighborIds.sort((a, b) => (degree.get(b) ?? 0) - (degree.get(a) ?? 0) || a.localeCompare(b));
   const keep = new Set<string>([...changedIds, ...neighborIds.slice(0, Math.max(0, cap - changedIds.length))]);
   const dropped = neighborIds.length - (keep.size - changedIds.length);
 
