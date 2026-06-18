@@ -13,7 +13,9 @@ describe("skill docs stay in sync", () => {
   it("documents every Block type in the visual-plan skill", () => {
     expect(blockTypes.length).toBeGreaterThanOrEqual(8);
     for (const t of blockTypes) {
-      expect(planSkill, `visual-plan SKILL.md must mention block type "${t}"`).toContain(t);
+      // Require the backtick-quoted form (e.g. `prose`) so the check is non-vacuous —
+      // a bare substring like "api" or "schema" can match incidentally in examples/prose.
+      expect(planSkill, `visual-plan SKILL.md must document block type \`${t}\``).toContain(`\`${t}\``);
     }
   });
 
