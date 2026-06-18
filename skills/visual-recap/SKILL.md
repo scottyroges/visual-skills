@@ -73,8 +73,8 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
        { "type": "overview", "id": "overview",
          "headline": "Add PayPal capture to the checkout flow",
          "points": [
-           { "text": "new `capture` mutation on the order router", "href": "#diff-0" },
-           { "text": "checkout calls it after buyer approval", "href": "#diff-1" }
+           { "text": "new `capture` mutation on the [order router](#diff-0)" },
+           { "text": "checkout calls it after buyer [approval](#diff-1)" }
          ],
          "diagram": { "type": "diagram", "id": "ov-flow", "title": "Capture flow", "kind": "sequence",
            "d2": "shape: sequence_diagram\nclient -> api: capture\napi -> paypal: capture",

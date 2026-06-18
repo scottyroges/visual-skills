@@ -90,7 +90,7 @@ Primary blocks you author for plans:
   (`DiagramBlock` or `tabs`) rendered before the points. Author it for larger plans.
 
       { "type": "overview", "id": "overview", "headline": "Add PayPal capture",
-        "points": [ { "text": "new `capture` route", "href": "#flow" } ],
+        "points": [ { "text": "new `capture` [route](#flow)" } ],
         "diagram": { "type": "diagram", "id": "ov-flow", "title": "Flow", "kind": "flowchart", "d2": "a -> b" } }
 
 Other block types in the `Block` union — `schema`, `api`, `diff` — are normally produced
