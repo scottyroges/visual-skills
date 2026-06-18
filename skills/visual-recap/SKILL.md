@@ -116,12 +116,12 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
    importance, so reading top-to-bottom is a narrative — e.g. *The core change* →
    *Supporting wiring* → *Tests & config*. A group is
    `{ "type":"group", "id":"…", "title":"…", "blocks":[ …diff blocks… ] }` (one level deep —
-   groups may not contain groups). Place the groups after the Summary, the `where-it-fits`
-   diagram, and the diagram(s).
+   groups may not contain groups). Place the groups after the lead (the Summary or `overview`), the
+   `where-it-fits` diagram, and the diagram(s).
 
 6. **Author the diagram(s)** for the change — see "Which diagram(s) to add" below. Prefer one;
-   use a `tabs` block when 2–3 lenses each add value. Place them near the top (after the Summary
-   / where-it-fits).
+   use a `tabs` block when 2–3 lenses each add value. Place them near the top (after the lead
+   Summary / `overview` and the where-it-fits graph).
 
 7. Render the combined array and open it:
 
