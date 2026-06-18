@@ -39,6 +39,13 @@ describe("prisma schema diff", () => {
     expect(block.d2).toContain("stripeSessionId");
   });
 
+  it("marks changed tables with the canonical 'changed' class", () => {
+    const block = schemaDiffToBlock([
+      { model: "User", addedFields: [{ name: "email", type: "String" }], removedFields: [], keptFields: [{ name: "id", type: "Int" }] },
+    ]);
+    expect(block.d2).toContain("class: changed");
+  });
+
   it("emits D2 that compiles via d2 even with relation-list and reserved-word field types", async () => {
     const BEFORE2 = `model League {
   id String

@@ -56,7 +56,7 @@ export function schemaDiffToBlock(diffs: ModelDiff[], id = "schema-diff"): Schem
     for (const f of d.keptFields) rows.push(`  "${f.name}": "${f.type}"`);
     for (const f of d.addedFields) rows.push(`  "${f.name}": "${f.type}  (+ added)"`);
     for (const f of d.removedFields) rows.push(`  "${f.name} (removed)": "${f.type}"`);
-    return `${d.model}: {\n  shape: sql_table\n${rows.join("\n")}\n}`;
+    return `${d.model}: {\n  shape: sql_table\n  class: changed\n${rows.join("\n")}\n}`;
   });
   return {
     type: "schema", id, title: "Schema changes", kind: "erd",

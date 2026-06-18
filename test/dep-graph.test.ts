@@ -36,7 +36,8 @@ describe("dependencyNeighborhood", () => {
       expect(block).not.toBeNull();
       expect(block!.kind).toBe("architecture");
       expect(block!.d2).toContain("src/a.ts");
-      expect(block!.d2).toContain("style.fill");
+      expect(block!.d2).toContain("class: changed");
+      expect(block!.mermaid!).toContain("classDef changed");
       expect(block!.d2).toContain("src/util");
       expect(block!.d2).toContain("zod");
       expect(block!.d2).toContain("src/b.ts");

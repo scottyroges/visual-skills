@@ -1,10 +1,5 @@
 import type { ApiProcedure, DiagramBlock } from "./blocks.js";
-
-const FILL: Record<string, string> = {
-  added: "#e6ffec",
-  removed: "#ffebe9",
-  changed: "#fffdf3",
-};
+import { MERMAID_CLASSDEFS } from "./diagram-colors.js";
 
 function q(s: string): string {
   return `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
@@ -41,8 +36,8 @@ export function apiSurfaceDiagram(
     const lines = [`${q(router)}: {`];
     for (const { proc, change } of procs) {
       lines.push(
-        change && FILL[change]
-          ? `  ${q(proc)}: { style.fill: ${q(FILL[change])} }`
+        change
+          ? `  ${q(proc)}: { class: ${change} }`
           : `  ${q(proc)}`,
       );
     }
@@ -61,13 +56,11 @@ export function apiSurfaceDiagram(
     for (const { proc, change } of procs) {
       const nid = `${rid}_${safeId(proc)}`;
       m.push(`    ${nid}["${proc}"]`);
-      if (change && FILL[change]) classes.push(`  class ${nid} ${change};`);
+      if (change) classes.push(`  class ${nid} ${change};`);
     }
     m.push("  end");
   }
-  m.push("classDef added fill:#e6ffec;");
-  m.push("classDef removed fill:#ffebe9;");
-  m.push("classDef changed fill:#fffdf3;");
+  m.push(MERMAID_CLASSDEFS);
   m.push(...classes);
 
   return { type: "diagram", id, kind: "architecture", title, d2: d2.join("\n"), mermaid: m.join("\n") };

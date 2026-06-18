@@ -4,6 +4,7 @@ import { join, dirname, relative, normalize } from "node:path";
 import ts from "typescript";
 import type { DiagramBlock } from "./blocks.js";
 import { importsOf } from "./imports.js";
+import { MERMAID_CLASSDEFS } from "./diagram-colors.js";
 
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", "coverage", ".turbo"]);
@@ -161,7 +162,7 @@ export async function dependencyNeighborhood(
   const lines: string[] = ["direction: right"];
   for (const [id, n] of nodes) {
     if (!keep.has(id)) continue;
-    lines.push(n.changed ? `${q(n.label)}: { style.fill: "#e6ffec" }` : q(n.label));
+    lines.push(n.changed ? `${q(n.label)}: { class: changed }` : q(n.label));
   }
   if (dropped > 0) lines.push(`${q(`+${dropped} more`)}`);
   for (const e of edges) {
@@ -192,7 +193,7 @@ export async function dependencyNeighborhood(
     mlines.push(`  ${mid.get(from)} --> ${mid.get(to)}`);
   }
   if (changedMids.length) {
-    mlines.push("classDef changed fill:#e6ffec;");
+    mlines.push(MERMAID_CLASSDEFS);
     for (const m of changedMids) mlines.push(`  class ${m} changed;`);
   }
 

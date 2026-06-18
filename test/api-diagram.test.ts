@@ -21,7 +21,8 @@ describe("apiSurfaceDiagram", () => {
     // d2 floor: quoted router container + change fill
     expect(block.d2).toContain('"league"');
     expect(block.d2).toContain('"captureOrder"');
-    expect(block.d2).toContain("style.fill");
+    expect(block.d2).toContain("class:");
+    expect(block.mermaid).toContain("classDef");
     expect(block.d2).toContain('client -> "league"');
     // mermaid upgrade: dot-free ids, labels keep names, change classes
     expect(block.mermaid).toContain("graph LR");
