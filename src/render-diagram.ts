@@ -129,6 +129,8 @@ async function renderViaD2(source: string): Promise<string> {
     const inFile = join(dir, "in.d2");
     const outFile = join(dir, "out.svg");
     // Prepend the shared semantic-color classes so any diagram can apply `class: <role>`.
+    // Sources must NOT define their own top-level `classes:` block — d2 silently merges/overrides
+    // (no error), which would let a recipe shadow the canonical palette. Recipes only *apply* classes.
     await writeFile(inFile, `${D2_CLASS_PRELUDE}\n${source}`);
     // --sketch = hand-drawn; theme 0 neutral; pad for breathing room.
     await exec("d2", ["--sketch", "--theme", "0", "--pad", "24", inFile, outFile]);
