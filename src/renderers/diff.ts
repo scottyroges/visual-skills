@@ -1,6 +1,7 @@
 import { escapeHtml } from "../html.js";
 import { highlightLines, langFromPath } from "../highlight.js";
 import type { DiffBlock, DiffHunk } from "../blocks.js";
+import { renderMarkdown } from "./markdown.js";
 
 function lineClass(line: string): "vs-add" | "vs-del" | "vs-ctx" {
   if (line.startsWith("+")) return "vs-add";
@@ -47,11 +48,15 @@ export async function renderDiff(
   onWarn?: (msg: string) => void,
 ): Promise<string> {
   const lang = langFromPath(block.path);
+  const desc = block.description
+    ? `<div class="vs-diff-desc">${await renderMarkdown(block.description, onWarn)}</div>`
+    : "";
   const hunks = await Promise.all(block.hunks.map((h) => renderHunk(h, lang, onWarn)));
   return (
     `<section class="vs-block vs-diff">` +
     `<h2>${escapeHtml(block.title)}</h2>` +
     `<div class="vs-path">${escapeHtml(block.path)}</div>` +
+    desc +
     hunks.join("") +
     `</section>`
   );

@@ -57,6 +57,7 @@ export interface DiffBlock {
   id: string;
   title: string;
   path: string;
+  description?: string;  // optional markdown "what & why", rendered above the hunks
   hunks: DiffHunk[];
 }
 
