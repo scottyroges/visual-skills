@@ -27,7 +27,12 @@ function resolveRel(fromRepoRel: string, spec: string): string | null {
 interface AliasMatcher { prefix: string; suffix: string; star: boolean; target: string; }
 interface Aliases { baseUrl: string; matchers: AliasMatcher[]; }
 
-/** Load tsconfig compilerOptions.paths/baseUrl from repoRoot; empty matchers if absent. */
+/**
+ * Load tsconfig compilerOptions.paths/baseUrl from repoRoot; empty matchers if absent.
+ * Heuristic for a diagram aid, not full module resolution: uses each pattern's first
+ * target only, matches in declaration order (no longest-prefix specificity), and does
+ * not follow `extends`. All of these degrade gracefully to relative-only resolution.
+ */
 function loadAliases(repoRoot: string): Aliases {
   const res = ts.readConfigFile(join(repoRoot, "tsconfig.json"), (p) => {
     try { return readFileSync(p, "utf8"); } catch { return undefined; }
