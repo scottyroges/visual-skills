@@ -102,6 +102,8 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
         break;
       }
       case "overview": {
+        // Unlike the diff embed (which captions its diagram with an <h3>), the lead diagram is
+        // intentionally untitled — a heading here would be redundant above the overview headline.
         let diagramHtml = "";
         if (b.diagram?.type === "diagram") {
           diagramHtml = `<div class="vs-overview-diagram">${diagramInner(svgById.get(b.diagram.id)!)}</div>`;
