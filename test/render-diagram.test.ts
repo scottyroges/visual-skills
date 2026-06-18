@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { renderDiagram } from "../src/render-diagram.js";
 import type { DiagramBlock } from "../src/blocks.js";
 
@@ -41,14 +44,19 @@ describe("renderDiagram (D2 floor)", () => {
       d2: "shape: sequence_diagram\na -> b: hi",
       mermaid: "sequenceDiagram\n  a->>b: hi",
     };
-    let converted = false;
-    const out = await renderDiagram(
-      block,
-      {},
-      { ready: async () => true, convert: async () => { converted = true; return { svg: "<svg id='x'/>", scene: {} }; } },
-    );
-    expect(converted).toBe(true);
-    expect(out.renderer).toBe("excalidraw");
+    const dir = await mkdtemp(join(tmpdir(), "vs-diag-"));
+    try {
+      let converted = false;
+      const out = await renderDiagram(
+        block,
+        { outDir: dir },
+        { ready: async () => true, convert: async () => { converted = true; return { svg: "<svg id='x'/>", scene: {} }; } },
+      );
+      expect(converted).toBe(true);
+      expect(out.renderer).toBe("excalidraw");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   }, 30_000);
 
   it("routes an eligible class block (with mermaid) to the excalidraw upgrade", async () => {
@@ -57,13 +65,18 @@ describe("renderDiagram (D2 floor)", () => {
       d2: "A -> B",
       mermaid: "classDiagram\n  A <|-- B",
     };
-    let converted = false;
-    const out = await renderDiagram(
-      block,
-      {},
-      { ready: async () => true, convert: async () => { converted = true; return { svg: "<svg id='x'/>", scene: {} }; } },
-    );
-    expect(converted).toBe(true);
-    expect(out.renderer).toBe("excalidraw");
+    const dir = await mkdtemp(join(tmpdir(), "vs-diag-"));
+    try {
+      let converted = false;
+      const out = await renderDiagram(
+        block,
+        { outDir: dir },
+        { ready: async () => true, convert: async () => { converted = true; return { svg: "<svg id='x'/>", scene: {} }; } },
+      );
+      expect(converted).toBe(true);
+      expect(out.renderer).toBe("excalidraw");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   }, 30_000);
 });
