@@ -25,7 +25,20 @@ export interface AssembleOpts {
 
 const ASSETS = fileURLToPath(new URL("../assets", import.meta.url));
 
+/** Throw if any block id repeats (recursively, incl. group children) — anchors and
+ *  in-page #cross-links depend on every block id being unique across the document. */
+function assertUniqueIds(blocks: Block[], seen = new Set<string>()): void {
+  for (const b of blocks) {
+    if (seen.has(b.id)) {
+      throw new Error(`duplicate block id "${b.id}" — block ids must be unique (anchors/cross-links depend on it)`);
+    }
+    seen.add(b.id);
+    if (b.type === "group") assertUniqueIds(b.blocks, seen);
+  }
+}
+
 export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<string> {
+  assertUniqueIds(blocks);
   // Collect diagram/schema blocks recursively (they may be nested in groups), render up front.
   const collectDiagrams = (bs: Block[]): (import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock)[] => {
     const out: (import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock)[] = [];

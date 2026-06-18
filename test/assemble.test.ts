@@ -87,4 +87,20 @@ describe("assemble", () => {
     ];
     await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/nest/);
   });
+
+  it("throws on duplicate block ids (anchors/cross-links must be unique)", async () => {
+    const blocks: Block[] = [
+      { type: "prose", id: "dup", markdown: "a" },
+      { type: "prose", id: "dup", markdown: "b" },
+    ];
+    await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id/);
+  });
+
+  it("throws on a duplicate id nested in a group", async () => {
+    const blocks: Block[] = [
+      { type: "prose", id: "x", markdown: "a" },
+      { type: "group", id: "g", title: "G", blocks: [{ type: "prose", id: "x", markdown: "b" }] },
+    ];
+    await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id/);
+  });
 });
