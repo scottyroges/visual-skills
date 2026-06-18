@@ -26,4 +26,14 @@ describe("renderProse", () => {
     expect(html).not.toContain("javascript:");
     expect(html).toContain("Hello");
   });
+
+  it("renders the title as a heading when present", async () => {
+    const html = await renderProse({ type: "prose", id: "s", title: "Summary", markdown: "body" });
+    expect(html).toContain("<h2>Summary</h2>");
+  });
+
+  it("renders no heading when the title is absent", async () => {
+    const html = await renderProse({ type: "prose", id: "s", markdown: "body" });
+    expect(html).not.toContain("<h2");
+  });
 });
