@@ -14,6 +14,11 @@
     var target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
     if (!target) return;
     openAncestors(target);
+    // Landing on a diff should reveal its code: open the diff's own collapsed <details>
+    // (its hunks live inside it). Scoped to .vs-diff so a group link doesn't blow open every diff.
+    if (target.matches && target.matches(".vs-diff") && target.querySelectorAll) {
+      target.querySelectorAll("details").forEach(function (d) { d.open = true; });
+    }
     target.scrollIntoView();
   }
 

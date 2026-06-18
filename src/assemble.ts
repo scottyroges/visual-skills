@@ -144,7 +144,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
           : "";
         html =
           `<section class="vs-block vs-group"><details open>` +
-          `<summary class="vs-group-summary"><span class="vs-group-title">${escapeHtml(b.title)}</span></summary>` +
+          `<summary><span class="vs-group-title">${escapeHtml(b.title)}</span></summary>` +
           `${desc}${children.join("")}</details></section>`;
         break;
       }
