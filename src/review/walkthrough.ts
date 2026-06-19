@@ -1,5 +1,6 @@
 import { escapeHtml } from "../html.js";
 import { renderMarkdown } from "../renderers/markdown.js";
+import { renderDiffBody } from "./diff.js";
 import type { Block, DiffBlock, DiffHunk, GroupBlock } from "../blocks.js";
 
 function countChanges(hunks: DiffHunk[]): { added: number; deleted: number } {
@@ -11,15 +12,6 @@ function countChanges(hunks: DiffHunk[]): { added: number; deleted: number } {
       else if (l.startsWith("-")) deleted++;
     }
   return { added, deleted };
-}
-
-// TEMPORARY plain diff body — Task 9 replaces this with the line-numbered renderer.
-function renderDiffBody(d: DiffBlock): string {
-  const rows = d.hunks
-    .flatMap((h) => [h.header, ...h.lines])
-    .map((l) => escapeHtml(l))
-    .join("\n");
-  return `<div class="diff-code"><pre class="diff-pre">${rows}</pre></div>`;
 }
 
 async function renderDesc(md: string, onWarn?: (m: string) => void): Promise<string> {
