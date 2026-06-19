@@ -30,6 +30,13 @@ describe("renderWalkthrough", () => {
     expect(html).not.toMatch(/<details[^>]*\bopen\b/);   // diffs collapsed
   });
 
+  it("puts a divider BETWEEN chapters but not before the first", async () => {
+    const html = await renderWalkthrough(blocks); // two chapters
+    const dividers = html.match(/class="chapter-divider"/g) ?? [];
+    expect(dividers).toHaveLength(1); // exactly one separator for two chapters
+    expect(html.indexOf("chapter-divider")).toBeGreaterThan(html.indexOf('id="grp-core"'));
+  });
+
   it("gives aligned (desc-item) bullets even when the description leads with a paragraph", async () => {
     const led: Block[] = [
       { type: "group", id: "g", title: "G", description: "d", blocks: [

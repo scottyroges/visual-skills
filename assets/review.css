@@ -871,6 +871,12 @@ details[open] .chevron { transform: rotate(90deg); }
   letter-spacing: 0.07em;
   margin-bottom: 8px;
 }
+/* Bold rule separating walkthrough chapters (rendered between, never before the first). */
+.chapter-divider {
+  border: none;
+  border-top: 2px solid var(--border-strong);
+  margin: 48px 0;
+}
 .chapter-no {
   flex: 0 0 auto;
   display: inline-flex;

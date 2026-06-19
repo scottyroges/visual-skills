@@ -123,5 +123,6 @@ export async function renderWalkthrough(
 ): Promise<string> {
   const groups = blocks.filter((b): b is GroupBlock => b.type === "group");
   const chapters = await Promise.all(groups.map((g, i) => renderChapter(g, i + 1, onWarn, diagrams)));
-  return chapters.join("");
+  // A bold rule between chapters (never before the first) makes the narrative beats scannable.
+  return chapters.join('<hr class="chapter-divider" />');
 }
