@@ -154,7 +154,7 @@ from `spec-blocks.ts` rather than duplicated; atlas-only blocks live in `atlas-b
 | `src/lint-atlas.ts` | The demo-standard floor (see below), surfaced through `onWarn`. |
 | `skills/shared/atlas-components.md` | Catalog: how it assembles, the section ladders, color/role vocabulary, and reproducible recipes for the atlas-only components (domain map, tiles, topology, seams). Cross-linked with `diagrams.md` and `spec-components.md`. |
 | `skills/visual-atlas/SKILL.md` | The skill: the standard, red flags, the workflow (scan → reconcile config → author per catalog → render → close warnings), the artifact set, the three modes, scaling by repo size. |
-| `assets/atlas.css` *(only if needed)* | Atlas-only styles (domain map legend, tile grid) not already covered by `spec.css`. Prefer reusing `spec.css`. |
+| `assets/atlas.css` | Dedicated atlas stylesheet (domain map legend, tile grid, topology). A first-class file even where it overlaps `spec.css` — the atlas owns its own surface so its styles evolve independently. Inlined alongside `review.css` + `spec.css`. |
 
 Wiring: register `visual-atlas` in `scripts/install-skills.ts` (`SKILLS` array) and add the
 `visual-atlas` bin + `atlas` script to `package.json`.
@@ -199,11 +199,16 @@ Clean on the canonical example; warns on a bare/incomplete set.
 - Extend `test/install-skills.test.ts` and `test/skill-docs.test.ts` for `visual-atlas` (skill
   registered; every atlas block type documented in the SKILL).
 
+## Resolved during review
+
+- **Atlas refresh on single-domain runs** — refresh only the changed domain's **tile** on the
+  atlas; do **not** recompute the `domain-map`. If a cross-domain edge looks to have changed, note
+  it in the drift report so the human can trigger a full run. Keeps single-domain runs fast and
+  scoped.
+- **`atlas.css`** — a **dedicated** stylesheet from the start, even where it overlaps `spec.css`.
+  The atlas owns its surface so its styles can evolve independently.
+
 ## Open questions / non-blocking
 
-- **Atlas refresh on single-domain runs** — minimal behavior is to refresh only the changed
-  domain's tile; whether to also recompute the `domain-map` (a cross-domain edge may have changed)
-  is a judgment call deferred to implementation, behind an explicit note in the drift report.
-- **`atlas.css`** — created only if `spec.css` proves insufficient for the tile grid / map legend.
 - **Monorepo `srcRoots`** — globbed roots are in the config shape from day one, but the canonical
   is single-root; multi-root resolution is exercised only if the dogfood subject needs it.
