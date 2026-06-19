@@ -5,6 +5,15 @@ import type { Block } from "./blocks.js";
 import { escapeHtml } from "./html.js";
 import { assertUniqueIds, collectDiagrams, renderAllDiagrams } from "./review/diagrams.js";
 import { renderTldr, renderOverviewPoints } from "./review/tldr.js";
+import { renderFilesTable } from "./review/files-table.js";
+
+function collectDiffPaths(bs: Block[], map = new Map<string, string>()): Map<string, string> {
+  for (const b of bs) {
+    if (b.type === "diff") map.set(b.path, b.id);
+    else if (b.type === "group") collectDiffPaths(b.blocks, map);
+  }
+  return map;
+}
 
 export interface ReviewStatus { level: "green" | "yellow" | "red"; text: string; }
 export interface ReviewOpts {
@@ -27,6 +36,7 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   // Placeholder shell — real topbar/sidebar/main sections are filled by later tasks.
   const topbar = `<header class="topbar"><div class="topbar-title">${escapeHtml(opts.title)}</div></header>`;
   const sidebar = `<nav class="sidebar"></nav>`;
+  const pathToId = collectDiffPaths(blocks);
   const mainSections = (await Promise.all(blocks.map(async (b) => {
     if (b.type === "overview") {
       return (
@@ -34,6 +44,13 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
         `<section id="overview" class="section">` +
         `<div class="section-header"><h2 class="section-title">Overview</h2></div>` +
         `${await renderOverviewPoints(b)}</section>`
+      );
+    }
+    if (b.type === "file-tree") {
+      return (
+        `<section id="files-changed" class="section">` +
+        `<div class="section-header"><h2 class="section-title">Files changed</h2></div>` +
+        `${renderFilesTable(b, pathToId)}</section>`
       );
     }
     return `<section class="section" id="${escapeHtml(b.id)}"></section>`;
