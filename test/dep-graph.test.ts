@@ -39,7 +39,7 @@ describe("dependencyNeighborhood", () => {
       expect(block!.d2).toContain("class: changed");
       expect(block!.mermaid!).toContain("classDef changed");
       expect(block!.d2).toContain("src/util");
-      expect(block!.d2).toContain("zod");
+      expect(block!.d2).not.toContain("zod"); // bare packages are omitted as noise
       expect(block!.d2).toContain("src/b.ts");
       // mermaid (editable upgrade): sanitized ids, path labels, edges
       expect(block!.mermaid).toBeDefined();
@@ -50,6 +50,33 @@ describe("dependencyNeighborhood", () => {
       const out = await renderDiagram(block!, { excalidraw: false });
       expect(out.svg).toMatch(/<svg/);
       expect(out.svg).not.toContain("failed to render");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it("omits bare-package imports, keeping only the in-repo neighborhood", async () => {
+    const root = await tempRepo({
+      "src/a.ts": `import "server-only";\nimport { sql } from "kysely";\nimport { u } from "./util.js";\nexport const a = 1;`,
+      "src/util.ts": `export const u = 1;`,
+    });
+    try {
+      const block = await dependencyNeighborhood(["src/a.ts"], root);
+      expect(block).not.toBeNull();
+      expect(block!.d2).toContain("src/util");
+      expect(block!.d2).not.toContain("server-only");
+      expect(block!.d2).not.toContain("kysely");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it("returns null when a changed file imports only bare packages (no in-repo edges)", async () => {
+    const root = await tempRepo({
+      "src/a.ts": `import "server-only";\nimport { z } from "zod";\nexport const a = 1;`,
+    });
+    try {
+      expect(await dependencyNeighborhood(["src/a.ts"], root)).toBeNull();
     } finally {
       await rm(root, { recursive: true, force: true });
     }
