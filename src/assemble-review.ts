@@ -11,6 +11,7 @@ import { renderDiagramCard, renderApiSurface, renderReusedBlock, renderDiagramLi
 import { renderTopbar } from "./review/topbar.js";
 import { renderSidebar, renderProgressRail } from "./review/sidebar.js";
 import { groupLooseDiffs } from "./review/normalize.js";
+import { lintBlocks } from "./lint-blocks.js";
 
 function collectDiffPaths(bs: Block[], map = new Map<string, string>()): Map<string, string> {
   for (const b of bs) {
@@ -47,6 +48,11 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
     excalidraw: opts.excalidraw,
     onWarn: opts.onWarn,
   });
+  if (opts.onWarn) {
+    for (const w of lintBlocks(blocks)) opts.onWarn(w); // NOTE: lint the ORIGINAL blocks, not `view`
+    const failed = [...diagrams.values()].filter((r) => r.failed).map((r) => r.id);
+    if (failed.length) opts.onWarn(`${failed.length} diagram(s) failed to compile and show a placeholder: ${failed.join(", ")} — fix their d2 source`);
+  }
   let walkthroughRendered = false;
   const mainSections = (await Promise.all(view.map(async (b) => {
     if (b.type === "overview") {

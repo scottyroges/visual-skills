@@ -32,6 +32,19 @@ describe("renderDiagram (D2 floor)", () => {
     expect(warnings.length).toBeGreaterThanOrEqual(1);
   }, 30_000);
 
+  it("sets failed=true on the placeholder, falsy on a valid render", async () => {
+    const bad = await renderDiagram(
+      { type: "diagram", id: "bad", title: "Bad", kind: "flowchart", d2: "x: {" },
+      { excalidraw: false },
+    );
+    expect(bad.failed).toBe(true);
+    const good = await renderDiagram(
+      { type: "diagram", id: "good", title: "Good", kind: "flowchart", d2: "a -> b" },
+      { excalidraw: false },
+    );
+    expect(good.failed).toBeFalsy();
+  }, 30_000);
+
   it("throws when a diagram block has no d2 source", async () => {
     // @ts-expect-error intentionally missing d2
     await expect(renderDiagram({ type: "diagram", id: "x", title: "x", kind: "flowchart" }, {}))

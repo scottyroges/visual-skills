@@ -40,6 +40,7 @@ export interface DiagramResult {
   svg: string;
   editable: string | null;
   renderer: "d2" | "excalidraw";
+  failed?: boolean;
 }
 
 export interface RenderOpts {
@@ -94,7 +95,7 @@ export async function renderDiagram(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     opts.onWarn?.(`block "${id}": d2 failed to compile (${message}); using placeholder`);
-    return { id, title, svg: placeholderSvg(title, message), editable: null, renderer: "d2" };
+    return { id, title, svg: placeholderSvg(title, message), editable: null, renderer: "d2", failed: true };
   }
 
   // 2. Upgrade: editable Excalidraw, only when eligible + the opt-in toolchain is present.
