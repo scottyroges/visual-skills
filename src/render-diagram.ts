@@ -132,9 +132,13 @@ async function renderViaD2(source: string): Promise<string> {
     // Sources must NOT define their own top-level `classes:` block — d2 silently merges/overrides
     // (no error), which would let a recipe shadow the canonical palette. Recipes only *apply* classes.
     await writeFile(inFile, `${D2_CLASS_PRELUDE}\n${source}`);
-    // --sketch = hand-drawn; theme 0 neutral; pad for breathing room.
-    await exec("d2", ["--sketch", "--theme", "0", "--pad", "24", inFile, outFile]);
-    return await readFile(outFile, "utf8");
+    // Clean (non-sketch) rendering for the review aesthetic.
+    await exec("d2", ["--theme", "0", "--pad", "24", inFile, outFile]);
+    const svg = await readFile(outFile, "utf8");
+    // d2 always embeds `.sketch-overlay-*` CSS rules in its stylesheet template, even without
+    // --sketch. They reference sketch-only `#streaks-*` gradients and are never applied here, so
+    // strip them to keep the clean output free of any hand-drawn styling.
+    return svg.replace(/\.sketch-overlay-[^{]+\{[^}]*\}/g, "");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
