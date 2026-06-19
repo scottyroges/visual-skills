@@ -108,6 +108,10 @@ export interface OverviewBlock {
   headline: string;                            // the main change, one scannable line (inline markdown)
   points: { text: string; href?: string }[];   // short key points; href = "#section-id" to its detail
   diagram?: DiagramBlock | TabsBlock;           // lead illustration, rendered before the points
+  // Review-shell TL;DR (all optional — older blocks.json still render):
+  facets?: { what?: string; why?: string; size?: string };
+  risk?: { level: "low" | "med" | "high"; note?: string };
+  startHref?: string;
 }
 
 export type Block =

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import type { Block } from "./blocks.js";
 import { escapeHtml } from "./html.js";
 import { assertUniqueIds, collectDiagrams, renderAllDiagrams } from "./review/diagrams.js";
+import { renderTldr, renderOverviewPoints } from "./review/tldr.js";
 
 export interface ReviewStatus { level: "green" | "yellow" | "red"; text: string; }
 export interface ReviewOpts {
@@ -26,7 +27,17 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   // Placeholder shell — real topbar/sidebar/main sections are filled by later tasks.
   const topbar = `<header class="topbar"><div class="topbar-title">${escapeHtml(opts.title)}</div></header>`;
   const sidebar = `<nav class="sidebar"></nav>`;
-  const mainSections = blocks.map((b) => `<section class="section" id="${escapeHtml(b.id)}"></section>`).join("");
+  const mainSections = (await Promise.all(blocks.map(async (b) => {
+    if (b.type === "overview") {
+      return (
+        `<section id="tldr" class="section">${await renderTldr(b)}</section>` +
+        `<section id="overview" class="section">` +
+        `<div class="section-header"><h2 class="section-title">Overview</h2></div>` +
+        `${await renderOverviewPoints(b)}</section>`
+      );
+    }
+    return `<section class="section" id="${escapeHtml(b.id)}"></section>`;
+  }))).join("");
   const main = `<main class="main">${mainSections}</main>`;
   const zoomOverlay =
     `<div id="zoom-overlay" class="zoom-overlay" aria-hidden="true">` +
