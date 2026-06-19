@@ -6,6 +6,7 @@ import { escapeHtml } from "./html.js";
 import { assertUniqueIds, collectDiagrams, renderAllDiagrams } from "./review/diagrams.js";
 import { renderTldr, renderOverviewPoints } from "./review/tldr.js";
 import { renderFilesTable } from "./review/files-table.js";
+import { renderWalkthrough } from "./review/walkthrough.js";
 
 function collectDiffPaths(bs: Block[], map = new Map<string, string>()): Map<string, string> {
   for (const b of bs) {
@@ -37,6 +38,7 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   const topbar = `<header class="topbar"><div class="topbar-title">${escapeHtml(opts.title)}</div></header>`;
   const sidebar = `<nav class="sidebar"></nav>`;
   const pathToId = collectDiffPaths(blocks);
+  let walkthroughRendered = false;
   const mainSections = (await Promise.all(blocks.map(async (b) => {
     if (b.type === "overview") {
       return (
@@ -51,6 +53,17 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
         `<section id="files-changed" class="section">` +
         `<div class="section-header"><h2 class="section-title">Files changed</h2></div>` +
         `${renderFilesTable(b, pathToId)}</section>`
+      );
+    }
+    if (b.type === "group") {
+      // All chapters live in one <section id="walkthrough">: render it on the first
+      // group block encountered and skip the rest.
+      if (walkthroughRendered) return "";
+      walkthroughRendered = true;
+      return (
+        `<section id="walkthrough" class="section">` +
+        `<div class="section-header"><h2 class="section-title">Guided walkthrough</h2></div>` +
+        `${await renderWalkthrough(blocks, opts.onWarn)}</section>`
       );
     }
     return `<section class="section" id="${escapeHtml(b.id)}"></section>`;
