@@ -1,0 +1,663 @@
+{
+  "title": "Spec · GM Strategic-Planning Brain",
+  "phase": "Phase 2m",
+  "status": "Brainstormed → Ready for plan",
+  "date": "2026-05-31",
+  "complexity": "Large · high blast-radius",
+  "related": [
+    {
+      "kind": "Predecessor",
+      "value": "cap-spend-value-model · shipped"
+    },
+    {
+      "kind": "Consumer",
+      "value": "phase-2h-negotiation-realism"
+    },
+    {
+      "kind": "Roadmap",
+      "value": "roadmap.md#phase-2m"
+    },
+    {
+      "kind": "Seed",
+      "value": "project_gm_planning_brain"
+    }
+  ],
+  "meta": [
+    {
+      "key": "Status",
+      "value": "Brainstormed 2026-05-31 · ready for plan"
+    },
+    {
+      "key": "Methodology",
+      "value": "Superpowers brainstorming"
+    },
+    {
+      "key": "Size",
+      "value": "6 plan components · 8 new fields · 9 decision sites · 3 sub-phases"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tldr",
+      "id": "tldr",
+      "heading": "Give every AI GM a multi-year strategic plan — and make GM skill show up as how accurately they see it.",
+      "rows": [
+        {
+          "key": "What",
+          "value": "A layered **StrategicPlan** (window classification + 5 boards) that sits *above* the GM's existing reactive, per-event decisions."
+        },
+        {
+          "key": "Why",
+          "value": "Today's GM brain only reacts — a contract expires → evaluate; an offer arrives → evaluate. There is no multi-year roster/cap board, no target lists, no draft/dev feedback loop."
+        },
+        {
+          "key": "Closes",
+          "value": "The three still-weak `gm_capManagement` correlations — *structurally*, not by bolting on more per-decision noise."
+        },
+        {
+          "key": "Size",
+          "value": "856-line design · 6 plan components · 8 new GM/owner fields · touches 9 decision sites · ships in 3 sub-phases."
+        }
+      ],
+      "bigIdea": {
+        "label": "The big idea",
+        "line": "“Detailed but mis-perceived.”",
+        "sub": "Every GM builds an equally detailed plan. **Bad GMs mis-perceive** cap projections, mis-rank targets, misclassify their contention window, and miss cliff years. **Good GMs see the world accurately.** GM skill becomes *plan-perception quality* — the structural mechanism that closes the weak correlations, instead of one more noise dial."
+      }
+    },
+    {
+      "type": "diagram",
+      "id": "flow",
+      "sectionTitle": "How it works",
+      "badge": "new vs preserved",
+      "intro": "The strategic plan is a new top layer. World state is filtered through skill-noised perception into the plan; the plan feeds GM, coach, and owner decisions and derives intent/budget for the existing `CompliancePlan`. The value model and negotiation engine below stay untouched.",
+      "title": "Information flow",
+      "kind": "architecture",
+      "d2": "direction: right\n\"World state\": { class: store }\n\"Perception (skill-noised)\": { class: actor }\n\"StrategicPlan\": { class: changed }\n\"GM decisions\"\n\"Coach (coachView)\"\n\"Owner (ownerView)\"\n\"CompliancePlan (existing)\": { class: external }\n\"value model + 2h negotiation\": { class: external }\n\"World state\" -> \"Perception (skill-noised)\"\n\"Perception (skill-noised)\" -> \"StrategicPlan\"\n\"StrategicPlan\" -> \"GM decisions\"\n\"StrategicPlan\" -> \"Coach (coachView)\"\n\"StrategicPlan\" -> \"Owner (ownerView)\"\n\"StrategicPlan\" -> \"CompliancePlan (existing)\": \"intent + budget + targets\"\n\"CompliancePlan (existing)\" -> \"value model + 2h negotiation\"",
+      "mermaid": "flowchart LR\n  W[World state] --> P[Perception skill-noised]\n  P --> SP[StrategicPlan]\n  SP --> GM[GM decisions]\n  SP --> C[Coach via coachView]\n  SP --> O[Owner via ownerView]\n  SP -->|intent + budget + targets| CP[CompliancePlan existing]\n  CP --> BB[value model + 2h negotiation]\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  class SP changed;\n  class P actor;\n  class W store;\n  class CP,BB external;"
+    },
+    {
+      "type": "components",
+      "id": "boards",
+      "title": "The plan: 6 components",
+      "badge": "window + 5 boards",
+      "intro": "The plan is a window classifier plus five boards. The signature move: **every board splits into a factual core and a perceived layer** — this is where GM skill lives.",
+      "anatomy": {
+        "left": {
+          "title": "Factual core",
+          "desc": "Computed deterministically from world state. **Identical for every GM.** The arithmetic. Validation checks it against world state directly.",
+          "eg": "ceiling · committedCapHit · contractEnds · byPosition"
+        },
+        "mid": {
+          "fn": "perceive(truth, skill, rng)"
+        },
+        "right": {
+          "title": "Perceived layer",
+          "desc": "GM-skill-noised judgment + projection. **Where skill differentiates.** Validation checks it against expected noise shapes.",
+          "eg": "perceivedCliffYears · perceivedTier · reservationAAV · bustRisk"
+        },
+        "caption": "Same world, two GMs, two plans: a 90-skill GM's perceived layer hugs the truth; a 40-skill GM's drifts — mis-ranked targets, missed cliffs, an over-confident window read."
+      },
+      "cards": [
+        {
+          "name": "WindowClassification",
+          "purpose": "Are we a contender, bubble, retooler, or rebuilder — and how sure?",
+          "skills": [
+            {
+              "name": "capManagement"
+            },
+            {
+              "name": "talentEvaluation"
+            }
+          ],
+          "split": {
+            "fact": "5 factual signals",
+            "perc": "noised scores + confidence"
+          },
+          "fields": {
+            "fact": [
+              "state",
+              "enteredSeason"
+            ],
+            "perc": [
+              "perceivedScores",
+              "confidence",
+              "expectedYearsRemaining"
+            ]
+          }
+        },
+        {
+          "name": "CapBoard",
+          "purpose": "5-year cap outlook: ceiling, commitments, dead cap — and which years are cliffs.",
+          "skills": [
+            {
+              "name": "capManagement"
+            }
+          ],
+          "split": {
+            "fact": "CBA + world projection",
+            "perc": "judgment + cliffs"
+          },
+          "fields": {
+            "fact": [
+              "ceiling",
+              "committedCapHit",
+              "deadCap"
+            ],
+            "perc": [
+              "perceivedCliffYears",
+              "perceivedFlexibilityScore"
+            ]
+          }
+        },
+        {
+          "name": "OrgDepthChart",
+          "purpose": "Who fills each position now and projected, sorted into core / bridge / depth tiers.",
+          "skills": [
+            {
+              "name": "talentEvaluation"
+            },
+            {
+              "name": "scoutingNetwork",
+              "deputy": true
+            }
+          ],
+          "split": {
+            "fact": "slots + contract ends",
+            "perc": "tiering + projection"
+          },
+          "fields": {
+            "fact": [
+              "byPosition",
+              "contractEnds"
+            ],
+            "perc": [
+              "coreTier",
+              "bridgeTier",
+              "unfilledSlots"
+            ]
+          }
+        },
+        {
+          "name": "ProScoutingBoard",
+          "purpose": "Ranked FA + trade-deadline targets (Plan A/B/C) per need slot, with reservation prices.",
+          "skills": [
+            {
+              "name": "talentEvaluation"
+            },
+            {
+              "name": "relationshipReading"
+            },
+            {
+              "name": "scoutingNetwork",
+              "deputy": true
+            }
+          ],
+          "split": {
+            "fact": "slot taxonomy",
+            "perc": "ranks + prices + risk"
+          },
+          "fields": {
+            "fact": [
+              "faTargets",
+              "deadlineTargets (slots)"
+            ],
+            "perc": [
+              "rank",
+              "reservationAAV",
+              "noTradeRisk"
+            ]
+          }
+        },
+        {
+          "name": "DraftBoard",
+          "purpose": "Prospect rankings, need-adjusted by position — the GM's view through their scouting org.",
+          "skills": [
+            {
+              "name": "draftAcumen"
+            },
+            {
+              "name": "scoutingNetwork",
+              "deputy": true
+            }
+          ],
+          "split": {
+            "fact": "prospect pool",
+            "perc": "ranks + ceiling"
+          },
+          "fields": {
+            "fact": [
+              "scoutingHorizon",
+              "finalRoundReady"
+            ],
+            "perc": [
+              "perceivedRank",
+              "perceivedCeiling",
+              "confidenceWidth"
+            ]
+          }
+        },
+        {
+          "name": "PipelineMap",
+          "purpose": "When each prospect is NHL-ready, and pipeline health (rich / normal / thin) per position.",
+          "skills": [
+            {
+              "name": "talentEvaluation"
+            },
+            {
+              "name": "scoutingNetwork",
+              "deputy": true
+            }
+          ],
+          "split": {
+            "fact": "prospect set",
+            "perc": "readiness + bust risk"
+          },
+          "fields": {
+            "fact": [
+              "perProspect (set)"
+            ],
+            "perc": [
+              "readinessLevel",
+              "bustRisk",
+              "graduationCountByYear"
+            ]
+          }
+        }
+      ],
+      "note": "**Deputy modulation:** `scoutingNetwork` adds to effective skill on scouting-driven fields — a 50-skill GM with an elite (90) scouting network sees a ~70-skill view. Good GM hires good scouts → compounding."
+    },
+    {
+      "type": "fits",
+      "id": "fits",
+      "title": "Where it fits",
+      "intro": "2m owns *which positions/players and when*. It slots between the model that prices a budget and the engine that lands a number.",
+      "chain": [
+        {
+          "role": "Predecessor · shipped",
+          "title": "Cap-spend value model",
+          "desc": "decides *how* a given budget is executed"
+        },
+        {
+          "role": "This phase · 2m",
+          "title": "GM Strategic-Planning Brain",
+          "desc": "decides *which* positions/players — and *when*",
+          "isThis": true
+        },
+        {
+          "role": "Consumer · 2h",
+          "title": "Negotiation realism",
+          "desc": "decides *what number* gets signed — reads via `evaluateExtensionCandidate`"
+        }
+      ],
+      "stack": [
+        {
+          "tag": "New",
+          "label": "StrategicPlan",
+          "note": "the new top layer — window + 5 boards",
+          "kind": "new"
+        },
+        {
+          "tag": "Kept",
+          "label": "CompliancePlan",
+          "note": "consumes derived intent + signingBudget; keeps its lever-cost machinery",
+          "kind": "reused"
+        },
+        {
+          "tag": "Kept",
+          "label": "Value model + 2h engine",
+          "note": "perception, marginal-cap, comp-anchored arithmetic — untouched",
+          "kind": "reused"
+        }
+      ]
+    },
+    {
+      "type": "decisions",
+      "id": "decisions",
+      "title": "Key decisions",
+      "badge": "9 locked",
+      "intro": "Locked in the 2026-05-31 brainstorm — the load-bearing choices the rest of the design rests on.",
+      "decisions": [
+        {
+          "q": "GM skill → plan model",
+          "a": "Detailed but mis-perceived",
+          "why": "makes skill *structural* — the mechanism to close the weak correlations, not one more per-decision noise dial.",
+          "rejected": "skill scaling plan *detail* (weak GMs build thinner plans) — real weak GMs plan in full, they're wrong not lazy, and detail-scaling resists validation."
+        },
+        {
+          "q": "Plan structure",
+          "a": "5 layered boards + window classifier (6 total)",
+          "why": "separable concerns — each board carries its own update cadence and consumers."
+        },
+        {
+          "q": "Board ownership",
+          "a": "GM owns all; deputy stats modulate quality",
+          "why": "avoids building deputy *agents* (deferred); reuses the existing `scoutingNetwork` stat — good GM hires good scouts, compounding."
+        },
+        {
+          "q": "Integration with `CompliancePlan`",
+          "a": "Medium layer — strategic informs intent/budget/targets; compliance keeps levers",
+          "why": "preserves the shipped, tuned lever-cost machinery instead of rewriting what already works.",
+          "rejected": "full replacement (discards the tuned levers) and a thin annotation layer (wouldn't shift behavior) — only a medium layer moves intent/budget without regressing the cap work."
+        },
+        {
+          "q": "Option-set gate hardness",
+          "a": "Soft prior — dominant default, breakable by personality / owner / opportunity",
+          "why": "a dominant default keeps GM behavior realistic without making it rigid.",
+          "rejected": "a hard gate where the window strictly dictates the option set — produces robotic GMs that can't pounce on a value opportunity or bend to owner pressure."
+        },
+        {
+          "q": "Classifier shape",
+          "a": "4 discrete states + a confidence score",
+          "why": "discrete states are legible and testable; confidence carries uncertainty without continuous-state complexity."
+        },
+        {
+          "q": "Non-GM agent visibility",
+          "a": "Partial via role-scoped views (coach + owner; no player/rival)",
+          "why": "models real-NHL info silos — coach/owner consume slices; no player or rival leakage."
+        },
+        {
+          "q": "Factual vs perceived split",
+          "a": "Each board: factual fields + perceived fields",
+          "why": "lets validation check factual fields against world state and perceived fields against noise shapes — isolates where skill lives."
+        },
+        {
+          "q": "Perception cadence",
+          "a": "Fresh each rebuild (no Bayesian carry-forward)",
+          "why": "real GMs re-evaluate faster than the cadence anyway; carry-forward adds state + tuning for no clear benefit."
+        }
+      ]
+    },
+    {
+      "type": "scope",
+      "id": "scope",
+      "title": "Scope",
+      "inList": [
+        "Layered strategic plan — window classifier + 5 boards, each on its own cadence",
+        "Plan quality scales with `capManagement` / `talentEvaluation` / `riskAversion` / `planDiscipline` + deputy stats",
+        "Replace reactive `intent` + `signingBudget` derivation with plan-aware computation",
+        "Close the three weak `gm_capManagement` correlations structurally",
+        "Surface new emergent GM-quality signals (window mix, cliff avoidance, target walkdown, …)",
+        "Owner mandate becomes *structural* — a +25 score shift on window, modulated by `planDiscipline`",
+        "Role-scoped read APIs: `coachView()` + `ownerView()`",
+        "Disruption handlers as explicit per-event plan-delta functions"
+      ],
+      "outList": [
+        {
+          "text": "Replacing `CompliancePlan` lever machinery — that stays"
+        },
+        {
+          "text": "Replacing the cap-spend value model — stays"
+        },
+        {
+          "text": "Replacing 2h negotiation arithmetic — stays"
+        },
+        {
+          "text": "Deputy *agents* with their own brains (GM owns all plans)"
+        },
+        {
+          "text": "Owner business-side planning",
+          "defer": "Phase 2q"
+        },
+        {
+          "text": "Coach strategic planning",
+          "defer": "Phase 2p"
+        },
+        {
+          "text": "Cross-GM plan visibility, or a player view of the plan"
+        },
+        {
+          "text": "Retirement-age / aging-curve changes",
+          "defer": "Phase 2n"
+        }
+      ]
+    },
+    {
+      "type": "rollout",
+      "id": "rollout",
+      "title": "Rollout",
+      "badge": "3 sub-phases, gated",
+      "intro": "Each phase has a hard exit gate — no advancing until the prior phase demonstrably holds the bands.",
+      "phases": [
+        {
+          "tag": "2m.A",
+          "title": "Structural core",
+          "scope": "`capBoard`, `orgDepthChart`, `windowClassification` (sticky transitions + owner mandate), position budgets. Wires `intent` + `signingBudget` to plan-aware computation. Adds `coachView()` / `ownerView()`, new GM/Owner fields, and Owner-Brain mandate emission. **No target lists yet.**",
+          "gate": [
+            "No regression on Phase 2d / value bands (util 90-100%, over/under = 0)",
+            "Window distribution realistic: ~7/8/7/10 ±2 across 32 teams",
+            "Misclassification differentiates by skill (<40 ≥25%, >70 ≤10%)",
+            "Cliff detection differentiates by `capManagement`"
+          ]
+        },
+        {
+          "tag": "2m.B",
+          "title": "Behavior layer",
+          "scope": "`proScoutingBoard` (FA + deadline target lists, Plan A/B/C + reservation prices), `pipelineMap` (full readiness), all disruption handlers. Wires into FA bidding, extensions, trade generation/evaluation, callup/sendDown. 2h's `evaluateExtensionCandidate` implemented against the real planner.",
+          "gate": [
+            "Target-list walkdown fires (Plan A signs elsewhere → bid Plan B)",
+            "Disruption handlers fire 6–12 per team-season",
+            "Cliff-year avoidance differentiates by skill",
+            "No Phase 2f arc-incidence or 2d cap-band regression"
+          ]
+        },
+        {
+          "tag": "2m.C",
+          "title": "Draft integration + calibration",
+          "scope": "`draftBoard` wired to draft-pick selection (plan-aware, need-adjusted ranking replaces the scout-blind-spot + `draftAcumen` heuristic). Full multi-seed calibration sweep. Spec-relaxation decision if correlations don't fully close.",
+          "gate": [
+            "`capManagement × dead_cap` r < −0.4 (or defensible relaxation)",
+            "`× assets_lost` r < −0.3 · `× ltir_misses` r < −0.3",
+            "Full Phase 2 acceptance gate green (2d + 2f + 2i + 2h)"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "done",
+      "id": "done",
+      "title": "Definition of done",
+      "badge": "calibration targets",
+      "intro": "The whole point: move three correlations from ~zero to clearly negative — bad cap managers should visibly accrue dead cap, lose assets, and miss LTIR windows.",
+      "movers": [
+        {
+          "name": "gm_capManagement × dead_cap",
+          "now": "r −0.04",
+          "target": "r < −0.4",
+          "label": "bad GMs stack cliff deals + stretch buyouts"
+        },
+        {
+          "name": "gm_capManagement × assets_lost",
+          "now": "r +0.05",
+          "target": "r < −0.3",
+          "label": "bad GMs over-commit picks in misaligned trades"
+        },
+        {
+          "name": "gm_capManagement × ltir_misses",
+          "now": "r ~0",
+          "target": "r < −0.3",
+          "label": "plan handles pre-return LTIR prep"
+        }
+      ],
+      "table": {
+        "headers": [
+          "Emergent signal",
+          "Target",
+          "Why it validates"
+        ],
+        "rows": [
+          {
+            "cells": [
+              "Window distribution",
+              "7 / 8 / 7 / 10 ±2",
+              "steady-state league shape (contender/bubble/retooler/rebuilder)"
+            ]
+          },
+          {
+            "cells": [
+              "Misclassification — weak GM (<40)",
+              "25–40%",
+              "bad GMs misperceive their own window"
+            ]
+          },
+          {
+            "cells": [
+              "Misclassification — strong GM (>70)",
+              "< 10%",
+              "good GMs classify accurately"
+            ],
+            "goodCols": [
+              1
+            ]
+          },
+          {
+            "cells": [
+              "Cliff-year count by skill",
+              "≤2 vs ≥4 / 10y",
+              "strong GMs structure to avoid cliffs; weak GMs stack them"
+            ]
+          },
+          {
+            "cells": [
+              "Target-list Plan A hit rate",
+              "30–45%",
+              "Plan A lands sometimes, not always (real bidding wars)"
+            ]
+          },
+          {
+            "cells": [
+              "Disruption handler fire count",
+              "6–12 / team-season",
+              "each handler fires occasionally; total volume realistic"
+            ]
+          },
+          {
+            "cells": [
+              "Owner-mandate window-flip rate",
+              "< 8%",
+              "owner pressure exists but isn't dominant"
+            ]
+          },
+          {
+            "cells": [
+              "Coach lineup ↔ pipeline alignment",
+              "≥ 70%",
+              "cross-role coordination via `coachView()` (one-way)"
+            ]
+          }
+        ]
+      },
+      "note": "Validation: 4 seeds × 25 seasons (2m.C); 4 × 15 (2m.A gate). In band if the median sits in tolerance for ≥3 of 4 seeds."
+    },
+    {
+      "type": "risks",
+      "id": "risks",
+      "title": "Risks",
+      "risks": [
+        {
+          "risk": "Cap-utilization regression in 2m.A as intent/budget derivation changes compliance behavior",
+          "mitigation": "2m.A's hard exit gate *is* the existing band — no proceeding to 2m.B until it demonstrably holds."
+        },
+        {
+          "risk": "Replan-cost explosion during burn-in (board rebuilds × 32 teams × 100 seasons)",
+          "mitigation": "dirty-flag per board; rebuild only boards whose inputs changed; perception is `O(roster)`, not `O(world)`."
+        },
+        {
+          "risk": "Window classification thrashes — sticky transitions don't stick",
+          "mitigation": "unit tests on transition logic; multi-seed steady-state check shows stability over 5+ seasons for stable rosters."
+        },
+        {
+          "risk": "Owner-mandate dominance — window driven entirely by the owner",
+          "mitigation": "bounded +25 shift; high-discipline GMs resist; calibration metric `flip_rate < 8%`."
+        },
+        {
+          "risk": "Disruption-handler conflicts — concurrent events produce inconsistent state",
+          "mitigation": "explicit precedence rules; deltas merged on a copy; rollback on conflict detection."
+        },
+        {
+          "risk": "Tuning-surface explosion — many new dials",
+          "mitigation": "enumerate all dials upfront; conservative defaults; tune only those that fail validation."
+        },
+        {
+          "risk": "Performance-budget breach (perception × 6 boards × ~12 replans per team-season)",
+          "mitigation": "pre-allocated `Float32Array`s; <50μs/board × 6 = 300μs/replan; <50μs per game."
+        }
+      ]
+    },
+    {
+      "type": "approve",
+      "id": "approve",
+      "title": "Before you approve",
+      "badge": "reviewer's checklist",
+      "intro": "What sign-off actually commits to, the one place to look hardest, and what's still open.",
+      "commit": {
+        "title": "What you're approving",
+        "body": "A **staged rollout, not a big bang.** Sign-off greenlights **2m.A** (the structural plumbing) first — behind a hard exit gate that *is* the existing Phase 2d / value-model band. **2m.B** (target lists, disruptions) and **2m.C** (draft + correlations) don't proceed until the prior phase demonstrably holds. Each phase is independently revertible."
+      },
+      "scrutinize": {
+        "title": "Scrutinize hardest",
+        "body": "The **decision-site integration** — the spec's own “most regression-prone section.” It rewires **9 GM decision sites** (intent/budget derivation, targeted bid sizing, extension anchors, trade-target ID, draft, levers) but keeps every tuned arithmetic core untouched (`value.ts`, `levers.ts`, `selectBest23`, `enumerateReliefOptions`). Risk is real but bounded — caught by 2m.A's gate before 2m.B adds target lists. [See the decision-site map ›](#ref-sites)"
+      },
+      "open": {
+        "title": "Still open — non-blocking",
+        "note": "Explicitly *plan-stage inputs, decided during planning — not blockers to approval:*",
+        "questions": [
+          "`NeedSlot` granularity — 13 slots or collapse to 9?",
+          "How far to project unfilled depth slots (Y0 only → Y0–Y4)?",
+          "Per-position budget defaults (Kerdman 57/33/10) per window.",
+          "`planDiscipline` distribution — wider or tighter?",
+          "Owner-mandate persistence — indefinite or TTL?",
+          "Cliff-year threshold X% (start 15%).",
+          "Same-precedence disruption collisions on one field.",
+          "2m.C spec-relaxation criteria if a correlation lands at −0.32."
+        ]
+      }
+    },
+    {
+      "type": "reference",
+      "id": "reference",
+      "intro": "Full depth, collapsed by default. Everything above gets you oriented; open these when you need the exact shapes.",
+      "items": [
+        {
+          "id": "ref-types",
+          "summary": "Data structures — the 6 components (TypeScript)",
+          "tally": "7 interfaces",
+          "html": "<div class=\"code-block\"><pre><span class=\"kw\">interface</span> <span class=\"ty\">StrategicPlan</span> {\n  franchise:        <span class=\"ty\">FranchiseId</span>\n  generatedSeason:  <span class=\"ty\">number</span>\n  generatedDay:     <span class=\"ty\">number</span>\n\n  window:           <span class=\"ty\">WindowClassification</span>\n  capBoard:         <span class=\"ty\">CapBoard</span>\n  orgDepthChart:    <span class=\"ty\">OrgDepthChart</span>\n  proScoutingBoard: <span class=\"ty\">ProScoutingBoard</span>\n  draftBoard:       <span class=\"ty\">DraftBoard</span>\n  pipelineMap:      <span class=\"ty\">PipelineMap</span>\n\n  <span class=\"cm\">// role-scoped reads — no playerView()/rivalGmView()</span>\n  coachView(): <span class=\"ty\">CoachPlanView</span>\n  ownerView(): <span class=\"ty\">OwnerPlanView</span>\n}</pre></div>\n          <div class=\"code-block\"><pre><span class=\"kw\">type</span> <span class=\"ty\">WindowState</span> = <span class=\"str\">'contender'</span> | <span class=\"str\">'bubble'</span> | <span class=\"str\">'retooler'</span> | <span class=\"str\">'rebuilder'</span>\n\n<span class=\"kw\">interface</span> <span class=\"ty\">WindowClassification</span> {\n  state:                  <span class=\"ty\">WindowState</span>\n  confidence:             <span class=\"ty\">number</span>               <span class=\"cm\">// 0-100, perceived margin &times;2</span>\n  enteredSeason:          <span class=\"ty\">number</span>               <span class=\"cm\">// sticky transitions</span>\n  expectedYearsRemaining: <span class=\"ty\">number</span>\n  reasons:                <span class=\"ty\">WindowReasonTag</span>[]\n  perceivedScores:        <span class=\"ty\">Record</span>&lt;<span class=\"ty\">WindowState</span>, <span class=\"ty\">number</span>&gt;  <span class=\"cm\">// GM-noised</span>\n}</pre></div>\n          <div class=\"code-block\"><pre><span class=\"kw\">type</span> <span class=\"ty\">Year05</span> = <span class=\"ty\">Float32Array</span>  <span class=\"cm\">// length-5: [Y0..Y4]</span>\n\n<span class=\"kw\">interface</span> <span class=\"ty\">CapBoard</span> {\n  <span class=\"cm\">// Factual — read from world state, same for all GMs</span>\n  ceiling:          <span class=\"ty\">Year05</span>\n  committedCapHit:  <span class=\"ty\">Year05</span>\n  deadCap:          <span class=\"ty\">Year05</span>\n  ltirPoolUsed:     <span class=\"ty\">number</span>\n  <span class=\"cm\">// Perceived — GM judgment + projection</span>\n  perceivedCliffYears:       <span class=\"ty\">number</span>[]\n  perceivedFlexibilityScore: <span class=\"ty\">number</span>\n  perceivedCeilingGrowthY3to4: <span class=\"ty\">number</span>\n}</pre></div>\n          <div class=\"code-block\"><pre><span class=\"kw\">interface</span> <span class=\"ty\">OrgDepthChart</span> {\n  <span class=\"cm\">// Factual</span>\n  byPosition:    <span class=\"ty\">Record</span>&lt;<span class=\"ty\">Position</span>, <span class=\"ty\">DepthSlot</span>[]&gt;\n  contractEnds:  <span class=\"ty\">Record</span>&lt;<span class=\"ty\">PlayerId</span>, <span class=\"ty\">number</span>&gt;\n  <span class=\"cm\">// Perceived</span>\n  coreTier:      <span class=\"ty\">PlayerId</span>[]   <span class=\"cm\">// 3-6 future/core players</span>\n  bridgeTier:    <span class=\"ty\">PlayerId</span>[]\n  depthTier:     <span class=\"ty\">PlayerId</span>[]\n  unfilledSlots: <span class=\"ty\">Record</span>&lt;<span class=\"ty\">NeedSlot</span>, <span class=\"ty\">number</span>[]&gt;\n}\n\n<span class=\"kw\">interface</span> <span class=\"ty\">ProScoutingBoard</span> {\n  faTargets:       <span class=\"ty\">Record</span>&lt;<span class=\"ty\">NeedSlot</span>, <span class=\"ty\">TargetEntry</span>[]&gt;  <span class=\"cm\">// A/B/C per slot</span>\n  deadlineTargets: <span class=\"ty\">Record</span>&lt;<span class=\"ty\">NeedSlot</span>, <span class=\"ty\">TargetEntry</span>[]&gt;\n  watchList:       <span class=\"ty\">PlayerId</span>[]\n}</pre></div>\n          <div class=\"code-block\"><pre><span class=\"kw\">interface</span> <span class=\"ty\">DraftBoard</span> {\n  ranked:          <span class=\"ty\">ProspectRanking</span>[]\n  needAdjusted:    <span class=\"ty\">Record</span>&lt;<span class=\"ty\">Position</span>, <span class=\"ty\">ProspectRanking</span>[]&gt;\n  finalRoundReady: <span class=\"ty\">boolean</span>\n  scoutingHorizon: <span class=\"ty\">number</span>\n}\n\n<span class=\"kw\">interface</span> <span class=\"ty\">PipelineMap</span> {\n  perProspect:           <span class=\"ty\">Record</span>&lt;<span class=\"ty\">PlayerId</span>, <span class=\"ty\">ProspectReadiness</span>&gt;\n  graduationCountByYear: <span class=\"ty\">Year05</span>\n  positionHealth:        <span class=\"ty\">Record</span>&lt;<span class=\"ty\">Position</span>, <span class=\"ty\">PipelineHealth</span>&gt;\n}</pre></div>"
+        },
+        {
+          "id": "ref-perception",
+          "summary": "Perception model — noise flavors & determinism",
+          "html": "<p>Every perceived field has a function of the same shape: <code style=\"font-family:var(--font-mono);\">perceiveX(truth, skill, deputy?, rng)</code>. Three noise flavors:</p>\n          <h4>Continuous numeric</h4>\n          <div class=\"code-block\"><pre>perceived = truth + N(0, &sigma;),   &sigma; = baseSigma &times; (100 &minus; skill) / 100</pre></div>\n          <p>Bounded to a valid range; directional bias (e.g. low <code>capManagement</code> &rarr; bullish on ceiling growth) adds a mean shift.</p>\n          <h4>Categorical / bucketed</h4>\n          <div class=\"code-block\"><pre>P(perceived_bucket &ne; truth_bucket) = (100 &minus; skill) / k\nP(shift 2 buckets)                  = much smaller (~5% mis-band)</pre></div>\n          <h4>Set membership (core players, cliff years)</h4>\n          <div class=\"code-block\"><pre>per true qualifier:    P(included)         = f(skill)\nper non-qualifier:     P(falsely included) = g(skill)</pre></div>\n          <h4>Determinism</h4>\n          <p>Each call is seeded by <code style=\"font-family:var(--font-mono);\">hash(worldSeed, franchiseId, season, day, boardType, fieldKey)</code> &mdash; same inputs, same perception. Re-rolling a board mid-season with unchanged world state yields the <em>same</em> perceived board (no &ldquo;lucky day&rdquo;). Deputy modulation: <code>effectiveSkill = clamp(gmSkill + scoutingNetworkBoost, 0, 100)</code>.</p>"
+        },
+        {
+          "id": "ref-replan",
+          "summary": "Replan lifecycle — calendar + triggers",
+          "html": "<h4>Calendar skeleton (forced replans)</h4>\n          <table class=\"spec-table\">\n            <thead><tr><th>Event</th><th>Sim day</th><th>Replan scope</th></tr></thead>\n            <tbody>\n              <tr><td>Season-end</td><td class=\"num\">varies</td><td><strong>Full</strong> &mdash; all 6 boards rebuilt</td></tr>\n              <tr><td>Pre-draft</td><td class=\"num\">~315</td><td><code>draftBoard</code> locked; <code>pipelineMap</code> final pass</td></tr>\n              <tr><td>FA open (Jul 1)</td><td class=\"num\">~335</td><td><code>proScoutingBoard</code> executes; <code>capBoard</code> rebuilt per bid</td></tr>\n              <tr><td>Mid-season (~game 41)</td><td class=\"num\">~85</td><td><code>window</code> confidence; deadline targets seeded</td></tr>\n              <tr><td>Trade deadline</td><td class=\"num\">130</td><td>target lists locked; <code>capBoard</code> post-deadline rebuild</td></tr>\n            </tbody>\n          </table>\n          <h4>Threshold-triggered (ad-hoc)</h4>\n          <p>Cap-affecting transaction &rarr; <code>capBoard</code>. Season-ending core injury &rarr; full <code>window</code> re-class. Prospect breakout &rarr; <code>pipelineMap</code> + <code>window</code> + depth slot. Target signs elsewhere &rarr; walk to Plan B + budget redistribution. Owner mandate change &rarr; full <code>window</code>. <strong>Cost discipline:</strong> boards rebuild only if their inputs changed (dirty flag per board).</p>"
+        },
+        {
+          "id": "ref-sites",
+          "summary": "Decision-site map — what the plan replaces vs adds",
+          "tally": "most regression-prone",
+          "html": "<table class=\"spec-table\">\n            <thead><tr><th>Site</th><th>Replaces</th><th>Keeps</th></tr></thead>\n            <tbody>\n              <tr><td><code>buildOffseasonPlan</code></td><td><code>intent</code> + <code>signingBudget</code> derivation; <code>tradeable</code></td><td>lever-cost machinery, cap-dump enumeration</td></tr>\n              <tr><td><code>generateGMOffer</code></td><td>bid sizing for <em>targeted</em> players (uses <code>reservationAAV</code>)</td><td><code>gmCapJudgmentBidMul</code>, value perception for untargeted UFAs</td></tr>\n              <tr><td>Extensions (2h seam)</td><td>offer-or-not gate; AAV anchor for core-tier</td><td>2h negotiation arithmetic, comp-anchored valuation</td></tr>\n              <tr><td><code>generateTradeProposal</code></td><td>target identification; position-shedding</td><td>trade arithmetic, retention logic, relationship memory</td></tr>\n              <tr><td><code>evaluateTradeProposal</code></td><td><em>adds</em> a plan-fit axis alongside value</td><td>value perception, NTC/NMC gating</td></tr>\n              <tr><td>Draft selection</td><td>BPA-vs-need becomes plan-aware</td><td>scout ingestion, blind spot, <code>draftAcumen</code> roll</td></tr>\n              <tr><td>Levers</td><td>cost ranking becomes plan-aware (tier-sensitive)</td><td><code>enumerateReliefOptions</code> ranking (PR-B)</td></tr>\n            </tbody>\n          </table>\n          <p>The recently-shipped tuning (<code>value.ts</code>, <code>levers.ts</code>, <code>selectBest23</code>, <code>enumerateReliefOptions</code>) stays untouched. What changes: <em>which</em> players enter the ranker, <em>which</em> intent runs, and <em>what</em> the budget total is.</p>"
+        },
+        {
+          "id": "ref-fields",
+          "summary": "New profile / world fields",
+          "tally": "8 new",
+          "html": "<div class=\"code-block\"><pre><span class=\"kw\">interface</span> <span class=\"ty\">GMProfile</span> {  <span class=\"cm\">// + 6 new traits</span>\n  planDiscipline:         <span class=\"ty\">number</span>   <span class=\"cm\">// mean 60 &sigma;18 — Yzerman/Lamoriello high</span>\n  shinyObjectBias:        <span class=\"ty\">number</span>   <span class=\"cm\">// inverse riskAversion + ego</span>\n  bridgeVsTermPreference: <span class=\"ty\">number</span>\n  ntcGenerosity:          <span class=\"ty\">number</span>   <span class=\"cm\">// high-discipline GMs stingy</span>\n  ltirHeadroomPreference: <span class=\"ty\">number</span>\n  relationshipReading:    <span class=\"ty\">number</span>   <span class=\"cm\">// reads NTC block probability</span>\n}\n\n<span class=\"kw\">interface</span> <span class=\"ty\">OwnerProfile</span> {  <span class=\"cm\">// + mandate</span>\n  mandate?: <span class=\"str\">'compete'</span> | <span class=\"str\">'rebuild'</span> | <span class=\"str\">'unspecified'</span>  <span class=\"cm\">// default unspecified</span>\n}</pre></div>\n          <p><code>Franchise.scoutingNetwork</code> already exists and modulates perception; a future <code>capAnalystQuality</code> for <code>CapBoard</code> is deferred.</p>"
+        },
+        {
+          "id": "ref-disruptions",
+          "summary": "Disruption handlers",
+          "tally": "event → plan delta",
+          "html": "<p>A disruption is an event a handler converts to a <code>PlanDelta</code> applied to a copy of the plan. Kinds: <code>star_injury</code>, <code>target_lost_in_fa</code>, <code>unexpected_offer</code>, <code>prospect_breakout</code>, <code>prospect_bust</code>, <code>rebuild_stall</code>, <code>coach_fired</code>, <code>key_player_trade_request</code>, <code>rival_blockbuster</code>, <code>owner_mandate_change</code>.</p>\n          <p><strong>Example &mdash; <code>target_lost_in_fa</code>:</strong> remove the lost target, promote Plan B; redistribute the unspent Plan A reservation (60% &rarr; Plan B, 40% &rarr; next slot&rsquo;s Plan A). <strong>Example &mdash; <code>prospect_breakout</code> (Y2+ &rarr; Y0):</strong> bump readiness to <code>now</code>, shift graduation counts, upgrade position health, and if a rebuilder sees &ge;2 breakouts, re-evaluate the window. Concurrent disruptions merge by precedence: <em>owner-mandate &gt; seasonality &gt; severity-major &gt; severity-minor</em>.</p>"
+        },
+        {
+          "id": "ref-testing",
+          "summary": "Testing & performance budget",
+          "html": "<p><strong>Testing:</strong> unit tests per perception function (truth + skill &rarr; expected shape), per board rebuild, and per disruption handler; integration tests for the plan&rarr;decision pipeline parameterized over GM skill; a multi-seed calibration sweep; a snapshot test on a known seed (window distribution at season 10); and a full cross-system regression check (~2150 tests + Phase 2d/2f/2c gates).</p>\n          <p><strong>Performance:</strong> sim target &lt; 2ms/game. ~1000 replan events per season &times; &lt;50&micro;s/board &times; 6 boards = ~300&micro;s/replan, distributing to &lt;50&micro;s per game from planning &mdash; achievable with pre-allocated buffers and seeded deterministic perception.</p>"
+        }
+      ]
+    }
+  ]
+}
