@@ -45,20 +45,11 @@
   });
 
   // Scroll-spy for outline
-  var sections = [
-    { id: 'tldr', target: 'tldr' },
-    { id: 'overview', target: 'overview' },
-    { id: 'ch1', target: 'ch1' },
-    { id: 's-repo', target: 's-repo' },
-    { id: 's-service', target: 's-service' },
-    { id: 's-router', target: 's-router' },
-    { id: 'ch2', target: 'ch2' },
-    { id: 's-tests', target: 's-tests' },
-    { id: 'ch3', target: 'ch3' },
-    { id: 's-docs', target: 's-docs' },
-  ];
-
   var outlineItems = document.querySelectorAll('.outline-item[data-target]');
+  var sections = Array.prototype.map.call(outlineItems, function(it) {
+    var t = it.getAttribute('data-target');
+    return { id: t, target: t };
+  });
 
   function updateActive(activeId) {
     outlineItems.forEach(function(item) {
@@ -99,11 +90,10 @@
 
   // Progress rail: highlight chapter based on scroll
   var progressSteps = document.querySelectorAll('.progress-step');
-  var chapters = [
-    document.getElementById('ch1'),
-    document.getElementById('ch2'),
-    document.getElementById('ch3'),
-  ];
+  var chapters = Array.prototype.map.call(progressSteps, function(s) {
+    var h = s.getAttribute('href') || '';
+    return h.charAt(0) === '#' ? document.getElementById(h.slice(1)) : null;
+  });
 
   function updateProgress() {
     var scrollY = window.scrollY || window.pageYOffset;
@@ -153,4 +143,20 @@
   stage.addEventListener('pointerup', function(){ drag=false; });
   stage.addEventListener('pointercancel', function(){ drag=false; });
   stage.addEventListener('click', function(e){ if(!moved && e.target===stage) closeOv(); });
+})();
+
+(function(){
+  'use strict';
+  function openTo(hash){
+    if(!hash || hash.charAt(0) !== '#') return;
+    var el = document.getElementById(hash.slice(1));
+    if(!el) return;
+    var p = el;
+    while(p){ if(p.tagName && p.tagName.toLowerCase() === 'details') p.open = true; p = p.parentElement; }
+    if(el.tagName && el.tagName.toLowerCase() === 'details') el.open = true;
+    var d = el.querySelector && el.querySelector('details.file-diff');
+    if(d) d.open = true;
+  }
+  window.addEventListener('hashchange', function(){ openTo(location.hash); });
+  if(location.hash) openTo(location.hash);
 })();

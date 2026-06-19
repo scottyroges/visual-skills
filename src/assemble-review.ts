@@ -9,6 +9,7 @@ import { renderFilesTable } from "./review/files-table.js";
 import { renderWalkthrough } from "./review/walkthrough.js";
 import { renderDiagramCard, renderApiSurface, renderReusedBlock } from "./review/sections.js";
 import { renderTopbar } from "./review/topbar.js";
+import { renderSidebar, renderProgressRail } from "./review/sidebar.js";
 
 function collectDiffPaths(bs: Block[], map = new Map<string, string>()): Map<string, string> {
   for (const b of bs) {
@@ -36,10 +37,9 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
   const viewer = await readFile(join(ASSETS, "review-viewer.js"), "utf8");
 
-  // Placeholder shell — real sidebar/main sections are filled by later tasks.
   const topbar = renderTopbar(blocks, opts);
-  const sidebar = `<nav class="sidebar"></nav>`;
   const pathToId = collectDiffPaths(blocks);
+  const sidebar = renderSidebar(blocks, pathToId, opts);
   const diagrams = await renderAllDiagrams(blocks, {
     outDir: opts.outDir,
     excalidraw: opts.excalidraw,
@@ -70,7 +70,7 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
       return (
         `<section id="walkthrough" class="section">` +
         `<div class="section-header"><h2 class="section-title">Guided walkthrough</h2></div>` +
-        `${await renderWalkthrough(blocks, opts.onWarn)}</section>`
+        `${renderProgressRail(blocks)}${await renderWalkthrough(blocks, opts.onWarn)}</section>`
       );
     }
     if (b.type === "diagram" || b.type === "schema") {
