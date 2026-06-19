@@ -333,22 +333,6 @@ body {
 
 .tldr-val { color: var(--ink); flex: 1; }
 
-.tldr-start {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: var(--text-base);
-}
-
-.tldr-start-label {
-  font-weight: 700;
-  color: var(--accent);
-  white-space: nowrap;
-}
-
 /* ===== SECTION HEADINGS ===== */
 .section {
   scroll-margin-top: calc(var(--topbar-h) + 20px);

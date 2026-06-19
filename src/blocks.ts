@@ -111,7 +111,6 @@ export interface OverviewBlock {
   // Review-shell TL;DR (all optional — older blocks.json still render):
   facets?: { what?: string; why?: string; size?: string };
   risk?: { level: "low" | "med" | "high"; note?: string };
-  startHref?: string;
 }
 
 export type Block =

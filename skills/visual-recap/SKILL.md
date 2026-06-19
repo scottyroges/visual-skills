@@ -24,7 +24,7 @@ A finished recap **always** has, regardless of change size:
 
 - **An authored title** — `Recap — <human label>`, not `Recap — commit <sha>`.
 - **A lead `overview` block, placed FIRST** — `headline` + TL;DR `facets` (what / why / size) +
-  `risk` (level + note) + `startHref`. This populates the TL;DR card and the topbar risk chip —
+  `risk` (level + note). This populates the TL;DR card and the topbar risk chip —
   the 10-second orientation. This is required even for a one-file fix.
 - **Every non-trivial diff annotated** — a bold one-line takeaway + 2–5 bullets. Omit the
   description *only* for a genuinely trivial one-or-two-line change.
@@ -68,7 +68,7 @@ If any of these is true, the recap is **not done** — keep going:
    *what the change does and why* — do not work from the diff text alone.
 
 4. **Author the lead `overview` block, placed FIRST** (step detail below). Always fill `headline`,
-   `facets` (what/why/size), `risk`, and `startHref`.
+   `facets` (what/why/size), and `risk`.
 
 5. **Annotate every non-trivial diff** as a bold takeaway + bullets (step detail below).
 
@@ -92,7 +92,7 @@ The floor is the same for everyone; only the ceiling moves.
 
 | Element | Small (1–2 files) | Medium | Large (many files, schema/API) |
 |---|---|---|---|
-| `overview` headline + facets + risk + startHref | **required** | **required** | **required** |
+| `overview` headline + facets + risk | **required** | **required** | **required** |
 | overview `points` | 1–3 | 3–5 | 4–6, keyword-linked |
 | per-diff `description` (bullets) | **required** (unless truly trivial) | **required** | **required** |
 | `group` blocks | optional (often one group, or none) | **yes** | **yes**, ordered as a narrative |
@@ -116,7 +116,6 @@ A scannable lead the reader groks in seconds:
       ],
       "facets": { "what": "Capture funds when the buyer approves", "why": "Orders were authorized but never charged", "size": "8 files, ~154 runtime lines" },
       "risk": { "level": "low", "note": "additive; no schema changes" },
-      "startHref": "#diff-0",
       "diagram": { "type": "diagram", "id": "ov-flow", "title": "Capture flow", "kind": "sequence",
         "d2": "shape: sequence_diagram\nclient -> api: capture\napi -> paypal: capture",
         "mermaid": "sequenceDiagram\n  client->>api: capture\n  api->>paypal: capture" } }
@@ -126,17 +125,16 @@ A scannable lead the reader groks in seconds:
   markdown to its detail section, e.g. `new \`capture\` mutation on the [order router](#diff-0)` —
   do NOT rely on a bare `href` that turns the whole bullet into one link (a keyword link reads far
   better).
-- `facets` / `risk` / `startHref`: **always set these** — they populate the TL;DR card (What / Why /
-  Risk / Size + a "Start here" link) and the topbar risk chip.
+- `facets` / `risk`: **always set these** — they populate the TL;DR card (What / Why / Risk / Size)
+  and the topbar risk chip.
   - `facets`: `{ "what": "…one line…", "why": "…one line…", "size": "…e.g. 8 files, ~154 runtime lines…" }`
   - `risk`: `{ "level": "low" | "med" | "high", "note": "…why, e.g. additive, no schema changes…" }`
-  - `startHref`: the section to read first, e.g. `"#diff-0"`.
 - `diagram` (optional, scales with size): the single most illuminating illustration (often the
   `where-it-fits` graph or the key behavioral diagram). Carry its `mermaid` to stay editable; don't
   point a `href` at a diagram hidden in a non-default tab.
 
 For a very small change you may keep the `points` list short and drop the `diagram`, but the
-`headline`, `facets`, `risk`, and `startHref` are still required.
+`headline`, `facets`, and `risk` are still required.
 
 ### 5 — Annotate each diff (bullets, not a paragraph)
 

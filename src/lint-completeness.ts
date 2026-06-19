@@ -40,7 +40,7 @@ export function lintCompleteness(blocks: Block[]): string[] {
   const overview = blocks.find((b): b is OverviewBlock => b.type === "overview");
   if (!overview) {
     warnings.push(
-      "no overview block — author a lead placed FIRST: headline + TL;DR facets (what/why/size) + risk + startHref. The bare gather output is raw material, not a finished review.",
+      "no overview block — author a lead placed FIRST: headline + TL;DR facets (what/why/size) + risk. The bare gather output is raw material, not a finished review.",
     );
   } else {
     const f = overview.facets ?? {};
@@ -52,9 +52,6 @@ export function lintCompleteness(blocks: Block[]): string[] {
     }
     if (!overview.risk?.level) {
       warnings.push("overview has no risk — set risk.level (low/med/high) + note to populate the risk chip");
-    }
-    if (!overview.startHref?.trim()) {
-      warnings.push('overview has no startHref — point the reader where to start (e.g. "#<diff-id>")');
     }
   }
 

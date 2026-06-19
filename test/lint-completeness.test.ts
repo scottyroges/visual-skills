@@ -18,7 +18,6 @@ const fullOverview: OverviewBlock = {
   points: [{ text: "a point" }],
   facets: { what: "what", why: "why", size: "1 file" },
   risk: { level: "low", note: "additive" },
-  startHref: "#d1",
 };
 
 describe("lintCompleteness", () => {
