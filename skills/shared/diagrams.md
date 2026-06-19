@@ -8,6 +8,10 @@ Pick the **fewest** diagrams that explain the change. One strong diagram beats t
 When 2–3 different lenses each add distinct value, present them in a `tabs` block rather than
 forcing one. Ground every node label in real identifiers from the target repo.
 
+For the **visual-spec** page's HTML/CSS section components (TL;DR, big-idea, anatomy explainer,
+component cards, decision cards, rollout, approval band) and its hand-authored info-flow SVG hero,
+see the sibling [Spec-Component Catalog](spec-components.md).
+
 ## Selection guide
 
 **Structure — what exists**
