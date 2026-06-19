@@ -8,6 +8,10 @@ Pick the **fewest** diagrams that explain the change. One strong diagram beats t
 When 2–3 different lenses each add distinct value, present them in a `tabs` block rather than
 forcing one. Ground every node label in real identifiers from the target repo.
 
+For the **visual-spec** page's HTML/CSS section components (TL;DR, big-idea, anatomy explainer,
+component cards, decision cards, rollout, approval band) and its hand-authored info-flow SVG hero,
+see the sibling [Spec-Component Catalog](spec-components.md).
+
 ## Selection guide
 
 **Structure — what exists**
@@ -52,6 +56,10 @@ journey maps (UX phases/emotions), BPMN gateway notation, event storming sticky-
 - Only `flowchart`/`graph`, `sequenceDiagram`, and `classDiagram` mermaid convert to *editable*
   Excalidraw elements. `stateDiagram` and `erDiagram` rasterize — so author a **state machine as
   a mermaid `flowchart`** (states as nodes, transitions as labeled edges), never `stateDiagram`.
+- **Keep mermaid edge/pipe labels free of parentheses and brackets** — `A -->|sqrt(1-p) loading| B`
+  fails to parse (mermaid reads `(` / `[` as a node-shape opener), which silently drops the editable
+  Excalidraw upgrade to a static image. Reword to `A -->|sqrt 1-p loading| B`. Unicode math
+  (`√ ρ ε ≈`) is fine; the punctuation is the problem. (d2 labels are unaffected.)
 - An invalid diagram degrades to a visible placeholder rather than breaking the document.
 
 ## Color vocabulary
