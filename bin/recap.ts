@@ -1,8 +1,9 @@
 #!/usr/bin/env tsx
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import type { Target } from "../src/git.js";
+import type { Block } from "../src/blocks.js";
 import { gatherRecap } from "../src/gather-recap.js";
 import { assembleReview } from "../src/assemble-review.js";
 import { generatorStamp } from "../src/version.js";
@@ -24,8 +25,32 @@ async function main() {
       base: { type: "string" },
       out: { type: "string" },
       "emit-blocks": { type: "string" },
+      blocks: { type: "string" },
+      title: { type: "string" },
+      source: { type: "string" },
     },
   });
+
+  // --blocks: render an existing (e.g. enriched) blocks.json through the review shell,
+  // skipping git gather. This is the enrichment round-trip target for the visual-recap skill.
+  if (values.blocks) {
+    const loaded = JSON.parse(await readFile(values.blocks, "utf8")) as Block[];
+    const outDir = (values.out ?? dirname(values.blocks)).replace(/\.html?$/i, "");
+    const htmlPath = join(outDir, "recap.html");
+    await mkdir(outDir, { recursive: true });
+    const generator = await generatorStamp();
+    const html = await assembleReview(loaded, {
+      title: values.title ?? "Recap",
+      source: values.source ?? "",
+      outDir,
+      onWarn: (m) => console.warn(m),
+      generator,
+    });
+    await writeFile(htmlPath, html);
+    await writeFile(join(outDir, "blocks.json"), JSON.stringify(loaded, null, 2));
+    console.log(`wrote ${htmlPath} (from ${values.blocks})`);
+    return;
+  }
 
   const repoRoot = values.repo!;
   const { scope, blocks, adapter } = await gatherRecap(parseTarget(values), repoRoot, (m) => console.warn(m));
@@ -55,7 +80,7 @@ async function main() {
   });
   await writeFile(htmlPath, html);
   // Keep the source grouped with the doc: persist the gathered blocks inside the folder so it is
-  // self-contained (enrich them and re-render with plan --blocks <dir>/blocks.json --out <dir>).
+  // self-contained (enrich them and re-render with recap --blocks <dir>/blocks.json --out <dir>).
   await writeFile(join(outDir, "blocks.json"), JSON.stringify(blocks, null, 2));
   console.log(`wrote ${htmlPath} (adapter: ${adapter})`);
 }
