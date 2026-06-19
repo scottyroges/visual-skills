@@ -106,11 +106,13 @@ chapter number; diff index within a group → letter).
 - The diff body is a `.diff-pre` of flex rows: **two line-number columns** (old / new, computed by
   parsing the `@@ -a,b +c,d @@` headers), a `+/−/ ` gutter, and the code cell (`white-space:pre`,
   horizontal scroll). Add / remove / context / hunk-header line styles.
-- **No truncation, no "view in the PR."** The full diff for every file must be present.
-- **Full-diff gather fix (required):** the recap gather currently truncates large hunks (observed:
-  a +446 plan doc captured as 16 lines in `blocks.json`; context stripped from small docs). Find
-  where the unified diff is bounded (`src/git.ts` diff generation and/or `src/parse-diff.ts`) and
-  ensure the **complete** unified diff (all hunks, full context) is captured.
+- **No truncation, no "view in the PR."** The full diff for every file must be present. The review
+  diff renderer must NOT introduce any per-file line cap or "more lines" note.
+- **Full-diff capture (verified — guard only):** the gather already captures complete diffs
+  (`git diff base...head` with a 64MB buffer; `parse-diff` has no cap) — verified a +446 file
+  gathers all 446 lines. The earlier 16-line observation was a stale artifact. **No fix needed; add
+  a regression test** that locks in full-diff capture end-to-end (gather → assembleReview → the
+  rendered diff contains the file's last changed line, with no truncation note).
 
 ## Diagrams (clean)
 
