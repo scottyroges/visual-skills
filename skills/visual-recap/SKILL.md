@@ -215,10 +215,16 @@ Consult the shared **diagram catalog** for the full selection guide and tested r
 
 Prefer the fewest diagrams that explain the change — often ONE. The catalog's *Behavior* and
 *Journey* lenses cover most recaps (a sequence for a new runtime path; a state machine for a
-lifecycle change). When 2–3 lenses each add distinct value (e.g. a sequence AND a state machine, or
-the `where-it-fits` graph AND a data-flow), present them in a `tabs` block instead of forcing one.
-If the change is purely structural, the mechanical `where-it-fits` graph may already be enough — skip
-adding more.
+lifecycle change). When 2–3 lenses each add distinct value (e.g. a sequence AND a data-flow),
+present them in a `tabs` block instead of forcing one.
+
+**The mechanical `where-it-fits` import graph is rough orientation, not a deliverable.** It is a
+de-noised dependency graph the gather step produces automatically; it rarely tells a story. For any
+change with a clear architectural home, **replace it with a curated *Feature home* diagram** (see the
+catalog) — the changed pieces in their layer/stack (router → service → repository → datastore), with
+reused existing modules called out and library/test noise dropped. Keep the same `id`
+(`where-it-fits`) so it lands in the structural slot. Only for a small, single-file change with no
+meaningful layering is a structural diagram unnecessary — then drop it rather than ship the raw graph.
 
 Use the catalog's recipes verbatim (they are compile-tested), substituting real identifiers.
 
