@@ -1,6 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { groupLooseDiffs } from "../src/review/normalize.js";
+import { groupLooseDiffs, stripChapterOrdinal } from "../src/review/normalize.js";
 import type { Block } from "../src/blocks.js";
+
+describe("stripChapterOrdinal", () => {
+  it("removes a leading ordinal prefix so the renderer's own numbering isn't doubled", () => {
+    expect(stripChapterOrdinal("1 · The data foundation")).toBe("The data foundation");
+    expect(stripChapterOrdinal("2 · Core logic — fallback + display")).toBe("Core logic — fallback + display");
+    expect(stripChapterOrdinal("10. Foo")).toBe("Foo");
+    expect(stripChapterOrdinal("3) Bar")).toBe("Bar");
+    expect(stripChapterOrdinal("4 - Baz")).toBe("Baz");
+  });
+  it("leaves un-prefixed titles (and false-positive lookalikes) untouched", () => {
+    expect(stripChapterOrdinal("The core change")).toBe("The core change");
+    expect(stripChapterOrdinal("Tests")).toBe("Tests");
+    expect(stripChapterOrdinal("1.5x faster")).toBe("1.5x faster"); // no separator+space
+  });
+});
 
 describe("groupLooseDiffs", () => {
   it("wraps a run of top-level diff blocks into one synthetic group, leaving other blocks in place", () => {

@@ -28,4 +28,13 @@ describe("review sidebar", () => {
     expect((rail.match(/class="progress-step[ "]/g) || []).length).toBe(2);
     expect(rail).toContain('href="#grp-core"');
   });
+  it("strips an author-supplied ordinal so the chapter number isn't shown twice", () => {
+    const numbered: Block[] = [
+      { type: "group", id: "g", title: "1 · The data foundation", blocks: [] },
+    ];
+    const rail = renderProgressRail(numbered);
+    expect(rail).toContain(">1</div>");                 // the renderer's number badge
+    expect(rail).toContain("The data foundation");
+    expect(rail).not.toContain("1 · The data foundation"); // the label no longer repeats the number
+  });
 });

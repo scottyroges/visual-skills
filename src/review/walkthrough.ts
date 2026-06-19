@@ -2,6 +2,7 @@ import { escapeHtml } from "../html.js";
 import { renderMarkdown } from "../renderers/markdown.js";
 import { renderDiffBody } from "./diff.js";
 import { renderDiagramLike } from "./sections.js";
+import { stripChapterOrdinal } from "./normalize.js";
 import type { Block, DiffBlock, DiffHunk, GroupBlock } from "../blocks.js";
 import type { DiagramResult } from "../render-diagram.js";
 
@@ -109,7 +110,7 @@ async function renderChapter(
 
   return (
     `<div id="${escapeHtml(g.id)}" class="section">` +
-    `<h3 class="subsection-title" style="font-size:var(--text-xl);font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;display:flex;align-items:center;gap:12px;"><span class="chapter-no">${n}</span>${escapeHtml(g.title)}</h3>` +
+    `<h3 class="subsection-title" style="font-size:var(--text-xl);font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;display:flex;align-items:center;gap:12px;"><span class="chapter-no">${n}</span>${escapeHtml(stripChapterOrdinal(g.title))}</h3>` +
     intro +
     subsections.join("") +
     `</div>`
