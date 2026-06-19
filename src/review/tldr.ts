@@ -1,9 +1,7 @@
-import { escapeHtml } from "../html.js";
+import { escapeHtml, SAFE_HREF } from "../html.js";
 import { renderInlineMarkdown } from "../renderers/markdown.js";
 import type { OverviewBlock } from "../blocks.js";
-
-const SAFE_HREF = /^(#[A-Za-z0-9_-]+|https?:\/\/)/;
-const RISK_LABEL = { low: "LOW", med: "MED", high: "HIGH" } as const;
+import { RISK_LABEL } from "./constants.js";
 
 export async function renderTldr(b: OverviewBlock): Promise<string> {
   const headline = `<h2 class="tldr-heading">${await renderInlineMarkdown(b.headline)}</h2>`;

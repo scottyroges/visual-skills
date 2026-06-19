@@ -1,10 +1,6 @@
-import { escapeHtml } from "../html.js";
+import { escapeHtml, SAFE_HREF } from "../html.js";
 import { renderInlineMarkdown } from "./markdown.js";
 import type { OverviewBlock } from "../blocks.js";
-
-// Only fragment (#id) and absolute http(s) hrefs are linkable — defense-in-depth against a
-// javascript:/data: href slipping into a point; anything else renders as plain text.
-const SAFE_HREF = /^(#[A-Za-z0-9_-]+|https?:\/\/)/;
 
 export async function renderOverview(
   block: OverviewBlock,
