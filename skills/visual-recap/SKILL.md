@@ -1,12 +1,12 @@
 ---
 name: visual-recap
-description: Use when the user asks to visualize, render, or "make readable" a pull request, commit, branch, or git diff as a self-contained HTML recap. Produces a hand-drawn-styled HTML document grounded in the real repo — file tree, Prisma schema changes, tRPC API-surface diagram, and syntax-highlighted diffs.
+description: Use when the user asks to visualize, render, or "make readable" a pull request, commit, branch, or git diff as a self-contained HTML recap. Produces a clean, self-contained app-shell PR-review document grounded in the real repo — file tree, Prisma schema changes, tRPC API-surface diagram, and syntax-highlighted diffs.
 ---
 
 # Visual Recap
 
-Turn a git target (PR, commit, branch, or working tree) into a single self-contained,
-hand-drawn-styled HTML document and open it.
+Turn a git target (PR, commit, branch, or working tree) into a single
+clean, self-contained app-shell PR-review document and open it.
 
 **Tool location** (edit if the repo moves):
 
@@ -40,9 +40,9 @@ hand-drawn-styled HTML document and open it.
   merge or head commit SHA (e.g. via `gh`, the GitHub UI, or `git log`) and re-run with
   `--commit <sha>` instead.
 - **`d2` missing:** diagrams degrade to visible placeholders (the recap still produces) —
-  tell the user to `brew install d2` for proper hand-drawn sketches.
+  tell the user to `brew install d2` for proper rendered diagrams.
 - Editable Excalidraw diagrams are an optional upgrade — see the tool's README
-  (`npm run setup:excalidraw`). Without it, diagrams render as static D2 sketches.
+  (`npm run setup:excalidraw`). Without it, diagrams render as static D2 images.
 
 ## Example
 
@@ -87,6 +87,12 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
    - `diagram`: the single most illuminating illustration (often the `where-it-fits` graph or the
      key behavioral diagram) — lead with the picture. Carry its `mermaid` to stay editable; don't
      point a `href` at a diagram hidden in a non-default tab.
+   For the review layout, also fill the TL;DR fields on the `overview` block — they populate the
+   TL;DR card (What / Why / Risk / Size + a "Start here" link) and the topbar risk chip:
+   - `facets`: `{ "what": "…one line…", "why": "…one line…", "size": "…e.g. 8 files, ~154 runtime lines…" }`
+   - `risk`: `{ "level": "low" | "med" | "high", "note": "…why, e.g. additive, no schema changes…" }`
+   - `startHref`: the section to read first, e.g. `"#diff-0"`.
+
    - For a small change, the plain prose `summary` block is enough — skip the overview.
 
 4. **Annotate each diff — as a bullet list, not a paragraph.** Set a diff block's `description`
@@ -151,12 +157,12 @@ The bare recap is mechanical. To turn it into a presentation of the change, enri
    use a `tabs` block when 2–3 lenses each add value. Place them near the top (after the lead
    Summary / `overview` and the where-it-fits graph).
 
-7. Render the combined array (edited in place at `<ABSOLUTE_OUT_DIR>/blocks.json`) and open it. The
-   render also writes `blocks.json` back into the folder, so the doc folder stays self-contained and
-   re-renders in place:
+7. Render the combined array (edited in place at `<ABSOLUTE_OUT_DIR>/blocks.json`) through the review
+   shell and open it. The render writes `recap.html` (and re-writes `blocks.json`) back into the
+   folder, so the doc folder stays self-contained and re-renders in place via `recap --blocks`:
 
-       npx tsx bin/plan.ts --blocks <ABSOLUTE_OUT_DIR>/blocks.json --title "Recap — <label>" --out <ABSOLUTE_OUT_DIR>
-       open <ABSOLUTE_OUT_DIR>/plan.html
+       npx tsx bin/recap.ts --blocks <ABSOLUTE_OUT_DIR>/blocks.json --title "Recap — <label>" --out <ABSOLUTE_OUT_DIR>
+       open <ABSOLUTE_OUT_DIR>/recap.html
 
 ### Which diagram(s) to add
 
