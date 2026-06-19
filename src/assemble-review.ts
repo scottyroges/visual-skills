@@ -8,6 +8,7 @@ import { renderTldr, renderOverviewPoints } from "./review/tldr.js";
 import { renderFilesTable } from "./review/files-table.js";
 import { renderWalkthrough } from "./review/walkthrough.js";
 import { renderDiagramCard, renderApiSurface, renderReusedBlock } from "./review/sections.js";
+import { renderTopbar } from "./review/topbar.js";
 
 function collectDiffPaths(bs: Block[], map = new Map<string, string>()): Map<string, string> {
   for (const b of bs) {
@@ -35,8 +36,8 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
   const viewer = await readFile(join(ASSETS, "review-viewer.js"), "utf8");
 
-  // Placeholder shell — real topbar/sidebar/main sections are filled by later tasks.
-  const topbar = `<header class="topbar"><div class="topbar-title">${escapeHtml(opts.title)}</div></header>`;
+  // Placeholder shell — real sidebar/main sections are filled by later tasks.
+  const topbar = renderTopbar(blocks, opts);
   const sidebar = `<nav class="sidebar"></nav>`;
   const pathToId = collectDiffPaths(blocks);
   const diagrams = await renderAllDiagrams(blocks, {
