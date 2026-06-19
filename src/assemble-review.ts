@@ -10,6 +10,7 @@ import { renderWalkthrough } from "./review/walkthrough.js";
 import { renderDiagramCard, renderApiSurface, renderReusedBlock } from "./review/sections.js";
 import { renderTopbar } from "./review/topbar.js";
 import { renderSidebar, renderProgressRail } from "./review/sidebar.js";
+import { groupLooseDiffs } from "./review/normalize.js";
 
 function collectDiffPaths(bs: Block[], map = new Map<string, string>()): Map<string, string> {
   for (const b of bs) {
@@ -34,19 +35,20 @@ const ASSETS = fileURLToPath(new URL("../assets", import.meta.url));
 
 export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise<string> {
   assertUniqueIds(blocks);
+  const view = groupLooseDiffs(blocks);
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
   const viewer = await readFile(join(ASSETS, "review-viewer.js"), "utf8");
 
-  const topbar = renderTopbar(blocks, opts);
-  const pathToId = collectDiffPaths(blocks);
-  const sidebar = renderSidebar(blocks, pathToId, opts);
-  const diagrams = await renderAllDiagrams(blocks, {
+  const topbar = renderTopbar(view, opts);
+  const pathToId = collectDiffPaths(view);
+  const sidebar = renderSidebar(view, pathToId, opts);
+  const diagrams = await renderAllDiagrams(view, {
     outDir: opts.outDir,
     excalidraw: opts.excalidraw,
     onWarn: opts.onWarn,
   });
   let walkthroughRendered = false;
-  const mainSections = (await Promise.all(blocks.map(async (b) => {
+  const mainSections = (await Promise.all(view.map(async (b) => {
     if (b.type === "overview") {
       return (
         `<section id="tldr" class="section">${await renderTldr(b)}</section>` +
@@ -70,7 +72,7 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
       return (
         `<section id="walkthrough" class="section">` +
         `<div class="section-header"><h2 class="section-title">Guided walkthrough</h2></div>` +
-        `${renderProgressRail(blocks)}${await renderWalkthrough(blocks, opts.onWarn)}</section>`
+        `${renderProgressRail(view)}${await renderWalkthrough(view, opts.onWarn)}</section>`
       );
     }
     if (b.type === "diagram" || b.type === "schema") {
