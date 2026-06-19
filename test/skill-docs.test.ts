@@ -40,7 +40,10 @@ describe("skill docs stay in sync", () => {
   });
 
   it("visual-recap documents the review-narrative enrichment", () => {
-    expect(recapSkill).toContain("Summary");
+    // The standard mandates an authored lead with a TL;DR (facets + risk), annotated diffs
+    // (description), and a grouped narrative.
+    expect(recapSkill).toContain("facets");
+    expect(recapSkill).toContain("risk");
     expect(recapSkill).toContain("description");
     expect(recapSkill).toContain("group");
   });
