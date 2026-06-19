@@ -26,7 +26,6 @@
       "level": "low",
       "note": "additive, read-only query; no schema change; gated by a league-membership check"
     },
-    "startHref": "#diff-4",
     "diagram": {
       "type": "diagram",
       "id": "ov-flow",
