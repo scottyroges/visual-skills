@@ -6,6 +6,7 @@ import type {
   ProseBlock,
   QuestionsBlock,
   AnnotatedCodeBlock,
+  TabsBlock,
   Block,
 } from "../blocks.js";
 import { escapeHtml } from "../html.js";
@@ -56,6 +57,19 @@ export function renderDiagramCard(b: DiagramBlock | SchemaBlock, r: DiagramResul
     `${editLink}` +
     `</div>`
   );
+}
+
+/** Place an already-rendered diagram/schema/tabs block. Tabs flatten to stacked cards
+ *  (review.css has no tab switcher). Returns "" for anything else or a missing render. */
+export function renderDiagramLike(b: Block, diagrams: Map<string, DiagramResult>): string {
+  if (b.type === "tabs") {
+    return (b as TabsBlock).tabs.map((t) => renderDiagramLike(t.block, diagrams)).join("");
+  }
+  if (b.type === "diagram" || b.type === "schema") {
+    const r = diagrams.get(b.id);
+    return r ? renderDiagramCard(b as DiagramBlock | SchemaBlock, r) : "";
+  }
+  return "";
 }
 
 const API_TYPE: Record<NonNullable<import("../blocks.js").ApiProcedure["change"]>, { label: string; style: string }> = {

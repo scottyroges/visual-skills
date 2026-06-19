@@ -7,7 +7,7 @@ import { assertUniqueIds, collectDiagrams, renderAllDiagrams } from "./review/di
 import { renderTldr, renderOverviewPoints } from "./review/tldr.js";
 import { renderFilesTable } from "./review/files-table.js";
 import { renderWalkthrough } from "./review/walkthrough.js";
-import { renderDiagramCard, renderApiSurface, renderReusedBlock } from "./review/sections.js";
+import { renderDiagramCard, renderApiSurface, renderReusedBlock, renderDiagramLike } from "./review/sections.js";
 import { renderTopbar } from "./review/topbar.js";
 import { renderSidebar, renderProgressRail } from "./review/sidebar.js";
 import { groupLooseDiffs } from "./review/normalize.js";
@@ -50,11 +50,15 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   let walkthroughRendered = false;
   const mainSections = (await Promise.all(view.map(async (b) => {
     if (b.type === "overview") {
+      const leadDiagram = b.diagram
+        ? `<section id="${escapeHtml(b.id)}-diagram" class="section">${renderDiagramLike(b.diagram, diagrams)}</section>`
+        : "";
       return (
         `<section id="tldr" class="section">${await renderTldr(b)}</section>` +
         `<section id="overview" class="section">` +
         `<div class="section-header"><h2 class="section-title">Overview</h2></div>` +
-        `${await renderOverviewPoints(b)}</section>`
+        `${await renderOverviewPoints(b)}</section>` +
+        leadDiagram
       );
     }
     if (b.type === "file-tree") {
@@ -72,11 +76,14 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
       return (
         `<section id="walkthrough" class="section">` +
         `<div class="section-header"><h2 class="section-title">Guided walkthrough</h2></div>` +
-        `${renderProgressRail(view)}${await renderWalkthrough(view, opts.onWarn)}</section>`
+        `${renderProgressRail(view)}${await renderWalkthrough(view, opts.onWarn, diagrams)}</section>`
       );
     }
     if (b.type === "diagram" || b.type === "schema") {
       return `<section id="${escapeHtml(b.id)}" class="section">${renderDiagramCard(b, diagrams.get(b.id)!)}</section>`;
+    }
+    if (b.type === "tabs") {
+      return `<section id="${escapeHtml(b.id)}" class="section">${renderDiagramLike(b, diagrams)}</section>`;
     }
     if (b.type === "api") {
       return (
@@ -88,6 +95,7 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
     if (b.type === "prose" || b.type === "questions" || b.type === "annotated-code") {
       return `<section id="${escapeHtml(b.id)}" class="section">${await renderReusedBlock(b, opts.onWarn)}</section>`;
     }
+    opts.onWarn?.(`review: no renderer for block type "${b.type}" (id ${b.id})`);
     return `<section class="section" id="${escapeHtml(b.id)}"></section>`;
   }))).join("");
   const main = `<main class="main">${mainSections}</main>`;

@@ -226,6 +226,8 @@ body {
 }
 .file-status-M { color: var(--change); }
 .file-status-A { color: var(--add); }
+.file-status-D { color: var(--remove); }
+.file-status-R { color: var(--change); }
 
 .file-name {
   flex: 1;

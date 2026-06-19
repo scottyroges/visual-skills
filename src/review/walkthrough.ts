@@ -1,7 +1,9 @@
 import { escapeHtml } from "../html.js";
 import { renderMarkdown } from "../renderers/markdown.js";
 import { renderDiffBody } from "./diff.js";
+import { renderDiagramLike } from "./sections.js";
 import type { Block, DiffBlock, DiffHunk, GroupBlock } from "../blocks.js";
+import type { DiagramResult } from "../render-diagram.js";
 
 function countChanges(hunks: DiffHunk[]): { added: number; deleted: number } {
   let added = 0,
@@ -35,6 +37,7 @@ async function renderSubsection(
   d: DiffBlock,
   marker: string,
   onWarn?: (m: string) => void,
+  diagrams: Map<string, DiagramResult> = new Map(),
 ): Promise<string> {
   const { added, deleted } = countChanges(d.hunks);
   const b = badge(added, deleted);
@@ -48,6 +51,8 @@ async function renderSubsection(
     `</span>`;
 
   const desc = d.description ? await renderDesc(d.description, onWarn) : "";
+
+  const diagramHtml = d.diagram ? renderDiagramLike(d.diagram, diagrams) : "";
 
   const counts =
     `<span class="diff-counts"><span class="plus">+${added}</span>` +
@@ -66,6 +71,7 @@ async function renderSubsection(
     statChip +
     `</div>` +
     desc +
+    diagramHtml +
     `<details class="file-diff">` +
     `<summary>` +
     `<span class="diff-path">${path}</span>` +
@@ -83,6 +89,7 @@ async function renderChapter(
   g: GroupBlock,
   n: number,
   onWarn?: (m: string) => void,
+  diagrams: Map<string, DiagramResult> = new Map(),
 ): Promise<string> {
   let intro = "";
   if (g.description) {
@@ -96,7 +103,7 @@ async function renderChapter(
 
   const diffs = g.blocks.filter((b): b is DiffBlock => b.type === "diff");
   const subsections = await Promise.all(
-    diffs.map((d, idx) => renderSubsection(d, `${n}${String.fromCharCode(97 + idx)}`, onWarn)),
+    diffs.map((d, idx) => renderSubsection(d, `${n}${String.fromCharCode(97 + idx)}`, onWarn, diagrams)),
   );
 
   return (
@@ -111,8 +118,9 @@ async function renderChapter(
 export async function renderWalkthrough(
   blocks: Block[],
   onWarn?: (m: string) => void,
+  diagrams: Map<string, DiagramResult> = new Map(),
 ): Promise<string> {
   const groups = blocks.filter((b): b is GroupBlock => b.type === "group");
-  const chapters = await Promise.all(groups.map((g, i) => renderChapter(g, i + 1, onWarn)));
+  const chapters = await Promise.all(groups.map((g, i) => renderChapter(g, i + 1, onWarn, diagrams)));
   return chapters.join("");
 }
