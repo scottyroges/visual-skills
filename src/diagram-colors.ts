@@ -66,3 +66,15 @@ export function rolesInSource(d2?: string, mermaid?: string): ColorRole[] {
   scan(mermaid);
   return ROLES.filter((r) => found.has(r));
 }
+
+/** Roles to list in the legend for the ARTIFACT actually rendered. The d2 SVG carries d2
+ *  `class:` colors; the Excalidraw scene carries only the mermaid `classDef` colors — so a
+ *  mermaid sequence (no class mechanism) renders colorless and must show no legend, even though
+ *  its d2 floor defines roles. Keying off the renderer keeps the legend honest. */
+export function legendRolesForRender(
+  d2: string,
+  mermaid: string | undefined,
+  renderer: "d2" | "excalidraw",
+): ColorRole[] {
+  return renderer === "excalidraw" ? rolesInSource(undefined, mermaid) : rolesInSource(d2, undefined);
+}

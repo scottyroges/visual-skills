@@ -6,7 +6,7 @@ import { isDiagramBlock } from "./blocks.js";
 import { lintBlocks } from "./lint-blocks.js";
 import { escapeHtml } from "./html.js";
 import { renderAll } from "./render-diagram.js";
-import { rolesInSource } from "./diagram-colors.js";
+import { legendRolesForRender } from "./diagram-colors.js";
 import { renderLegend } from "./renderers/legend.js";
 import { renderProse } from "./renderers/prose.js";
 import { renderFileTree } from "./renderers/file-tree.js";
@@ -95,8 +95,11 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
     return `<div class="vs-zoomable">${r.svg}</div>${legendHtml}${link}`;
   };
 
-  const legendFor = (b: import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock): string =>
-    renderLegend(rolesInSource(b.d2, "mermaid" in b ? b.mermaid : undefined));
+  const legendFor = (
+    b: import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock,
+    r: (typeof rendered)[number],
+  ): string =>
+    renderLegend(legendRolesForRender(b.d2, "mermaid" in b ? b.mermaid : undefined, r.renderer));
 
   const renderBlock = async (b: Block): Promise<string> => {
     let html: string;
@@ -105,7 +108,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
       case "schema": {
         const r = svgById.get(b.id)!;
         // r.svg is trusted: produced by the d2 binary (or Excalidraw), which emit no <script>.
-        html = `<section class="vs-block vs-diagram"><h2>${escapeHtml(b.title)}</h2>${diagramInner(r, legendFor(b))}</section>`;
+        html = `<section class="vs-block vs-diagram"><h2>${escapeHtml(b.title)}</h2>${diagramInner(r, legendFor(b, r))}</section>`;
         break;
       }
       case "prose": html = await renderProse(b, opts.onWarn); break;
@@ -113,7 +116,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
       case "diff": {
         let diagramHtml = "";
         if (b.diagram?.type === "diagram") {
-          diagramHtml = `<div class="vs-diff-diagram"><h3>${escapeHtml(b.diagram.title)}</h3>${diagramInner(svgById.get(b.diagram.id)!, legendFor(b.diagram))}</div>`;
+          diagramHtml = `<div class="vs-diff-diagram"><h3>${escapeHtml(b.diagram.title)}</h3>${diagramInner(svgById.get(b.diagram.id)!, legendFor(b.diagram, svgById.get(b.diagram.id)!))}</div>`;
         } else if (b.diagram?.type === "tabs") {
           diagramHtml = `<div class="vs-diff-diagram">${await renderBlock(b.diagram)}</div>`;
         }
@@ -125,7 +128,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
         // intentionally untitled — a heading here would be redundant above the overview headline.
         let diagramHtml = "";
         if (b.diagram?.type === "diagram") {
-          diagramHtml = `<div class="vs-overview-diagram">${diagramInner(svgById.get(b.diagram.id)!, legendFor(b.diagram))}</div>`;
+          diagramHtml = `<div class="vs-overview-diagram">${diagramInner(svgById.get(b.diagram.id)!, legendFor(b.diagram, svgById.get(b.diagram.id)!))}</div>`;
         } else if (b.diagram?.type === "tabs") {
           diagramHtml = `<div class="vs-overview-diagram">${await renderBlock(b.diagram)}</div>`;
         }

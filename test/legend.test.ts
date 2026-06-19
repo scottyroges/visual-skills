@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rolesInSource } from "../src/diagram-colors.js";
+import { rolesInSource, legendRolesForRender } from "../src/diagram-colors.js";
 import { renderLegend } from "../src/renderers/legend.js";
 
 describe("rolesInSource", () => {
@@ -13,6 +13,27 @@ describe("rolesInSource", () => {
 
   it("returns nothing for a diagram that applies no roles", () => {
     expect(rolesInSource("a -> b", undefined)).toEqual([]);
+  });
+});
+
+describe("legendRolesForRender", () => {
+  // A sequence: d2 carries class colors, but the mermaid sequence has no class mechanism.
+  const seqD2 = "shape: sequence_diagram\nclient: { class: actor }\ndb: { class: store }\nclient -> db: q";
+  const seqMermaid = "sequenceDiagram\n  client->>db: q";
+
+  it("uses d2 roles when the d2 SVG is rendered", () => {
+    expect(legendRolesForRender(seqD2, seqMermaid, "d2")).toEqual(["actor", "store"]);
+  });
+
+  it("uses mermaid-only roles when the Excalidraw scene is rendered (sequence => none)", () => {
+    // The rendered artifact is the colorless mermaid sequence, so the legend must be empty.
+    expect(legendRolesForRender(seqD2, seqMermaid, "excalidraw")).toEqual([]);
+  });
+
+  it("keeps flowchart colors in the Excalidraw legend (mermaid classDefs convert)", () => {
+    const d2 = "a: { class: changed }\na -> b";
+    const mermaid = "flowchart LR\n A-->B\n classDef changed fill:#fff;\n class A changed;";
+    expect(legendRolesForRender(d2, mermaid, "excalidraw")).toEqual(["changed"]);
   });
 });
 
