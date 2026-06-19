@@ -56,6 +56,10 @@ journey maps (UX phases/emotions), BPMN gateway notation, event storming sticky-
 - Only `flowchart`/`graph`, `sequenceDiagram`, and `classDiagram` mermaid convert to *editable*
   Excalidraw elements. `stateDiagram` and `erDiagram` rasterize — so author a **state machine as
   a mermaid `flowchart`** (states as nodes, transitions as labeled edges), never `stateDiagram`.
+- **Keep mermaid edge/pipe labels free of parentheses and brackets** — `A -->|sqrt(1-p) loading| B`
+  fails to parse (mermaid reads `(` / `[` as a node-shape opener), which silently drops the editable
+  Excalidraw upgrade to a static image. Reword to `A -->|sqrt 1-p loading| B`. Unicode math
+  (`√ ρ ε ≈`) is fine; the punctuation is the problem. (d2 labels are unaffected.)
 - An invalid diagram degrades to a visible placeholder rather than breaking the document.
 
 ## Color vocabulary

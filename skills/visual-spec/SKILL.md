@@ -69,14 +69,17 @@ If any of these is true, the page is **not done** — keep going:
    decisions (which 2–3 were contested), the scope boundaries, the phases + gates, the success
    targets, the risks, and the open questions.
 
-4. **Author `spec.json`** — page options + the ordered blocks, using the **spec-component catalog**
-   (recipes + field shapes):
+4. **Author `spec.json`** — page options + the ordered blocks (shape in "The `spec.json` shape"
+   below). The **spec-component catalog** shows what each component looks like and when to use it:
 
        $VISUAL_SKILLS_DIR/skills/shared/spec-components.md
 
-   Fill the floor first (tldr + big idea, decisions with why + rejected, scope), then the size-scaled
-   surfaces. Short text fields are **inline markdown** (`code`, **bold**, *em*, `[link](#id)`); cross-link
-   the approval band's "scrutinize" to a reference drawer by id (e.g. `#ref-sites`).
+   The catalog's snippets are the rendered **HTML output**; you author typed **JSON blocks** and the
+   renderer produces that HTML. The exact JSON field shape of every block is defined and commented in
+   `$VISUAL_SKILLS_DIR/src/spec-blocks.ts` — **read it as you author.** Fill the floor first (tldr +
+   big idea, decisions with why + rejected, scope), then the size-scaled surfaces. Short text fields
+   are **inline markdown** (`code`, **bold**, *em*, `[link](#id)`); cross-link the approval band's
+   "scrutinize" to a reference drawer by id (e.g. `#ref-sites`).
 
 5. **Author the hero diagram** as a `diagram` block (kind `architecture`/`flowchart`/`sequence`),
    using the **diagram catalog** recipes + color vocabulary — mark the new subject `changed`, leave
@@ -95,9 +98,37 @@ If any of these is true, the page is **not done** — keep going:
    TL;DR/big-idea, decisions without why, no scope, a large spec missing a hero/rollout/approve).
    Edit `spec.json` and re-run step 6 until the render is clean.
 
+## The `spec.json` shape
+
+A single JSON object: **page options at the top level**, then a `blocks` array. The page options
+populate the topbar chips, the sidebar "Related" list, and the sidebar "Meta" list — they are NOT
+blocks, so their shape is not in `spec-blocks.ts`:
+
+    {
+      "title":      "Spec · <name>",            // topbar title (required)
+      "phase":      "Phase 2m",                  // topbar chip (optional)
+      "status":     "Brainstormed → Ready for plan",  // topbar chip (optional)
+      "date":       "2026-05-31",                // topbar chip (optional)
+      "complexity": "Large · high blast-radius", // topbar chip (optional)
+      "related":    [{ "kind": "Predecessor", "value": "cap-spend-value-model · shipped" }],
+                                                 // sidebar "Related" — PLAIN STRINGS {kind, value}, no links
+      "meta":       [{ "key": "Status", "value": "ready for plan" }],
+                                                 // sidebar "Meta" — PLAIN STRINGS {key, value}
+      "blocks":     [ … ordered SpecBlock objects (see src/spec-blocks.ts) … ]
+    }
+
+`related` and `meta` are arrays of plain-string pairs (`{kind, value}` / `{key, value}`) — **not
+link objects**. Every block object's fields are in `src/spec-blocks.ts`.
+
 ## Scaling by size
 
-The floor is the same for everyone; only the ceiling moves.
+The floor is the same for everyone; only the ceiling moves. **"Large" is measured by section count,
+not the `complexity` chip:** once a spec carries **5+ chapter sections** (everything except `tldr`
+and `reference`), the completeness lint expects the fuller treatment — a hero `diagram`, a `rollout`,
+and an `approve` band — and a big-idea line on the TL;DR. A genuinely small spec stays under that and
+those surfaces are optional. If you find yourself with 5+ sections, add them for real (grounded in
+the doc), don't pad — a 5-section design almost always *has* a build order and warrants an approval
+band.
 
 | Element | Small spec | Medium | Large (multi-phase, high blast-radius) |
 |---|---|---|---|

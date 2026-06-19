@@ -59,6 +59,20 @@ function renderTopbar(opts: SpecOpts): string {
   );
 }
 
+/** Warn (don't crash) on malformed page-level options — the easy shapes to get wrong. */
+function validateSpecOpts(opts: SpecOpts, warn: (m: string) => void): void {
+  (opts.related ?? []).forEach((r, i) => {
+    const o = r as Record<string, unknown>;
+    if (!o || (o.kind === undefined && o.value === undefined))
+      warn(`related[${i}] should be { kind, value } (plain strings) — got keys [${o ? Object.keys(o).join(", ") : "—"}]; entry ignored`);
+  });
+  (opts.meta ?? []).forEach((m, i) => {
+    const o = m as Record<string, unknown>;
+    if (!o || (o.key === undefined && o.value === undefined))
+      warn(`meta[${i}] should be { key, value } (plain strings) — got keys [${o ? Object.keys(o).join(", ") : "—"}]; entry ignored`);
+  });
+}
+
 interface NavEntry { id: string; label: string; num: string; }
 function navEntries(blocks: SpecBlock[]): NavEntry[] {
   let n = 0;
@@ -81,16 +95,24 @@ function renderSidebar(blocks: SpecBlock[], opts: SpecOpts): string {
     `<div class="sidebar-section"><span class="sidebar-label">Contents</span>` +
     `<ul class="outline-list" role="list">${outline}</ul></div>`);
 
-  if (opts.related?.length) {
-    const items = opts.related
+  // Tolerant of malformed page options: coerce + drop empties so a wrong shape degrades to a
+  // (warned) skip rather than crashing escapeHtml. validateSpecOpts() surfaces the mistake.
+  const related = (opts.related ?? [])
+    .map((r) => ({ kind: String(r?.kind ?? ""), value: String(r?.value ?? "") }))
+    .filter((r) => r.kind || r.value);
+  if (related.length) {
+    const items = related
       .map((r) => `<li><span class="rk">${escapeHtml(r.kind)}</span><br><span class="rv">${escapeHtml(r.value)}</span></li>`)
       .join("");
     sections.push(
       `<div class="sidebar-section"><span class="sidebar-label">Related</span>` +
       `<ul class="related-list" role="list">${items}</ul></div>`);
   }
-  if (opts.meta?.length) {
-    const rows = opts.meta
+  const meta = (opts.meta ?? [])
+    .map((m) => ({ key: String(m?.key ?? ""), value: String(m?.value ?? "") }))
+    .filter((m) => m.key || m.value);
+  if (meta.length) {
+    const rows = meta
       .map((m) => `<div class="meta-row"><span class="mk">${escapeHtml(m.key)}</span><span class="mv">${escapeHtml(m.value)}</span></div>`)
       .join("");
     sections.push(
@@ -375,6 +397,7 @@ export async function assembleSpec(blocks: SpecBlock[], opts: SpecOpts): Promise
   const diagrams = new Map<string, DiagramResult>();
   for (const r of rendered) diagrams.set(r.id, r);
   if (opts.onWarn) {
+    validateSpecOpts(opts, opts.onWarn);                 // friendly warning on malformed related/meta (vs a crash)
     for (const w of lintSpec(blocks)) opts.onWarn(w);   // demo-standard floor: lead / decisions / scope / size-scaled surfaces
     const failed = rendered.filter((r) => r.failed).map((r) => r.id);
     if (failed.length) opts.onWarn(`${failed.length} diagram(s) failed to compile: ${failed.join(", ")} — fix their d2 source`);

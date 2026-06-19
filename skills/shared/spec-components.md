@@ -21,6 +21,21 @@ A visual spec reuses the recap's **app shell** verbatim (`header.topbar` → `di
 The shipped artifact **inlines both** into one `<style>` so it stays self-contained over `file://`
 (same as the recap demo). `assets/spec.css` is the source of truth; the example inlines a snapshot.
 
+**Input vs output.** The snippets below are the **rendered HTML** each component produces — they show
+you the shape and classes. You don't write this HTML by hand: you author **typed JSON blocks** in a
+`spec.json`, and `assemble-spec.ts` generates the HTML. The exact JSON field shape of every block is
+defined and commented in [`src/spec-blocks.ts`](../../src/spec-blocks.ts) — read it as you author.
+
+**Page options** (the `spec.json` top level, not blocks) drive the page chrome:
+
+    { "title": "…", "phase": "…", "status": "…", "date": "…", "complexity": "…",
+      "related": [{ "kind": "Predecessor", "value": "…" }],   // sidebar Related — plain strings, no links
+      "meta":    [{ "key": "Status", "value": "…" }],          // sidebar Meta — plain strings
+      "blocks":  [ … ] }
+
+`title`/`phase`/`status`/`date`/`complexity` are the topbar chips; `related` and `meta` are arrays of
+plain-string pairs (NOT link objects).
+
 ## Section ladder (orientation → approval)
 
 Author top-to-bottom in this order; it takes a cold reader from "what is this" to "I can sign off":

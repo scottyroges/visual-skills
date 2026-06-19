@@ -104,6 +104,23 @@ describe("assembleSpec", () => {
     }
   });
 
+  it("does not crash on a malformed `related`/`meta` shape — warns and skips instead", async () => {
+    // Regression: the dogfood passed link-shaped related ({label, href}); the wrong shape used to
+    // crash escapeHtml(undefined). It must now degrade to a warning, never throw.
+    const warns: string[] = [];
+    const bad = {
+      ...opts,
+      related: [{ label: "cap-spend", href: "./x.md" }] as unknown as { kind: string; value: string }[],
+      meta: [{ k: "Status", v: "ready" }] as unknown as { key: string; value: string }[],
+      onWarn: (m: string) => warns.push(m),
+    };
+    let html = "";
+    await expect((async () => { html = await assembleSpec(blocks, bad); })()).resolves.toBeUndefined();
+    expect(html).toContain("</html>");
+    expect(warns.some((w) => /related\[0\] should be \{ kind, value \}/.test(w))).toBe(true);
+    expect(warns.some((w) => /meta\[0\] should be \{ key, value \}/.test(w))).toBe(true);
+  });
+
   it("rejects duplicate ids (block or reference item)", () => {
     expect(() => assertUniqueSpecIds([
       { type: "scope", id: "dup", inList: [], outList: [] },
