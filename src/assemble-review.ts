@@ -7,6 +7,7 @@ import { assertUniqueIds, collectDiagrams, renderAllDiagrams } from "./review/di
 import { renderTldr, renderOverviewPoints } from "./review/tldr.js";
 import { renderFilesTable } from "./review/files-table.js";
 import { renderWalkthrough } from "./review/walkthrough.js";
+import { renderDiagramCard, renderApiSurface, renderReusedBlock } from "./review/sections.js";
 
 function collectDiffPaths(bs: Block[], map = new Map<string, string>()): Map<string, string> {
   for (const b of bs) {
@@ -38,6 +39,11 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   const topbar = `<header class="topbar"><div class="topbar-title">${escapeHtml(opts.title)}</div></header>`;
   const sidebar = `<nav class="sidebar"></nav>`;
   const pathToId = collectDiffPaths(blocks);
+  const diagrams = await renderAllDiagrams(blocks, {
+    outDir: opts.outDir,
+    excalidraw: opts.excalidraw,
+    onWarn: opts.onWarn,
+  });
   let walkthroughRendered = false;
   const mainSections = (await Promise.all(blocks.map(async (b) => {
     if (b.type === "overview") {
@@ -65,6 +71,19 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
         `<div class="section-header"><h2 class="section-title">Guided walkthrough</h2></div>` +
         `${await renderWalkthrough(blocks, opts.onWarn)}</section>`
       );
+    }
+    if (b.type === "diagram" || b.type === "schema") {
+      return `<section id="${escapeHtml(b.id)}" class="section">${renderDiagramCard(b, diagrams.get(b.id)!)}</section>`;
+    }
+    if (b.type === "api") {
+      return (
+        `<section id="${escapeHtml(b.id)}" class="section">` +
+        `<div class="section-header"><h2 class="section-title">${escapeHtml(b.title)}</h2></div>` +
+        `${renderApiSurface(b)}</section>`
+      );
+    }
+    if (b.type === "prose" || b.type === "questions" || b.type === "annotated-code") {
+      return `<section id="${escapeHtml(b.id)}" class="section">${await renderReusedBlock(b, opts.onWarn)}</section>`;
     }
     return `<section class="section" id="${escapeHtml(b.id)}"></section>`;
   }))).join("");
