@@ -1,5 +1,6 @@
 import type { Block, FileChange, GroupBlock } from "../blocks.js";
 import { escapeHtml } from "../html.js";
+import { stripChapterOrdinal } from "./normalize.js";
 import type { ReviewOpts } from "../assemble-review.js";
 
 const STATUS_LABEL: Record<FileChange["status"], string> = {
@@ -19,7 +20,7 @@ export function renderProgressRail(blocks: Block[]): string {
       return (
         `<a class="progress-step${active}" href="#${escapeHtml(g.id)}">` +
         `<div class="progress-step-num" aria-hidden="true">${i + 1}</div>` +
-        `<span class="progress-step-label">${escapeHtml(g.title)}</span></a>`
+        `<span class="progress-step-label">${escapeHtml(stripChapterOrdinal(g.title))}</span></a>`
       );
     })
     .join("");

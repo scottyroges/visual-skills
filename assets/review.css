@@ -443,16 +443,18 @@ body {
 /* ===== WALKTHROUGH PROGRESS ===== */
 .progress-rail {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 0;
   margin-bottom: 28px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow-x: auto;            /* scroll horizontally when there are many/long chapters */
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 .progress-step {
-  flex: 1;
+  flex: 1 0 auto;              /* grow to fill when few; never shrink below content -> overflow scrolls */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -461,8 +463,10 @@ body {
   border-right: 1px solid var(--border);
   font-size: var(--text-sm);
   color: var(--ink-muted);
+  white-space: nowrap;
   transition: background 100ms ease-out;
 }
+.progress-step-label { white-space: nowrap; }
 .progress-step:last-child { border-right: none; }
 .progress-step.is-active { background: var(--accent-subtle); color: var(--accent); }
 .progress-step { text-decoration: none; cursor: pointer; }
