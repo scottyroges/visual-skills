@@ -29,4 +29,29 @@ describe("renderWalkthrough", () => {
     expect(html).toContain("Adds a thing.");
     expect(html).not.toMatch(/<details[^>]*\bopen\b/);   // diffs collapsed
   });
+
+  it("puts a divider BETWEEN chapters but not before the first", async () => {
+    const html = await renderWalkthrough(blocks); // two chapters
+    const dividers = html.match(/class="chapter-divider"/g) ?? [];
+    expect(dividers).toHaveLength(1); // exactly one separator for two chapters
+    expect(html.indexOf("chapter-divider")).toBeGreaterThan(html.indexOf('id="grp-core"'));
+  });
+
+  it("gives aligned (desc-item) bullets even when the description leads with a paragraph", async () => {
+    const led: Block[] = [
+      { type: "group", id: "g", title: "G", description: "d", blocks: [
+        { type: "diff", id: "diff-led", title: "z.ts", path: "src/z.ts",
+          description: "**Takeaway.**\n\n- first bullet\n- second bullet that is long enough to wrap\n\nTrailing note.",
+          hunks: [{ header: "@@", lines: ["+z"] }] },
+      ] },
+    ];
+    const html = await renderWalkthrough(led);
+    // The canonical "bold takeaway + bullets" shape must use the aligned flex bullets,
+    // not a bare <ul><li> (whose wrapped lines slide under the marker).
+    expect(html).toContain('class="desc-item"');
+    expect(html).toContain('class="desc-bullet"');
+    expect(html).toContain("Takeaway.");
+    expect(html).toContain("Trailing note.");
+    expect(html).not.toMatch(/<li>(?!<span)/); // no un-transformed list items
+  });
 });

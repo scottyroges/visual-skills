@@ -12,6 +12,7 @@ import { renderTopbar } from "./review/topbar.js";
 import { renderSidebar, renderProgressRail } from "./review/sidebar.js";
 import { groupLooseDiffs } from "./review/normalize.js";
 import { lintBlocks } from "./lint-blocks.js";
+import { lintCompleteness } from "./lint-completeness.js";
 
 function collectDiffPaths(bs: Block[], map = new Map<string, string>()): Map<string, string> {
   for (const b of bs) {
@@ -50,6 +51,7 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   });
   if (opts.onWarn) {
     for (const w of lintBlocks(blocks)) opts.onWarn(w); // NOTE: lint the ORIGINAL blocks, not `view`
+    for (const w of lintCompleteness(blocks)) opts.onWarn(w); // demo-standard floor: overview/TL;DR/annotations/grouping
     const failed = [...diagrams.values()].filter((r) => r.failed).map((r) => r.id);
     if (failed.length) opts.onWarn(`${failed.length} diagram(s) failed to compile and show a placeholder: ${failed.join(", ")} — fix their d2 source`);
   }

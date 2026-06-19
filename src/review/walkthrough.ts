@@ -18,13 +18,14 @@ function countChanges(hunks: DiffHunk[]): { added: number; deleted: number } {
 
 async function renderDesc(md: string, onWarn?: (m: string) => void): Promise<string> {
   const html = (await renderMarkdown(md, onWarn)).trim();
-  if (html.startsWith("<ul>")) {
-    return html
-      .replace(/^<ul>/, '<ul class="desc-list">')
-      .replace(/<li>/g, '<li class="desc-item"><span class="desc-bullet" aria-hidden="true">&#8250;</span><span>')
-      .replace(/<\/li>/g, "</span></li>");
-  }
-  return `<div class="section-intro">${html}</div>`;
+  // Apply the aligned flex-bullet treatment to ANY bullet list, even when the description
+  // leads with a paragraph (the canonical "bold takeaway + bullets" shape). A bare <ul><li>
+  // would slide wrapped lines under the marker because the global reset zeroes list padding.
+  const withLists = html
+    .replace(/<ul>/g, '<ul class="desc-list">')
+    .replace(/<li>/g, '<li class="desc-item"><span class="desc-bullet" aria-hidden="true">&#8250;</span><span>')
+    .replace(/<\/li>/g, "</span></li>");
+  return `<div class="section-intro">${withLists}</div>`;
 }
 
 function badge(added: number, deleted: number): { cls: string; label: string } {
@@ -122,5 +123,6 @@ export async function renderWalkthrough(
 ): Promise<string> {
   const groups = blocks.filter((b): b is GroupBlock => b.type === "group");
   const chapters = await Promise.all(groups.map((g, i) => renderChapter(g, i + 1, onWarn, diagrams)));
-  return chapters.join("");
+  // A bold rule between chapters (never before the first) makes the narrative beats scannable.
+  return chapters.join('<hr class="chapter-divider" />');
 }

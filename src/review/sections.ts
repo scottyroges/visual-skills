@@ -10,7 +10,7 @@ import type {
   Block,
 } from "../blocks.js";
 import { escapeHtml } from "../html.js";
-import { PALETTE, ROLE_LABELS, rolesInSource, type ColorRole } from "../diagram-colors.js";
+import { PALETTE, ROLE_LABELS, legendRolesForRender, type ColorRole } from "../diagram-colors.js";
 import type { DiagramResult } from "../render-diagram.js";
 import { renderProse } from "../renderers/prose.js";
 import { renderQuestions } from "../renderers/questions.js";
@@ -45,7 +45,7 @@ export function renderReviewLegend(roles: ColorRole[]): string {
 /** Zoomable diagram card matching the mockup's `.diagram-wrap` vocabulary. */
 export function renderDiagramCard(b: DiagramBlock | SchemaBlock, r: DiagramResult): string {
   const mermaid = "mermaid" in b ? b.mermaid : undefined;
-  const legend = renderReviewLegend(rolesInSource(b.d2, mermaid));
+  const legend = renderReviewLegend(legendRolesForRender(b.d2, mermaid, r.renderer));
   const editLink = r.editable
     ? `<p class="diagram-caption"><a href="${escapeHtml(basename(r.editable))}">Open in Excalidraw to edit</a></p>`
     : "";

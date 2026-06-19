@@ -88,6 +88,39 @@ datastores by role. Don't color every node; uncolored = neutral/unchanged.
 
 <!-- catalog-entries-start -->
 
+### Feature home (layered stack)
+- **kind:** `architecture` — **editable:** yes
+- **Use when:** orienting *where a change lives* — the changed pieces in their layered stack
+  (router → service → repository → datastore), with reused existing modules called out. The curated
+  replacement for the recap's mechanical `where-it-fits` import graph (use the same `where-it-fits`
+  id). Mark new pieces `changed`; leave reused/existing modules neutral; tag the datastore `store`.
+- **Avoid when:** a single-file change with no meaningful layering (drop the structural diagram).
+
+```d2
+direction: right
+"procedure (router, new)": { class: changed }
+"service method (new)": { class: changed }
+"repo query (new)": { class: changed }
+"existing dep (reused)"
+"Postgres": { class: store }
+"procedure (router, new)" -> "service method (new)"
+"service method (new)" -> "existing dep (reused)": reuse
+"service method (new)" -> "repo query (new)"
+"repo query (new)" -> "Postgres": query
+```
+
+```mermaid
+flowchart LR
+  R["procedure (router, new)"] --> S["service method (new)"]
+  S -->|reuse| X["existing dep (reused)"]
+  S --> Q["repo query (new)"]
+  Q -->|query| DB[(Postgres)]
+  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;
+  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;
+  class R,S,Q changed;
+  class DB store;
+```
+
 ### Dependency graph
 - **kind:** `architecture` — **editable:** yes
 - **Use when:** showing how the changed module sits among its importers/imports; spotting cycles.

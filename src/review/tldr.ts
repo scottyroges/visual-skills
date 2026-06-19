@@ -17,15 +17,10 @@ export async function renderTldr(b: OverviewBlock): Promise<string> {
   }
   if (b.facets?.size) rows.push(row("Size", await renderInlineMarkdown(b.facets.size)));
 
-  const start = b.startHref && SAFE_HREF.test(b.startHref)
-    ? `<div class="tldr-start"><span class="tldr-start-label">Start here</span> ` +
-      `<a href="${escapeHtml(b.startHref)}">&#8594;</a></div>`
-    : "";
-
   return (
     `<div class="tldr-card">` +
     `<div class="tldr-header"><span class="tldr-eyebrow">TL;DR</span>${headline}</div>` +
-    `<div class="tldr-rows">${rows.join("")}</div>${start}</div>`
+    `<div class="tldr-rows">${rows.join("")}</div></div>`
   );
 }
 

@@ -118,7 +118,6 @@ export async function dependencyNeighborhood(
     else nodes.set(id, { label, changed });
   };
   const keyId = (key: string) => `m:${key}`;
-  const pkgId = (name: string) => `p:${name}`;
 
   for (const p of sources) addNode(keyId(moduleKey(p)), p, true);
 
@@ -127,8 +126,9 @@ export async function dependencyNeighborhood(
     if (!src) continue;
     for (const spec of importsOf(src)) {
       const mod = resolveModule(p, spec, aliases);
+      // In-repo modules only: bare packages (server-only, kysely, vitest, @trpc/server, …) are
+      // noise in a "where it fits" neighborhood — omit them so the app structure reads clearly.
       if (mod) { addNode(keyId(mod), mod); edges.add(`${keyId(moduleKey(p))} ${keyId(mod)}`); }
-      else { addNode(pkgId(spec), spec); edges.add(`${keyId(moduleKey(p))} ${pkgId(spec)}`); }
     }
   }
 
