@@ -5,6 +5,7 @@ import { escapeHtml } from "./html.js";
 import { renderInlineMarkdown, renderMarkdown } from "./renderers/markdown.js";
 import { renderAll, type DiagramResult } from "./render-diagram.js";
 import { renderDiagramCard } from "./review/sections.js";
+import { lintSpec } from "./lint-spec.js";
 import {
   assertUniqueSpecIds, collectSpecDiagrams, toDiagramBlock, isChapter, chapterLabel,
   type SpecBlock, type TldrBlock, type SpecDiagramBlock, type ComponentsBlock, type FitsBlock,
@@ -374,6 +375,7 @@ export async function assembleSpec(blocks: SpecBlock[], opts: SpecOpts): Promise
   const diagrams = new Map<string, DiagramResult>();
   for (const r of rendered) diagrams.set(r.id, r);
   if (opts.onWarn) {
+    for (const w of lintSpec(blocks)) opts.onWarn(w);   // demo-standard floor: lead / decisions / scope / size-scaled surfaces
     const failed = rendered.filter((r) => r.failed).map((r) => r.id);
     if (failed.length) opts.onWarn(`${failed.length} diagram(s) failed to compile: ${failed.join(", ")} — fix their d2 source`);
   }

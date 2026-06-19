@@ -3,11 +3,14 @@ import { readFileSync } from "node:fs";
 
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 const blocks = read("../src/blocks.ts");
+const specBlocks = read("../src/spec-blocks.ts");
 const planSkill = read("../skills/visual-plan/SKILL.md");
 const recapSkill = read("../skills/visual-recap/SKILL.md");
+const specSkill = read("../skills/visual-spec/SKILL.md");
 
 // Discriminant literals like `type: "diagram"` across the Block interfaces.
 const blockTypes = [...new Set([...blocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))];
+const specBlockTypes = [...new Set([...specBlocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))];
 
 describe("skill docs stay in sync", () => {
   it("documents every Block type in the visual-plan skill", () => {
@@ -19,12 +22,27 @@ describe("skill docs stay in sync", () => {
     }
   });
 
-  it("both skills have name + description frontmatter", () => {
-    for (const md of [planSkill, recapSkill]) {
+  it("documents every spec block type in the visual-spec skill", () => {
+    expect(specBlockTypes.length).toBeGreaterThanOrEqual(11);
+    for (const t of specBlockTypes) {
+      expect(specSkill, `visual-spec SKILL.md must document spec block type \`${t}\``).toContain(`\`${t}\``);
+    }
+  });
+
+  it("all skills have name + description frontmatter", () => {
+    for (const md of [planSkill, recapSkill, specSkill]) {
       expect(md.startsWith("---")).toBe(true);
       expect(md).toMatch(/\nname:\s*\S+/);
       expect(md).toMatch(/\ndescription:\s*\S+/);
     }
+  });
+
+  it("visual-spec mandates the standard (lead, decisions+why, scope, approval) and references both catalogs", () => {
+    for (const s of ["tldr", "decisions", "why", "scope", "approve", "rejected"]) {
+      expect(specSkill, `visual-spec SKILL.md must mention "${s}"`).toContain(s);
+    }
+    expect(specSkill).toContain("skills/shared/spec-components.md");
+    expect(specSkill).toContain("skills/shared/diagrams.md");
   });
 
   it("both skills reference the shared diagram catalog", () => {
