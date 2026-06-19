@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import type { Target } from "../src/git.js";
 import { gatherRecap } from "../src/gather-recap.js";
-import { assemble } from "../src/assemble.js";
+import { assembleReview } from "../src/assemble-review.js";
 import { generatorStamp } from "../src/version.js";
 
 function parseTarget(values: Record<string, string | undefined>): Target {
@@ -45,7 +45,7 @@ async function main() {
   const htmlPath = join(outDir, "recap.html");
   await mkdir(outDir, { recursive: true });
   const generator = await generatorStamp();
-  const html = await assemble(blocks, {
+  const html = await assembleReview(blocks, {
     title: `Recap — ${scope.label}`,
     source: `${repoRoot} · base ${scope.baseRef.slice(0, 10)} → head ${scope.headRef.slice(0, 10)} · stack ${adapter}`,
     status: { level: "green", text: `${blocks.length} blocks` },
