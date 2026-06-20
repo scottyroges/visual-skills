@@ -280,7 +280,7 @@
             },
             {
               "dir": "calls",
-              "body": "[sim](domain-sim.html#c-contracts) — `executeAcceptedTrade`, cap math, `processMidSeasonGmFiring`"
+              "body": "[sim](../domain-sim/domain-sim.html#c-contracts) — `executeAcceptedTrade`, cap math, `processMidSeasonGmFiring`"
             },
             {
               "dir": "reads",
@@ -354,7 +354,7 @@
           "connections": [
             {
               "dir": "produces",
-              "body": "a lineup consumed by [sim](domain-sim.html#c-sim-game) each game"
+              "body": "a lineup consumed by [sim](../domain-sim/domain-sim.html#c-sim-game) each game"
             },
             {
               "dir": "gated by",
@@ -362,7 +362,7 @@
             },
             {
               "dir": "emits",
-              "body": "friction tags (e.g. `locker_room_unrest`) to [story](domain-story.html)"
+              "body": "friction tags (e.g. `locker_room_unrest`) to [story](../domain-story/domain-story.html)"
             }
           ]
         },
@@ -437,11 +437,11 @@
           "connections": [
             {
               "dir": "calls",
-              "body": "[sim](domain-sim.html) — `processMidSeasonFiring` / `processMidSeasonGmFiring`"
+              "body": "[sim](../domain-sim/domain-sim.html) — `processMidSeasonFiring` / `processMidSeasonGmFiring`"
             },
             {
               "dir": "writes",
-              "body": "`Franchise.ownerBlame` (debounced) — read by news in [story](domain-story.html)"
+              "body": "`Franchise.ownerBlame` (debounced) — read by news in [story](../domain-story/domain-story.html)"
             },
             {
               "dir": "reads",
@@ -503,7 +503,7 @@
           "connections": [
             {
               "dir": "produces",
-              "body": "demands & `wantsTradeRequest` — read by the [gm](#c-gm) and by [story](domain-story.html#c-director) arcs"
+              "body": "demands & `wantsTradeRequest` — read by the [gm](#c-gm) and by [story](../domain-story/domain-story.html#c-director) arcs"
             },
             {
               "dir": "reads",
@@ -595,7 +595,7 @@
           "connections": [
             {
               "dir": "invoked by",
-              "body": "[story](domain-story.html#c-director) — via `pickArcOption` when an arc decision is the agent's"
+              "body": "[story](../domain-story/domain-story.html#c-director) — via `pickArcOption` when an arc decision is the agent's"
             }
           ]
         }
@@ -662,7 +662,7 @@
         {
           "name": "sim",
           "path": "lib/sim",
-          "href": "domain-sim.html"
+          "href": "../domain-sim/domain-sim.html"
         },
         {
           "name": "world",
@@ -675,7 +675,7 @@
         {
           "name": "story",
           "path": "lib/story",
-          "href": "domain-story.html"
+          "href": "../domain-story/domain-story.html"
         }
       ],
       "note": "Calls into `sim` for execution (`executeAcceptedTrade`, `processMidSeasonFiring`, cap math), reads rosters & profiles, and emits tags into `story` via `evaluateAndEmitFromBrains`."

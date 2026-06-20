@@ -304,7 +304,7 @@
           "connections": [
             {
               "dir": "calls",
-              "body": "[sim-game](#c-sim-game) per game; [brain](domain-brain.html) `runDayTriggers`; [story](domain-story.html) `storyTick`"
+              "body": "[sim-game](#c-sim-game) per game; [brain](../domain-brain/domain-brain.html) `runDayTriggers`; [story](../domain-story/domain-story.html) `storyTick`"
             },
             {
               "dir": "threads",
@@ -408,7 +408,7 @@
           "connections": [
             {
               "dir": "called by",
-              "body": "[brain (gm)](domain-brain.html#c-gm) — cap checks, extensions, trade execution"
+              "body": "[brain (gm)](../domain-brain/domain-brain.html#c-gm) — cap checks, extensions, trade execution"
             },
             {
               "dir": "drives",
@@ -446,7 +446,7 @@
           "connections": [
             {
               "dir": "emits to",
-              "body": "[story](domain-story.html#c-director) — the season-event bus and KM opportunities"
+              "body": "[story](../domain-story/domain-story.html#c-director) — the season-event bus and KM opportunities"
             },
             {
               "dir": "consumed by",
@@ -526,12 +526,12 @@
         {
           "name": "brain",
           "path": "lib/brain",
-          "href": "domain-brain.html"
+          "href": "../domain-brain/domain-brain.html"
         },
         {
           "name": "story",
           "path": "lib/story",
-          "href": "domain-story.html"
+          "href": "../domain-story/domain-story.html"
         }
       ],
       "note": "Between games it calls `brain` triggers to get decisions, then executes them; it emits season events and Key-Moment opportunities to `story`. The dependency on intelligence/narrative is by *callback*, not control — `sim` stays the driver."

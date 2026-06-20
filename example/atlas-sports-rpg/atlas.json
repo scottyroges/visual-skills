@@ -149,7 +149,7 @@
             "brain",
             "story"
           ],
-          "href": "domain-sim.html"
+          "href": "domain-sim/domain-sim.html"
         },
         {
           "name": "brain",
@@ -172,7 +172,7 @@
             "world",
             "profiles"
           ],
-          "href": "domain-brain.html"
+          "href": "domain-brain/domain-brain.html"
         },
         {
           "name": "story",
@@ -195,7 +195,7 @@
             "sim",
             "brain"
           ],
-          "href": "domain-story.html"
+          "href": "domain-story/domain-story.html"
         },
         {
           "name": "world",

@@ -59,11 +59,20 @@ If any of these is true, the atlas is **not done** — keep going:
 ## Workflow (three modes)
 
 `bin/atlas.ts` has three operation modes. The artifact set lives in `--out` (a *directory*, absolute
-path — e.g. `<repo>/.visual/atlas`), all committable and re-renderable:
+path — e.g. `<repo>/.visual/atlas`), all committable and re-renderable. **Each domain gets its own
+folder** so its diagram sidecars stay self-contained (no cross-domain collisions):
 
-- `atlas.domains.json` — the grouping config (human-owned source of truth).
-- `atlas.json` + `domain-<slug>.json` — the page blocks.
-- `atlas.html` + `domain-<slug>.html` — the rendered, cross-linked output.
+    .visual/atlas/
+      atlas.domains.json        # the grouping config (human-owned source of truth)
+      atlas.json  atlas.html    # the atlas page blocks + rendered output
+      <atlas diagrams>.excalidraw
+      domain-<slug>/
+        domain-<slug>.json  domain-<slug>.html
+        <that domain's diagrams>.excalidraw
+
+Cross-page links follow the layout: an atlas tile → `domain-<slug>/domain-<slug>.html`; a domain's
+"← Atlas" back-link → `../atlas.html`; a domain→domain link (seams/connections) →
+`../domain-<other>/domain-<other>.html#anchor`.
 
 ### 1. Full scan (the main path)
 

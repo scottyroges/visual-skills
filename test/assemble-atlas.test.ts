@@ -30,7 +30,7 @@ describe("assemble shell", () => {
   });
   it("domain: back-link + layer/path/count/depends chips", async () => {
     const html = await assembleDomain([], { title: "brain", layer: "intelligence", layerLabel: "Intelligence", path: "lib/brain", count: "~76 files", depends: "sim · world" });
-    expect(html).toContain('class="topbar-back" href="atlas.html"');
+    expect(html).toContain('class="topbar-back" href="../atlas.html"');
     expect(html).toContain('class="chip layer-chip layer-intelligence">Intelligence');
     expect(html).toContain('class="chip chip-stat">lib/brain');
     expect(html).toContain('class="chip chip-count">~76 files');
@@ -188,14 +188,14 @@ describe("canonical regeneration (acceptance)", () => {
     expect(html).not.toMatch(/season spine/i);
   });
   it("domain-brain.json renders 6 deep sections each with files + exports + connections", async () => {
-    const doc = fix("domain-brain.json");
+    const doc = fix("domain-brain/domain-brain.json");
     const html = await assembleDomain(doc.blocks, { ...doc, title: doc.title });
     for (const id of ["c-gm","c-coach","c-owner","c-player","c-scout","c-agent"]) expect(html).toContain(`id="${id}"`);
     expect((html.match(/conns-label">Key files/g) || []).length).toBe(6);
     expect((html.match(/conns-label">Connections/g) || []).length).toBe(6);
   });
   it("domain-story.json renders 7 deep sections", async () => {
-    const doc = fix("domain-story.json");
+    const doc = fix("domain-story/domain-story.json");
     const html = await assembleDomain(doc.blocks, { ...doc, title: doc.title });
     for (const id of ["c-observer","c-memory","c-director","c-km","c-prose","c-news","c-identity"]) expect(html).toContain(`id="${id}"`);
     expect((html.match(/conns-label">Connections/g) || []).length).toBe(7);
