@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { dirname, join } from "node:path";
 
-const SKILLS = ["visual-recap", "visual-plan", "visual-spec"];
+const SKILLS = ["visual-recap", "visual-plan", "visual-spec", "visual-atlas"];
 
 export interface SkillLink {
   source: string;
