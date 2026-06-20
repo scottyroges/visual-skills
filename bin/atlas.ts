@@ -126,6 +126,13 @@ async function main() {
     // render every present JSON (reuses --all behavior)
     const entries = (await readdir(outDir)).filter((f) => f === "atlas.json" || (f.startsWith("domain-") && f.endsWith(".json")));
     entries.sort((a, b) => (a === "atlas.json" ? -1 : b === "atlas.json" ? 1 : a.localeCompare(b)));
+    // Orphaned domain pages: a domain-<slug>.json with no matching domain in the (re)grouped config
+    // — left behind after a regroup. Warn so the human can delete it (we never delete files).
+    const slugs = new Set(config.domains.map((d) => d.slug));
+    for (const f of entries) {
+      const m = /^domain-(.+)\.json$/.exec(f);
+      if (m && !slugs.has(m[1])) console.warn(`⚠ ${f}: no matching domain in atlas.domains.json (stale after a regroup? delete it)`);
+    }
     for (const f of entries) {
       const { outName, warnings } = await renderFile(join(outDir, f), outDir);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);

@@ -69,15 +69,18 @@ export function reconcile(config: AtlasConfig, liveModules: string[]): { config:
   const liveSet = new Set(live);
   const assigned = new Set<string>();
 
+  // `globs`/`modules` may be absent in a hand-written config — the skill tells humans to author
+  // slug/name/globs, and `modules` is the generated resolved field. Tolerate both being missing.
   const domains: DomainConfig[] = config.domains.map((d) => {
-    const modules = live.filter((m) => d.globs.some((g) => matchGlob(g, m)));
+    const globs = d.globs ?? [];
+    const modules = live.filter((m) => globs.some((g) => matchGlob(g, m)));
     for (const m of modules) assigned.add(m);
-    return { ...d, globs: [...d.globs], modules: [...modules].sort() };
+    return { ...d, globs: [...globs], modules: [...modules].sort() };
   });
 
   const newModules = live.filter((m) => !assigned.has(m)).sort();
   const stalePaths = config.domains
-    .flatMap((d) => d.modules.map(norm).filter((p) => !liveSet.has(p)).map((path) => ({ slug: d.slug, path })))
+    .flatMap((d) => (d.modules ?? []).map(norm).filter((p) => !liveSet.has(p)).map((path) => ({ slug: d.slug, path })))
     .sort((a, b) => a.slug.localeCompare(b.slug) || a.path.localeCompare(b.path));
   const emptyDomains = domains.filter((d) => d.modules.length === 0).map((d) => d.slug).sort();
 

@@ -20,11 +20,20 @@ describe("scanInventory", () => {
     expect(engine.imports).toEqual(["lib/brain/gm"]);
   });
 
-  it("excludes generated code and test trees from the inventory", async () => {
+  it("excludes generated code, test trees, and co-located test files from the inventory", async () => {
     const inv = await scanInventory(REPO, ["lib"]);
     const paths = inv.modules.map((m) => m.path);
-    expect(paths).not.toContain("lib/generated/client.ts");        // codegen
+    expect(paths).not.toContain("lib/generated/client.ts");     // codegen
     expect(paths).not.toContain("lib/sim/__tests__/helper.ts"); // nested test tree
+    expect(paths).not.toContain("lib/sim/season.test.ts");      // co-located *.test.ts
+  });
+
+  it("excludes type-only imports from a module's resolved edges (valueOnly)", async () => {
+    const inv = await scanInventory(REPO, ["lib"]);
+    // api/root.ts: value import of sim/engine + `import type` of brain/gm — only the value edge survives.
+    const root = inv.modules.find((m) => m.path === "lib/api/root.ts")!;
+    expect(root.imports).toEqual(["lib/sim/engine"]);
+    expect(root.imports).not.toContain("lib/brain/gm");
   });
 
   it("flags routers and collects prisma models", async () => {
@@ -48,8 +57,8 @@ describe("aggregateDomainEdges", () => {
   it("maps module edges to cross-domain edges, dropping intra-domain", async () => {
     const inv = await scanInventory(REPO, ["lib"]);
     const edges = aggregateDomainEdges(CONFIG, inv);
-    expect([...(edges.get("sim") ?? [])].sort()).toEqual(["brain"]); // engine→gm; loop→engine dropped
-    expect([...(edges.get("api") ?? [])].sort()).toEqual(["sim"]);   // root→engine
+    expect([...(edges.get("sim") ?? [])].sort()).toEqual(["brain"]); // engine→gm (value); loop→engine dropped
+    expect([...(edges.get("api") ?? [])].sort()).toEqual(["sim"]);   // root→engine; root's type-only brain import excluded
     expect(edges.get("brain") ?? new Set()).toEqual(new Set());      // gm imports nothing in-repo
   });
 });

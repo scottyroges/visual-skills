@@ -60,6 +60,13 @@ journey maps (UX phases/emotions), BPMN gateway notation, event storming sticky-
   fails to parse (mermaid reads `(` / `[` as a node-shape opener), which silently drops the editable
   Excalidraw upgrade to a static image. Reword to `A -->|sqrt 1-p loading| B`. Unicode math
   (`√ ρ ε ≈`) is fine; the punctuation is the problem. (d2 labels are unaffected.)
+- **Mermaid: a `/` right after `[` opens a parallelogram shape.** `cron[/api/cron/sync]` or
+  `http[/api/trpc route]` is read as a slanted-node opener and fails to parse. For label text that
+  starts with or contains a leading slash (route paths, file paths), wrap it in quotes:
+  `cron["/api/cron/sync"]`.
+- **d2: a literal `$` in a label throws `substitutions must begin on {`.** `proj: "projected $"`
+  fails — d2 treats `$` as a substitution sigil. Drop or word it (`"projected value"`), or escape as
+  needed. (mermaid labels are unaffected.)
 - An invalid diagram degrades to a visible placeholder rather than breaking the document.
 
 ## Color vocabulary

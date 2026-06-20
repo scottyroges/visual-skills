@@ -12,6 +12,9 @@ import type { AtlasDiagram } from "./atlas-blocks.js";
  *  (Build/vendor dirs are already skipped by walkSource.) */
 const NON_DOMAIN_DIRS = new Set(["generated", "__generated__", "test", "tests", "__tests__", "__mocks__"]);
 
+/** Co-located test/spec files (e.g. `format.test.ts`, `pick-lock.spec.tsx`) aren't architecture. */
+const TEST_FILE_RE = /\.(test|spec)\.[cm]?[jt]sx?$/;
+
 /** One scanned source module: resolved in-repo import keys + exported names. */
 export interface ModuleInfo {
   path: string;          // repo-relative, e.g. "lib/sim/engine.ts"
@@ -36,12 +39,15 @@ export async function scanInventory(repoRoot: string, srcRoots: string[]): Promi
       const path = `${root.replace(/\/$/, "")}/${rel}`.replace(/\\/g, "/");
       if (seen.has(path)) continue;
       seen.add(path);
-      if (path.split("/").some((seg) => NON_DOMAIN_DIRS.has(seg))) continue; // codegen / tests aren't domains
+      if (path.split("/").some((seg) => NON_DOMAIN_DIRS.has(seg))) continue; // codegen / test trees aren't domains
+      if (TEST_FILE_RE.test(path)) continue;                                 // co-located test/spec files aren't either
 
       const src = await readFile(join(repoRoot, path), "utf8").catch(() => null);
       if (src == null) continue;
+      // valueOnly: a `import type { AppRouter }` (tRPC) or `import type { Foo }` (Prisma) is not a
+      // runtime/architectural dependency, so it must not become a domain edge.
       const imports = [...new Set(
-        importsOf(src)
+        importsOf(src, { valueOnly: true })
           .map((spec) => resolveModule(path, spec, aliases))
           .filter((k): k is string => k != null && k !== moduleKey(path)),
       )].sort();
