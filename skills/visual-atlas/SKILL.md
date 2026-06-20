@@ -72,18 +72,25 @@ path — e.g. `<repo>/.atlas`), all committable and re-renderable:
        cd "$VISUAL_SKILLS_DIR"
        npx tsx bin/atlas.ts --repo <ABSOLUTE_SUBJECT_REPO> --out <ABSOLUTE_OUT_DIR>
 
-   This walks the repo (codegen and test trees — `generated` / `__generated__` / `test` / `tests` /
-   `__tests__` / `__mocks__` — are excluded; they aren't architecture), creates `atlas.domains.json`
-   from a **folder first-guess** if absent (or **reconciles drift** against your edits if present —
-   reporting unassigned modules / stale paths / empty domains), emits draft `atlas.json` +
-   `domain-<slug>.json` *only where absent* (it never clobbers your authored prose), and renders.
+   This walks the repo (codegen, test trees, and co-located `*.test.*` / `*.spec.*` files are
+   excluded — they aren't architecture), creates `atlas.domains.json` from a **folder first-guess**
+   if absent (or **reconciles drift** against your edits if present — reporting unassigned modules /
+   stale paths / empty domains), emits draft `atlas.json` + `domain-<slug>.json` *only where absent*
+   (it never clobbers your authored prose), and renders.
 
-2. **Curate the grouping (optional but encouraged).** Open `atlas.domains.json`. The scanner's
-   first-guess is one domain per top-level dir — merge, split, or rename domains by editing each
-   domain's `globs` (the human lever) and re-run the scan. Regrouping is deterministic.
+2. **Curate the grouping — usually required, not optional.** Open `atlas.domains.json`. The
+   first-guess is one domain per top-level dir, which on a **layered** codebase (a `routers/` +
+   `services/` + `repositories/` split, or `app/` + `lib/` + `server/`) produces exactly the flat
+   folder grouping this skill forbids — one giant "server" tile is not a domain. For anything beyond
+   a small or already feature-foldered repo, **rewrite the domains as feature/bounded-context slices**
+   with file-precise `globs` (e.g. `["src/server/routers/picks*.ts", "src/server/services/pick*.ts"]`)
+   and re-run the scan. Regrouping is deterministic; the `globs` are the human lever.
 
 3. **Read the code, then enrich the drafts.** Open the actual modules — don't work from the draft
-   skeleton alone. Fill, per the **catalog**:
+   skeleton alone. The scanner groups `depth` components by immediate subdirectory; on a layered
+   domain that can blob many files into one card, so **expect to rebuild the `components`/`depth`
+   blocks into meaningful units** (e.g. "ESPN provider", "sync service", "cron orchestrator"), not
+   just fill blanks. Fill, per the **catalog**:
 
        $VISUAL_SKILLS_DIR/skills/shared/atlas-components.md
 
