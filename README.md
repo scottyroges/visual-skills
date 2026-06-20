@@ -48,15 +48,18 @@ Install the skills once so Claude Code can discover them from any repo:
 
     npm run skills:install
 
-This symlinks `skills/visual-recap` and `skills/visual-plan` into `~/.claude/skills/`. To
-install into a different Claude config root, pass `--dir`:
+This symlinks `visual-recap` / `visual-plan` / `visual-spec` / `visual-atlas` into
+`~/.claude/skills/` **and stamps each `SKILL.md`'s `VISUAL_SKILLS_DIR` to this clone**, so the
+skills work from wherever you cloned the repo — no hand-editing of paths after a clone. (It's
+idempotent: a `SKILL.md` already pointing here is left untouched.) To install into a different
+Claude config root, pass `--dir`:
 
     npm run skills:install -- --dir /path/to/.claude
 
-After
-that, ask Claude Code to "visualize this PR" / "make a visual recap of <commit>" to trigger
-`visual-recap`, or "turn this spec into a visual plan" to trigger `visual-plan`. The skills
-invoke the CLIs above; the tool path is set in one constant near the top of each `SKILL.md`.
+After that, ask Claude Code to "make a visual atlas of this codebase" to trigger `visual-atlas`,
+"visualize this PR" / "make a visual recap of <commit>" for `visual-recap`, or "turn this spec
+into a visual plan" for `visual-plan`. The skills invoke the CLIs above; their tool path is the
+`VISUAL_SKILLS_DIR` constant near the top of each `SKILL.md`, set automatically by the installer.
 
 ## Scope
 Implemented: D2 floor + assembler + recap gatherer (Prisma+tRPC adapter) (M0/M1),
