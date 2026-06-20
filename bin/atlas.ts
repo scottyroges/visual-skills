@@ -5,7 +5,7 @@
 //   atlas --all <ABS dir> --out <ABS dir>           # render every committed atlas.json + domain-*.json
 //   atlas --blocks <ABS file.json> --out <ABS dir>  # render one committed page
 // Add --force to overwrite existing draft JSON (default: never clobber authored prose).
-import { readFile, readFile as fsReadFile, writeFile, mkdir, readdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, isAbsolute, basename } from "node:path";
 import { parseArgs } from "node:util";
@@ -52,7 +52,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 async function loadOrGuessConfig(repoRoot: string, outDir: string): Promise<AtlasConfig> {
   const cfgPath = join(outDir, "atlas.domains.json");
-  if (existsSync(cfgPath)) return JSON.parse(await fsReadFile(cfgPath, "utf8")) as AtlasConfig;
+  if (existsSync(cfgPath)) return JSON.parse(await readFile(cfgPath, "utf8")) as AtlasConfig;
   const inv = await scanInventory(repoRoot, ["src", "lib"]);
   const repoName = basename(repoRoot);
   return firstGuessConfig(repoName, ["src", "lib"], inv.modules.map((m) => m.path));
@@ -84,7 +84,7 @@ async function main() {
     if (values.domain) {
       const cfgPath = join(outDir, "atlas.domains.json");
       if (!existsSync(cfgPath)) { console.error(`--domain needs an existing ${cfgPath} (run a full scan first)`); process.exit(2); }
-      const config = JSON.parse(await fsReadFile(cfgPath, "utf8")) as AtlasConfig;
+      const config = JSON.parse(await readFile(cfgPath, "utf8")) as AtlasConfig;
       const domain = config.domains.find((d) => d.slug === values.domain);
       if (!domain) { console.error(`unknown domain "${values.domain}" — not in atlas.domains.json`); process.exit(2); }
       const inv = await scanInventory(values.repo, config.srcRoots);
