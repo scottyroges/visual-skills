@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { assembleAtlas, assembleDomain } from "../src/assemble-atlas.js";
+import { assembleAtlas, assembleDomain, renderAtlasDiagram, atlasLegend } from "../src/assemble-atlas.js";
 import { type AtlasBlock } from "../src/atlas-blocks.js";
+import { renderAll } from "../src/render-diagram.js";
 
 const domainBlocks: AtlasBlock[] = [
   { type: "domain-tldr", id: "tldr", heading: "h", rows: [] },
@@ -60,5 +61,23 @@ describe("sidebar + rail", () => {
     expect(html).toContain('sidebar-label">Domains');
     expect(html).toContain('href="domain-sim.html" class="nav-domain"');
     expect(html).toContain('nd-pending">overview');
+  });
+});
+
+describe("diagram card + legend", () => {
+  it("legend renders swatches with fill+stroke", () => {
+    const h = atlasLegend([{ label: "Engine", fill: "#d0ebff", stroke: "#4dabf7" }]);
+    expect(h).toContain("legend-swatch");
+    expect(h).toContain("background:#d0ebff");
+    expect(h).toContain("Engine");
+  });
+  it("diagram card wraps a diagram-svg in a zoomable box with a caption", async () => {
+    const diag = { id: "d1", kind: "architecture" as const, d2: "a -> b", caption: "the *flow*", legend: [{ label: "x", fill: "#fff", stroke: "#000" }] };
+    const map = new Map((await renderAll([{ type: "diagram", id: "d1", title: "", kind: "architecture", d2: "a -> b" }])).map((r) => [r.id, r]));
+    const h = await renderAtlasDiagram(diag, map);
+    expect(h).toContain('class="diagram-box"');
+    expect(h).toContain('diagram-svg');
+    expect(h).toContain('class="diagram-caption"');
+    expect(h).not.toContain('class="diagram-title"');
   });
 });

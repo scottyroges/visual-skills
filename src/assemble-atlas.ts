@@ -4,8 +4,13 @@ import { fileURLToPath } from "node:url";
 import { escapeHtml } from "./html.js";
 import {
   assertUniqueAtlasIds, isAtlasChapter, atlasChapterLabel, LAYER_DOTS,
-  type AtlasBlock, type AtlasOpts, type DomainOpts,
+  type AtlasBlock, type AtlasOpts, type DomainOpts, type AtlasDiagram,
 } from "./atlas-blocks.js";
+import { renderInlineMarkdown } from "./renderers/markdown.js";
+import { type DiagramResult } from "./render-diagram.js";
+import { withDiagramSvgClass } from "./review/sections.js";
+
+const mi = (s: string) => renderInlineMarkdown(s);
 
 const ASSETS = fileURLToPath(new URL("../assets", import.meta.url));
 
@@ -126,6 +131,30 @@ function rail(blocks: AtlasBlock[]): string {
     `<div class="progress-step-num" aria-hidden="true">${escapeHtml(e.num)}</div>` +
     `<span class="progress-step-label">${escapeHtml(e.label)}</span></a>`).join("");
   return `<nav class="progress-rail" aria-label="Section progress">${steps}</nav>`;
+}
+
+export function atlasLegend(items?: AtlasDiagram["legend"]): string {
+  if (!items?.length) return "";
+  const spans = items.map((i) =>
+    `<span class="legend-item"><span class="legend-swatch" style="background:${i.fill};border-color:${i.stroke};"></span>${escapeHtml(i.label)}</span>`).join("");
+  return `<div class="legend" aria-label="Diagram legend">${spans}</div>`;
+}
+
+const ENLARGE = `<button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button>`;
+
+/** A diagram card with NO title above it (the section header supplies context). The svg gets
+ *  the diagram-svg class so the zoom overlay + sizing rule apply. domain-map uses its own path. */
+export async function renderAtlasDiagram(d: AtlasDiagram, diagrams: Map<string, DiagramResult>): Promise<string> {
+  const r = diagrams.get(d.id);
+  const svg = r ? withDiagramSvgClass(r.svg) : "";
+  const cap = d.caption ? `<p class="diagram-caption">${await mi(d.caption)}</p>` : "";
+  return `<div class="diagram-box">${ENLARGE}${svg}</div>${atlasLegend(d.legend)}${cap}`;
+}
+
+function sectionHeader(title?: string, badge?: string): string {
+  if (!title) return "";
+  return `<div class="section-header"><h2 class="section-title">${escapeHtml(title)}</h2>` +
+    `${badge ? `<span class="section-badge">${escapeHtml(badge)}</span>` : ""}</div>`;
 }
 
 export async function assembleAtlas(blocks: AtlasBlock[], opts: AtlasOpts): Promise<string> {
