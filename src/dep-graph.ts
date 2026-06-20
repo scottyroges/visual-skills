@@ -14,7 +14,7 @@ function q(s: string): string {
 }
 
 /** Strip a source extension and a trailing /index so two specifiers to the same module match. */
-function moduleKey(repoRelPath: string): string {
+export function moduleKey(repoRelPath: string): string {
   return repoRelPath.replace(/\\/g, "/").replace(SOURCE_RE, "").replace(/\/index$/, "");
 }
 
@@ -26,7 +26,7 @@ function resolveRel(fromRepoRel: string, spec: string): string | null {
 }
 
 interface AliasMatcher { prefix: string; suffix: string; star: boolean; target: string; }
-interface Aliases { baseUrl: string; matchers: AliasMatcher[]; }
+export interface Aliases { baseUrl: string; matchers: AliasMatcher[]; }
 
 /**
  * Load tsconfig compilerOptions.paths/baseUrl from repoRoot; empty matchers if absent.
@@ -34,7 +34,7 @@ interface Aliases { baseUrl: string; matchers: AliasMatcher[]; }
  * target only, matches in declaration order (no longest-prefix specificity), and does
  * not follow `extends`. All of these degrade gracefully to relative-only resolution.
  */
-function loadAliases(repoRoot: string): Aliases {
+export function loadAliases(repoRoot: string): Aliases {
   const res = ts.readConfigFile(join(repoRoot, "tsconfig.json"), (p) => {
     try { return readFileSync(p, "utf8"); } catch { return undefined; }
   });
@@ -71,12 +71,12 @@ function resolveAlias(spec: string, aliases: Aliases): string | null {
 }
 
 /** Resolve any specifier (relative OR tsconfig-alias) to an in-repo module key; null for bare packages. */
-function resolveModule(fromRepoRel: string, spec: string, aliases: Aliases): string | null {
+export function resolveModule(fromRepoRel: string, spec: string, aliases: Aliases): string | null {
   return spec.startsWith(".") ? resolveRel(fromRepoRel, spec) : resolveAlias(spec, aliases);
 }
 
 /** Recursively list repo-relative source files, skipping vendor/build dirs. */
-async function walkSource(root: string, dir = root, acc: string[] = []): Promise<string[]> {
+export async function walkSource(root: string, dir = root, acc: string[] = []): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
   for (const e of entries) {
     const abs = join(dir, e.name);

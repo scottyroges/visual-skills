@@ -26,3 +26,31 @@ export function importsOf(source: string): string[] {
   visit(sf);
   return [...new Set(specs)];
 }
+
+/** Extract exported binding names from TS/JS source: named decls, `export { ... }`,
+ *  re-exports (`export { x } from`), and `export default` (as "default"). Dedups. */
+export function exportsOf(source: string): string[] {
+  const sf = ts.createSourceFile("f.ts", source, ts.ScriptTarget.Latest, true);
+  const names: string[] = [];
+  const visit = (n: ts.Node): void => {
+    if (ts.isFunctionDeclaration(n) || ts.isClassDeclaration(n) ||
+        ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n) || ts.isEnumDeclaration(n)) {
+      const mods = ts.getModifiers(n) ?? [];
+      const exported = mods.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+      const isDefault = mods.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword);
+      if (exported) names.push(isDefault ? "default" : n.name?.text ?? "default");
+    } else if (ts.isVariableStatement(n)) {
+      const exported = (ts.getModifiers(n) ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+      if (exported)
+        for (const d of n.declarationList.declarations)
+          if (ts.isIdentifier(d.name)) names.push(d.name.text);
+    } else if (ts.isExportDeclaration(n) && n.exportClause && ts.isNamedExports(n.exportClause)) {
+      for (const el of n.exportClause.elements) names.push(el.name.text);
+    } else if (ts.isExportAssignment(n)) {
+      names.push("default");
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return [...new Set(names)];
+}

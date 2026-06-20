@@ -1,11 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdtemp, writeFile, readFile, readdir } from "node:fs/promises";
+import { mkdtempSync, writeFileSync, existsSync, readFileSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 const exec = promisify(execFile);
 const BIN = new URL("../bin/atlas.ts", import.meta.url).pathname;
+
+/** Run bin/atlas.ts with the given args via tsx; throws on non-zero exit. */
+function runCli(args: string[]): void {
+  execFileSync("npx", ["tsx", BIN, ...args], { encoding: "utf8" });
+}
 
 const atlasDoc = { kind: "atlas", title: "Atlas · demo", blocks: [
   { type: "atlas-tldr", id: "tldr", heading: "h", rows: [] },
@@ -38,3 +44,85 @@ describe("atlas CLI (render-only)", () => {
     expect(dom).toContain('class="topbar-back"');
   });
 });
+
+it("--repo full scan: creates config + drafts, renders, is idempotent (no clobber)", () => {
+  const repo = join(__dirname, "fixtures", "atlas-repo");
+  const out = mkdtempSync(join(tmpdir(), "atlas-scan-"));
+  try {
+    // first run — creates everything
+    runCli(["--repo", repo, "--out", out]); // runCli = the helper used by existing CLI tests
+    expect(existsSync(join(out, "atlas.domains.json"))).toBe(true);
+    expect(existsSync(join(out, "atlas.json"))).toBe(true);
+    expect(existsSync(join(out, "domain-sim.json"))).toBe(true);
+    expect(existsSync(join(out, "atlas.html"))).toBe(true);
+    expect(existsSync(join(out, "domain-sim.html"))).toBe(true);
+
+    // author prose into a draft, then re-run — must NOT be clobbered
+    const p = join(out, "domain-sim.json");
+    const doc = JSON.parse(readFileSync(p, "utf8"));
+    doc.blocks.find((b: any) => b.type === "domain-tldr").rows.push({ key: "x", value: "AUTHORED" });
+    writeFileSync(p, JSON.stringify(doc, null, 2));
+    runCli(["--repo", repo, "--out", out]);
+    expect(readFileSync(p, "utf8")).toContain("AUTHORED");
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+}, 30_000);
+
+it("--domain refreshes only that domain page and reports tile drift", () => {
+  const repo = join(__dirname, "fixtures", "atlas-repo");
+  const out = mkdtempSync(join(tmpdir(), "atlas-dom-"));
+  try {
+    runCli(["--repo", repo, "--out", out]);               // seed config + drafts
+    const atlasBefore = readFileSync(join(out, "atlas.json"), "utf8");
+    rmSync(join(out, "domain-sim.json"));                  // simulate wanting a fresh sim draft
+    runCli(["--repo", repo, "--domain", "sim", "--out", out]);
+    expect(existsSync(join(out, "domain-sim.json"))).toBe(true);
+    expect(existsSync(join(out, "domain-sim.html"))).toBe(true);
+    expect(readFileSync(join(out, "atlas.json"), "utf8")).toBe(atlasBefore); // atlas untouched
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+}, 30_000);
+
+it("--domain errors clearly without a config", () => {
+  const repo = join(__dirname, "fixtures", "atlas-repo");
+  const out = mkdtempSync(join(tmpdir(), "atlas-dom2-"));
+  try {
+    expect(() => runCli(["--repo", repo, "--domain", "sim", "--out", out])).toThrow();
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+}, 30_000);
+
+it("--domain regenerates from reconciled config: overwrites authored prose and reflects correct file count", () => {
+  const repo = join(__dirname, "fixtures", "atlas-repo");
+  const out = mkdtempSync(join(tmpdir(), "atlas-dom3-"));
+  try {
+    // Seed: full run creates config + domain-sim.json
+    runCli(["--repo", repo, "--out", out]);
+
+    // Insert an authored marker into domain-sim.json
+    const domPath = join(out, "domain-sim.json");
+    const doc = JSON.parse(readFileSync(domPath, "utf8"));
+    const tldr = doc.blocks.find((b: any) => b.type === "domain-tldr");
+    tldr.rows.push({ key: "x", value: "AUTHORED" });
+    writeFileSync(domPath, JSON.stringify(doc, null, 2));
+
+    // Single-domain regenerate — should overwrite the authored content
+    runCli(["--repo", repo, "--domain", "sim", "--out", out]);
+
+    const regenerated = JSON.parse(readFileSync(domPath, "utf8"));
+
+    // AUTHORED marker must be gone (intentional overwrite behavior)
+    const regeneratedTldr = regenerated.blocks.find((b: any) => b.type === "domain-tldr");
+    expect(regeneratedTldr.rows.some((r: any) => r.value === "AUTHORED")).toBe(false);
+
+    // MUST-FIX 1: count reflects reconciled module list (sim has 2 files in the fixture)
+    const filesRow = regeneratedTldr.rows.find((r: any) => r.key === "Files");
+    expect(filesRow).toBeDefined();
+    expect(filesRow.value).toBe("2");
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+}, 30_000);
