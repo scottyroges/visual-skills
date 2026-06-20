@@ -171,3 +171,28 @@ describe("depth + owns + seams", () => {
     expect(h).toContain('class="neighbor-chip is-flat"');
   });
 });
+
+describe("full page assembly", () => {
+  it("atlas places the rail after the tldr and renders all blocks", async () => {
+    const blocks: AtlasBlock[] = [
+      { type: "atlas-tldr", id: "tldr", heading: "h", rows: [], primer: [] },
+      { type: "domain-index", id: "domains", title: "The 7 domains", tiles: [] },
+    ];
+    const html = await assembleAtlas(blocks, { title: "Atlas" });
+    expect(html).toContain('id="tldr" class="section"');
+    expect(html).toContain('id="domains" class="section"');
+    const railAt = html.indexOf('class="progress-rail"'); const tldrAt = html.indexOf('id="tldr"'); const domAt = html.indexOf('id="domains"');
+    expect(tldrAt).toBeLessThan(railAt); expect(railAt).toBeLessThan(domAt);
+  });
+  it("domain renders a depth diagram via the pipeline", async () => {
+    const blocks: AtlasBlock[] = [
+      { type: "domain-tldr", id: "tldr", heading: "h", rows: [] },
+      { type: "depth", id: "depth", title: "In depth", components: [
+        { id: "c-x", name: "x", path: "lib/x", detail: ["p"], diagrams: [{ id: "dx", kind: "architecture", d2: "a -> b" }] },
+      ] },
+    ];
+    const html = await assembleDomain(blocks, { title: "x", layer: "engine", layerLabel: "Engine" });
+    expect(html).toContain('id="c-x"');
+    expect(html).toContain("diagram-svg");
+  });
+});

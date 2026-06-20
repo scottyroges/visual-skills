@@ -3,12 +3,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { escapeHtml } from "./html.js";
 import {
-  assertUniqueAtlasIds, isAtlasChapter, atlasChapterLabel, LAYER_DOTS,
+  assertUniqueAtlasIds, isAtlasChapter, atlasChapterLabel, LAYER_DOTS, collectAtlasDiagrams,
   type AtlasBlock, type AtlasOpts, type DomainOpts, type AtlasDiagram,
   type KV, type ComponentDeep,
 } from "./atlas-blocks.js";
 import { renderInlineMarkdown } from "./renderers/markdown.js";
-import { type DiagramResult } from "./render-diagram.js";
+import { renderAll, type DiagramResult } from "./render-diagram.js";
 import { withDiagramSvgClass } from "./review/sections.js";
 
 const mi = (s: string) => renderInlineMarkdown(s);
@@ -309,14 +309,33 @@ export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, Diag
   return `<section id="${escapeHtml(b.id)}" class="section">${inner}</section>`;
 }
 
+async function renderMain(blocks: AtlasBlock[], opts: { outDir?: string; excalidraw?: boolean; onWarn?: (m: string) => void }): Promise<string> {
+  const rendered = await renderAll(collectAtlasDiagrams(blocks), { outDir: opts.outDir, excalidraw: opts.excalidraw, onWarn: opts.onWarn });
+  const diagrams = new Map<string, DiagramResult>();
+  for (const r of rendered) diagrams.set(r.id, r);
+  if (opts.onWarn) {
+    const failed = rendered.filter((r) => r.failed).map((r) => r.id);
+    if (failed.length) opts.onWarn(`${failed.length} diagram(s) failed to compile: ${failed.join(", ")} — fix their d2 source`);
+  }
+  const railHtml = rail(blocks);
+  const parts: string[] = [];
+  let railPlaced = false;
+  for (const b of blocks) {
+    parts.push(await renderAtlasBlock(b, diagrams, opts.onWarn));
+    if (!railPlaced && (b.type === "atlas-tldr" || b.type === "domain-tldr")) { parts.push(railHtml); railPlaced = true; }
+  }
+  if (!railPlaced) parts.unshift(railHtml);
+  return `<main class="main">${parts.join("")}</main>`;
+}
+
 export async function assembleAtlas(blocks: AtlasBlock[], opts: AtlasOpts): Promise<string> {
   assertUniqueAtlasIds(blocks);
-  const main = `<main class="main">${rail(blocks)}</main>`;  // content blocks wired in a later task
+  const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, atlasTopbar(opts), sidebar(blocks, opts, null, true), main);
 }
 
 export async function assembleDomain(blocks: AtlasBlock[], opts: DomainOpts): Promise<string> {
   assertUniqueAtlasIds(blocks);
-  const main = `<main class="main">${rail(blocks)}</main>`;  // content blocks wired in a later task
+  const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, domainTopbar(opts), sidebar(blocks, opts, opts.layer, false), main);
 }
