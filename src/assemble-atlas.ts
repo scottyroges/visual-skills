@@ -98,9 +98,12 @@ function outlineHtml(entries: NavEntry[]): string {
 }
 
 function metaHtml(meta?: { key: string; value: string }[]): string {
-  if (!meta?.length) return "";
-  const rows = meta.map((m) => `<div class="meta-row"><span class="mk">${escapeHtml(m.key)}</span><span class="mv">${escapeHtml(m.value)}</span></div>`).join("");
-  return `<div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list">${rows}</div></div>`;
+  const rows = (meta ?? [])
+    .map((m) => ({ key: String(m?.key ?? ""), value: String(m?.value ?? "") }))
+    .filter((m) => m.key || m.value);
+  if (!rows.length) return "";
+  const html = rows.map((m) => `<div class="meta-row"><span class="mk">${escapeHtml(m.key)}</span><span class="mv">${escapeHtml(m.value)}</span></div>`).join("");
+  return `<div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list">${html}</div></div>`;
 }
 
 /** The atlas "Domains" sidebar block, derived from the domain-index tiles. */
@@ -289,8 +292,7 @@ async function renderSeams(b: Extract<AtlasBlock, { type: "seams" }>): Promise<s
     `<div class="seam-body"><div class="seam-neighbors">${neighbors}</div>${note}</div></div></div>`;
 }
 
-/** Dispatch one block to its renderer, wrapped in its <section>. Domain-page block cases are
- *  added in later tasks; the default warns. */
+/** Dispatch one block to its renderer, wrapped in its <section>. */
 export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, DiagramResult>, onWarn?: (m: string) => void): Promise<string> {
   const inner = await (async () => {
     switch (b.type) {

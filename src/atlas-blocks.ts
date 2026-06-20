@@ -62,7 +62,7 @@ export interface KV { name: string; desc: string; }        // name mono; desc in
 export interface ComponentDeep {
   id: string;                                  // "c-gm" (anchor for its card)
   name: string; path: string;
-  detail: string[];                            // paragraphs (block markdown)
+  detail: string[];                            // paragraphs (inline markdown)
   diagrams?: AtlasDiagram[];                    // 0..n
   codeHtml?: string;                           // raw trusted code block (review.css token spans)
   files?: KV[];                                // "Key files"
