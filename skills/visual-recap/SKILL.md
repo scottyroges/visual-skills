@@ -53,7 +53,7 @@ If any of these is true, the recap is **not done** — keep going:
 ## Workflow (one required path)
 
 1. **Identify** the target repo (default: cwd), what to recap, and the output folder (`--out` is a
-   *directory*, e.g. `<target-repo>/.recaps/<short-label>`, absolute path). Pick the target flag:
+   *directory*, e.g. `<target-repo>/.visual/recaps/<short-label>`, absolute path). Pick the target flag:
    - a pull request → `--pr <number>` (needs the `gh` CLI)
    - a commit/SHA/tag → `--commit <ref>`
    - a branch → `--branch <name>` (optionally `--base <ref>`)
@@ -255,10 +255,10 @@ or top-level blocks.
     cd "$VISUAL_SKILLS_DIR"
     # 1–2. gather raw blocks (raw material, not the deliverable)
     npx tsx bin/recap.ts --repo /Users/me/Projects/ppgl --commit 3559f61 \
-      --emit-blocks /Users/me/Projects/ppgl/.recaps/pr-183/blocks.json
+      --emit-blocks /Users/me/Projects/ppgl/.visual/recaps/pr-183/blocks.json
     # 3–7. read the code; edit blocks.json — add the overview, annotate diffs, group, diagram
     # 8. render + open
-    npx tsx bin/recap.ts --blocks /Users/me/Projects/ppgl/.recaps/pr-183/blocks.json \
-      --title "Recap — estimated purse" --out /Users/me/Projects/ppgl/.recaps/pr-183
-    open /Users/me/Projects/ppgl/.recaps/pr-183/recap.html
+    npx tsx bin/recap.ts --blocks /Users/me/Projects/ppgl/.visual/recaps/pr-183/blocks.json \
+      --title "Recap — estimated purse" --out /Users/me/Projects/ppgl/.visual/recaps/pr-183
+    open /Users/me/Projects/ppgl/.visual/recaps/pr-183/recap.html
     # 9. fix any warnings the render printed, then re-render

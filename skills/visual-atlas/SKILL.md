@@ -59,7 +59,7 @@ If any of these is true, the atlas is **not done** — keep going:
 ## Workflow (three modes)
 
 `bin/atlas.ts` has three operation modes. The artifact set lives in `--out` (a *directory*, absolute
-path — e.g. `<repo>/.atlas`), all committable and re-renderable:
+path — e.g. `<repo>/.visual/atlas`), all committable and re-renderable:
 
 - `atlas.domains.json` — the grouping config (human-owned source of truth).
 - `atlas.json` + `domain-<slug>.json` — the page blocks.
@@ -184,11 +184,11 @@ Don't pad — but a repo with several real domains warrants a page per domain. A
 
     cd "$VISUAL_SKILLS_DIR"
     # 1. scan
-    npx tsx bin/atlas.ts --repo /Users/me/Projects/app --out /Users/me/Projects/app/.atlas
+    npx tsx bin/atlas.ts --repo /Users/me/Projects/app --out /Users/me/Projects/app/.visual/atlas
     # 2-4. curate atlas.domains.json; read the code; enrich the draft JSON per the catalog
     # 5. re-render + open, fix warnings
-    npx tsx bin/atlas.ts --all /Users/me/Projects/app/.atlas --out /Users/me/Projects/app/.atlas
-    open /Users/me/Projects/app/.atlas/atlas.html
+    npx tsx bin/atlas.ts --all /Users/me/Projects/app/.visual/atlas --out /Users/me/Projects/app/.visual/atlas
+    open /Users/me/Projects/app/.visual/atlas/atlas.html
 
 The canonical reference build (what good looks like):
 
