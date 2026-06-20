@@ -33,7 +33,8 @@ export function exportsOf(source: string): string[] {
   const sf = ts.createSourceFile("f.ts", source, ts.ScriptTarget.Latest, true);
   const names: string[] = [];
   const visit = (n: ts.Node): void => {
-    if (ts.isFunctionDeclaration(n) || ts.isClassDeclaration(n)) {
+    if (ts.isFunctionDeclaration(n) || ts.isClassDeclaration(n) ||
+        ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n) || ts.isEnumDeclaration(n)) {
       const mods = ts.getModifiers(n) ?? [];
       const exported = mods.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
       const isDefault = mods.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword);

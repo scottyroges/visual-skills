@@ -82,3 +82,39 @@ describe("buildAtlasDraft", () => {
     expect(sim.purpose).toBe(""); // placeholder for the agent
   });
 });
+
+import { buildDomainDraft } from "../src/gather-atlas.js";
+
+describe("buildDomainDraft", () => {
+  it("emits tldr + components + arch diagram-section + depth + owns + seams for a domain", async () => {
+    const inv = await scanInventory(REPO, ["lib"]);
+    const edges = aggregateDomainEdges(CONFIG, inv);
+    const draft = buildDomainDraft("sim", CONFIG, inv, edges, { date: "2026-06-20" });
+
+    expect(draft.kind).toBe("domain");
+    expect(draft.slug).toBe("sim");
+    expect(draft.path).toBe("lib/sim");
+    expect(draft.depends).toBe("brain");
+    expect(draft.blocks.map((b) => b.type)).toEqual(
+      ["domain-tldr", "components", "diagram-section", "depth", "seams"],
+    );
+
+    // sim has loose files directly under lib/sim → one component named after the domain.
+    const depth = draft.blocks.find((b) => b.type === "depth") as any;
+    expect(depth.components.map((c: any) => c.name)).toEqual(["sim"]);
+    expect(depth.components[0].exports.map((e: any) => e.name).sort())
+      .toEqual(["SimResult", "runSeason", "simulateGame"].sort());
+
+    const seams = draft.blocks.find((b) => b.type === "seams") as any;
+    expect(seams.depends.map((x: any) => x.name)).toEqual(["brain"]);
+    expect(seams.depends[0].href).toBe("domain-brain.html");
+  });
+
+  it("never emits an owns block; throws on an unknown slug", async () => {
+    const inv = await scanInventory(REPO, ["lib"]);
+    const edges = aggregateDomainEdges(CONFIG, inv);
+    const draft = buildDomainDraft("sim", CONFIG, inv, edges);
+    expect(draft.blocks.some((b) => b.type === "owns")).toBe(false);
+    expect(() => buildDomainDraft("nope", CONFIG, inv, edges)).toThrow(/unknown domain/);
+  });
+});

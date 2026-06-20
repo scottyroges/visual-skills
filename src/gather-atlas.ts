@@ -73,7 +73,7 @@ export function aggregateDomainEdges(config: AtlasConfig, inv: Inventory): Map<s
   return edges;
 }
 
-import type { AtlasBlock, DomainTile } from "./atlas-blocks.js";
+import type { AtlasBlock, DomainTile, ComponentCard, ComponentDeep, KV } from "./atlas-blocks.js";
 
 /** Serializable atlas-page document (matches bin/atlas.ts's AtlasDoc). */
 export interface AtlasDraft {
@@ -143,5 +143,70 @@ export function buildAtlasDraft(
   return {
     kind: "atlas", title: `System Atlas · ${config.repo}`,
     count: `${config.domains.length} domains`, date: opts.date, generator: GENERATOR, blocks,
+  };
+}
+
+/** Group a domain's modules by their immediate subdirectory under the common path.
+ *  Loose files directly under the path collapse into one group named after the slug. */
+function groupBySubdir(modules: string[], base: string, slug: string): { name: string; files: string[] }[] {
+  const prefix = base.endsWith("/") ? base : base + "/";
+  const groups = new Map<string, string[]>();
+  for (const m of modules) {
+    const rest = m.startsWith(prefix) ? m.slice(prefix.length) : m;
+    const slash = rest.indexOf("/");
+    const name = slash < 0 ? slug : rest.slice(0, slash);
+    (groups.get(name) ?? groups.set(name, []).get(name)!).push(m);
+  }
+  return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([name, files]) => ({ name, files }));
+}
+
+export function buildDomainDraft(
+  slug: string,
+  config: AtlasConfig,
+  inv: Inventory,
+  edges: Map<string, Set<string>>,
+  opts: { date?: string } = {},
+): DomainDraft {
+  const domain = config.domains.find((d) => d.slug === slug);
+  if (!domain) throw new Error(`unknown domain "${slug}"`);
+  const base = commonPath(domain.modules, slug);
+  const byKey = new Map(inv.modules.map((m) => [moduleKey(m.path), m]));
+  const groups = groupBySubdir(domain.modules, base, slug);
+
+  const cards: ComponentCard[] = groups.map((g) => ({
+    name: g.name, purpose: "", href: `#c-${g.name}`,
+  }));
+
+  const components: ComponentDeep[] = groups.map((g) => {
+    const exports: KV[] = g.files
+      .flatMap((f) => (byKey.get(moduleKey(f))?.exports ?? []).map((name) => ({ name, desc: "" })));
+    const files: KV[] = g.files.map((f) => ({ name: f.replace(base.endsWith("/") ? base : base + "/", ""), desc: "" }));
+    return { id: `c-${g.name}`, name: g.name, path: g.files.length === 1 ? g.files[0] : `${base}/${g.name}`,
+      detail: [""], files, exports, connections: [] };
+  });
+
+  const deps = [...(edges.get(slug) ?? [])].sort();
+  const exposes = domain.modules
+    .filter((m) => byKey.get(moduleKey(m))?.isRouter)
+    .map((m) => ({ api: m, note: "" }));
+
+  const blocks: AtlasBlock[] = [
+    { type: "domain-tldr", id: "tldr", heading: domain.name, rows: [
+      { key: "Path", value: base }, { key: "Files", value: String(domain.modules.length) },
+    ] },
+    { type: "components", id: "components", title: "Components", cards },
+    { type: "diagram-section", id: "arch", title: "Internal architecture",
+      diagram: { id: "arch-diagram", kind: "architecture",
+        d2: ["direction: right", ...groups.map((g) => g.name)].join("\n"),
+        mermaid: ["graph LR", ...groups.map((g, i) => `  a${i}["${g.name}"]`)].join("\n") } },
+    { type: "depth", id: "depth", title: "In depth", components },
+    { type: "seams", id: "seams", title: "Seams", exposes,
+      depends: deps.map((s) => ({ name: s, path: commonPath(config.domains.find((d) => d.slug === s)!.modules, s), href: `domain-${s}.html` })) },
+  ];
+
+  return {
+    kind: "domain", slug, title: domain.name, layer: "engine", layerLabel: "Engine",
+    path: base, count: `${domain.modules.length} files`,
+    depends: deps.join(" · ") || undefined, date: opts.date, generator: GENERATOR, blocks,
   };
 }
