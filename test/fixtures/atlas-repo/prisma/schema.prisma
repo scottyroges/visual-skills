@@ -1,0 +1,8 @@
+model Team {
+  id   String @id
+  name String
+}
+model Game {
+  id    String @id
+  score Int
+}
