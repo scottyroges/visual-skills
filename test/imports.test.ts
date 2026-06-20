@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { importsOf } from "../src/imports.js";
+import { exportsOf } from "../src/imports.js";
 
 describe("importsOf", () => {
   it("collects static, re-export, and dynamic import specifiers (deduped)", () => {
@@ -15,5 +16,25 @@ describe("importsOf", () => {
 
   it("returns an empty array for source with no imports", () => {
     expect(importsOf("const x = 1;\nexport const y = x + 1;")).toEqual([]);
+  });
+});
+
+describe("exportsOf", () => {
+  it("extracts named, const, class, and re-exported names; dedups", () => {
+    const src = `
+      export function computePlan() {}
+      export const RATE = 1;
+      export class Engine {}
+      export { helper, helper as aliased } from "./util.js";
+      export default function main() {}
+      function private1() {}
+    `;
+    expect(exportsOf(src).sort()).toEqual(
+      ["Engine", "RATE", "aliased", "computePlan", "default", "helper"].sort(),
+    );
+  });
+
+  it("returns [] for a module with no exports", () => {
+    expect(exportsOf("const x = 1;")).toEqual([]);
   });
 });
