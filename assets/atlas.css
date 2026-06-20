@@ -155,6 +155,15 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 .neighbor-chip.is-flat:hover { border-color: var(--border-strong); background: var(--panel-deep); color: var(--ink-muted); }
 @media (max-width: 720px) { .seam-cols { grid-template-columns: 1fr; } }
 
+/* sidebar: nested sub-section links under a chapter in the CONTENTS outline.
+   Used on domain pages to list a chapter's deep-dive components without a bespoke
+   second sidebar block — one uniform outline per page. */
+.outline-sub { list-style: none; margin: 1px 0 5px; }
+.outline-subitem { display: flex; align-items: center; gap: 8px; padding: 3px 14px 3px 34px; font-size: var(--text-xs); color: var(--ink-muted); text-decoration: none; border-left: 2px solid transparent; transition: background 100ms ease-out, color 100ms ease-out; }
+.outline-subitem:hover { background: var(--panel-deep); color: var(--ink); }
+.outline-subitem:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-subitem .os-dot { width: 8px; height: 8px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.14); flex-shrink: 0; }
+
 /* sidebar: a small "domains" jump-list block on the atlas */
 .nav-domains { list-style: none; }
 .nav-domain {
