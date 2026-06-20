@@ -40,7 +40,7 @@ compile-tested recipes, consult the shared catalog: `$VISUAL_SKILLS_DIR/skills/s
 Color diagrams with the catalog's semantic palette (the "Color vocabulary" section) — mark the
 `changed`/subject node and tag actors / external systems / datastores by role.
 
-Primary blocks you author for plans:
+Primary blocks you author for a doc:
 
 - **narrative / sections -> `prose`** (Markdown; GitHub-flavored). A fenced `mermaid`
   flowchart inside prose is auto-promoted to a diagram (and becomes editable if the
@@ -75,7 +75,7 @@ Primary blocks you author for plans:
 
 - **grouping -> `group`** — a titled, collapsible set of related blocks; add an optional `description`
   (markdown) summarizing what the group covers. Shape: `{ "type":"group", "id":"…", "title":"…", "blocks":[ … ] }` (one level deep). Used mainly by recaps to order diffs into a
-  narrative; available for plans too.
+  narrative; available for any doc too.
 
 - **multiple views of one thing -> `tabs`** — a CSS-only tab switcher (no JS) presenting
   complementary diagrams as switchable panels. Each tab holds ONE block, one level deep (a tab
@@ -87,7 +87,7 @@ Primary blocks you author for plans:
 
 - **lead summary -> `overview`** — a scannable callout placed first: a one-line `headline`, short
   `points` (each `href` linking to a section by `#id`), and an optional lead `diagram`
-  (`DiagramBlock` or `tabs`) rendered before the points. Author it for larger plans.
+  (`DiagramBlock` or `tabs`) rendered before the points. Author it for larger docs.
 
       { "type": "overview", "id": "overview", "headline": "Add PayPal capture",
         "points": [ { "text": "new `capture` [route](#flow)" } ],
@@ -107,6 +107,6 @@ for visual-recap when the subject is a code change rather than a plan.
 ## Example
 
     cd "$VISUAL_SKILLS_DIR"
-    npx tsx bin/doc.ts --blocks /tmp/plan-blocks.json --title "Payments migration" \
+    npx tsx bin/doc.ts --blocks /tmp/doc-blocks.json --title "Payments migration" \
       --source docs/specs/payments.md --out /Users/me/Projects/app/.visual/docs/payments
     open /Users/me/Projects/app/.visual/docs/payments/doc.html

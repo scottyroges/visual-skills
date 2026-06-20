@@ -94,7 +94,7 @@ Cross-page links follow the layout: an atlas tile → `domain-<slug>/domain-<slu
    a small or already feature-foldered repo, **rewrite the domains as feature/bounded-context slices**
    with file-precise `globs` (e.g. `["src/server/routers/picks*.ts", "src/server/services/pick*.ts"]`)
    and re-run the scan. Regrouping is deterministic; the `globs` are the human lever. After a
-   regroup, **delete any orphaned `domain-<slug>.json`** for domains you renamed or removed — the
+   regroup, **delete any orphaned `domain-<slug>/` folder** for domains you renamed or removed — the
    scan warns about them (it never deletes files), and a stale one would still render a dead page.
    You may write `atlas.domains.json` by hand with just `slug` / `name` / `globs`; the scanner fills
    in the resolved `modules`.
@@ -201,4 +201,4 @@ Don't pad — but a repo with several real domains warrants a page per domain. A
 
 The canonical reference build (what good looks like):
 
-    $VISUAL_SKILLS_DIR/example/atlas-sports-rpg/   (atlas.json + domain-*.json → *.html)
+    $VISUAL_SKILLS_DIR/example/atlas-sports-rpg/   (atlas.{json,html} + domain-<slug>/domain-<slug>.{json,html})

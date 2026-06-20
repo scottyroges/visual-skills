@@ -1,7 +1,10 @@
 # visual-skills
 
-Self-hosted renderer that turns specs and code changes into a single
-self-contained, hand-drawn-styled HTML document grounded in the real repo.
+Self-hosted renderer that turns specs, code changes, and whole codebases into
+self-contained, hand-drawn-styled HTML documents grounded in the real repo. Four tools /
+Claude Code skills share one app shell + diagram pipeline: **visual-doc** (any authored
+doc), **visual-recap** (a code change), **visual-spec** (a design spec → approval), and
+**visual-atlas** (a codebase's domains & architecture).
 
 ## Prerequisites
 - Node 20+
@@ -30,6 +33,16 @@ augment them, and render via the doc CLI (this is what the `visual-recap` skill 
     npx tsx bin/recap.ts --repo /path/to/repo --commit <sha> --emit-blocks blocks.json
     npx tsx bin/doc.ts --blocks blocks.json --out .visual/recaps/x   # -> .visual/recaps/x/doc.html
 
+Spec (a design doc / RFC, authored for approval):
+
+    npx tsx bin/spec.ts --blocks spec.json --out .visual/specs/x    # -> .visual/specs/x/spec.html
+
+Atlas (a standing map of a codebase's domains & architecture):
+
+    npx tsx bin/atlas.ts --repo /path/to/repo --out .visual/atlas   # scan -> draft JSON -> render
+    # enrich the draft JSON (domain purposes, connections, diagrams), then re-render:
+    npx tsx bin/atlas.ts --all .visual/atlas --out .visual/atlas    # atlas.html + domain-<slug>/ folders
+
 ## Optional: editable Excalidraw diagrams
 
 By default, flowchart/architecture diagrams render as static D2 sketches. To make them
@@ -56,10 +69,11 @@ Claude config root, pass `--dir`:
 
     npm run skills:install -- --dir /path/to/.claude
 
-After that, ask Claude Code to "make a visual atlas of this codebase" to trigger `visual-atlas`,
-"visualize this PR" / "make a visual recap of <commit>" for `visual-recap`, or "turn this spec
-or plan markdown into a readable doc" for `visual-doc`. The skills invoke the CLIs above; their tool path is the
-`VISUAL_SKILLS_DIR` constant near the top of each `SKILL.md`, set automatically by the installer.
+After that, ask Claude Code to "make a visual atlas of this codebase" for `visual-atlas`,
+"visualize this PR" / "make a visual recap of <commit>" for `visual-recap`, "make this design
+spec readable so I can approve it" for `visual-spec`, or "turn this plan/markdown into a readable
+doc" for `visual-doc`. The skills invoke the CLIs above; their tool path is the `VISUAL_SKILLS_DIR`
+constant near the top of each `SKILL.md`, set automatically by the installer.
 
 ## Scope
 Implemented: D2 floor + assembler + recap gatherer (Prisma+tRPC adapter) (M0/M1),
@@ -70,5 +84,8 @@ upgrade with API-surface + plan-mermaid diagram producers (M3), and the `visual-
 behavioral diagrams (M6), and review-narrative recaps — agent-authored "Summary",
 per-file diff descriptions with in-page cross-links, and importance-ordered `group`s
 (M7), and a shared diagram catalog with a `tabs` multi-view block plus widened
-Excalidraw editability (sequence/class) (M8). Deprioritized: `gh pr comment`
-integration (M5). See `docs/superpowers/specs/`.
+Excalidraw editability (sequence/class) (M8), the `visual-spec` design-spec→approval skill
+(its own block model + completeness lint), and the `visual-atlas` codebase-map skill (a
+mechanical scanner + human-owned `atlas.domains.json` grouping, per-domain folders, and a
+demo-standard lint). Deprioritized: `gh pr comment` integration (M5). See
+`docs/superpowers/specs/`.
