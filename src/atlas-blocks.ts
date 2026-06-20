@@ -143,6 +143,26 @@ export function assertUniqueAtlasIds(blocks: AtlasBlock[]): void {
   }
 }
 
+// atlas page options
+export interface AtlasOpts {
+  title: string;                               // topbar title, e.g. "System Atlas · sports-rpg"
+  stack?: string;                              // chip, e.g. "Next.js · TypeScript"
+  count?: string;                              // chip, e.g. "7 domains"
+  date?: string;                               // chip, e.g. "generated 2026-06-20"
+  note?: string;                               // chip, e.g. "in-memory state"
+  meta?: { key: string; value: string }[];     // sidebar Meta
+  outDir?: string; excalidraw?: boolean; onWarn?: (m: string) => void; generator?: string;
+}
+// domain page options
+export interface DomainOpts {
+  title: string;                               // the domain name, e.g. "brain"
+  layer: DomainTile["layer"]; layerLabel: string;
+  path?: string; count?: string; depends?: string; date?: string;
+  backHref?: string;                           // default "atlas.html"
+  meta?: { key: string; value: string }[];
+  outDir?: string; excalidraw?: boolean; onWarn?: (m: string) => void; generator?: string;
+}
+
 /** tldr blocks are the lead; everything else is a numbered chapter. */
 export function isAtlasChapter(b: AtlasBlock): boolean {
   return b.type !== "atlas-tldr" && b.type !== "domain-tldr";
