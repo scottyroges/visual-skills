@@ -111,3 +111,28 @@ describe("atlas-page block renderers", () => {
     expect(h).toContain("Page pending");
   });
 });
+
+describe("domain-page renderers (lead + cards + arch)", () => {
+  const empty = new Map();
+  it("domain-tldr renders card + bigidea with the Domain eyebrow", async () => {
+    const h = await renderAtlasBlock({ type: "domain-tldr", id: "tldr", heading: "h", rows: [{ key: "Owns", value: "x" }], bigIdea: { line: "the idea", sub: "s" } }, empty);
+    expect(h).toContain('class="tldr-eyebrow">Domain');
+    expect(h).toContain('class="bigidea-line"');
+  });
+  it("components renders cards as anchor links with a card-jump", async () => {
+    const h = await renderAtlasBlock({ type: "components", id: "components", title: "The 6 brains", cards: [
+      { name: "gm", purpose: "p", exports: [{ name: "computeGMAssessment" }, { name: "x", deputy: true }], href: "#c-gm" },
+    ] }, empty);
+    expect(h).toContain('a class="board-card" href="#c-gm"');
+    expect(h).toContain('class="skill-chip">computeGMAssessment');
+    expect(h).toContain('class="skill-chip is-deputy">x');
+    expect(h).toContain('class="card-jump"');
+  });
+  it("diagram-section renders intro + diagram + optional callout", async () => {
+    const map = new Map((await renderAll([{ type: "diagram", id: "d1", title: "", kind: "architecture", d2: "a -> b" }])).map((r) => [r.id, r]));
+    const h = await renderAtlasBlock({ type: "diagram-section", id: "arch", title: "Internal architecture", intro: "i", diagram: { id: "d1", kind: "architecture", d2: "a -> b" }, callout: "note" }, map);
+    expect(h).toContain('id="arch" class="section"');
+    expect(h).toContain('class="diagram-box"');
+    expect(h).toContain('class="callout"');
+  });
+});

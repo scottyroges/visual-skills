@@ -199,6 +199,40 @@ async function renderDomainIndex(b: Extract<AtlasBlock, { type: "domain-index" }
     `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}<div class="domain-grid">${tiles}</div>`;
 }
 
+async function renderDomainTldr(b: Extract<AtlasBlock, { type: "domain-tldr" }>): Promise<string> {
+  const rows = (await Promise.all(b.rows.map(async (r) =>
+    `<div class="tldr-row"><span class="tldr-key">${escapeHtml(r.key)}</span><span class="tldr-val">${await mi(r.value)}</span></div>`))).join("");
+  const card = `<div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">${escapeHtml(b.eyebrow ?? "Domain")}</span>` +
+    `<h2 class="tldr-heading">${await mi(b.heading)}</h2></div><div class="tldr-rows">${rows}</div></div>`;
+  const big = b.bigIdea
+    ? `<div class="bigidea"><div class="bigidea-label">${escapeHtml(b.bigIdea.label ?? "The load-bearing idea")}</div>` +
+      `<div class="bigidea-line">${await mi(b.bigIdea.line)}</div>` +
+      `${b.bigIdea.sub ? `<p class="bigidea-sub">${await mi(b.bigIdea.sub)}</p>` : ""}</div>`
+    : "";
+  return card + big;
+}
+
+async function renderComponents(b: Extract<AtlasBlock, { type: "components" }>): Promise<string> {
+  const cards = (await Promise.all(b.cards.map(async (c) => {
+    const chips = (c.exports ?? []).map((e) => `<span class="skill-chip${e.deputy ? " is-deputy" : ""}">${escapeHtml(e.name)}</span>`).join("");
+    const row = chips ? `<div class="board-row"><span class="board-row-label">${escapeHtml(c.exportsLabel ?? "exports")}</span>${chips}</div>` : "";
+    return `<a class="board-card" href="${escapeHtml(c.href)}"><div class="board-name">${escapeHtml(c.name)}</div>` +
+      `<div class="board-purpose">${await mi(c.purpose)}</div>${row}` +
+      `<div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>`;
+  }))).join("");
+  return sectionHeader(b.title, b.badge) +
+    `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}<div class="board-grid">${cards}</div>`;
+}
+
+async function renderDiagramSection(b: Extract<AtlasBlock, { type: "diagram-section" }>, diagrams: Map<string, DiagramResult>): Promise<string> {
+  const callout = b.callout
+    ? `<div class="callout"><span class="callout-icon" aria-hidden="true">&#9737;</span><span class="callout-text">${await mi(b.callout)}</span></div>`
+    : "";
+  return sectionHeader(b.title, b.badge) +
+    `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}` +
+    `${await renderAtlasDiagram(b.diagram, diagrams)}${callout}`;
+}
+
 /** Dispatch one block to its renderer, wrapped in its <section>. Domain-page block cases are
  *  added in later tasks; the default warns. */
 export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, DiagramResult>, onWarn?: (m: string) => void): Promise<string> {
@@ -207,6 +241,9 @@ export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, Diag
       case "atlas-tldr": return renderAtlasTldr(b);
       case "domain-map": return renderDomainMap(b);
       case "domain-index": return renderDomainIndex(b);
+      case "domain-tldr": return renderDomainTldr(b);
+      case "components": return renderComponents(b);
+      case "diagram-section": return renderDiagramSection(b, diagrams);
       default: onWarn?.(`atlas: no renderer for block type "${(b as AtlasBlock).type}"`); return "";
     }
   })();
