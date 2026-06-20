@@ -1341,6 +1341,9 @@ details.ref[open] .ref-chev { transform: rotate(90deg); }
 /* svg text inherits the page sans (the hand-authored domain map reuses .flow-svg from spec.css) */
 .map-svg text { font-family: var(--font-sans); }
 
+/* the load-bearing idea reads full-width on atlas pages (override spec.css's 70ch cap) */
+.bigidea-sub { max-width: none; }
+
 /* ---- domain index: a tile grid (the onboarding map AND the reference index) ---- */
 .domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
 .domain-tile {
