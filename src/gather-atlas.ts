@@ -180,7 +180,7 @@ export function buildDomainDraft(
     const exports: KV[] = g.files
       .flatMap((f) => (byKey.get(moduleKey(f))?.exports ?? []).map((name) => ({ name, desc: "" })));
     const files: KV[] = g.files.map((f) => ({ name: f.replace(base.endsWith("/") ? base : base + "/", ""), desc: "" }));
-    return { id: `c-${g.name}`, name: g.name, path: g.files.length === 1 ? g.files[0] : `${base}/${g.name}`,
+    return { id: `c-${g.name}`, name: g.name, path: g.files.length === 1 ? g.files[0] : g.name === slug ? base : `${base}/${g.name}`,
       detail: [""], files, exports, connections: [] };
   });
 

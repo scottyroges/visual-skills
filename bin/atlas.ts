@@ -50,9 +50,18 @@ async function renderFile(file: string, outDir: string): Promise<{ outName: stri
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+function parseConfig(cfgPath: string, raw: string): AtlasConfig {
+  try {
+    return JSON.parse(raw) as AtlasConfig;
+  } catch (e) {
+    console.error(`atlas.domains.json: could not parse — ${(e as Error).message}`);
+    process.exit(2);
+  }
+}
+
 async function loadOrGuessConfig(repoRoot: string, outDir: string): Promise<AtlasConfig> {
   const cfgPath = join(outDir, "atlas.domains.json");
-  if (existsSync(cfgPath)) return JSON.parse(await readFile(cfgPath, "utf8")) as AtlasConfig;
+  if (existsSync(cfgPath)) return parseConfig(cfgPath, await readFile(cfgPath, "utf8"));
   const inv = await scanInventory(repoRoot, ["src", "lib"]);
   const repoName = basename(repoRoot);
   return firstGuessConfig(repoName, ["src", "lib"], inv.modules.map((m) => m.path));
@@ -84,18 +93,19 @@ async function main() {
     if (values.domain) {
       const cfgPath = join(outDir, "atlas.domains.json");
       if (!existsSync(cfgPath)) { console.error(`--domain needs an existing ${cfgPath} (run a full scan first)`); process.exit(2); }
-      const config = JSON.parse(await readFile(cfgPath, "utf8")) as AtlasConfig;
+      const config = parseConfig(cfgPath, await readFile(cfgPath, "utf8"));
       const domain = config.domains.find((d) => d.slug === values.domain);
       if (!domain) { console.error(`unknown domain "${values.domain}" — not in atlas.domains.json`); process.exit(2); }
       const inv = await scanInventory(values.repo, config.srcRoots);
-      const { drift } = reconcile(config, inv.modules.map((m) => m.path));
-      const edges = aggregateDomainEdges(config, inv);
-      await writeFile(join(outDir, `domain-${domain.slug}.json`),
-        JSON.stringify(buildDomainDraft(domain.slug, config, inv, edges, { date: today() }), null, 2));
-      const { outName, warnings } = await renderFile(join(outDir, `domain-${domain.slug}.json`), outDir);
+      const { config: live, drift } = reconcile(config, inv.modules.map((m) => m.path));
+      const liveDomain = live.domains.find((d) => d.slug === values.domain)!;
+      const edges = aggregateDomainEdges(live, inv);
+      await writeFile(join(outDir, `domain-${liveDomain.slug}.json`),
+        JSON.stringify(buildDomainDraft(liveDomain.slug, live, inv, edges, { date: today() }), null, 2));
+      const { outName, warnings } = await renderFile(join(outDir, `domain-${liveDomain.slug}.json`), outDir);
       console.log(`refreshed ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
       // tile-only note (do not recompute the atlas map; see spec "Resolved during review")
-      console.log(`note: atlas tile for "${domain.slug}" — ${domain.modules.length} files, deps: ${[...(edges.get(domain.slug) ?? [])].sort().join(", ") || "none"} (update atlas.json's tile if changed)`);
+      console.log(`note: atlas tile for "${liveDomain.slug}" — ${liveDomain.modules.length} files, deps: ${[...(edges.get(liveDomain.slug) ?? [])].sort().join(", ") || "none"} (update atlas.json's tile if changed)`);
       printDrift(drift);
       return; // end main()
     }

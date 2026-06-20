@@ -94,3 +94,35 @@ it("--domain errors clearly without a config", () => {
     rmSync(out, { recursive: true, force: true });
   }
 }, 30_000);
+
+it("--domain regenerates from reconciled config: overwrites authored prose and reflects correct file count", () => {
+  const repo = join(__dirname, "fixtures", "atlas-repo");
+  const out = mkdtempSync(join(tmpdir(), "atlas-dom3-"));
+  try {
+    // Seed: full run creates config + domain-sim.json
+    runCli(["--repo", repo, "--out", out]);
+
+    // Insert an authored marker into domain-sim.json
+    const domPath = join(out, "domain-sim.json");
+    const doc = JSON.parse(readFileSync(domPath, "utf8"));
+    const tldr = doc.blocks.find((b: any) => b.type === "domain-tldr");
+    tldr.rows.push({ key: "x", value: "AUTHORED" });
+    writeFileSync(domPath, JSON.stringify(doc, null, 2));
+
+    // Single-domain regenerate — should overwrite the authored content
+    runCli(["--repo", repo, "--domain", "sim", "--out", out]);
+
+    const regenerated = JSON.parse(readFileSync(domPath, "utf8"));
+
+    // AUTHORED marker must be gone (intentional overwrite behavior)
+    const regeneratedTldr = regenerated.blocks.find((b: any) => b.type === "domain-tldr");
+    expect(regeneratedTldr.rows.some((r: any) => r.value === "AUTHORED")).toBe(false);
+
+    // MUST-FIX 1: count reflects reconciled module list (sim has 2 files in the fixture)
+    const filesRow = regeneratedTldr.rows.find((r: any) => r.key === "Files");
+    expect(filesRow).toBeDefined();
+    expect(filesRow.value).toBe("2");
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+}, 30_000);
