@@ -1460,14 +1460,14 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 
 <div class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#components"><span class="progress-step-num">1</span><span class="progress-step-label">The 6 brains</span></a><a class="progress-step" href="#arch"><span class="progress-step-num">2</span><span class="progress-step-label">Architecture</span></a><a class="progress-step" href="#depth"><span class="progress-step-num">3</span><span class="progress-step-label">In depth</span></a><a class="progress-step" href="#data"><span class="progress-step-num">4</span><span class="progress-step-label">Data it owns</span></a><a class="progress-step" href="#seams"><span class="progress-step-num">5</span><span class="progress-step-label">Seams</span></a></div>
 
-<section id="components" class="section"><div class="section-header"><h2 class="section-title">The 6 brains</h2><span class="section-badge">+ shared perception</span></div><p class="section-intro">Each role is its own sub-folder under <code>lib/brain</code>, sharing one perception layer (<code>perception.ts</code>) and a trigger engine (<code>triggers.ts</code>) that fires them on a daily / weekly / post-game cadence. Tap a card to dig into that brain.</p>
+<section id="components" class="section"><div class="section-header"><h2 class="section-title">The 6 brains</h2><span class="section-badge">+ shared perception</span></div><p class="section-intro">Each role is its own sub-folder under <code>lib/brain</code>, sharing one perception layer (<code>perception.ts</code>) and a trigger engine (<code>triggers.ts</code>) that fires them on a daily / weekly / post-game cadence. Tap a card to jump to its full section.</p>
 <div class="board-grid">
-<a class="board-card" href="#c-gm"><div class="board-name">gm</div><div class="board-purpose">Team-building &amp; strategy: a perceived 5-year <code>StrategicPlan</code>, trades, call-ups, cap compliance, and the draft board. The deepest brain.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">computeGMAssessment</span><span class="skill-chip">generateTradeProposal</span><span class="skill-chip is-deputy">StrategicPlan</span></div><div class="card-jump">Dig in <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
-<a class="board-card" href="#c-coach"><div class="board-name">coach</div><div class="board-purpose">Roster deployment &amp; accountability: builds lines, picks the goalie, recommends healthy scratches, and rates players by <em>system fit</em> rather than raw skill.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">computeCoachAssessment</span><span class="skill-chip">buildLineup</span><span class="skill-chip is-deputy">recommendScratches</span></div><div class="card-jump">Dig in <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
-<a class="board-card" href="#c-owner"><div class="board-name">owner</div><div class="board-purpose">Franchise oversight: sees wins clearly but roster quality poorly, attributes blame (coach vs GM vs roster), tracks satisfaction, hires, fires, and meddles.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">computeOwnerAssessment</span><span class="skill-chip">shouldFireCoach</span><span class="skill-chip is-deputy">decideOwnerMeddling</span></div><div class="card-jump">Dig in <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
-<a class="board-card" href="#c-player"><div class="board-name">player</div><div class="board-purpose">Ego-biased self-perception: rates its own skill with inflation/deflation, derives multi-part satisfaction (ice time, fit, contract), and raises demands.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">computeSelfAssessment</span><span class="skill-chip">computeSatisfaction</span></div><div class="card-jump">Dig in <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
-<a class="board-card" href="#c-scout"><div class="board-name">scout</div><div class="board-purpose">Prospect evaluation: builds individual reports and a draft board, with perception noise scaled by the scout&rsquo;s accuracy and region specialty.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">buildIndividualReport</span><span class="skill-chip">buildDraftBoard</span></div><div class="card-jump">Dig in <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
-<a class="board-card" href="#c-agent"><div class="board-name">agent</div><div class="board-purpose">Player representation: picks the negotiation stance for a player&rsquo;s contract during story arcs (the narrowest brain &mdash; arc decisions only).</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">pickAgentDecision</span></div><div class="card-jump">Dig in <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
+<a class="board-card" href="#c-gm"><div class="board-name">gm</div><div class="board-purpose">Team-building &amp; strategy: a perceived 5-year <code>StrategicPlan</code>, trades, call-ups, cap compliance, and the draft board. The deepest brain.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">computeGMAssessment</span><span class="skill-chip">generateTradeProposal</span><span class="skill-chip is-deputy">StrategicPlan</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
+<a class="board-card" href="#c-coach"><div class="board-name">coach</div><div class="board-purpose">Roster deployment &amp; accountability: builds lines, picks the goalie, recommends healthy scratches, and rates players by <em>system fit</em> rather than raw skill.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">computeCoachAssessment</span><span class="skill-chip">buildLineup</span><span class="skill-chip is-deputy">recommendScratches</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
+<a class="board-card" href="#c-owner"><div class="board-name">owner</div><div class="board-purpose">Franchise oversight: sees wins clearly but roster quality poorly, attributes blame (coach vs GM vs roster), tracks satisfaction, hires, fires, and meddles.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">computeOwnerAssessment</span><span class="skill-chip">shouldFireCoach</span><span class="skill-chip is-deputy">decideOwnerMeddling</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
+<a class="board-card" href="#c-player"><div class="board-name">player</div><div class="board-purpose">Ego-biased self-perception: rates its own skill with inflation/deflation, derives multi-part satisfaction (ice time, fit, contract), and raises demands.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">computeSelfAssessment</span><span class="skill-chip">computeSatisfaction</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
+<a class="board-card" href="#c-scout"><div class="board-name">scout</div><div class="board-purpose">Prospect evaluation: builds individual reports and a draft board, with perception noise scaled by the scout&rsquo;s accuracy and region specialty.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">buildIndividualReport</span><span class="skill-chip">buildDraftBoard</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
+<a class="board-card" href="#c-agent"><div class="board-name">agent</div><div class="board-purpose">Player representation: picks the negotiation stance for a player&rsquo;s contract during story arcs (the narrowest brain &mdash; arc decisions only).</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">pickAgentDecision</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a>
 </div></section>
 
 <section id="arch" class="section"><div class="section-header"><h2 class="section-title">Internal architecture</h2><span class="section-badge">perceive → decide</span></div><p class="section-intro">Every brain runs the same pipeline. The trigger engine reads world state, the perception layer distorts it by skill, role assessments cache a weekly snapshot, and decisions are handed to <code>sim</code> to execute.</p>
@@ -1578,10 +1578,10 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 </mask></svg></svg>
 </div>
 <div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#e5dbff;border-color:#9775fa;"></span>World state (read-only)</span><span class="legend-item"><span class="legend-swatch" style="background:#d0ebff;border-color:#4dabf7;"></span>Perception</span><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>This domain</span><span class="legend-item"><span class="legend-swatch" style="background:#f1f3f5;border-color:#adb5bd;"></span>sim (executes)</span></div>
-<div class="callout"><span class="callout-icon" aria-hidden="true">&#9737;</span><span class="callout-text">Assessments are cached with a 7-day TTL (<code>AssessmentCache</code>), so each role re-perceives the league about once a week rather than every day &mdash; cheap, and &ldquo;fresh enough&rdquo; to drive decisions.</span></div>
+<div class="callout"><span class="callout-icon" aria-hidden="true">&#9737;</span><span class="callout-text"><strong>Shared infrastructure:</strong> <code>perception.ts</code> (<code>evaluatePlayer</code>, <code>computeLeagueAverages</code>, <code>AssessmentCache</code>) and <code>triggers.ts</code> (<code>runDayTriggers</code>, <code>runPostGameTriggers</code>) are used by every role below. Assessments cache with a 7-day TTL, so each role re-perceives the league about once a week.</span></div>
 </section>
 
-<section id="depth" class="section"><div class="section-header"><h2 class="section-title">The brains, in depth</h2><span class="section-badge">6 roles</span></div><p class="section-intro">Each brain, what it actually computes, and how it connects to the rest of the system.</p>
+<section id="depth" class="section"><div class="section-header"><h2 class="section-title">The brains, in depth</h2><span class="section-badge">6 roles</span></div><p class="section-intro">A full section per brain &mdash; what it computes, how it works, its files and exports, and how it connects to the rest of the system.</p>
 
 <div class="subsection" id="c-gm"><div class="subsection-header"><h3 class="subsection-title">gm <span class="subsection-path">lib/brain/gm</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div>
 <p class="detail-p">The GM is the deepest brain. Beyond a weekly <code>GMAssessment</code> (roster depth, position gaps, window state, posture), it maintains a perceived 5-year <code>StrategicPlan</code> &mdash; a <code>CapBoard</code> (ceiling, committed, dead cap, perceived flexibility), an <code>OrgDepthChart</code> (factual slots + perceived tiers), a <code>PipelineMap</code> (prospect readiness), and a <code>ProScoutingBoard</code> (tiered FA / deadline targets). Crucially the plan is <em>perceived</em>: a low-skill GM mis-tiers its own depth chart and chases the wrong targets.</p>
@@ -1694,7 +1694,7 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 </mask></svg></svg>
 </div>
 <div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#d0ebff;border-color:#4dabf7;"></span>trigger</span><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>the plan</span></div>
-<p class="detail-p" style="margin-top:18px;">Its other headline path is the <strong>weekly trade cycle</strong>, where perception asymmetry turns into real value transfer between teams.</p>
+<p class="detail-p" style="margin-top:18px;">Its other headline path is the <strong>weekly trade cycle</strong>, where perception asymmetry turns into real value transfer: a low-<code>talentEvaluation</code> GM over-perceives the other team&rsquo;s assets and under-perceives its own, so it accepts deals that quietly bleed value to the sharper GM.</p>
 <div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 779 626"><svg class="d2-2454771702 d2-svg" width="779" height="626" viewBox="-13 27 779 626"><rect x="-13.000000" y="27.000000" width="779.000000" height="626.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-2454771702 .text {
 	font-family: "d2-2454771702-font-regular";
@@ -1803,14 +1803,143 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 </mask></svg></svg>
 </div>
 <div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#d0ebff;border-color:#4dabf7;"></span>trigger</span></div>
-<div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">produces</span><span class="conn-body"><code>StrategicPlan</code> &mdash; consumed by its own trades, call-ups, and draft logic</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><a href="domain-sim.html">sim</a> &mdash; <code>executeAcceptedTrade</code>, cap math, <code>processMidSeasonGmFiring</code></span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><code>Franchise</code> &amp; contracts (world), <code>GMProfile</code> (profiles), rosters (sim)</span></div></div></div>
+<div class="conns-label">Key files</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">gm/plan/types.ts</span><span class="owns-desc">The <code>StrategicPlan</code> and its sub-board type definitions.</span></div>
+<div class="owns-row"><span class="owns-name">gm/plan/disruptions.ts · handlers/</span><span class="owns-desc">Disruption &rarr; <code>PlanDelta</code>, <code>applyDeltaInPlace</code>, and the per-event handler registry.</span></div>
+<div class="owns-row"><span class="owns-name">gm/assessment.ts</span><span class="owns-desc">The weekly <code>GMAssessment</code> (depth, gaps, window, posture).</span></div>
+<div class="owns-row"><span class="owns-name">gm/trades.ts · trade-execution.ts</span><span class="owns-desc">Proposal generation, the negotiation loop, and trade execution.</span></div>
+<div class="owns-row"><span class="owns-name">gm/replan.ts · value.ts · callups.ts</span><span class="owns-desc">Replan triggers, perceived market AAV, and call-up / send-down logic.</span></div>
+</div>
+<div class="conns-label">Key exports</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">computeGMAssessment()</span><span class="owns-desc">&rarr; <code>GMAssessment</code> &mdash; the cached weekly read.</span></div>
+<div class="owns-row"><span class="owns-name">StrategicPlan</span><span class="owns-desc">+ <code>CapBoard</code>, <code>OrgDepthChart</code>, <code>PipelineMap</code>, <code>ProScoutingBoard</code>.</span></div>
+<div class="owns-row"><span class="owns-name">generateTradeProposal() · negotiateTrade()</span><span class="owns-desc">The trade cycle&rsquo;s proposal and evaluation half.</span></div>
+<div class="owns-row"><span class="owns-name">executeAcceptedTrade()</span><span class="owns-desc">Swaps players, rebuilds rosters &amp; cap, fires a replan on both teams.</span></div>
+<div class="owns-row"><span class="owns-name">fireReplanTrigger() · evaluateCallup()</span><span class="owns-desc">Replan cascade entry; AHL promotion / demotion.</span></div>
+</div>
+<div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">produces</span><span class="conn-body"><code>StrategicPlan</code> &mdash; consumed by its own trades, call-ups, and draft logic</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><a href="domain-sim.html#c-contracts">sim</a> &mdash; <code>executeAcceptedTrade</code>, cap math, <code>processMidSeasonGmFiring</code></span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><code>Franchise</code> &amp; contracts (world), <code>GMProfile</code> (profiles), rosters (sim)</span></div><div class="conn"><span class="conn-dir">consumes</span><span class="conn-body"><a href="#c-scout">scout</a>&rsquo;s <code>DraftBoard</code> at the draft</span></div></div></div>
 
 <div class="subsection" id="c-coach"><div class="subsection-header"><h3 class="subsection-title">coach <span class="subsection-path">lib/brain/coach</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div>
-<p class="detail-p">The coach rates players by <code>computeSystemFitRating</code> &mdash; not raw skill, but fit to its system &mdash; then <code>buildLineup</code> assembles four forward lines, three D pairs, PP/PK units, and a starting goalie, balancing chemistry. <code>recommendScratches</code> flags underperformers, which the GM must approve before they sit. A separate staff review evaluates assistant-coach effectiveness.</p>
-<div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">produces</span><span class="conn-body">a lineup consumed by <a href="domain-sim.html">sim</a> each game; scratch recommendations gated by the GM</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><code>RosterSOA</code>, chemistry, and player points (sim); <code>CoachProfile</code> (profiles)</span></div><div class="conn"><span class="conn-dir">emits</span><span class="conn-body">friction tags (e.g. <code>locker_room_unrest</code>) to <a href="domain-story.html">story</a></span></div></div></div>
+<p class="detail-p">The coach perceives players through a <code>computeSystemFitRating</code> lens &mdash; not raw skill, but fit to its system &mdash; so a defensive coach down-rates a one-way scorer. From that assessment, <code>buildLineup</code> assembles four forward lines, three D pairs, PP/PK units, and a starting goalie, balancing chemistry; <code>recommendScratches</code> flags underperformers, which the GM must approve before they sit. A staff review separately grades the assistants.</p>
+<div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 915 258"><svg class="d2-17975877 d2-svg" width="915" height="258" viewBox="-25 -25 915 258"><rect x="-25.000000" y="-25.000000" width="915.000000" height="258.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-17975877 .text-bold {
+	font-family: "d2-17975877-font-bold";
+}
+@font-face {
+	font-family: d2-17975877-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-17975877 .text-italic {
+	font-family: "d2-17975877-font-italic";
+}
+@font-face {
+	font-family: d2-17975877-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-17975877 .fill-N1{fill:#0A0F25;}
+		.d2-17975877 .fill-N2{fill:#676C7E;}
+		.d2-17975877 .fill-N3{fill:#9499AB;}
+		.d2-17975877 .fill-N4{fill:#CFD2DD;}
+		.d2-17975877 .fill-N5{fill:#DEE1EB;}
+		.d2-17975877 .fill-N6{fill:#EEF1F8;}
+		.d2-17975877 .fill-N7{fill:#FFFFFF;}
+		.d2-17975877 .fill-B1{fill:#0D32B2;}
+		.d2-17975877 .fill-B2{fill:#0D32B2;}
+		.d2-17975877 .fill-B3{fill:#E3E9FD;}
+		.d2-17975877 .fill-B4{fill:#E3E9FD;}
+		.d2-17975877 .fill-B5{fill:#EDF0FD;}
+		.d2-17975877 .fill-B6{fill:#F7F8FE;}
+		.d2-17975877 .fill-AA2{fill:#4A6FF3;}
+		.d2-17975877 .fill-AA4{fill:#EDF0FD;}
+		.d2-17975877 .fill-AA5{fill:#F7F8FE;}
+		.d2-17975877 .fill-AB4{fill:#EDF0FD;}
+		.d2-17975877 .fill-AB5{fill:#F7F8FE;}
+		.d2-17975877 .stroke-N1{stroke:#0A0F25;}
+		.d2-17975877 .stroke-N2{stroke:#676C7E;}
+		.d2-17975877 .stroke-N3{stroke:#9499AB;}
+		.d2-17975877 .stroke-N4{stroke:#CFD2DD;}
+		.d2-17975877 .stroke-N5{stroke:#DEE1EB;}
+		.d2-17975877 .stroke-N6{stroke:#EEF1F8;}
+		.d2-17975877 .stroke-N7{stroke:#FFFFFF;}
+		.d2-17975877 .stroke-B1{stroke:#0D32B2;}
+		.d2-17975877 .stroke-B2{stroke:#0D32B2;}
+		.d2-17975877 .stroke-B3{stroke:#E3E9FD;}
+		.d2-17975877 .stroke-B4{stroke:#E3E9FD;}
+		.d2-17975877 .stroke-B5{stroke:#EDF0FD;}
+		.d2-17975877 .stroke-B6{stroke:#F7F8FE;}
+		.d2-17975877 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-17975877 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-17975877 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-17975877 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-17975877 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-17975877 .background-color-N1{background-color:#0A0F25;}
+		.d2-17975877 .background-color-N2{background-color:#676C7E;}
+		.d2-17975877 .background-color-N3{background-color:#9499AB;}
+		.d2-17975877 .background-color-N4{background-color:#CFD2DD;}
+		.d2-17975877 .background-color-N5{background-color:#DEE1EB;}
+		.d2-17975877 .background-color-N6{background-color:#EEF1F8;}
+		.d2-17975877 .background-color-N7{background-color:#FFFFFF;}
+		.d2-17975877 .background-color-B1{background-color:#0D32B2;}
+		.d2-17975877 .background-color-B2{background-color:#0D32B2;}
+		.d2-17975877 .background-color-B3{background-color:#E3E9FD;}
+		.d2-17975877 .background-color-B4{background-color:#E3E9FD;}
+		.d2-17975877 .background-color-B5{background-color:#EDF0FD;}
+		.d2-17975877 .background-color-B6{background-color:#F7F8FE;}
+		.d2-17975877 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-17975877 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-17975877 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-17975877 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-17975877 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-17975877 .color-N1{color:#0A0F25;}
+		.d2-17975877 .color-N2{color:#676C7E;}
+		.d2-17975877 .color-N3{color:#9499AB;}
+		.d2-17975877 .color-N4{color:#CFD2DD;}
+		.d2-17975877 .color-N5{color:#DEE1EB;}
+		.d2-17975877 .color-N6{color:#EEF1F8;}
+		.d2-17975877 .color-N7{color:#FFFFFF;}
+		.d2-17975877 .color-B1{color:#0D32B2;}
+		.d2-17975877 .color-B2{color:#0D32B2;}
+		.d2-17975877 .color-B3{color:#E3E9FD;}
+		.d2-17975877 .color-B4{color:#E3E9FD;}
+		.d2-17975877 .color-B5{color:#EDF0FD;}
+		.d2-17975877 .color-B6{color:#F7F8FE;}
+		.d2-17975877 .color-AA2{color:#4A6FF3;}
+		.d2-17975877 .color-AA4{color:#EDF0FD;}
+		.d2-17975877 .color-AA5{color:#F7F8FE;}
+		.d2-17975877 .color-AB4{color:#EDF0FD;}
+		.d2-17975877 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="YXNz actor"><g class="shape" ><rect x="0.000000" y="67.000000" width="234.000000" height="82.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="117.000000" y="105.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px"><tspan x="117.000000" dy="0.000000">computeCoachAssessment</tspan><tspan x="117.000000" dy="18.500000">system-fit ratings</tspan></text></g><g class="bGluZXVw changed"><g class="shape" ><rect x="334.000000" y="0.000000" width="225.000000" height="82.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="446.500000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px"><tspan x="446.500000" dy="0.000000">buildLineup</tspan><tspan x="446.500000" dy="18.500000">4 lines · 3 pairs · PP/PK · G</tspan></text></g><g class="c2NyYXRjaA=="><g class="shape" ><rect x="347.000000" y="142.000000" width="199.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="446.500000" y="180.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">recommendScratches</text></g><g class="Z20= external"><g class="shape" ><rect x="717.000000" y="142.000000" width="137.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="785.500000" y="180.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">GM approves</text></g><g class="c2lt external"><g class="shape" ><rect x="705.000000" y="8.000000" width="160.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="785.000000" y="46.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">sim (each game)</text></g><g class="KGFzcyAtJmd0OyBsaW5ldXApWzBd"><marker id="mk-d2-17975877-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 220.856953 66.257219 C 271.000000 46.200001 294.000000 41.000000 330.000000 41.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-17975877-3488378134)" mask="url(#d2-17975877)" /></g><g class="KGFzcyAtJmd0OyBzY3JhdGNoKVswXQ=="><path d="M 220.856953 149.742781 C 271.000000 169.800003 296.600006 175.000000 343.000000 175.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-17975877-3488378134)" mask="url(#d2-17975877)" /></g><g class="KHNjcmF0Y2ggLSZndDsgZ20pWzBd"><path d="M 548.000000 175.000000 C 614.799988 175.000000 648.900024 175.000000 712.500000 175.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-17975877-3488378134)" mask="url(#d2-17975877)" /><text x="631.500000" y="181.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">gate</text></g><g class="KGxpbmV1cCAtJmd0OyBzaW0pWzBd"><path d="M 561.000000 41.000000 C 617.400024 41.000000 646.599976 41.000000 701.000000 41.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-17975877-3488378134)" mask="url(#d2-17975877)" /><text x="632.000000" y="47.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">deploy</text></g><mask id="d2-17975877" maskUnits="userSpaceOnUse" x="-25" y="-25" width="915" height="258">
+<rect x="-25" y="-25" width="915" height="258" fill="white"></rect>
+<rect x="614.000000" y="165.000000" width="35" height="21" fill="black"></rect>
+<rect x="607.000000" y="31.000000" width="50" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div>
+<div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#d0ebff;border-color:#4dabf7;"></span>assessment</span><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>lineup</span><span class="legend-item"><span class="legend-swatch" style="background:#f1f3f5;border-color:#adb5bd;"></span>gate / sim</span></div>
+<div class="conns-label">Key files</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">coach/assessment.ts</span><span class="owns-desc">System-fit ratings, position gaps, roster weaknesses.</span></div>
+<div class="owns-row"><span class="owns-name">coach/lineup.ts</span><span class="owns-desc">Line / pairing / special-teams construction with chemistry balancing.</span></div>
+<div class="owns-row"><span class="owns-name">coach/scratches.ts · staff-review.ts</span><span class="owns-desc">Scratch recommendations (GM-gated) and assistant-coach review.</span></div>
+</div>
+<div class="conns-label">Key exports</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">computeCoachAssessment()</span><span class="owns-desc">&rarr; <code>CoachAssessment</code>; plus <code>computeSystemFitRating()</code>.</span></div>
+<div class="owns-row"><span class="owns-name">buildLineup()</span><span class="owns-desc">&rarr; <code>LineupContext</code> consumed by the engine each game.</span></div>
+<div class="owns-row"><span class="owns-name">recommendScratches() · approveScratch()</span><span class="owns-desc">The scratch loop (coach proposes, GM approves).</span></div>
+</div>
+<div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">produces</span><span class="conn-body">a lineup consumed by <a href="domain-sim.html#c-sim-game">sim</a> each game</span></div><div class="conn"><span class="conn-dir">gated by</span><span class="conn-body"><a href="#c-gm">gm</a> &mdash; approves scratches before they take effect</span></div><div class="conn"><span class="conn-dir">emits</span><span class="conn-body">friction tags (e.g. <code>locker_room_unrest</code>) to <a href="domain-story.html">story</a></span></div></div></div>
 
 <div class="subsection" id="c-owner"><div class="subsection-header"><h3 class="subsection-title">owner <span class="subsection-path">lib/brain/owner</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div>
-<p class="detail-p">The owner perceives wins and losses clearly but roster quality poorly (fixed low skill ~30). Each month it runs <code>evaluateOwnerBlame</code> to attribute losing to the coach, the GM, or the roster, and refreshes a rolling <strong>satisfaction</strong> metric for each of the coach and GM. Blame and firing both <em>debounce</em> &mdash; a target must persist across two cycles before it sticks &mdash; which suppresses single-cycle RNG noise.</p>
+<p class="detail-p">The owner perceives wins and losses clearly but roster quality poorly (fixed low skill ~30). Each month <code>evaluateOwnerBlame</code> attributes losing to the coach, the GM, or the roster, and a rolling <strong>satisfaction</strong> metric is refreshed for the coach and GM from record-vs-expected, recent losses, streaks, and average player satisfaction. Blame and firing both <em>debounce</em> &mdash; a target must persist across two cycles before it sticks &mdash; which suppresses single-cycle RNG noise. The owner also meddles (vetoes, forced signings) and sets the contend-vs-rebuild mandate.</p>
 <div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1660 132"><svg class="d2-880571155 d2-svg" width="1660" height="132" viewBox="-25 -25 1660 132"><rect x="-25.000000" y="-25.000000" width="1660.000000" height="132.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-880571155 .text-bold {
 	font-family: "d2-880571155-font-bold";
@@ -1916,19 +2045,264 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 </mask></svg></svg>
 </div>
 <div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#d0ebff;border-color:#4dabf7;"></span>evidence</span><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>decision</span><span class="legend-item"><span class="legend-swatch" style="background:#f1f3f5;border-color:#adb5bd;"></span>sim (executes)</span></div>
+<div class="conns-label">Key files</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">owner/assessment.ts · blame.ts</span><span class="owns-desc">The owner read and the monthly blame attribution (debounced).</span></div>
+<div class="owns-row"><span class="owns-name">owner/coach-satisfaction.ts · gm-satisfaction.ts</span><span class="owns-desc">Rolling satisfaction metrics that drive firing.</span></div>
+<div class="owns-row"><span class="owns-name">owner/hire-fire-coach.ts · hire-fire-gm.ts</span><span class="owns-desc">Firing gates and replacement hiring.</span></div>
+<div class="owns-row"><span class="owns-name">owner/meddling.ts · mandate.ts</span><span class="owns-desc">Interference events and the contend / rebuild mandate.</span></div>
+</div>
+<div class="conns-label">Key exports</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">computeOwnerAssessment()</span><span class="owns-desc">&rarr; <code>OwnerAssessment</code> with a <code>BlameTarget</code>.</span></div>
+<div class="owns-row"><span class="owns-name">evaluateOwnerBlame()</span><span class="owns-desc">&rarr; <code>OwnerBlameAssessment</code> from <code>OwnerBlameEvidence</code>.</span></div>
+<div class="owns-row"><span class="owns-name">shouldFireCoach() · shouldFireGm()</span><span class="owns-desc">The gated firing decisions.</span></div>
+<div class="owns-row"><span class="owns-name">decideOwnerMeddling()</span><span class="owns-desc">&rarr; <code>OwnerMeddlingEvent</code> (veto / forced move).</span></div>
+</div>
 <div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><a href="domain-sim.html">sim</a> &mdash; <code>processMidSeasonFiring</code> / <code>processMidSeasonGmFiring</code></span></div><div class="conn"><span class="conn-dir">writes</span><span class="conn-body"><code>Franchise.ownerBlame</code> (debounced) &mdash; read by news in <a href="domain-story.html">story</a></span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body">standings &amp; the coach/GM assessments; <code>OwnerProfile</code> (profiles)</span></div></div></div>
 
 <div class="subsection" id="c-player"><div class="subsection-header"><h3 class="subsection-title">player <span class="subsection-path">lib/brain/player</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div>
-<p class="detail-p"><code>computeSelfAssessment</code> rates a player&rsquo;s own skill with ego-driven inflation or deflation; <code>computeSatisfaction</code> blends ice time, team success, coach fit, city, and contract fairness into a <code>PlayerSatisfaction</code>. Low satisfaction plus an inflated self-view drives contract demands and trade-request flags. A separate path handles archetype assignment and retirement.</p>
-<div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">produces</span><span class="conn-body">demands &amp; <code>wantsTradeRequest</code> flags &mdash; read by the <a href="#c-gm">gm</a> and by <a href="domain-story.html">story</a> arcs</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body">own roster row, ice time, and contract terms (sim / world)</span></div></div></div>
+<p class="detail-p"><code>computeSelfAssessment</code> rates a player&rsquo;s own skill with ego-driven inflation or deflation; <code>computeSatisfaction</code> blends ice time, team success, coach fit, city, and contract fairness into a <code>PlayerSatisfaction</code>. Low satisfaction plus an inflated self-view drives contract demands and a <code>wantsTradeRequest</code> flag &mdash; the seed for a trade-request story arc. Separate paths assign the player&rsquo;s archetype and decide retirement.</p>
+<div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1037 132"><svg class="d2-1669991886 d2-svg" width="1037" height="132" viewBox="-25 -25 1037 132"><rect x="-25.000000" y="-25.000000" width="1037.000000" height="132.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-1669991886 .text-bold {
+	font-family: "d2-1669991886-font-bold";
+}
+@font-face {
+	font-family: d2-1669991886-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-1669991886 .text-italic {
+	font-family: "d2-1669991886-font-italic";
+}
+@font-face {
+	font-family: d2-1669991886-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-1669991886 .fill-N1{fill:#0A0F25;}
+		.d2-1669991886 .fill-N2{fill:#676C7E;}
+		.d2-1669991886 .fill-N3{fill:#9499AB;}
+		.d2-1669991886 .fill-N4{fill:#CFD2DD;}
+		.d2-1669991886 .fill-N5{fill:#DEE1EB;}
+		.d2-1669991886 .fill-N6{fill:#EEF1F8;}
+		.d2-1669991886 .fill-N7{fill:#FFFFFF;}
+		.d2-1669991886 .fill-B1{fill:#0D32B2;}
+		.d2-1669991886 .fill-B2{fill:#0D32B2;}
+		.d2-1669991886 .fill-B3{fill:#E3E9FD;}
+		.d2-1669991886 .fill-B4{fill:#E3E9FD;}
+		.d2-1669991886 .fill-B5{fill:#EDF0FD;}
+		.d2-1669991886 .fill-B6{fill:#F7F8FE;}
+		.d2-1669991886 .fill-AA2{fill:#4A6FF3;}
+		.d2-1669991886 .fill-AA4{fill:#EDF0FD;}
+		.d2-1669991886 .fill-AA5{fill:#F7F8FE;}
+		.d2-1669991886 .fill-AB4{fill:#EDF0FD;}
+		.d2-1669991886 .fill-AB5{fill:#F7F8FE;}
+		.d2-1669991886 .stroke-N1{stroke:#0A0F25;}
+		.d2-1669991886 .stroke-N2{stroke:#676C7E;}
+		.d2-1669991886 .stroke-N3{stroke:#9499AB;}
+		.d2-1669991886 .stroke-N4{stroke:#CFD2DD;}
+		.d2-1669991886 .stroke-N5{stroke:#DEE1EB;}
+		.d2-1669991886 .stroke-N6{stroke:#EEF1F8;}
+		.d2-1669991886 .stroke-N7{stroke:#FFFFFF;}
+		.d2-1669991886 .stroke-B1{stroke:#0D32B2;}
+		.d2-1669991886 .stroke-B2{stroke:#0D32B2;}
+		.d2-1669991886 .stroke-B3{stroke:#E3E9FD;}
+		.d2-1669991886 .stroke-B4{stroke:#E3E9FD;}
+		.d2-1669991886 .stroke-B5{stroke:#EDF0FD;}
+		.d2-1669991886 .stroke-B6{stroke:#F7F8FE;}
+		.d2-1669991886 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-1669991886 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-1669991886 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-1669991886 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-1669991886 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-1669991886 .background-color-N1{background-color:#0A0F25;}
+		.d2-1669991886 .background-color-N2{background-color:#676C7E;}
+		.d2-1669991886 .background-color-N3{background-color:#9499AB;}
+		.d2-1669991886 .background-color-N4{background-color:#CFD2DD;}
+		.d2-1669991886 .background-color-N5{background-color:#DEE1EB;}
+		.d2-1669991886 .background-color-N6{background-color:#EEF1F8;}
+		.d2-1669991886 .background-color-N7{background-color:#FFFFFF;}
+		.d2-1669991886 .background-color-B1{background-color:#0D32B2;}
+		.d2-1669991886 .background-color-B2{background-color:#0D32B2;}
+		.d2-1669991886 .background-color-B3{background-color:#E3E9FD;}
+		.d2-1669991886 .background-color-B4{background-color:#E3E9FD;}
+		.d2-1669991886 .background-color-B5{background-color:#EDF0FD;}
+		.d2-1669991886 .background-color-B6{background-color:#F7F8FE;}
+		.d2-1669991886 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-1669991886 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-1669991886 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-1669991886 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-1669991886 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-1669991886 .color-N1{color:#0A0F25;}
+		.d2-1669991886 .color-N2{color:#676C7E;}
+		.d2-1669991886 .color-N3{color:#9499AB;}
+		.d2-1669991886 .color-N4{color:#CFD2DD;}
+		.d2-1669991886 .color-N5{color:#DEE1EB;}
+		.d2-1669991886 .color-N6{color:#EEF1F8;}
+		.d2-1669991886 .color-N7{color:#FFFFFF;}
+		.d2-1669991886 .color-B1{color:#0D32B2;}
+		.d2-1669991886 .color-B2{color:#0D32B2;}
+		.d2-1669991886 .color-B3{color:#E3E9FD;}
+		.d2-1669991886 .color-B4{color:#E3E9FD;}
+		.d2-1669991886 .color-B5{color:#EDF0FD;}
+		.d2-1669991886 .color-B6{color:#F7F8FE;}
+		.d2-1669991886 .color-AA2{color:#4A6FF3;}
+		.d2-1669991886 .color-AA4{color:#EDF0FD;}
+		.d2-1669991886 .color-AA5{color:#F7F8FE;}
+		.d2-1669991886 .color-AB4{color:#EDF0FD;}
+		.d2-1669991886 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="c2VsZg== actor"><g class="shape" ><rect x="0.000000" y="0.000000" width="218.000000" height="82.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="109.000000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px"><tspan x="109.000000" dy="0.000000">computeSelfAssessment</tspan><tspan x="109.000000" dy="18.500000">ego-biased skill</tspan></text></g><g class="c2F0"><g class="shape" ><rect x="359.000000" y="0.000000" width="200.000000" height="82.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="459.000000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="459.000000" dy="0.000000">computeSatisfaction</tspan><tspan x="459.000000" dy="18.500000">ice time · fit · contract</tspan></text></g><g class="ZGVt changed"><g class="shape" ><rect x="801.000000" y="0.000000" width="186.000000" height="82.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="894.000000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px"><tspan x="894.000000" dy="0.000000">demands</tspan><tspan x="894.000000" dy="18.500000">+ trade-request flag</tspan></text></g><g class="KHNlbGYgLSZndDsgc2F0KVswXQ=="><marker id="mk-d2-1669991886-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 219.500000 41.000000 C 274.299988 41.000000 302.700012 41.000000 355.500000 41.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1669991886-3488378134)" mask="url(#d2-1669991886)" /></g><g class="KHNhdCAtJmd0OyBkZW0pWzBd"><path d="M 561.000000 41.000000 C 655.799988 41.000000 704.200012 41.000000 797.000000 41.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1669991886-3488378134)" mask="url(#d2-1669991886)" /><text x="680.500000" y="47.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">if low + inflated</text></g><mask id="d2-1669991886" maskUnits="userSpaceOnUse" x="-25" y="-25" width="1037" height="132">
+<rect x="-25" y="-25" width="1037" height="132" fill="white"></rect>
+<rect x="628.000000" y="31.000000" width="105" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div>
+<div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#d0ebff;border-color:#4dabf7;"></span>self-view</span><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>output</span></div>
+<div class="conns-label">Key files</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">player/assessment.ts</span><span class="owns-desc">Self-assessment and multi-component satisfaction.</span></div>
+<div class="owns-row"><span class="owns-name">player/demands.ts</span><span class="owns-desc">Contract demands and trade-request flags.</span></div>
+<div class="owns-row"><span class="owns-name">player/archetype-assignment.ts · retirement.ts</span><span class="owns-desc">Role assignment and career-end evaluation.</span></div>
+</div>
+<div class="conns-label">Key exports</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">computeSelfAssessment()</span><span class="owns-desc">&rarr; <code>PlayerSelfAssessment</code> (ego-biased).</span></div>
+<div class="owns-row"><span class="owns-name">computeSatisfaction()</span><span class="owns-desc">&rarr; <code>PlayerSatisfaction</code> (ice time · fit · city · contract).</span></div>
+</div>
+<div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">produces</span><span class="conn-body">demands &amp; <code>wantsTradeRequest</code> &mdash; read by the <a href="#c-gm">gm</a> and by <a href="domain-story.html#c-director">story</a> arcs</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body">own roster row, ice time, and contract terms (sim / world)</span></div></div></div>
 
 <div class="subsection" id="c-scout"><div class="subsection-header"><h3 class="subsection-title">scout <span class="subsection-path">lib/brain/scout</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div>
-<p class="detail-p"><code>buildIndividualReport</code> produces a per-prospect read &mdash; ceiling and current skill, each blurred by Gaussian noise scaled by the scout&rsquo;s accuracy and region specialty &mdash; and <code>buildDraftBoard</code> aggregates the team&rsquo;s scouts into a ranked board. The board is the GM&rsquo;s perceived view of the draft class, so a weak scouting department systematically mis-ranks prospects.</p>
+<p class="detail-p"><code>buildIndividualReport</code> produces a per-prospect read &mdash; ceiling and current skill, each blurred by Gaussian noise scaled by the scout&rsquo;s accuracy and region specialty &mdash; and <code>buildDraftBoard</code> aggregates a team&rsquo;s scouts into a ranked board. The board is the GM&rsquo;s <em>perceived</em> view of the draft class, so a weak scouting department systematically mis-ranks prospects and the GM drafts the wrong player believing it&rsquo;s right.</p>
+<div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1188 132"><svg class="d2-2956297490 d2-svg" width="1188" height="132" viewBox="-25 -25 1188 132"><rect x="-25.000000" y="-25.000000" width="1188.000000" height="132.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-2956297490 .text-bold {
+	font-family: "d2-2956297490-font-bold";
+}
+@font-face {
+	font-family: d2-2956297490-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-2956297490 .text-italic {
+	font-family: "d2-2956297490-font-italic";
+}
+@font-face {
+	font-family: d2-2956297490-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-2956297490 .fill-N1{fill:#0A0F25;}
+		.d2-2956297490 .fill-N2{fill:#676C7E;}
+		.d2-2956297490 .fill-N3{fill:#9499AB;}
+		.d2-2956297490 .fill-N4{fill:#CFD2DD;}
+		.d2-2956297490 .fill-N5{fill:#DEE1EB;}
+		.d2-2956297490 .fill-N6{fill:#EEF1F8;}
+		.d2-2956297490 .fill-N7{fill:#FFFFFF;}
+		.d2-2956297490 .fill-B1{fill:#0D32B2;}
+		.d2-2956297490 .fill-B2{fill:#0D32B2;}
+		.d2-2956297490 .fill-B3{fill:#E3E9FD;}
+		.d2-2956297490 .fill-B4{fill:#E3E9FD;}
+		.d2-2956297490 .fill-B5{fill:#EDF0FD;}
+		.d2-2956297490 .fill-B6{fill:#F7F8FE;}
+		.d2-2956297490 .fill-AA2{fill:#4A6FF3;}
+		.d2-2956297490 .fill-AA4{fill:#EDF0FD;}
+		.d2-2956297490 .fill-AA5{fill:#F7F8FE;}
+		.d2-2956297490 .fill-AB4{fill:#EDF0FD;}
+		.d2-2956297490 .fill-AB5{fill:#F7F8FE;}
+		.d2-2956297490 .stroke-N1{stroke:#0A0F25;}
+		.d2-2956297490 .stroke-N2{stroke:#676C7E;}
+		.d2-2956297490 .stroke-N3{stroke:#9499AB;}
+		.d2-2956297490 .stroke-N4{stroke:#CFD2DD;}
+		.d2-2956297490 .stroke-N5{stroke:#DEE1EB;}
+		.d2-2956297490 .stroke-N6{stroke:#EEF1F8;}
+		.d2-2956297490 .stroke-N7{stroke:#FFFFFF;}
+		.d2-2956297490 .stroke-B1{stroke:#0D32B2;}
+		.d2-2956297490 .stroke-B2{stroke:#0D32B2;}
+		.d2-2956297490 .stroke-B3{stroke:#E3E9FD;}
+		.d2-2956297490 .stroke-B4{stroke:#E3E9FD;}
+		.d2-2956297490 .stroke-B5{stroke:#EDF0FD;}
+		.d2-2956297490 .stroke-B6{stroke:#F7F8FE;}
+		.d2-2956297490 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-2956297490 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-2956297490 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-2956297490 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-2956297490 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-2956297490 .background-color-N1{background-color:#0A0F25;}
+		.d2-2956297490 .background-color-N2{background-color:#676C7E;}
+		.d2-2956297490 .background-color-N3{background-color:#9499AB;}
+		.d2-2956297490 .background-color-N4{background-color:#CFD2DD;}
+		.d2-2956297490 .background-color-N5{background-color:#DEE1EB;}
+		.d2-2956297490 .background-color-N6{background-color:#EEF1F8;}
+		.d2-2956297490 .background-color-N7{background-color:#FFFFFF;}
+		.d2-2956297490 .background-color-B1{background-color:#0D32B2;}
+		.d2-2956297490 .background-color-B2{background-color:#0D32B2;}
+		.d2-2956297490 .background-color-B3{background-color:#E3E9FD;}
+		.d2-2956297490 .background-color-B4{background-color:#E3E9FD;}
+		.d2-2956297490 .background-color-B5{background-color:#EDF0FD;}
+		.d2-2956297490 .background-color-B6{background-color:#F7F8FE;}
+		.d2-2956297490 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-2956297490 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-2956297490 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-2956297490 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-2956297490 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-2956297490 .color-N1{color:#0A0F25;}
+		.d2-2956297490 .color-N2{color:#676C7E;}
+		.d2-2956297490 .color-N3{color:#9499AB;}
+		.d2-2956297490 .color-N4{color:#CFD2DD;}
+		.d2-2956297490 .color-N5{color:#DEE1EB;}
+		.d2-2956297490 .color-N6{color:#EEF1F8;}
+		.d2-2956297490 .color-N7{color:#FFFFFF;}
+		.d2-2956297490 .color-B1{color:#0D32B2;}
+		.d2-2956297490 .color-B2{color:#0D32B2;}
+		.d2-2956297490 .color-B3{color:#E3E9FD;}
+		.d2-2956297490 .color-B4{color:#E3E9FD;}
+		.d2-2956297490 .color-B5{color:#EDF0FD;}
+		.d2-2956297490 .color-B6{color:#F7F8FE;}
+		.d2-2956297490 .color-AA2{color:#4A6FF3;}
+		.d2-2956297490 .color-AA4{color:#EDF0FD;}
+		.d2-2956297490 .color-AA5{color:#F7F8FE;}
+		.d2-2956297490 .color-AB4{color:#EDF0FD;}
+		.d2-2956297490 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="cHJvc3BlY3Rz external"><g class="shape" ><rect x="0.000000" y="0.000000" width="138.000000" height="82.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="69.000000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px"><tspan x="69.000000" dy="0.000000">draft-eligible</tspan><tspan x="69.000000" dy="18.500000">prospects</tspan></text></g><g class="cmVwb3J0 actor"><g class="shape" ><rect x="311.000000" y="0.000000" width="202.000000" height="82.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="412.000000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px"><tspan x="412.000000" dy="0.000000">buildIndividualReport</tspan><tspan x="412.000000" dy="18.500000">ceiling · skill (noised)</tspan></text></g><g class="Ym9hcmQ= changed"><g class="shape" ><rect x="693.000000" y="0.000000" width="160.000000" height="82.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="773.000000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px"><tspan x="773.000000" dy="0.000000">buildDraftBoard</tspan><tspan x="773.000000" dy="18.500000">ranked</tspan></text></g><g class="Z20= external"><g class="shape" ><rect x="1031.000000" y="8.000000" width="107.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="1084.500000" y="46.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">GM draft</text></g><g class="KHByb3NwZWN0cyAtJmd0OyByZXBvcnQpWzBd"><marker id="mk-d2-2956297490-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 139.500000 41.000000 C 207.100006 41.000000 241.899994 41.000000 307.500000 41.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2956297490-3488378134)" mask="url(#d2-2956297490)" /><text x="224.500000" y="47.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">per scout</text></g><g class="KHJlcG9ydCAtJmd0OyBib2FyZClbMF0="><path d="M 515.000000 41.000000 C 585.000000 41.000000 621.000000 41.000000 689.000000 41.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2956297490-3488378134)" mask="url(#d2-2956297490)" /><text x="603.000000" y="47.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">aggregate</text></g><g class="KGJvYXJkIC0mZ3Q7IGdtKVswXQ=="><path d="M 855.000000 41.000000 C 924.200012 41.000000 959.799988 41.000000 1027.000000 41.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2956297490-3488378134)" mask="url(#d2-2956297490)" /><text x="942.000000" y="47.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">consumed</text></g><mask id="d2-2956297490" maskUnits="userSpaceOnUse" x="-25" y="-25" width="1188" height="132">
+<rect x="-25" y="-25" width="1188" height="132" fill="white"></rect>
+<rect x="191.000000" y="31.000000" width="67" height="21" fill="black"></rect>
+<rect x="566.000000" y="31.000000" width="74" height="21" fill="black"></rect>
+<rect x="906.000000" y="31.000000" width="72" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div>
+<div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#d0ebff;border-color:#4dabf7;"></span>report</span><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>board</span><span class="legend-item"><span class="legend-swatch" style="background:#f1f3f5;border-color:#adb5bd;"></span>prospects / GM</span></div>
+<div class="conns-label">Key files</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">scout/reports.ts</span><span class="owns-desc">Individual prospect reports and the aggregated draft board.</span></div>
+</div>
+<div class="conns-label">Key exports</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">buildIndividualReport()</span><span class="owns-desc">&rarr; <code>ScoutReport</code> (ceiling + current, noised by accuracy/region).</span></div>
+<div class="owns-row"><span class="owns-name">buildDraftBoard()</span><span class="owns-desc">&rarr; <code>DraftBoardEntry[]</code> &mdash; the team&rsquo;s ranked class.</span></div>
+</div>
 <div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">produces</span><span class="conn-body"><code>DraftBoard</code> &mdash; consumed by the <a href="#c-gm">gm</a> at the draft</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body">draft-eligible prospects (world), scaled by <code>ScoutProfile</code> accuracy + region (profiles)</span></div></div></div>
 
 <div class="subsection" id="c-agent"><div class="subsection-header"><h3 class="subsection-title">agent <span class="subsection-path">lib/brain/agent</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div>
-<p class="detail-p">The narrowest brain: <code>pickAgentDecision</code> chooses a negotiation stance for a player&rsquo;s contract when a story arc surfaces a decision (e.g. <code>agent_negotiation_stance</code>). Like the other roles&rsquo; arc deciders, it scores known options and falls back to a weighted pick, tagging the result <code>ai_brain</code> or <code>placeholder</code> for audit.</p>
-<div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">invoked by</span><span class="conn-body"><a href="domain-story.html">story</a> &mdash; via <code>pickArcOption</code> when an arc decision is the agent&rsquo;s</span></div></div></div>
+<p class="detail-p">The narrowest brain: <code>pickAgentDecision</code> chooses a negotiation stance for a player&rsquo;s contract when a story arc surfaces a decision (e.g. <code>agent_negotiation_stance</code>). Like the other roles&rsquo; arc deciders it tries real logic for known decision ids &mdash; scoring options with the shared <code>scoreToWeightedPick</code> / <code>personalityFactor</code> primitives &mdash; and falls back to a weighted pick for the rest, tagging the result <code>ai_brain</code> or <code>placeholder</code> for audit.</p>
+<div class="conns-label">Key files</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">agent/arc-decisions.ts</span><span class="owns-desc">Agent decision &amp; sub-beat logic for negotiation arcs.</span></div>
+<div class="owns-row"><span class="owns-name">arc-scoring.ts <span class="api-note" style="font-family:var(--font-sans);color:var(--ink-faint);font-size:0.85em;">(shared)</span></span><span class="owns-desc">The <code>scoreToWeightedPick</code> / <code>personalityFactor</code> primitives all roles reuse.</span></div>
+</div>
+<div class="conns-label">Key exports</div><div class="owns-list">
+<div class="owns-row"><span class="owns-name">pickAgentDecision() · pickAgentSubBeat()</span><span class="owns-desc">The agent&rsquo;s arc-decision entry points.</span></div>
+</div>
+<div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">invoked by</span><span class="conn-body"><a href="domain-story.html#c-director">story</a> &mdash; via <code>pickArcOption</code> when an arc decision is the agent&rsquo;s</span></div></div></div>
 
 </section>
 
