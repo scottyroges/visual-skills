@@ -69,4 +69,16 @@ describe("reconcile", () => {
     reconcile(config, live);
     expect(JSON.stringify(config)).toBe(snapshot);
   });
+
+  it("tolerates a hand-written config with no resolved `modules` field", () => {
+    // The skill tells humans to author slug/name/globs only; `modules` is generated.
+    const handWritten = {
+      repo: "demo", srcRoots: ["lib"],
+      domains: [{ slug: "sim", name: "Sim", globs: ["lib/sim/**"] }],
+    } as unknown as Parameters<typeof reconcile>[0];
+    const { config: next, drift } = reconcile(handWritten, ["lib/sim/engine.ts", "lib/x/y.ts"]);
+    expect(next.domains[0].modules).toEqual(["lib/sim/engine.ts"]); // resolved from globs
+    expect(drift.stalePaths).toEqual([]);                            // no prior modules → no stale
+    expect(drift.newModules).toEqual(["lib/x/y.ts"]);
+  });
 });

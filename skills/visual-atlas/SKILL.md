@@ -84,7 +84,11 @@ path — e.g. `<repo>/.atlas`), all committable and re-renderable:
    folder grouping this skill forbids — one giant "server" tile is not a domain. For anything beyond
    a small or already feature-foldered repo, **rewrite the domains as feature/bounded-context slices**
    with file-precise `globs` (e.g. `["src/server/routers/picks*.ts", "src/server/services/pick*.ts"]`)
-   and re-run the scan. Regrouping is deterministic; the `globs` are the human lever.
+   and re-run the scan. Regrouping is deterministic; the `globs` are the human lever. After a
+   regroup, **delete any orphaned `domain-<slug>.json`** for domains you renamed or removed — the
+   scan warns about them (it never deletes files), and a stale one would still render a dead page.
+   You may write `atlas.domains.json` by hand with just `slug` / `name` / `globs`; the scanner fills
+   in the resolved `modules`.
 
 3. **Read the code, then enrich the drafts.** Open the actual modules — don't work from the draft
    skeleton alone. The scanner groups `depth` components by immediate subdirectory; on a layered
