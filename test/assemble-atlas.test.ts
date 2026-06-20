@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { assembleAtlas, assembleDomain, renderAtlasDiagram, atlasLegend } from "../src/assemble-atlas.js";
+import { assembleAtlas, assembleDomain, renderAtlasDiagram, atlasLegend, renderAtlasBlock } from "../src/assemble-atlas.js";
 import { type AtlasBlock } from "../src/atlas-blocks.js";
 import { renderAll } from "../src/render-diagram.js";
 
@@ -79,5 +79,35 @@ describe("diagram card + legend", () => {
     expect(h).toContain('diagram-svg');
     expect(h).toContain('class="diagram-caption"');
     expect(h).not.toContain('class="diagram-title"');
+  });
+});
+
+describe("atlas-page block renderers", () => {
+  const empty = new Map();
+  it("atlas-tldr renders the card + primer rows", async () => {
+    const h = await renderAtlasBlock({ type: "atlas-tldr", id: "tldr", heading: "A `sim`", rows: [{ key: "What", value: "x" }], primer: [{ h: "No god-mode", p: "noisy **perception**" }] }, empty);
+    expect(h).toContain('class="tldr-eyebrow">Start here');
+    expect(h).toContain('class="tldr-key">What');
+    expect(h).toContain('class="primer"');
+    expect(h).toContain('class="primer-n">1');
+    expect(h).toContain("No god-mode");
+  });
+  it("domain-map inlines the raw svg + legend + caption in a zoom box", async () => {
+    const h = await renderAtlasBlock({ type: "domain-map", id: "map", title: "The domain map", badge: "layered", svg: '<svg class="diagram-svg map-svg flow-svg" viewBox="0 0 10 10"></svg>', legend: [{ label: "Engine", fill: "#d0ebff", stroke: "#4dabf7" }], caption: "x" }, empty);
+    expect(h).toContain('id="map" class="section"');
+    expect(h).toContain("map-svg");
+    expect(h).toContain('class="diagram-box"');
+    expect(h).toContain("legend-swatch");
+  });
+  it("domain-index renders linked + pending tiles with layer chips and deps", async () => {
+    const h = await renderAtlasBlock({ type: "domain-index", id: "domains", title: "The 7 domains", tiles: [
+      { name: "sim", path: "lib/sim", layer: "engine", layerLabel: "Engine", purpose: "engine", meta: [{ key: "~77", value: "files" }], deps: ["world"], href: "domain-sim.html" },
+      { name: "world", path: "lib/world", layer: "foundation", layerLabel: "Foundation", purpose: "data" },
+    ] }, empty);
+    expect(h).toContain('a class="domain-tile is-linked" href="domain-sim.html"');
+    expect(h).toContain('class="layer-chip layer-engine">Engine');
+    expect(h).toContain('class="dep-chip">world');
+    expect(h).toContain('class="domain-tile is-pending"');
+    expect(h).toContain("Page pending");
   });
 });

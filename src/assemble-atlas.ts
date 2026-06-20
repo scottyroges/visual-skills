@@ -157,6 +157,62 @@ function sectionHeader(title?: string, badge?: string): string {
     `${badge ? `<span class="section-badge">${escapeHtml(badge)}</span>` : ""}</div>`;
 }
 
+async function renderAtlasTldr(b: Extract<AtlasBlock, { type: "atlas-tldr" }>): Promise<string> {
+  const rows = (await Promise.all(b.rows.map(async (r) =>
+    `<div class="tldr-row"><span class="tldr-key">${escapeHtml(r.key)}</span><span class="tldr-val">${await mi(r.value)}</span></div>`))).join("");
+  const card = `<div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">${escapeHtml(b.eyebrow ?? "Start here")}</span>` +
+    `<h2 class="tldr-heading">${await mi(b.heading)}</h2></div><div class="tldr-rows">${rows}</div></div>`;
+  const primer = b.primer?.length
+    ? `<div class="primer">${(await Promise.all(b.primer.map(async (p, i) =>
+        `<div class="primer-row"><span class="primer-n">${i + 1}</span><div class="primer-body">` +
+        `<div class="primer-h">${await mi(p.h)}</div><div class="primer-p">${await mi(p.p)}</div></div></div>`))).join("")}</div>`
+    : "";
+  return card + primer;
+}
+
+async function renderDomainMap(b: Extract<AtlasBlock, { type: "domain-map" }>): Promise<string> {
+  return sectionHeader(b.title, b.badge) +
+    `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}` +
+    `<div class="diagram-box">${ENLARGE}${b.svg}</div>${atlasLegend(b.legend)}` +
+    `${b.caption ? `<p class="diagram-caption">${await mi(b.caption)}</p>` : ""}`;
+}
+
+async function renderDomainIndex(b: Extract<AtlasBlock, { type: "domain-index" }>): Promise<string> {
+  const tiles = (await Promise.all(b.tiles.map(async (t) => {
+    const meta = t.meta?.length
+      ? `<div class="domain-tile-meta">${(await Promise.all(t.meta.map(async (m) =>
+          `<span>${m.key ? `<span class="dm-k">${escapeHtml(m.key)}</span> ` : ""}${await mi(m.value)}</span>`))).join("")}</div>`
+      : "";
+    const deps = t.deps?.length
+      ? `<div class="domain-tile-deps"><span class="dep-label">depends on</span>${t.deps.map((d) => `<span class="dep-chip">${escapeHtml(d)}</span>`).join("")}</div>`
+      : "";
+    const head = `<div class="domain-tile-head"><span class="domain-tile-name">${escapeHtml(t.name)}</span>` +
+      `<span class="domain-tile-path">${escapeHtml(t.path)}</span>` +
+      `<span class="layer-chip layer-${escapeHtml(t.layer)}">${escapeHtml(t.layerLabel)}</span></div>`;
+    const body = `${head}<p class="domain-tile-purpose">${await mi(t.purpose)}</p>${meta}${deps}`;
+    if (t.href)
+      return `<a class="domain-tile is-linked" href="${escapeHtml(t.href)}">${body}` +
+        `<div class="domain-tile-foot">Open domain <span class="dtf-arrow" aria-hidden="true">&rarr;</span></div></a>`;
+    return `<div class="domain-tile is-pending">${body}<div class="domain-tile-foot">Page pending</div></div>`;
+  }))).join("");
+  return sectionHeader(b.title, b.badge) +
+    `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}<div class="domain-grid">${tiles}</div>`;
+}
+
+/** Dispatch one block to its renderer, wrapped in its <section>. Domain-page block cases are
+ *  added in later tasks; the default warns. */
+export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, DiagramResult>, onWarn?: (m: string) => void): Promise<string> {
+  const inner = await (async () => {
+    switch (b.type) {
+      case "atlas-tldr": return renderAtlasTldr(b);
+      case "domain-map": return renderDomainMap(b);
+      case "domain-index": return renderDomainIndex(b);
+      default: onWarn?.(`atlas: no renderer for block type "${(b as AtlasBlock).type}"`); return "";
+    }
+  })();
+  return `<section id="${escapeHtml(b.id)}" class="section">${inner}</section>`;
+}
+
 export async function assembleAtlas(blocks: AtlasBlock[], opts: AtlasOpts): Promise<string> {
   assertUniqueAtlasIds(blocks);
   const main = `<main class="main">${rail(blocks)}</main>`;  // content blocks wired in a later task
