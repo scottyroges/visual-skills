@@ -72,10 +72,11 @@ path — e.g. `<repo>/.atlas`), all committable and re-renderable:
        cd "$VISUAL_SKILLS_DIR"
        npx tsx bin/atlas.ts --repo <ABSOLUTE_SUBJECT_REPO> --out <ABSOLUTE_OUT_DIR>
 
-   This walks the repo, creates `atlas.domains.json` from a **folder first-guess** if absent (or
-   **reconciles drift** against your edits if present — reporting unassigned modules / stale paths /
-   empty domains), emits draft `atlas.json` + `domain-<slug>.json` *only where absent* (it never
-   clobbers your authored prose), and renders.
+   This walks the repo (codegen and test trees — `generated` / `__generated__` / `test` / `tests` /
+   `__tests__` / `__mocks__` — are excluded; they aren't architecture), creates `atlas.domains.json`
+   from a **folder first-guess** if absent (or **reconciles drift** against your edits if present —
+   reporting unassigned modules / stale paths / empty domains), emits draft `atlas.json` +
+   `domain-<slug>.json` *only where absent* (it never clobbers your authored prose), and renders.
 
 2. **Curate the grouping (optional but encouraged).** Open `atlas.domains.json`. The scanner's
    first-guess is one domain per top-level dir — merge, split, or rename domains by editing each

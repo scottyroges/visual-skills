@@ -146,7 +146,7 @@ color-coded. **Two ways to produce it:**
 A titled section wrapping a single rendered diagram (no title printed above the SVG — the section
 header gives context). On the atlas it's the **spine** (the runtime loop); on a domain page it's the
 **internal-arch**. Shape: `{ "type": "diagram-section", "id": "spine", "title": "…", "intro": "…",
-"diagram": { "id": "…", "kind": "flowchart|architecture|sequence|class", "d2": "…", "mermaid": "…",
+"diagram": { "id": "…", "kind": "flowchart|architecture|sequence|erd|class", "d2": "…", "mermaid": "…",
 "legend": […], "caption": "…" }, "callout": "…" }`. Carry `mermaid` for editable kinds (see the
 [diagram catalog](diagrams.md)).
 
