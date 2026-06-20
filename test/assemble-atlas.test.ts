@@ -1,5 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { assembleAtlas, assembleDomain } from "../src/assemble-atlas.js";
+import { type AtlasBlock } from "../src/atlas-blocks.js";
+
+const domainBlocks: AtlasBlock[] = [
+  { type: "domain-tldr", id: "tldr", heading: "h", rows: [] },
+  { type: "components", id: "components", title: "The pieces", cards: [] },
+  { type: "diagram-section", id: "arch", title: "Architecture", diagram: { id: "d1", kind: "architecture", d2: "a -> b" } },
+  { type: "depth", id: "depth", title: "In depth", components: [
+    { id: "c-gm", name: "gm", path: "lib/brain/gm", detail: ["x"] },
+    { id: "c-coach", name: "coach", path: "lib/brain/coach", detail: ["x"] },
+  ] },
+  { type: "owns", id: "data", title: "Data it owns", rows: [] },
+  { type: "seams", id: "seams", title: "Seams", exposes: [], depends: [] },
+];
 
 describe("assemble shell", () => {
   it("atlas: self-contained doc, three stylesheets, topbar chips, zoom overlay", async () => {
@@ -21,5 +34,31 @@ describe("assemble shell", () => {
     expect(html).toContain('class="chip chip-stat">lib/brain');
     expect(html).toContain('class="chip chip-count">~76 files');
     expect(html).toContain("depends on sim · world");
+  });
+});
+
+describe("sidebar + rail", () => {
+  it("nests depth components under the in-depth chapter; numbers chapters; tldr is the lead", async () => {
+    const html = await assembleDomain(domainBlocks, { title: "brain", layer: "intelligence", layerLabel: "Intelligence", meta: [{ key: "Layer", value: "Intelligence" }] });
+    expect(html).toContain('data-target="tldr"');
+    expect(html).toContain('class="outline-num" aria-hidden="true">1</span><span>The pieces');
+    expect(html).toContain('class="outline-sub"');
+    expect(html).toContain('href="#c-gm" class="outline-subitem"');
+    expect(html).toContain('href="#c-coach" class="outline-subitem"');
+    expect((html.match(/class="progress-step[ "]/g) || []).length).toBe(5);
+    expect(html).toMatch(/sidebar-label">Meta/);
+    expect(html).not.toMatch(/class="progress-step[^"]*" href="#tldr"/);
+  });
+  it("atlas builds a Domains block from the index tiles (linked vs pending dot)", async () => {
+    const atlasBlocks: AtlasBlock[] = [
+      { type: "domain-index", id: "domains", title: "The 7 domains", tiles: [
+        { name: "sim", path: "lib/sim", layer: "engine", layerLabel: "Engine", purpose: "p", href: "domain-sim.html" },
+        { name: "world", path: "lib/world", layer: "foundation", layerLabel: "Foundation", purpose: "p" },
+      ] },
+    ];
+    const html = await assembleAtlas(atlasBlocks, { title: "Atlas" });
+    expect(html).toContain('sidebar-label">Domains');
+    expect(html).toContain('href="domain-sim.html" class="nav-domain"');
+    expect(html).toContain('nd-pending">overview');
   });
 });
