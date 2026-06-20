@@ -118,7 +118,10 @@ export function collectAtlasDiagrams(blocks: AtlasBlock[]): DiagramBlock[] {
   const out: DiagramBlock[] = [];
   for (const b of blocks) {
     if (b.type === "diagram-section") out.push(atlasDiagramToBlock(b.diagram));
-    if (b.type === "depth") for (const c of b.components) for (const d of c.diagrams ?? []) out.push(atlasDiagramToBlock(d));
+    if (b.type === "depth")
+      for (const c of b.components)
+        for (const d of c.diagrams ?? [])
+          out.push(atlasDiagramToBlock(d));
   }
   return out;
 }
@@ -132,7 +135,11 @@ export function assertUniqueAtlasIds(blocks: AtlasBlock[]): void {
   for (const b of blocks) {
     add(b.id);
     if (b.type === "diagram-section") add(b.diagram.id);
-    if (b.type === "depth") for (const c of b.components) { add(c.id); for (const d of c.diagrams ?? []) add(d.id); }
+    if (b.type === "depth")
+      for (const c of b.components) {
+        add(c.id);
+        for (const d of c.diagrams ?? []) add(d.id);
+      }
   }
 }
 
@@ -149,6 +156,8 @@ export function atlasChapterLabel(b: AtlasBlock): string {
     case "depth": return b.title;
     case "owns": return b.title;
     case "seams": return b.title;
-    default: return b.id;
+    case "atlas-tldr":
+    case "domain-tldr": return b.id;
+    default: { const _exhaustive: never = b; return (_exhaustive as AtlasBlock).id; }
   }
 }

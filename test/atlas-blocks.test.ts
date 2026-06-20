@@ -23,8 +23,12 @@ describe("atlas-blocks helpers", () => {
     expect(() => assertUniqueAtlasIds([arch, { ...arch }])).toThrow(/duplicate/);
     expect(() => assertUniqueAtlasIds([depth, { type: "diagram-section", id: "x", diagram: { id: "gm-plan", kind: "architecture", d2: "a" } }])).toThrow(/duplicate/);
   });
+  it("rejects a diagram-section whose id collides with its own diagram id", () => {
+    expect(() => assertUniqueAtlasIds([{ type: "diagram-section", id: "x", diagram: { id: "x", kind: "architecture", d2: "a" } }])).toThrow(/duplicate/);
+  });
   it("treats tldr as the lead (not a chapter) and others as chapters", () => {
     expect(isAtlasChapter(tldr)).toBe(false);
+    expect(isAtlasChapter({ type: "atlas-tldr", id: "tldr", heading: "h", rows: [] })).toBe(false);
     expect(isAtlasChapter(arch)).toBe(true);
     expect(atlasChapterLabel(depth)).toBe("In depth");
   });
