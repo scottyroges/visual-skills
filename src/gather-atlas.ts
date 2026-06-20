@@ -73,6 +73,33 @@ export function aggregateDomainEdges(config: AtlasConfig, inv: Inventory): Map<s
   return edges;
 }
 
+import type { AtlasBlock, DomainTile } from "./atlas-blocks.js";
+
+/** Serializable atlas-page document (matches bin/atlas.ts's AtlasDoc). */
+export interface AtlasDraft {
+  kind: "atlas"; title: string; stack?: string; count?: string; date?: string;
+  generator: string; blocks: AtlasBlock[];
+}
+/** Serializable domain-page document (matches bin/atlas.ts's DomainDoc). */
+export interface DomainDraft {
+  kind: "domain"; slug: string; title: string;
+  layer: DomainTile["layer"]; layerLabel: string;
+  path?: string; count?: string; depends?: string; date?: string;
+  generator: string; blocks: AtlasBlock[];
+}
+
+const GENERATOR = "visual-skills · visual-atlas";
+
+/** Common directory prefix of a domain's modules, e.g. "lib/sim". Falls back to the slug. */
+function commonPath(modules: string[], slug: string): string {
+  if (modules.length === 0) return slug;
+  const split = modules.map((m) => m.split("/"));
+  const first = split[0];
+  let i = 0;
+  for (; i < first.length - 1; i++) if (!split.every((p) => p[i] === first[i])) break;
+  return first.slice(0, i).join("/") || slug;
+}
+
 /** Build the mechanical domain-map as an editable architecture diagram-section's diagram. */
 export function domainMapDiagram(config: AtlasConfig, edges: Map<string, Set<string>>): AtlasDiagram {
   const slugs = config.domains.map((d) => d.slug);
@@ -84,4 +111,37 @@ export function domainMapDiagram(config: AtlasConfig, edges: Map<string, Set<str
     ...slugs.flatMap((s) => [...(edges.get(s) ?? [])].sort().map((t) => `  ${mid.get(s)} --> ${mid.get(t)}`))];
 
   return { id: "map", kind: "architecture", d2, mermaid: mlines.join("\n") };
+}
+
+export function buildAtlasDraft(
+  config: AtlasConfig,
+  inv: Inventory,
+  edges: Map<string, Set<string>>,
+  opts: { date?: string } = {},
+): AtlasDraft {
+  const tiles: DomainTile[] = config.domains.map((d) => ({
+    name: d.slug,
+    path: commonPath(d.modules, d.slug),
+    layer: "engine",
+    layerLabel: "Engine",
+    purpose: "",                                   // agent fills
+    meta: [{ key: `~${d.modules.length}`, value: "files" }],
+    deps: [...(edges.get(d.slug) ?? [])].sort(),
+    href: `domain-${d.slug}.html`,
+  }));
+
+  const blocks: AtlasBlock[] = [
+    {
+      type: "atlas-tldr", id: "tldr", heading: config.repo,
+      rows: [{ key: "Domains", value: String(config.domains.length) }],
+      primer: [],
+    },
+    { type: "diagram-section", id: "map", title: "Domain map", diagram: domainMapDiagram(config, edges) },
+    { type: "domain-index", id: "domains", title: "Domains", tiles },
+  ];
+
+  return {
+    kind: "atlas", title: `System Atlas · ${config.repo}`,
+    count: `${config.domains.length} domains`, date: opts.date, generator: GENERATOR, blocks,
+  };
 }

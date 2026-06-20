@@ -58,3 +58,27 @@ describe("domainMapDiagram", () => {
     expect(diag.mermaid).toContain("graph");
   });
 });
+
+import { buildAtlasDraft } from "../src/gather-atlas.js";
+
+describe("buildAtlasDraft", () => {
+  it("emits tldr + domain-map diagram-section + domain-index with a tile per domain", async () => {
+    const inv = await scanInventory(REPO, ["lib"]);
+    const edges = aggregateDomainEdges(CONFIG, inv);
+    const draft = buildAtlasDraft(CONFIG, inv, edges, { date: "2026-06-20" });
+
+    expect(draft.kind).toBe("atlas");
+    expect(draft.date).toBe("2026-06-20");
+    expect(draft.count).toBe("3 domains");
+    const types = draft.blocks.map((b) => b.type);
+    expect(types).toEqual(["atlas-tldr", "diagram-section", "domain-index"]);
+
+    const index = draft.blocks.find((b) => b.type === "domain-index") as any;
+    expect(index.tiles.map((t: any) => t.name)).toEqual(["sim", "brain", "api"]);
+    const sim = index.tiles.find((t: any) => t.name === "sim");
+    expect(sim.href).toBe("domain-sim.html");
+    expect(sim.deps).toEqual(["brain"]);
+    expect(sim.meta[0]).toEqual({ key: "~2", value: "files" });
+    expect(sim.purpose).toBe(""); // placeholder for the agent
+  });
+});
