@@ -1,0 +1,540 @@
+{
+  "kind": "domain",
+  "slug": "sim",
+  "title": "sim",
+  "layer": "engine",
+  "layerLabel": "Engine",
+  "path": "lib/sim",
+  "count": "~77 files",
+  "depends": "world · profiles · brain · story",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Engine"
+    },
+    {
+      "key": "Path",
+      "value": "lib/sim"
+    },
+    {
+      "key": "Files",
+      "value": "~77 (excl. tests)"
+    },
+    {
+      "key": "Depends on",
+      "value": "world · profiles · brain · story"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "eyebrow": "Domain",
+      "heading": "The deterministic game engine and the multi-season loop — the physics of the whole simulation.",
+      "rows": [
+        {
+          "key": "Owns",
+          "value": "Intra-game hockey resolved shift-by-shift, the between-game and offseason machinery (injuries, cap, contracts, draft, free agency, awards), and the season orchestration that ties it together."
+        },
+        {
+          "key": "Why",
+          "value": "It transforms world state into outcomes — stats, injuries, events — that every downstream domain reacts to. It is the one place game rules live."
+        },
+        {
+          "key": "Budget",
+          "value": "A full game resolves in **<2 ms** so thousands of seasons can run for calibration. That performance bar shapes the whole design."
+        }
+      ],
+      "bigIdea": {
+        "label": "The load-bearing idea",
+        "line": "\"Data-oriented and deterministic, by construction.\"",
+        "sub": "Players live in a **struct-of-arrays** (`RosterSOA` — parallel typed arrays), the hot loop pre-allocates its scratch buffers, and every random draw comes from a seeded `createRng`. Same seed → same game, every time — which is exactly what makes replays and the calibration harness possible."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "The pieces",
+      "badge": "engine + orchestration",
+      "intro": "A small hot core (game, shift, roster layout) wrapped by orchestration (season, offseason) and a set of leaf systems (contracts, events, key moments). Tap a card to jump to its full section.",
+      "cards": [
+        {
+          "name": "sim-game",
+          "purpose": "The per-game entry: initializes game state, runs three periods (plus OT and shootout if tied), and finalizes a `SimResult`.",
+          "exports": [
+            {
+              "name": "simGame"
+            },
+            {
+              "name": "GameContext",
+              "deputy": true
+            }
+          ],
+          "href": "#c-sim-game"
+        },
+        {
+          "name": "sim-shift",
+          "purpose": "The hot loop, ~120× per game. Picks lines, computes matchups and fatigue, and rolls events — shots, hits, penalties, injuries — as attribute-driven probabilities.",
+          "exports": [
+            {
+              "name": "simShift"
+            }
+          ],
+          "href": "#c-sim-shift"
+        },
+        {
+          "name": "sim-season",
+          "purpose": "Walks the schedule day by day, threads between-game state (fatigue recovery, injury advance, chemistry), and fires the brain triggers.",
+          "exports": [
+            {
+              "name": "simSeason"
+            },
+            {
+              "name": "PreparedTeam",
+              "deputy": true
+            }
+          ],
+          "href": "#c-sim-season"
+        },
+        {
+          "name": "roster-soa",
+          "purpose": "The performance heart: a struct-of-arrays player layout (parallel typed arrays for 30+ attributes), loaded once per team for cache-friendly, allocation-free simulation.",
+          "exports": [
+            {
+              "name": "RosterSOA"
+            },
+            {
+              "name": "loadRosterSOA"
+            }
+          ],
+          "href": "#c-roster-soa"
+        },
+        {
+          "name": "contracts/",
+          "purpose": "The contract engine: ELCs, extensions, buyouts, qualifying offers, three-team trades, and salary bargaining sessions.",
+          "exports": [
+            {
+              "name": "cap.ts",
+              "deputy": true
+            },
+            {
+              "name": "triplet · bargaining",
+              "deputy": true
+            }
+          ],
+          "exportsLabel": "covers",
+          "href": "#c-contracts"
+        },
+        {
+          "name": "events/ · km/",
+          "purpose": "The boundary to the story engine: a season-event bus (firings, retirements, succession) and the Key-Moment yield hook that surfaces in-game decision points.",
+          "exports": [
+            {
+              "name": "emit"
+            },
+            {
+              "name": "tryYieldKM"
+            }
+          ],
+          "href": "#c-events"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "How a season runs",
+      "badge": "sequence",
+      "intro": "`simSeason` is the orchestrator. For each game it calls `simGame`, which drives ~120 `simShift` calls; post-game reconciles standings and injuries, then the day's brain triggers fire.",
+      "diagram": {
+        "id": "sim-loop",
+        "kind": "sequence",
+        "d2": "shape: sequence_diagram\nseason: { label: \"simSeason\"; class: actor }\ngame: { label: \"simGame\" }\nshift: { label: \"simShift\" }\npost: { label: \"post-game\" }\nbrain: { label: \"brain triggers\"; class: external }\nseason -> game: per game\ngame -> shift: ×120 shifts\nshift -> shift: rollEvents()\ngame -> post: SimResult\npost -> season: standings · injuries\nseason -> brain: runDayTriggers()\n",
+        "legend": [
+          {
+            "label": "orchestrator",
+            "fill": "#d0ebff",
+            "stroke": "#4dabf7"
+          },
+          {
+            "label": "brain (external to sim)",
+            "fill": "#f1f3f5",
+            "stroke": "#adb5bd"
+          }
+        ]
+      }
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "The pieces, in depth",
+      "badge": "6 pieces",
+      "intro": "A full section per piece — what it does, how it works, its files and exports, and how it connects to the rest of the engine.",
+      "components": [
+        {
+          "id": "c-sim-game",
+          "name": "sim-game",
+          "path": "lib/sim/sim-game.ts",
+          "detail": [
+            "`simGame(context)` is the per-game entry. It builds the `GameState` and RNG, pre-allocates scratch buffers and a batch of RNG values, computes team-level offense and pace, then runs three periods of 40 shifts each. If the score is tied it runs 3-on-3 OT and, if needed, a shootout, before `finalizeCGResult` rolls up per-player stats into a `SimResult`. The whole call is the first box of the [season loop](#arch) above."
+          ],
+          "files": [
+            {
+              "name": "sim-game.ts",
+              "desc": "Game init, the period / OT / shootout loop, and result finalization."
+            },
+            {
+              "name": "state.ts · events.ts",
+              "desc": "`GameState` / `LineState` and the game-event payload types."
+            }
+          ],
+          "exports": [
+            {
+              "name": "simGame()",
+              "desc": "→ `SimResult` — the per-game entry point."
+            },
+            {
+              "name": "GameContext · SimResult",
+              "desc": "The input (roster, lines, coach, seed) and output (events, stats, injuries)."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[sim-shift](#c-sim-shift) — ~120× per game"
+            },
+            {
+              "dir": "reads",
+              "body": "[RosterSOA](#c-roster-soa) + coach modifiers via `GameContext`"
+            },
+            {
+              "dir": "called by",
+              "body": "[sim-season](#c-sim-season) for every scheduled game"
+            }
+          ]
+        },
+        {
+          "id": "c-sim-shift",
+          "name": "sim-shift",
+          "path": "lib/sim/sim-shift.ts",
+          "detail": [
+            "The hot loop, ~30 seconds of game time per call. It picks lines (the away team disadvantaged by last change), computes a shift context (line offense quality, pace, fatigue and zone-start bias, momentum), updates time-on-ice, then rolls events as probabilities. Every event — a scoring chance and its shot/save resolution, hits, penalties, takeaways, fights, injuries — is a base rate scaled by the relevant attributes. There are **no allocations** here; that is the <2 ms budget being defended."
+          ],
+          "diagrams": [
+            {
+              "id": "shift-internals",
+              "kind": "architecture",
+              "d2": "direction: right\npick: { label: \"pickLines\\nmatchups + fatigue\"; class: actor }\nctx: { label: \"computeShiftContext\\noffense · pace · zone bias\" }\nroll: { label: \"rollEvents\"; class: changed }\nshot: { label: \"scoring chance → shot\\n→ goalie save?\" }\nother: { label: \"hits · penalties\\ntakeaways · injuries\" }\npick -> ctx\nctx -> roll\nroll -> shot: P(chance)\nroll -> other: P(event)\n",
+              "legend": [
+                {
+                  "label": "entry",
+                  "fill": "#d0ebff",
+                  "stroke": "#4dabf7"
+                },
+                {
+                  "label": "the roll",
+                  "fill": "#ffd43b",
+                  "stroke": "#f08c00"
+                }
+              ]
+            }
+          ],
+          "files": [
+            {
+              "name": "sim-shift.ts",
+              "desc": "Line picking, shift context, and the `rollEvents` probability cascade."
+            },
+            {
+              "name": "enums.ts",
+              "desc": "Numeric `SimEventType` / `SimPosition` enums for hot-loop speed."
+            }
+          ],
+          "exports": [
+            {
+              "name": "simShift()",
+              "desc": "Resolves one ~30s shift, mutating game state in place."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "reads",
+              "body": "[RosterSOA](#c-roster-soa), fatigue, momentum, penalty timers"
+            },
+            {
+              "dir": "uses",
+              "body": "`createRng` — every draw is seeded & replayable"
+            },
+            {
+              "dir": "produces",
+              "body": "the game event stream (shots, goals, hits, penalties, injuries)"
+            }
+          ]
+        },
+        {
+          "id": "c-sim-season",
+          "name": "sim-season",
+          "path": "lib/sim/sim-season.ts · sim-multi-season.ts",
+          "detail": [
+            "`simSeason` walks the schedule day by day: it runs each game, reconciles standings and injuries post-game, then runs a daily tick (fatigue recovery, injury advance, chemistry) and fires the brain triggers. `sim-multi-season` wraps it with the offseason — playoffs, awards, retirements, draft, free agency, development, and the identity season tick — and emits season events to the story engine. The full path is the [spine](atlas.html#spine) on the atlas."
+          ],
+          "files": [
+            {
+              "name": "sim-season.ts",
+              "desc": "The regular-season loop and between-game state threading."
+            },
+            {
+              "name": "sim-multi-season.ts",
+              "desc": "Multi-season orchestration: playoffs, awards, offseason, succession."
+            },
+            {
+              "name": "daily-tick.ts · post-game.ts",
+              "desc": "Fatigue / injury recovery and standings / injury reconciliation."
+            }
+          ],
+          "exports": [
+            {
+              "name": "simSeason()",
+              "desc": "→ `SimSeasonResult` — one full regular season."
+            },
+            {
+              "name": "PreparedTeam · SeasonGameResult",
+              "desc": "The per-team prepared state and per-game result shapes."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[sim-game](#c-sim-game) per game; [brain](domain-brain.html) `runDayTriggers`; [story](domain-story.html) `storyTick`"
+            },
+            {
+              "dir": "threads",
+              "body": "`PreparedTeam` state — fatigue, injuries, chemistry between games"
+            }
+          ]
+        },
+        {
+          "id": "c-roster-soa",
+          "name": "roster-soa",
+          "path": "lib/sim/roster-soa.ts · loader.ts",
+          "detail": [
+            "Rather than an array of player objects, a team's roster is a **struct-of-arrays**: one parallel typed array per attribute. The hot loop indexes by player slot, which keeps memory access cache-friendly and avoids per-shift allocation — the single biggest reason a game fits in the time budget. `loadRosterSOA` converts `GeneratedPlayer[]` into this layout once and sorts players by role (NHL skaters, NHL goalies, then AHL)."
+          ],
+          "codeHtml": "<div class=\"code-block\"><pre><span class=\"kw\">interface</span> <span class=\"ty\">RosterSOA</span> {\n  <span class=\"fn\">shooting</span>:   <span class=\"ty\">Float32Array</span>;  <span class=\"cm\">// one slot per player</span>\n  <span class=\"fn\">skating</span>:    <span class=\"ty\">Float32Array</span>;\n  <span class=\"fn\">fatigue</span>:    <span class=\"ty\">Float32Array</span>;\n  <span class=\"fn\">confidence</span>: <span class=\"ty\">Float32Array</span>;\n  <span class=\"cm\">// …30+ skater fields, 10 goalie fields, all parallel</span>\n}</pre></div>",
+          "files": [
+            {
+              "name": "roster-soa.ts",
+              "desc": "The struct-of-arrays layout and its accessors."
+            },
+            {
+              "name": "loader.ts",
+              "desc": "`GeneratedPlayer[]` → `RosterSOA`, sorted by role."
+            },
+            {
+              "name": "rng.ts",
+              "desc": "Mulberry32 seeded PRNG — `createRng`, `nextGaussian`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "RosterSOA · loadRosterSOA()",
+              "desc": "The layout type and its loader."
+            },
+            {
+              "name": "createRng() · nextGaussian()",
+              "desc": "The deterministic RNG every system draws from."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "built from",
+              "body": "`GeneratedPlayer[]` (world generator)"
+            },
+            {
+              "dir": "consumed by",
+              "body": "[sim-shift](#c-sim-shift) every shift, by player slot index"
+            }
+          ]
+        },
+        {
+          "id": "c-contracts",
+          "name": "contracts/",
+          "path": "lib/sim/contracts · cap.ts",
+          "detail": [
+            "A ~22-file engine for everything money. `computeCapState` derives ceiling, committed hit, dead cap, LTIR, and projections; on top of it sit the negotiation surfaces — a triplet engine for three-team trades, an auction for asset ordering, and a bargaining session for salary/term — each backed by comparable-player indices. Entry-level deals, extensions, qualifying offers, and buyouts round it out."
+          ],
+          "diagrams": [
+            {
+              "id": "contracts-engine",
+              "kind": "architecture",
+              "d2": "direction: right\ncap: { label: \"computeCapState\\nceiling · committed · LTIR\"; class: store }\ncomp: { label: \"comp indices\\ncomparable players\" }\ntrip: { label: \"triplet\\n3-team trades\" }\nauc: { label: \"auction\\nasset ordering\" }\nbarg: { label: \"bargaining\\nsalary · term\"; class: changed }\ncomp -> trip\ncomp -> barg\ncap -> trip\ncap -> auc\ncap -> barg\n",
+              "legend": [
+                {
+                  "label": "cap state",
+                  "fill": "#e5dbff",
+                  "stroke": "#9775fa"
+                },
+                {
+                  "label": "bargaining",
+                  "fill": "#ffd43b",
+                  "stroke": "#f08c00"
+                }
+              ]
+            }
+          ],
+          "files": [
+            {
+              "name": "cap.ts",
+              "desc": "Cap-state computation and compliance enforcement."
+            },
+            {
+              "name": "contracts/triplet.ts · auction.ts · bargaining.ts",
+              "desc": "The three negotiation surfaces."
+            },
+            {
+              "name": "contracts/comp-index.ts",
+              "desc": "Comparable-player indices used for valuation."
+            }
+          ],
+          "exports": [
+            {
+              "name": "computeCapState()",
+              "desc": "→ `CapState`; plus `enforceCapCompliance`, `nextSeasonCap`."
+            },
+            {
+              "name": "TripletState · AuctionState · BargainingState",
+              "desc": "The negotiation-surface state machines."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[brain (gm)](domain-brain.html#c-gm) — cap checks, extensions, trade execution"
+            },
+            {
+              "dir": "drives",
+              "body": "the offseason market — free agency, waivers, re-signings"
+            }
+          ]
+        },
+        {
+          "id": "c-events",
+          "name": "events/ · km/",
+          "path": "lib/sim/events · km",
+          "detail": [
+            "The narrow boundary to the narrative layer. `events/season-events.ts` is a season-boundary bus — a discriminated union of `CoachFiredEvent`, `GMRetiredEvent`, `PlayerRetiredEvent`, `OwnerSucceededEvent`, … — that the orchestrator emits after personnel changes. `km/yield.ts` samples Key-Moment opportunities by tier (cinematic / standard / background) for the story engine to resolve."
+          ],
+          "files": [
+            {
+              "name": "events/season-events.ts",
+              "desc": "The season-boundary event bus and its event union."
+            },
+            {
+              "name": "km/yield.ts",
+              "desc": "Tiered Key-Moment opportunity sampling."
+            }
+          ],
+          "exports": [
+            {
+              "name": "emit()",
+              "desc": "Publishes a season event after a personnel change."
+            },
+            {
+              "name": "tryYieldKM()",
+              "desc": "→ `KMOutcome | null` for the story engine."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "emits to",
+              "body": "[story](domain-story.html#c-director) — the season-event bus and KM opportunities"
+            },
+            {
+              "dir": "consumed by",
+              "body": "`SeasonTick`'s bus subscriptions in story"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "The engine produces outcomes and the per-game state to compute them; it borrows the schema from `world` and attributes from `profiles`.",
+      "rows": [
+        {
+          "name": "SimResult · SimSeasonResult",
+          "desc": "The output of a game / season: event stream, player stats, injuries, and final results."
+        },
+        {
+          "name": "GameState · LineState · PlayerInGameState",
+          "desc": "In-memory per-game state: score, penalties, period, on-ice lines, per-player TOI & stats."
+        },
+        {
+          "name": "RosterSOA",
+          "desc": "The struct-of-arrays roster — parallel typed arrays for every skater & goalie attribute."
+        },
+        {
+          "name": "SkaterSeasonStats · GoalieSeasonStats",
+          "desc": "Accumulated season totals, rolled up from per-game stats."
+        },
+        {
+          "name": "CapState",
+          "desc": "Computed salary-cap state: ceiling, committed hit, dead cap, LTIR, projections."
+        }
+      ],
+      "note": "Reads (never owns): `League`/`Game`/`Player` schema from `lib/world`; `SkaterSkills`, `CoachProfile`, personality from `lib/profiles`."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "A narrow, data-oriented surface in; decisions and events out.",
+      "exposes": [
+        {
+          "api": "simGame()",
+          "note": "one game"
+        },
+        {
+          "api": "simSeason()",
+          "note": "a full season"
+        },
+        {
+          "api": "simShift()",
+          "note": "the hot loop"
+        },
+        {
+          "api": "loadRosterSOA()"
+        },
+        {
+          "api": "createRng()",
+          "note": "seeded determinism"
+        },
+        {
+          "api": "updateStandings() · processInjuries()"
+        }
+      ],
+      "depends": [
+        {
+          "name": "world",
+          "path": "lib/world"
+        },
+        {
+          "name": "profiles",
+          "path": "lib/profiles"
+        },
+        {
+          "name": "brain",
+          "path": "lib/brain",
+          "href": "domain-brain.html"
+        },
+        {
+          "name": "story",
+          "path": "lib/story",
+          "href": "domain-story.html"
+        }
+      ],
+      "note": "Between games it calls `brain` triggers to get decisions, then executes them; it emits season events and Key-Moment opportunities to `story`. The dependency on intelligence/narrative is by *callback*, not control — `sim` stays the driver."
+    }
+  ]
+}

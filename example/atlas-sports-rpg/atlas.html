@@ -1,0 +1,1660 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="visual-skills · visual-atlas"><title>System Atlas · sports-rpg</title><style>/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --panel: #f7f8fa;
+  --panel-deep: #f0f2f5;
+  --border: #e3e6ea;
+  --border-strong: #c8cdd5;
+  --ink: #1c2024;
+  --ink-muted: #5a626c;
+  --ink-faint: #646b75;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: #eff4ff;
+  --accent-border: #bfdbfe;
+  --add: #16a34a;
+  --add-bg: #f0fdf4;
+  --add-border: #bbf7d0;
+  --remove: #dc2626;
+  --remove-bg: #fef2f2;
+  --remove-border: #fecaca;
+  --change: #d97706;
+  --change-bg: #fffbeb;
+  --change-border: #fde68a;
+  --risk-low: #16a34a;
+  --risk-low-bg: #f0fdf4;
+  --risk-low-border: #bbf7d0;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+
+  --sidebar-w: 264px;
+  --topbar-h: 52px;
+  --radius: 6px;
+  --radius-sm: 4px;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== TOP BAR ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--topbar-h);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+}
+
+.topbar-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  line-height: 1.5;
+}
+
+.chip-risk {
+  color: var(--risk-low);
+  background: var(--risk-low-bg);
+  border-color: var(--risk-low-border);
+}
+
+.chip-stat {
+  color: var(--ink-muted);
+  background: var(--panel-deep);
+  border-color: var(--border);
+  font-weight: 500;
+}
+
+.chip-pr {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+  font-weight: 600;
+}
+
+.diff-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.diff-add { color: var(--add); }
+.diff-rem { color: var(--remove); }
+
+.topbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-strong);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  color: var(--ink-muted);
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+.sidebar-toggle:hover { background: var(--panel-deep); border-color: var(--border-strong); }
+.sidebar-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ===== LAYOUT ===== */
+.layout {
+  display: flex;
+  min-height: calc(100vh - var(--topbar-h));
+  position: relative;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+.sidebar-section {
+  padding: 16px 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-section:last-child { border-bottom: none; }
+
+.sidebar-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 14px 8px;
+  display: block;
+}
+
+/* File tree */
+.file-list { list-style: none; }
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 100ms ease-out;
+  line-height: 1.4;
+}
+.file-item:hover { background: var(--panel-deep); color: var(--ink); }
+.file-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.file-status {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.file-status-M { color: var(--change); }
+.file-status-A { color: var(--add); }
+.file-status-D { color: var(--remove); }
+.file-status-R { color: var(--change); }
+
+.file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-stat {
+  font-size: var(--text-xs);
+  font-family: var(--font-sans);
+  color: var(--ink-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.file-stat .plus { color: var(--add); font-weight: 600; }
+.file-stat .minus { color: var(--remove); font-weight: 600; }
+
+/* Outline nav */
+.outline-list { list-style: none; }
+
+.outline-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.outline-item:hover { background: var(--panel-deep); color: var(--ink); border-left-color: var(--border-strong); }
+.outline-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-item.is-active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-subtle); font-weight: 500; }
+
+.outline-num {
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  font-weight: 600;
+  width: 16px;
+  flex-shrink: 0;
+}
+.outline-item.is-active .outline-num { color: var(--accent); }
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 56px 80px;
+  max-width: 1480px;
+}
+
+/* ===== TLDR ===== */
+.tldr-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.tldr-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tldr-heading {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.tldr-eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tldr-rows { display: flex; flex-direction: column; gap: 8px; }
+
+.tldr-row {
+  display: flex;
+  gap: 10px;
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.tldr-key {
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 56px;
+}
+
+.tldr-val { color: var(--ink); flex: 1; }
+
+/* ===== SECTION HEADINGS ===== */
+.section {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 40px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.section-badge {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  background: var(--panel);
+}
+
+.subsection {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 32px;
+}
+
+.subsection-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.subsection-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 0;
+}
+
+.subsection-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ===== OVERVIEW LIST ===== */
+.overview-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.overview-item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: border-color 100ms ease-out;
+}
+.overview-item:hover { border-color: var(--border-strong); }
+
+.overview-num {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  width: 18px;
+}
+
+.overview-text { color: var(--ink); flex: 1; }
+.overview-text a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.overview-text a:hover { text-decoration: underline; }
+.overview-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* ===== WALKTHROUGH PROGRESS ===== */
+.progress-rail {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;            /* scroll horizontally when there are many/long chapters */
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.progress-step {
+  flex: 1 0 auto;              /* grow to fill when few; never shrink below content -> overflow scrolls */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  transition: background 100ms ease-out;
+}
+.progress-step-label { white-space: nowrap; }
+.progress-step:last-child { border-right: none; }
+.progress-step.is-active { background: var(--accent-subtle); color: var(--accent); }
+.progress-step { text-decoration: none; cursor: pointer; }
+.progress-step:hover { background: var(--panel-deep); color: var(--ink); }
+.progress-step.is-active:hover { color: var(--accent); }
+.progress-step:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.progress-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  background: var(--panel-deep);
+  color: var(--ink-faint);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+}
+.progress-step.is-active .progress-step-num {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.progress-step-label { font-weight: 500; white-space: nowrap; }
+
+/* ===== DESCRIPTION BULLETS ===== */
+.desc-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.desc-item {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--ink);
+}
+.desc-bullet {
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  margin-top: 2px;
+}
+.desc-item code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+.desc-item strong { font-weight: 600; }
+.desc-item em { font-style: italic; color: var(--ink-muted); }
+
+/* ===== CODE BLOCKS / DIFF ===== */
+.file-diff {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.file-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 100ms ease-out;
+}
+.file-diff-header:hover { background: var(--panel-deep); }
+
+.file-diff-header summary { display: flex; align-items: center; gap: 8px; width: 100%; list-style: none; }
+.file-diff-header summary::-webkit-details-marker { display: none; }
+.file-diff-header summary::marker { display: none; }
+
+details.file-diff-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+details.file-diff-details > summary:hover { background: var(--panel-deep); }
+details.file-diff-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.file-diff-details > summary::-webkit-details-marker { display: none; }
+
+/* the actual collapsed file-diff summary: one tidy row, single chevron */
+.file-diff > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: var(--panel);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+.file-diff > summary::-webkit-details-marker { display: none; }
+.file-diff > summary::marker { content: ""; }
+.file-diff > summary:hover { background: var(--panel-deep); }
+.file-diff > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.file-diff[open] > summary { border-bottom: 1px solid var(--border); }
+.diff-counts { margin-left: auto; }
+
+.diff-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  font-weight: 500;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diff-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.diff-badge-M { color: var(--change); background: var(--change-bg); border-color: var(--change-border); }
+.diff-badge-A { color: var(--add); background: var(--add-bg); border-color: var(--add-border); }
+
+.diff-counts {
+  display: flex;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.diff-counts .plus { color: var(--add); }
+.diff-counts .minus { color: var(--remove); }
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-faint);
+  transition: transform 150ms ease-out;
+  flex-shrink: 0;
+}
+details[open] .chevron { transform: rotate(90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
+  details[open] .chevron { transform: rotate(90deg); }
+}
+
+.code-block {
+  overflow-x: auto;
+  background: var(--bg);
+  margin: 0;
+}
+.code-block pre {
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 2;
+  min-width: 0;
+}
+
+/* Token coloring — span-based, semantic only */
+.kw { color: #7c3aed; font-weight: 600; }  /* keyword */
+.fn { color: #0369a1; }                      /* function/method */
+.str { color: #16a34a; }                     /* string */
+.cm { color: var(--ink-faint); font-style: italic; } /* comment */
+.ty { color: #b45309; }                      /* type */
+.pn { color: var(--ink); }                   /* punctuation */
+.nm { color: var(--ink); }                   /* number */
+
+/* ===== DIAGRAMS ===== */
+.diagram-wrap {
+  margin-bottom: 28px;
+}
+
+.diagram-title {
+  font-size: var(--text-base);
+  font-weight: 650;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.diagram-caption {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  margin: 8px 2px 0;
+}
+
+.diagram-box {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: zoom-in;
+}
+
+/* Inline SVG for diagrams */
+.diagram-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.diagram-enlarge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 0.8rem/1 system-ui, sans-serif;
+  color: var(--ink-muted);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.diagram-enlarge:hover { border-color: var(--accent); color: var(--accent); }
+.diagram-enlarge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* zoom overlay */
+.zoom-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(15,20,28,0.85); display: none; }
+.zoom-overlay.is-open { display: block; }
+.zoom-stage { position: absolute; inset: 0; overflow: hidden; cursor: grab;
+  display: flex; align-items: center; justify-content: center; touch-action: none; }
+.zoom-stage:active { cursor: grabbing; }
+.zoom-stage svg { max-width: 94vw; max-height: 84vh; transform-origin: center center;
+  background: #fff; border-radius: 12px; box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5); }
+.zoom-controls { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 1; }
+.zoom-controls button { min-width: 40px; height: 40px; padding: 0 12px;
+  border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.96); color: #1c2024;
+  border-radius: 10px; font: 600 15px/1 system-ui, sans-serif; cursor: pointer; }
+.zoom-controls button:hover { background: #fff; }
+
+/* ===== FILES CHANGED TABLE ===== */
+.files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.files-table th {
+  background: var(--panel);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.files-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--ink);
+}
+.files-table tr:last-child td { border-bottom: none; }
+.files-table tr:hover td { background: var(--panel); }
+
+.files-table .col-status { width: 32px; font-weight: 700; font-family: var(--font-mono); font-size: var(--text-sm); }
+.files-table .col-path { font-family: var(--font-mono); }
+.files-table .col-path a { color: var(--accent); text-decoration: none; }
+.files-table .col-path a:hover { text-decoration: underline; }
+.files-table .col-stat { width: 80px; white-space: nowrap; }
+.files-table .col-role { color: var(--ink-muted); font-size: var(--text-xs); }
+
+.files-group-row td {
+  background: var(--panel-deep);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 5px 12px;
+}
+
+/* ===== API SURFACE ===== */
+.api-surface {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.api-surface-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-deep);
+}
+
+.api-name {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.api-type {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--add);
+  background: var(--add-bg);
+  border: 1px solid var(--add-border);
+  border-radius: 20px;
+  padding: 1px 7px;
+}
+
+.api-surface .code-block pre {
+  padding: 14px 18px;
+}
+
+/* ===== CALLOUT ===== */
+.callout {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  margin-bottom: 14px;
+}
+.callout-icon { font-size: var(--text-md); flex-shrink: 0; line-height: 1.5; }
+.callout-text { color: var(--ink); line-height: 1.6; }
+.callout-text strong { font-weight: 600; }
+.callout-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ===== TYPOGRAPHY UTILITIES ===== */
+.headline {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.subheadline {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 28px;
+}
+
+.section-intro {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* ===== CHAPTER MARKER ===== */
+.chapter-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+/* Bold rule separating walkthrough chapters (rendered between, never before the first). */
+.chapter-divider {
+  border: none;
+  border-top: 2px solid var(--border-strong);
+  margin: 48px 0;
+}
+.chapter-no {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.chapter-marker-num {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--panel-deep);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    height: calc(100vh - var(--topbar-h));
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 200ms ease-out;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.08);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+  }
+  .sidebar-toggle { display: flex; }
+  .main { padding: 24px 20px 60px; }
+}
+
+@media (max-width: 375px) {
+  .main { padding: 16px 14px 40px; }
+  .topbar-title { font-size: var(--text-base); }
+  .headline { font-size: var(--text-xl); }
+  .progress-step-label { display: none; }
+  .progress-step { padding: 8px 10px; }
+  .dataflow { min-width: 420px; }
+}
+
+/* Sidebar overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: var(--topbar-h);
+  background: rgba(28,32,36,0.3);
+  z-index: 40;
+}
+.sidebar-overlay.is-open { display: block; }
+
+/* Focus styles */
+a:focus-visible, button:focus-visible, details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* real code diffs inside file-diff details */
+.diff-code { background:#fff; border-top:1px solid var(--border); }
+.diff-pre { margin:0; overflow-x:auto; padding:4px 0;
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#3a4047;
+  font-variant-ligatures:none; }
+.diff-pre .dl { display:flex; align-items:baseline; min-width:max-content; }
+.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:#8b939e;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:#9aa1ab;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dc { flex:0 0 auto; white-space:pre; padding-right:20px; }
+.diff-pre .dl-add { background:#e9f7ee; } .diff-pre .dl-add .dg { color:#1a7f37; } .diff-pre .dl-add .dc { color:#0f3a1d; }
+.diff-pre .dl-del { background:#fdecec; } .diff-pre .dl-del .dg { color:#c4332e; } .diff-pre .dl-del .dc { color:#5c1a18; }
+.diff-pre .dl-ctx .dc { color:#3a4047; }
+.diff-pre .dl-hunk { background:var(--panel); color:var(--ink-muted); }
+.diff-pre .dl-hunk .dc { color:var(--ink-muted); font-weight:600; }
+.diff-more { padding:8px 16px; font:12px/1.4 system-ui,sans-serif; color:var(--ink-muted);
+  background:var(--panel); border-top:1px solid var(--border); }
+
+/* ===== separation hierarchy: chapter breaks vs within-chapter breaks ===== */
+#ch1, #ch2, #ch3 { margin-bottom: 0; }
+/* CHAPTER break: stronger + darker line */
+#ch2, #ch3 { margin-top: 0; padding-top: 48px; border-top: 2px solid #8b939e; }
+/* WITHIN a chapter: lighter line between subsections (1a/1b/1c) ... */
+.subsection { margin-bottom: 0; }
+.subsection + .subsection { border-top: 1px solid var(--border); padding-top: 40px; }
+/* ... and between file groups (a new description directly after a diff) */
+.file-diff + .desc-list,
+.file-diff + .section-intro,
+.file-diff + ul,
+.file-diff + p {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== craft pass: typography + motion polish ===== */
+html { scroll-behavior: smooth; }
+.section-title, .subsection-title, .tldr-heading { text-wrap: balance; }
+.tldr-val, .overview-text, .section-intro, .desc-item span { text-wrap: pretty; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* color pass: subtle hover lift on file rows + risk level system */
+.file-diff { transition: box-shadow 150ms ease-out, border-color 150ms ease-out; }
+.file-diff:hover { border-color: var(--accent); box-shadow: 0 6px 18px -12px rgba(37,99,235,0.35); }
+.chip-risk.risk-med { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+.chip-risk.risk-high { color: var(--remove); background: #fef2f2; border-color: #fecaca; }
+@media (prefers-reduced-motion: reduce) { .file-diff { transition: none; } }
+
+/* spec.css — reusable visual-spec components.
+   Layers ON TOP of review.css (same design tokens). Load review.css first, then this.
+   Source of truth for the spec-component catalog (skills/shared/spec-components.md).
+   The canonical example inlines a snapshot of these rules. */
+
+/* ============================================================= */
+/* ===== VISUAL-SPEC EXTENSIONS (on top of review.css) ========= */
+/* ============================================================= */
+
+/* A "spec" carries a couple of extra semantic roles the recap doesn't:
+   a 'perceived' role (GM-skill-noised judgment, gold) vs a 'factual' role
+   (computed from world state, neutral). They reuse the diagram palette so
+   the page reads as one system. */
+:root {
+  --perceived: #92600a;          /* readable gold ink for text on light */
+  --perceived-bg: #fff8e6;
+  --perceived-border: #f0c54a;
+  --reused: #6b7280;             /* preserved / untouched machinery */
+  --reused-bg: #f1f3f5;
+  --reused-border: #ced4da;
+  --store: #6d4ed8;              /* datastore ink */
+  --proc: #1971c2;              /* perception / process ink */
+}
+
+/* ---- topbar: phase + status + complexity chips ---- */
+.chip-phase { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent-border); font-weight: 700; }
+.chip-status { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.chip-complexity { color: var(--change); background: var(--change-bg); border-color: var(--change-border); font-weight: 600; }
+
+/* ---- the big idea panel ---- */
+.bigidea {
+  margin: 0 0 36px;
+  padding: 22px 26px;
+  border: 1px solid var(--perceived-border);
+  background: var(--perceived-bg);
+  border-radius: var(--radius);
+}
+.bigidea-label {
+  font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--perceived); margin-bottom: 8px;
+}
+.bigidea-line {
+  font-size: var(--text-2xl); font-weight: 800; letter-spacing: -0.025em;
+  color: var(--ink); line-height: 1.2; text-wrap: balance;
+}
+.bigidea-sub {
+  margin-top: 10px; max-width: 70ch; color: var(--ink-muted);
+  font-size: var(--text-base); line-height: 1.6; text-wrap: pretty;
+}
+.bigidea-sub strong { color: var(--ink); font-weight: 650; }
+
+/* ---- diagram legend (color is a secondary signal; labels carry meaning) ---- */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 2px 0; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-sm); color: var(--ink-muted); }
+.legend-swatch { width: 13px; height: 13px; border-radius: 3px; border: 1px solid; flex-shrink: 0; }
+
+/* svg text inherits the page sans */
+.flow-svg text { font-family: var(--font-sans); }
+
+/* ---- anatomy of a board (factual core vs perceived layer) ---- */
+.anatomy {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.anatomy-panel { padding: 16px 18px; }
+.anatomy-factual { background: var(--reused-bg); }
+.anatomy-perceived { background: var(--perceived-bg); }
+.anatomy-mid {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 0 16px; background: var(--bg);
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+}
+.anatomy-arrow { font-size: 22px; color: var(--ink-faint); line-height: 1; }
+.anatomy-fn { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); text-align: center; max-width: 130px; }
+.anatomy-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--text-base); margin-bottom: 4px; }
+.anatomy-factual .anatomy-h { color: var(--reused); }
+.anatomy-perceived .anatomy-h { color: var(--perceived); }
+.anatomy-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-bottom: 10px; }
+.anatomy-eg { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.7; color: var(--ink); }
+.anatomy-caption { font-size: var(--text-sm); color: var(--ink-muted); margin: 0 2px 28px; line-height: 1.6; }
+@media (max-width: 720px) {
+  .anatomy { grid-template-columns: 1fr; }
+  .anatomy-mid { flex-direction: row; border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 16px; }
+  .anatomy-arrow { transform: rotate(90deg); }
+}
+
+/* ---- 6 component (board) cards ---- */
+.board-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 8px; }
+.board-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px; background: var(--bg);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  display: flex; flex-direction: column;
+}
+.board-card:hover { border-color: var(--border-strong); box-shadow: 0 6px 18px -14px rgba(28,32,36,0.4); }
+.board-name { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-base); color: var(--ink); letter-spacing: -0.01em; }
+.board-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 7px 0 12px; }
+.board-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.board-row-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 2px; }
+.skill-chip { font-size: var(--text-xs); font-weight: 600; background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 20px; padding: 1px 8px; white-space: nowrap; }
+.skill-chip.is-deputy { background: var(--panel-deep); color: var(--ink-muted); border-color: var(--border); }
+.split-badge { display: inline-flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; font-size: var(--text-xs); font-weight: 600; align-self: flex-start; margin-bottom: 12px; }
+.split-badge .sb-fact { background: var(--reused-bg); color: var(--reused); padding: 2px 9px; }
+.split-badge .sb-perc { background: var(--perceived-bg); color: var(--perceived); padding: 2px 9px; border-left: 1px solid var(--border); }
+.board-fields { margin-top: auto; display: flex; flex-direction: column; gap: 5px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.field-line { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5; display: flex; gap: 7px; }
+.field-tag { flex-shrink: 0; width: 10px; font-weight: 700; }
+.field-fact .field-tag { color: var(--reused); }
+.field-perc .field-tag { color: var(--perceived); }
+.field-fact .field-names { color: var(--ink-muted); }
+.field-perc .field-names { color: var(--perceived); }
+
+/* ---- where it fits ---- */
+.fits-chain { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; margin-bottom: 26px; }
+.fits-node { flex: 1 1 220px; min-width: 200px; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--panel); }
+.fits-node.is-this { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.fits-arrow { display: flex; align-items: center; justify-content: center; padding: 0 12px; color: var(--ink-faint); font-size: 22px; flex-shrink: 0; }
+.fits-role { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 600; }
+.fits-node.is-this .fits-role { color: var(--perceived); }
+.fits-title { font-weight: 700; color: var(--ink); margin: 3px 0 5px; }
+.fits-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; }
+.fits-desc em { color: var(--ink); font-style: normal; font-weight: 600; }
+@media (max-width: 720px) {
+  .fits-chain { flex-direction: column; }
+  .fits-arrow { padding: 8px 0; }
+  .fits-arrow span { transform: rotate(90deg); display: inline-block; }
+}
+
+/* ---- layer stack ---- */
+.layer-stack { display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.layer { display: flex; align-items: baseline; gap: 12px; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; background: var(--panel); }
+.layer.is-new { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.layer.is-reused { background: var(--reused-bg); }
+.layer-label { font-weight: 700; color: var(--ink); flex-shrink: 0; }
+.layer.is-new .layer-label { color: var(--perceived); }
+.layer-note { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.45; }
+.layer-tag { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 7px; border-radius: 20px; flex-shrink: 0; }
+.layer.is-new .layer-tag { color: #fff; background: var(--change); }
+.layer.is-reused .layer-tag { color: var(--reused); background: var(--bg); border: 1px solid var(--reused-border); }
+
+/* ---- key decisions ---- */
+.decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.decision-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--bg); display: flex; gap: 12px; }
+.decision-num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--panel-deep); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: var(--text-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.decision-q { font-size: var(--text-sm); color: var(--ink-faint); font-weight: 600; line-height: 1.4; }
+.decision-a { font-weight: 650; color: var(--ink); margin-top: 4px; line-height: 1.45; }
+.decision-a code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- scope (in / out) ---- */
+.scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.scope-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.scope-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.scope-in .scope-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.scope-out .scope-head { background: var(--reused-bg); color: var(--ink-muted); }
+.scope-count { font-size: var(--text-xs); font-weight: 600; opacity: 0.8; }
+.scope-list { list-style: none; padding: 8px 0; }
+.scope-list li { display: flex; gap: 9px; padding: 6px 16px; font-size: var(--text-base); line-height: 1.5; }
+.scope-marker { flex-shrink: 0; font-weight: 700; }
+.scope-in .scope-marker { color: var(--add); }
+.scope-out .scope-marker { color: var(--ink-faint); }
+.scope-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.scope-list .defer { color: var(--ink-faint); font-size: var(--text-sm); }
+@media (max-width: 720px) { .scope-cols { grid-template-columns: 1fr; } }
+
+/* ---- rollout phases ---- */
+.phases { display: flex; flex-direction: column; gap: 14px; }
+.phase { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.phase-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.phase-tag { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-sm); color: var(--accent); background: var(--accent-subtle); border: 1px solid var(--accent-border); border-radius: var(--radius-sm); padding: 2px 9px; }
+.phase-title { font-weight: 700; color: var(--ink); }
+.phase-body { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; padding: 16px; }
+.phase-sub { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin-bottom: 8px; }
+.phase-scope p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; }
+.phase-scope code, .gate-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.phase-gate { background: var(--panel); border-radius: var(--radius-sm); padding: 12px 14px; }
+.gate-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.gate-list li { display: flex; gap: 8px; font-size: var(--text-sm); line-height: 1.5; color: var(--ink); }
+.gate-check { color: var(--add); flex-shrink: 0; font-weight: 700; }
+@media (max-width: 720px) { .phase-body { grid-template-columns: 1fr; } }
+
+/* ---- definition of done: movers + table ---- */
+.movers { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.mover { border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; background: var(--bg); }
+.mover-name { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); line-height: 1.4; }
+.mover-vals { display: flex; align-items: baseline; gap: 9px; margin: 9px 0 4px; }
+.mover-now { color: var(--ink-faint); font-weight: 600; font-size: var(--text-base); }
+.mover-now s { color: var(--remove); text-decoration-thickness: 1px; }
+.mover-arrow { color: var(--ink-faint); font-size: var(--text-base); }
+.mover-target { color: var(--add); font-weight: 800; font-size: var(--text-xl); letter-spacing: -0.02em; }
+.mover-label { font-size: var(--text-xs); color: var(--ink-faint); }
+
+.spec-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 6px 0 8px; }
+.spec-table th { text-align: left; background: var(--panel); padding: 8px 12px; font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); border-bottom: 1px solid var(--border); }
+.spec-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--ink); line-height: 1.5; }
+.spec-table tr:last-child td { border-bottom: none; }
+.spec-table tr:hover td { background: var(--panel); }
+.spec-table code { font-family: var(--font-mono); font-size: 0.86em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.spec-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.spec-table .good { color: #15803d; font-weight: 700; }
+.tbl-note { font-size: var(--text-sm); color: var(--ink-muted); margin: 2px 2px 0; }
+
+/* ---- risks ---- */
+.risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; }
+.risk-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.risk-r { display: flex; gap: 9px; padding: 12px 15px; background: var(--remove-bg); border-bottom: 1px solid var(--remove-border); font-weight: 650; color: #991b1b; font-size: var(--text-sm); line-height: 1.45; }
+.risk-icon { flex-shrink: 0; }
+.risk-m { padding: 12px 15px; font-size: var(--text-sm); color: var(--ink); line-height: 1.55; }
+.risk-m b { color: #15803d; font-weight: 700; }
+.risk-m code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- reference drill-downs ---- */
+.ref-intro { font-size: var(--text-base); color: var(--ink-muted); margin-bottom: 16px; line-height: 1.6; }
+details.ref { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; background: var(--bg); }
+details.ref > summary { display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: var(--panel); cursor: pointer; user-select: none; list-style: none; font-weight: 650; color: var(--ink); transition: background 100ms ease-out; }
+details.ref > summary::-webkit-details-marker { display: none; }
+details.ref > summary::marker { content: ""; }
+details.ref > summary:hover { background: var(--panel-deep); }
+details.ref > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.ref[open] > summary { border-bottom: 1px solid var(--border); }
+.ref-chev { width: 15px; height: 15px; color: var(--ink-faint); transition: transform 150ms ease-out; flex-shrink: 0; }
+details.ref[open] .ref-chev { transform: rotate(90deg); }
+.ref-tally { margin-left: auto; font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.ref-body { padding: 16px; }
+.ref-body > p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; margin-bottom: 12px; }
+.ref-body > p:last-child { margin-bottom: 0; }
+.ref-body .code-block { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; }
+.ref-body h4 { font-size: var(--text-base); font-weight: 700; color: var(--ink); margin: 16px 0 8px; }
+.ref-body h4:first-child { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .ref-chev { transition: none; } }
+
+/* meta list in sidebar */
+.meta-list { padding: 0 14px 8px; display: flex; flex-direction: column; gap: 9px; }
+.meta-row { font-size: var(--text-xs); line-height: 1.4; }
+.meta-row .mk { display: block; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 1px; }
+.meta-row .mv { color: var(--ink); }
+.related-list { list-style: none; padding: 0 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.related-list li { font-size: var(--text-xs); line-height: 1.4; }
+.related-list .rk { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.related-list .rv { color: var(--ink); font-family: var(--font-mono); overflow-wrap: anywhere; }
+
+/* ---- decision rationale (approval layer) ---- */
+.decision-why { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); line-height: 1.5; }
+.decision-why::before { content: "Why "; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; font-size: 0.72em; letter-spacing: 0.06em; }
+.decision-why em { color: var(--ink); font-style: normal; font-weight: 650; }
+.decision-why code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.decision-alt { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 7px; line-height: 1.5; }
+.decision-alt-tag { display: inline-block; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--remove); background: var(--remove-bg); border: 1px solid var(--remove-border); border-radius: 4px; padding: 0 5px; margin-right: 6px; vertical-align: 1px; }
+.decision-alt em { color: var(--ink); font-style: italic; }
+.decision-alt code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- before you approve ---- */
+.approve-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; align-items: start; }
+.approve-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.approve-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.approve-card.commit .approve-head { background: var(--accent-subtle); color: var(--accent); border-bottom-color: var(--accent-border); }
+.approve-card.scrutinize .approve-head { background: var(--change-bg); color: #92600a; border-bottom-color: var(--change-border); }
+.approve-card.open .approve-head { background: var(--panel-deep); color: var(--ink-muted); }
+.approve-body { padding: 13px 16px; font-size: var(--text-sm); color: var(--ink); line-height: 1.6; }
+.approve-body strong { font-weight: 700; }
+.approve-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.approve-body a:hover { text-decoration: underline; }
+.approve-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.approve-q { list-style: none; counter-reset: aq; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+.approve-q li { counter-increment: aq; display: flex; gap: 8px; font-size: var(--text-sm); color: var(--ink); line-height: 1.45; }
+.approve-q li::before { content: counter(aq); flex-shrink: 0; width: 17px; height: 17px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.approve-q code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
+
+/* atlas.css — reusable visual-atlas components.
+   Layers ON TOP of review.css + spec.css (same design tokens). Load review.css, then
+   spec.css, then this. Source of truth for the atlas-component catalog
+   (skills/shared/atlas-components.md). The canonical example inlines a snapshot of these rules.
+
+   A visual-atlas is a STANDING MAP of a codebase: one narrative `atlas.html` (system
+   onboarding map) that links down to per-domain `domain-<slug>.html` deep-dive pages. It owns
+   its own surface so its styles can evolve independently of the recap/spec. */
+
+/* ============================================================= */
+/* ===== VISUAL-ATLAS EXTENSIONS (on top of review.css + spec.css) */
+/* ============================================================= */
+
+/* Tier accents — each architectural layer gets one role tint so the map, the tiles, and the
+   sidebar all read as one system. Reuses the shared diagram palette (foundation=store violet,
+   engine=actor blue, intelligence=changed gold, narrative=added green, surface=accent,
+   harness=external gray). Color is always secondary — every tier also carries its text label. */
+:root {
+  --tier-foundation: #6d4ed8; --tier-foundation-bg: #f1ecfd;
+  --tier-engine:     #1971c2; --tier-engine-bg:     #e7f1fb;
+  --tier-intelligence: #b3791a; --tier-intelligence-bg: #fff6e2;
+  --tier-narrative:  #2f9e44; --tier-narrative-bg:  #eafaef;
+  --tier-surface:    var(--accent); --tier-surface-bg: var(--accent-subtle);
+  --tier-harness:    #6b7280; --tier-harness-bg:    #f1f3f5;
+}
+
+/* ---- topbar: domain-count + stack chips, and the back-link on domain pages ---- */
+.chip-stack { color: var(--tier-engine); background: var(--tier-engine-bg); border-color: #bcdcf5; font-weight: 600; }
+.chip-count { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.topbar-back {
+  display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; flex-shrink: 0;
+  font-size: var(--text-sm); font-weight: 600; color: var(--accent); text-decoration: none;
+  border: 1px solid var(--accent-border); background: var(--accent-subtle);
+  border-radius: 20px; padding: 3px 11px 3px 9px; transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.topbar-back:hover { background: #e0ecff; border-color: var(--accent); }
+.topbar-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- primer: "the N things to hold in your head" (atlas lead, after the TL;DR) ---- */
+.primer { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow: hidden; margin-bottom: 32px; }
+.primer-row { display: flex; gap: 14px; padding: 14px 18px; align-items: baseline; }
+.primer-row + .primer-row { border-top: 1px solid var(--border); }
+.primer-n {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; align-self: flex-start;
+  background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border);
+  font-size: var(--text-sm); font-weight: 800; display: flex; align-items: center; justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.primer-body { min-width: 0; }
+.primer-h { font-weight: 700; color: var(--ink); line-height: 1.4; letter-spacing: -0.01em; }
+.primer-p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-top: 3px; text-wrap: pretty; }
+.primer-h code, .primer-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* svg text inherits the page sans (the hand-authored domain map reuses .flow-svg from spec.css) */
+.map-svg text { font-family: var(--font-sans); }
+
+/* ---- component cards that jump to their deep-dive section ---- */
+a.board-card { text-decoration: none; color: inherit; }
+a.board-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-jump { margin-top: 10px; display: flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.card-jump .cj-arrow { transition: transform 150ms ease-out; }
+a.board-card:hover .cj-arrow { transform: translateY(2px); }
+@media (prefers-reduced-motion: reduce) { .card-jump .cj-arrow { transition: none; } }
+
+/* ---- per-component deep-dive: detail + diagram + connections ---- */
+/* reuses review.css .subsection / .subsection-header / .subsection-title / .subsection-path */
+.subsection-back { font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); text-decoration: none; white-space: nowrap; }
+.subsection-back:hover { color: var(--accent); }
+.detail-p { font-size: var(--text-base); color: var(--ink); line-height: 1.65; margin-bottom: 14px; text-wrap: pretty; }
+.detail-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.detail-p strong { font-weight: 650; }
+.detail-p em { font-style: normal; font-weight: 600; color: var(--ink); }
+
+/* connections: how this component talks to its neighbors (calls / read by / produces) */
+.conns { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 4px; }
+.conn { display: flex; align-items: baseline; gap: 10px; font-size: var(--text-sm); line-height: 1.5; }
+.conn-dir { flex-shrink: 0; min-width: 78px; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); text-align: right; }
+.conn-body { color: var(--ink); }
+.conn-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.conn-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.conn-body a:hover { text-decoration: underline; }
+.conns-label { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin: 14px 0 9px; }
+
+/* the load-bearing idea reads full-width on atlas pages (override spec.css's 70ch cap) */
+.bigidea-sub { max-width: none; }
+
+/* ---- domain index: a tile grid (the onboarding map AND the reference index) ---- */
+.domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
+.domain-tile {
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);
+  padding: 16px 18px; display: flex; flex-direction: column; text-decoration: none; color: inherit;
+  position: relative; transition: border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+a.domain-tile.is-linked:hover { border-color: var(--accent); box-shadow: 0 8px 22px -16px rgba(37,99,235,0.5); transform: translateY(-1px); }
+a.domain-tile.is-linked:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.domain-tile.is-pending { background: var(--panel); border-style: dashed; }
+.domain-tile-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.domain-tile-name { font-size: var(--text-md); font-weight: 700; color: var(--ink); letter-spacing: -0.015em; }
+.domain-tile-path { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); }
+.layer-chip {
+  margin-left: auto; font-size: var(--text-xs); font-weight: 700; padding: 1px 8px; border-radius: 20px;
+  border: 1px solid; white-space: nowrap; letter-spacing: 0.01em;
+}
+.layer-foundation   { color: var(--tier-foundation);   background: var(--tier-foundation-bg);   border-color: #d6c8f7; }
+.layer-engine       { color: var(--tier-engine);       background: var(--tier-engine-bg);       border-color: #bcdcf5; }
+.layer-intelligence { color: var(--tier-intelligence); background: var(--tier-intelligence-bg); border-color: var(--change-border); }
+.layer-narrative    { color: var(--tier-narrative);    background: var(--tier-narrative-bg);    border-color: #b6e6c4; }
+.layer-surface      { color: var(--tier-surface);      background: var(--tier-surface-bg);      border-color: var(--accent-border); }
+.layer-harness      { color: var(--tier-harness);      background: var(--tier-harness-bg);      border-color: var(--border-strong); }
+.domain-tile-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 9px 0 12px; text-wrap: pretty; }
+.domain-tile-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--text-xs); color: var(--ink-faint); margin-bottom: 11px; }
+.domain-tile-meta .dm-k { font-weight: 700; color: var(--ink-muted); }
+.domain-tile-meta code { font-family: var(--font-mono); font-size: 0.95em; color: var(--ink-muted); }
+.domain-tile-deps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--border); }
+.domain-tile-deps .dep-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; margin-right: 2px; }
+.dep-chip { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.domain-tile-foot { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: var(--text-sm); font-weight: 600; }
+.domain-tile.is-linked .domain-tile-foot { color: var(--accent); }
+.domain-tile.is-pending .domain-tile-foot { color: var(--ink-faint); font-weight: 600; }
+.domain-tile-foot .dtf-arrow { transition: transform 150ms ease-out; }
+a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
+
+/* ---- domain page: data it owns ---- */
+.owns-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.owns-row { display: grid; grid-template-columns: minmax(180px, 0.9fr) 1.6fr; gap: 14px; padding: 11px 16px; align-items: baseline; }
+.owns-row + .owns-row { border-top: 1px solid var(--border); }
+.owns-row:nth-child(even) { background: var(--panel); }
+.owns-name { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.owns-name .owns-store { color: var(--tier-foundation); }
+.owns-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; text-wrap: pretty; }
+.owns-desc code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- domain page: seams (exposes / depends on) ---- */
+.seam-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.seam-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.seam-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.seam-exposes .seam-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.seam-depends .seam-head { background: var(--panel-deep); color: var(--ink-muted); }
+.seam-body { padding: 12px 16px; }
+.seam-api { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.seam-api li { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--ink); line-height: 1.4; display: flex; gap: 8px; }
+.seam-api li::before { content: "›"; color: var(--add); font-weight: 700; flex-shrink: 0; }
+.seam-api .api-note { font-family: var(--font-sans); color: var(--ink-faint); font-size: var(--text-xs); }
+.seam-neighbors { display: flex; flex-wrap: wrap; gap: 8px; }
+.neighbor-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); font-weight: 600;
+  color: var(--ink); background: var(--panel); border: 1px solid var(--border-strong);
+  border-radius: 20px; padding: 3px 11px; text-decoration: none; transition: border-color 120ms ease-out, background 120ms ease-out;
+}
+.neighbor-chip:hover { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent); }
+.neighbor-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.neighbor-chip .nc-path { font-family: var(--font-mono); font-size: 0.85em; color: var(--ink-faint); }
+.neighbor-chip:hover .nc-path { color: var(--accent); }
+.neighbor-chip.is-flat { background: var(--panel-deep); border-style: dashed; cursor: default; color: var(--ink-muted); }
+.neighbor-chip.is-flat:hover { border-color: var(--border-strong); background: var(--panel-deep); color: var(--ink-muted); }
+@media (max-width: 720px) { .seam-cols { grid-template-columns: 1fr; } }
+
+/* sidebar: nested sub-section links under a chapter in the CONTENTS outline.
+   Used on domain pages to list a chapter's deep-dive components without a bespoke
+   second sidebar block — one uniform outline per page. */
+.outline-sub { list-style: none; margin: 1px 0 5px; }
+.outline-subitem { display: flex; align-items: center; gap: 8px; padding: 3px 14px 3px 34px; font-size: var(--text-xs); color: var(--ink-muted); text-decoration: none; border-left: 2px solid transparent; transition: background 100ms ease-out, color 100ms ease-out; }
+.outline-subitem:hover { background: var(--panel-deep); color: var(--ink); }
+.outline-subitem:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-subitem .os-dot { width: 8px; height: 8px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.14); flex-shrink: 0; }
+
+/* sidebar: a small "domains" jump-list block on the atlas */
+.nav-domains { list-style: none; }
+.nav-domain {
+  display: flex; align-items: center; gap: 8px; padding: 4px 14px; font-size: var(--text-sm);
+  color: var(--ink); text-decoration: none; transition: background 100ms ease-out;
+}
+.nav-domain:hover { background: var(--panel-deep); }
+.nav-domain:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
+.nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
+</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><span class="topbar-title">System Atlas · sports-rpg</span><div class="topbar-meta"><span class="chip chip-stack">Next.js · TypeScript</span><span class="chip chip-count">7 domains</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">generated 2026-06-19</span><span class="chip chip-stat">in-memory state</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>Start here</span></a></li><li><a href="#map" class="outline-item" data-target="map"><span class="outline-num" aria-hidden="true">1</span><span>The domain map</span></a></li><li><a href="#spine" class="outline-item" data-target="spine"><span class="outline-num" aria-hidden="true">2</span><span>Spine</span></a></li><li><a href="#domains" class="outline-item" data-target="domains"><span class="outline-num" aria-hidden="true">3</span><span>The 7 domains</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Domains</span><ul class="nav-domains" role="list"><li><a href="domain-sim.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>sim</span></a></li><li><a href="domain-brain.html" class="nav-domain"><span class="nd-dot" style="background:#ffd43b;border-color:#f08c00;"></span><span>brain</span></a></li><li><a href="domain-story.html" class="nav-domain"><span class="nd-dot" style="background:#d3f9d8;border-color:#37b24d;"></span><span>story</span></a></li><li><a href="#domains" class="nav-domain"><span class="nd-dot" style="background:#e5dbff;border-color:#9775fa;"></span><span>world</span><span class="nd-pending">overview</span></a></li><li><a href="#domains" class="nav-domain"><span class="nd-dot" style="background:#e5dbff;border-color:#9775fa;"></span><span>profiles</span><span class="nd-pending">overview</span></a></li><li><a href="#domains" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>store</span><span class="nd-pending">overview</span></a></li><li><a href="#domains" class="nav-domain"><span class="nd-dot" style="background:#f1f3f5;border-color:#adb5bd;"></span><span>calibration</span><span class="nd-pending">overview</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Root</span><span class="mv">lib/ &amp; app/</span></div><div class="meta-row"><span class="mk">Domains</span><span class="mv">7 (3 with pages)</span></div><div class="meta-row"><span class="mk">Read first</span><span class="mv">sim → brain → story</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Start here</span><h2 class="tldr-heading">A deterministic hockey-league life-sim: generate a world, simulate seasons, let role-based AI run the franchises, and narrate what happens.</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">What</span><span class="tldr-val">A single-player sports RPG where you watch a whole NHL-shaped league live: games, careers, trades, firings, and storylines, all simulated.</span></div><div class="tldr-row"><span class="tldr-key">Shape</span><span class="tldr-val">Domain logic in <code>lib/</code> (7 domains); a Next.js <code>app/</code> reads it through an in-memory store. No database — state lives in memory for the session.</span></div><div class="tldr-row"><span class="tldr-key">Spine</span><span class="tldr-val">Everything hangs off one loop: <code>generateLeague</code> → <code>simSeason</code> → (per day) brains decide &amp; the story engine narrates → offseason → repeat.</span></div></div></div><div class="primer"><div class="primer-row"><span class="primer-n">1</span><div class="primer-body"><div class="primer-h">No god-mode AI — four roles each perceive their own (wrong) world.</div><div class="primer-p">GMs, coaches, owners, and players each evaluate the league through noisy, skill-scaled perception. A weak GM literally <em>mis-sees</em> talent. This is the heart of <code>lib/brain</code>.</div></div></div><div class="primer-row"><span class="primer-n">2</span><div class="primer-body"><div class="primer-h">Determinism is a hard contract — same seed, same league, same season.</div><div class="primer-p">Every random draw comes from a seeded RNG (<code>createRng</code>); nothing calls <code>Math.random()</code>. This is what makes the calibration harness and replays possible.</div></div></div><div class="primer-row"><span class="primer-n">3</span><div class="primer-body"><div class="primer-h">One season loop is the spine the whole codebase hangs off.</div><div class="primer-p">If you read one function, read <code>simSeason</code>: it walks the schedule, calls the game engine, fires the brains between games, and ticks the story engine. Section 2 traces it.</div></div></div><div class="primer-row"><span class="primer-n">4</span><div class="primer-body"><div class="primer-h">State is ephemeral and lives in one Zustand store.</div><div class="primer-p">There is no persistence layer yet — the generated league lives in <code>lib/store</code> for the session and the UI subscribes to it. Reference data (calibration baselines) is the only thing on disk.</div></div></div></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#map"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">The domain map</span></a><a class="progress-step" href="#spine"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Spine</span></a><a class="progress-step" href="#domains"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">The 7 domains</span></a></nav><section id="map" class="section"><div class="section-header"><h2 class="section-title">The domain map</h2><span class="section-badge">layered</span></div><p class="section-intro">The seven domains in four architectural layers. Higher layers depend on the ones below; the engine sits on the data model, intelligence and narrative sit on the engine. The test harness exercises the whole stack.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><svg class="diagram-svg map-svg flow-svg" viewBox="0 0 1180 700" role="img" aria-label="Layered domain map: a Surface/State layer (app, store) over an Intelligence/Narrative layer (brain, story) over the Engine layer (sim) over the Foundation layer (world, profiles), with calibration exercising the whole stack.">
+<defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 z" fill="#868e96"/></marker></defs>
+<!-- tier bars + labels -->
+<rect x="12" y="44" width="5" height="116" rx="2.5" fill="#2563eb"/><rect x="28" y="48" width="156" height="22" rx="11" fill="#eff4ff" stroke="#bfdbfe"/><text x="106" y="63" text-anchor="middle" font-size="11" font-weight="700" fill="#2563eb">SURFACE · STATE</text>
+<rect x="12" y="180" width="5" height="164" rx="2.5" fill="#b3791a"/><rect x="28" y="184" width="218" height="22" rx="11" fill="#fff6e2" stroke="#fde68a"/><text x="137" y="199" text-anchor="middle" font-size="11" font-weight="700" fill="#b3791a">INTELLIGENCE · NARRATIVE</text>
+<rect x="12" y="384" width="5" height="112" rx="2.5" fill="#1971c2"/><rect x="28" y="388" width="96" height="22" rx="11" fill="#e7f1fb" stroke="#bcdcf5"/><text x="76" y="403" text-anchor="middle" font-size="11" font-weight="700" fill="#1971c2">ENGINE</text>
+<rect x="12" y="520" width="5" height="120" rx="2.5" fill="#6d4ed8"/><rect x="28" y="524" width="132" height="22" rx="11" fill="#f1ecfd" stroke="#d6c8f7"/><text x="94" y="539" text-anchor="middle" font-size="11" font-weight="700" fill="#6d4ed8">FOUNDATION</text>
+<!-- surface boxes -->
+<rect x="40" y="78" width="300" height="60" rx="8" fill="#eff4ff" stroke="#2563eb"/><text x="58" y="105" font-size="15" font-weight="700" fill="#1b1b1b">app/</text><text x="58" y="124" font-size="11.5" fill="#495057">Next.js routes — the UI</text>
+<rect x="372" y="78" width="300" height="60" rx="8" fill="#eff4ff" stroke="#2563eb"/><text x="390" y="105" font-size="15" font-weight="700" fill="#1b1b1b">store</text><text x="390" y="124" font-size="11.5" fill="#495057">Zustand league state</text>
+<!-- intelligence / narrative boxes -->
+<rect x="40" y="220" width="390" height="104" rx="9" fill="#ffd43b" stroke="#f08c00" stroke-width="2"/><text x="60" y="256" font-size="19" font-weight="800" fill="#1b1b1b">brain</text><text x="60" y="282" font-size="12.5" fill="#5a4a18">6 role AI brains — independent, noisy perception</text><text x="60" y="302" font-size="12.5" fill="#5a4a18">GM · Coach · Owner · Player · Scout · Agent</text>
+<rect x="470" y="220" width="390" height="104" rx="9" fill="#d3f9d8" stroke="#37b24d"/><text x="490" y="256" font-size="19" font-weight="800" fill="#1b1b1b">story</text><text x="490" y="282" font-size="12.5" fill="#1d6230">turns sim events into narrative</text><text x="490" y="302" font-size="12.5" fill="#1d6230">arcs · memory · news · prose · identity</text>
+<!-- engine box -->
+<rect x="40" y="416" width="820" height="64" rx="9" fill="#d0ebff" stroke="#4dabf7"/><text x="60" y="445" font-size="19" font-weight="800" fill="#1b1b1b">sim</text><text x="60" y="467" font-size="12.5" fill="#1a5a86">deterministic game engine + multi-season loop — &lt;2 ms/game, struct-of-arrays</text>
+<!-- foundation boxes -->
+<rect x="40" y="556" width="390" height="64" rx="9" fill="#e5dbff" stroke="#9775fa"/><text x="60" y="585" font-size="17" font-weight="800" fill="#1b1b1b">world</text><text x="60" y="606" font-size="11.5" fill="#4a3a78">institutional data model + generation</text>
+<rect x="470" y="556" width="390" height="64" rx="9" fill="#ede7fb" stroke="#b197e0"/><text x="490" y="585" font-size="17" font-weight="800" fill="#1b1b1b">profiles</text><text x="490" y="606" font-size="11.5" fill="#4a3a78">skills · personality · condition</text>
+<!-- harness column -->
+<rect x="956" y="220" width="200" height="400" rx="9" fill="#f1f3f5" stroke="#adb5bd" stroke-dasharray="6 4"/><text x="1056" y="262" text-anchor="middle" font-size="16" font-weight="800" fill="#1b1b1b">calibration</text><text x="1056" y="286" text-anchor="middle" font-size="11.5" fill="#5a626c">multi-season</text><text x="1056" y="303" text-anchor="middle" font-size="11.5" fill="#5a626c">test harness</text><line x1="996" y1="324" x2="1116" y2="324" stroke="#ced4da"/><text x="1056" y="520" text-anchor="middle" font-size="11.5" fill="#868e96">exercises</text><text x="1056" y="537" text-anchor="middle" font-size="11.5" fill="#868e96">the full stack</text>
+<!-- arrows (depends on) -->
+<line x1="340" y1="108" x2="368" y2="108" stroke="#868e96" stroke-width="1.6" marker-end="url(#ar)"/>
+<polyline points="522,138 522,168 450,168 450,412" fill="none" stroke="#868e96" stroke-width="1.6" marker-end="url(#ar)"/><text x="458" y="300" font-size="12" fill="#6c757d">drives</text>
+<line x1="235" y1="324" x2="235" y2="412" stroke="#868e96" stroke-width="1.6" marker-end="url(#ar)"/>
+<line x1="665" y1="324" x2="665" y2="412" stroke="#868e96" stroke-width="1.6" marker-end="url(#ar)"/>
+<line x1="466" y1="272" x2="434" y2="272" stroke="#868e96" stroke-width="1.6" marker-end="url(#ar)"/>
+<line x1="235" y1="480" x2="235" y2="552" stroke="#868e96" stroke-width="1.6" marker-end="url(#ar)"/><text x="243" y="520" font-size="12" fill="#6c757d">reads</text>
+<line x1="665" y1="480" x2="665" y2="552" stroke="#868e96" stroke-width="1.6" marker-end="url(#ar)"/>
+<polyline points="40,300 24,300 24,588 36,588" fill="none" stroke="#868e96" stroke-width="1.6" marker-end="url(#ar)"/>
+<!-- harness dashed arrows -->
+<line x1="952" y1="272" x2="864" y2="272" stroke="#adb5bd" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<line x1="952" y1="448" x2="864" y2="448" stroke="#adb5bd" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<line x1="952" y1="588" x2="864" y2="588" stroke="#adb5bd" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+</svg></div><div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#eff4ff;border-color:#2563eb;"></span>Surface · state</span><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>Intelligence</span><span class="legend-item"><span class="legend-swatch" style="background:#d3f9d8;border-color:#37b24d;"></span>Narrative</span><span class="legend-item"><span class="legend-swatch" style="background:#d0ebff;border-color:#4dabf7;"></span>Engine</span><span class="legend-item"><span class="legend-swatch" style="background:#e5dbff;border-color:#9775fa;"></span>Foundation</span><span class="legend-item"><span class="legend-swatch" style="background:#f1f3f5;border-color:#adb5bd;"></span>Harness</span></div><p class="diagram-caption">Solid arrow = <strong>depends on</strong>; dashed = <strong>exercises</strong>. Higher layers sit on the layers below.</p></section><section id="spine" class="section"><div class="section-header"><h2 class="section-title">Spine</h2><span class="section-badge">runtime</span></div><p class="section-intro">The one runtime flow worth memorizing. <code>store.simSeason()</code> kicks it off; the gold steps repeat for every game and every day across the 82-game season — that inner loop is where the brains and the story engine do their work — then the offseason runs and the whole thing repeats for the next season.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><svg class="diagram-svg" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1618.328125 220.75" width="1618.328125" height="220.75"><!-- svg-source:excalidraw --><metadata></metadata><defs><style class="style-fonts">
+      @font-face { font-family: Excalifont; src: url(data:font/woff2;base64,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); }</style></defs><rect x="0" y="0" width="1618.328125" height="220.75" fill="#ffffff"></rect><g stroke-linecap="round" transform="translate(10 106) rotate(0 131.9140625 22)"><path d="M0 0 C76.11 1.25, 150.72 0.8, 263.83 0 M0 0 C101.43 1.39, 203.26 1.58, 263.83 0 M263.83 0 C265.85 15.69, 263.99 25.98, 263.83 44 M263.83 0 C263.43 11.65, 264.46 22.36, 263.83 44 M263.83 44 C200.43 44.94, 136.78 44.82, 0 44 M263.83 44 C190.79 43.87, 117.91 44.05, 0 44 M0 44 C1.45 26.17, 1.06 11.05, 0 0 M0 44 C-0.68 34.05, -1.09 23.84, 0 0" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(54.19921875 115.5) rotate(0 87.71484375 12.5)"><text x="87.71484375" y="17.619999999999997" font-family="Excalifont, Xiaolai, Segoe UI Emoji" font-size="20px" fill="#1b1b1b" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">generateLeague(seed)</text></g><g stroke-linecap="round" transform="translate(323.828125 106) rotate(0 73.6796875 22)"><path d="M0 0 C52.58 0.39, 105.63 0.4, 147.36 0 M0 0 C57.44 0.11, 115.2 1.27, 147.36 0 M147.36 0 C149.17 15.34, 145.53 29.68, 147.36 44 M147.36 0 C148.05 10.74, 148.03 18.94, 147.36 44 M147.36 44 C89.12 44.48, 31.75 43.76, 0 44 M147.36 44 C94.2 45.06, 41.02 45.16, 0 44 M0 44 C-1.13 28.41, 0.44 8.46, 0 0 M0 44 C0.1 27.87, -0.18 12.98, 0 0" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(348.0693359375 115.5) rotate(0 49.4384765625 12.5)"><text x="49.4384765625" y="17.619999999999997" font-family="Excalifont, Xiaolai, Segoe UI Emoji" font-size="20px" fill="#1b1b1b" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">simSeason()</text></g><g stroke-linecap="round" transform="translate(744.265625 10) rotate(0 67.8984375 22)"><path d="M1.07 -1.58 L135.9 0.33 L137.37 45.31 L1.29 42.4" stroke="none" stroke-width="0" fill="#ffd43b"></path><path d="M0 0 C29.07 -0.89, 56.41 2.51, 135.8 0 M0 0 C30.22 0.27, 62.59 0.63, 135.8 0 M135.8 0 C136.13 11.91, 135.07 26.04, 135.8 44 M135.8 0 C136.75 11.69, 135.18 22.45, 135.8 44 M135.8 44 C83.96 42.14, 31.15 44.56, 0 44 M135.8 44 C97.94 44.84, 59.5 45.22, 0 44 M0 44 C1.04 31.31, -1.89 18.68, 0 0 M0 44 C-0.67 31.63, -0.31 20.74, 0 0" stroke="#f08c00" stroke-width="2" fill="none"></path></g><g transform="translate(767.1787109375 19.5) rotate(0 44.9853515625 12.5)"><text x="44.9853515625" y="17.619999999999997" font-family="Excalifont, Xiaolai, Segoe UI Emoji" font-size="20px" fill="#1b1b1b" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">simGame()</text></g><g stroke-linecap="round" transform="translate(1116.828125 10) rotate(0 99.1875 22)"><path d="M-1.58 0.1 L198.7 1.57 L199.69 45.29 L-1.6 43.71" stroke="none" stroke-width="0" fill="#ffd43b"></path><path d="M0 0 C75.93 0.02, 156.85 -3.12, 198.38 0 M0 0 C44.84 2.14, 89.91 2.1, 198.38 0 M198.38 0 C196.87 16.03, 197.2 33.21, 198.38 44 M198.38 0 C199.69 12.36, 199.67 26.73, 198.38 44 M198.38 44 C134.84 43.81, 74.9 43.94, 0 44 M198.38 44 C134.43 46.17, 70.38 45.36, 0 44 M0 44 C0.68 25.27, 1.18 9.01, 0 0 M0 44 C-0.28 32.35, 0.92 22.29, 0 0" stroke="#f08c00" stroke-width="2" fill="none"></path></g><g transform="translate(1145.8349609375 19.5) rotate(0 70.1806640625 12.5)"><text x="70.1806640625" y="17.619999999999997" font-family="Excalifont, Xiaolai, Segoe UI Emoji" font-size="20px" fill="#1b1b1b" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">runDayTriggers()</text></g><g stroke-linecap="round" transform="translate(1365.203125 87.5) rotate(0 121.5625 22)"><path d="M0.1 0.33 L244.69 1.31 L244.42 42.4 L-0.29 42.61" stroke="none" stroke-width="0" fill="#ffd43b"></path><path d="M0 0 C61.85 3.1, 119.67 0.37, 243.13 0 M0 0 C70.73 0.14, 141.3 0.47, 243.13 0 M243.13 0 C241.99 15.48, 242.01 33.97, 243.13 44 M243.13 0 C242.97 18.17, 244.39 34.73, 243.13 44 M243.13 44 C182.24 43.86, 121.83 43.23, 0 44 M243.13 44 C164.57 45.72, 84.69 45.76, 0 44 M0 44 C-1.8 34.23, -0.82 21.65, 0 0 M0 44 C-0.13 31.76, 0.92 16.91, 0 0" stroke="#f08c00" stroke-width="2" fill="none"></path></g><g transform="translate(1401.6533203125 97) rotate(0 85.1123046875 12.5)"><text x="85.1123046875" y="17.619999999999997" font-family="Excalifont, Xiaolai, Segoe UI Emoji" font-size="20px" fill="#1b1b1b" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">storyTick.dailyTick()</text></g><g stroke-linecap="round" transform="translate(654.15625 106) rotate(0 158.0078125 22)"><path d="M0 0 C123.38 -2.93, 243.15 -2.07, 316.02 0 M0 0 C63.8 -0.28, 127.53 0.24, 316.02 0 M316.02 0 C314.04 11.97, 315.48 28, 316.02 44 M316.02 0 C317.3 18.33, 316.56 34.48, 316.02 44 M316.02 44 C217.93 43.27, 118.44 43.86, 0 44 M316.02 44 C199.97 45.76, 83.35 45.37, 0 44 M0 44 C0.84 27.12, -1.04 11.23, 0 0 M0 44 C1.04 35.21, -0.67 25.41, 0 0" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(706.724609375 115.5) rotate(0 105.439453125 12.5)"><text x="105.439453125" y="17.619999999999997" font-family="Excalifont, Xiaolai, Segoe UI Emoji" font-size="20px" fill="#1b1b1b" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">offseason: draft, FA, retire</text></g><g stroke-linecap="round"><g transform="translate(274.328 128) rotate(0 21.850000000000023 0)"><path d="M0.5 -0.39 C7.79 -0.47, 36.18 -0.13, 43.29 -0.05 M0.09 0.61 C7.58 0.84, 36.96 0.6, 44.31 0.62" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(274.328 128) rotate(0 21.850000000000023 0)"><path d="M23.8 8.15 C27.59 5.65, 32.71 3.75, 44.31 0.62 M23.8 8.15 C30.3 6.19, 37.1 3.36, 44.31 0.62" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(274.328 128) rotate(0 21.850000000000023 0)"><path d="M23.76 -6.79 C27.62 -6, 32.75 -4.61, 44.31 0.62 M23.76 -6.79 C30.28 -4.07, 37.09 -2.21, 44.31 0.62" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g></g><mask></mask><g mask="url(#mask-3O3xczSwgmHkc18HDeS4t)" stroke-linecap="round"><g transform="translate(435.858 106) rotate(0 151.304 -37)"><path d="M-0.84 -0.9 C20.1 -13.61, 76.1 -63.04, 126.7 -75.19 C177.3 -87.34, 273.35 -74.02, 302.77 -73.8 M0.92 1.25 C21.6 -10.85, 75.49 -62.01, 125.69 -74.28 C175.89 -86.55, 272.41 -72.65, 302.09 -72.38" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(435.858 106) rotate(0 151.304 -37)"><path d="M278.07 -65.45 C285.8 -68.15, 294.6 -70.36, 302.09 -72.38 M278.07 -65.45 C286.54 -66.8, 293.22 -70.82, 302.09 -72.38" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(435.858 106) rotate(0 151.304 -37)"><path d="M279.24 -82.51 C286.67 -78.62, 295.02 -74.24, 302.09 -72.38 M279.24 -82.51 C287.43 -78.46, 293.74 -77.07, 302.09 -72.38" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g></g><mask id="mask-3O3xczSwgmHkc18HDeS4t"><rect x="0" y="0" fill="#fff" width="838.466" height="280"></rect><rect x="525.748171875" y="19.5" fill="#000" width="73.84765625" height="25" opacity="1"></rect></mask><g transform="translate(525.748171875 19.5) rotate(0 61.07448675833638 46.97560325142627)"><text x="36.923828125" y="17.619999999999997" font-family="Excalifont, Xiaolai, Segoe UI Emoji" font-size="20px" fill="#1b1b1b" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">per game</text></g><g stroke-linecap="round"><g transform="translate(880.563 32) rotate(0 115.23250000000002 0)"><path d="M-0.9 -0.12 C25.88 0.05, 123.15 0.04, 161.75 0.16 C200.34 0.28, 219.19 0.45, 230.67 0.6 M0.84 -1.22 C27.86 -0.76, 125.64 1.82, 163.83 1.79 C202.03 1.75, 218.82 -0.98, 230.01 -1.43" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(880.563 32) rotate(0 115.23250000000002 0)"><path d="M207.21 8.83 C215.99 3.01, 225.35 1.33, 230.01 -1.43 M207.21 8.83 C216.05 5, 222.21 0.88, 230.01 -1.43" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(880.563 32) rotate(0 115.23250000000002 0)"><path d="M205.95 -8.23 C215.1 -7.38, 224.96 -2.4, 230.01 -1.43 M205.95 -8.23 C215.25 -6.09, 221.86 -4.24, 230.01 -1.43" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g></g><mask></mask><g stroke-linecap="round"><g transform="translate(1315.703 32.5) rotate(0 62.13599999999997 25.761000000000003)"><path d="M-0.12 -1.19 C4.14 -1.09, 3.83 -9.19, 24.66 -0.3 C45.49 8.6, 108.09 43.29, 124.87 52.19 M-1.64 0.8 C2.55 0.59, 2.79 -11.11, 23.8 -2.32 C44.81 6.48, 107.97 44.69, 124.42 53.59" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(1315.703 32.5) rotate(0 62.13599999999997 25.761000000000003)"><path d="M99.79 49.33 C103.43 50.6, 111.42 52.31, 124.42 53.59 M99.79 49.33 C107.52 49.5, 114.72 51, 124.42 53.59" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(1315.703 32.5) rotate(0 62.13599999999997 25.761000000000003)"><path d="M108.29 34.49 C109.87 39.17, 115.9 44.29, 124.42 53.59 M108.29 34.49 C113.49 39.39, 118.02 45.55, 124.42 53.59" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g></g><mask></mask><g mask="url(#mask-vvlVmA-chAzzhTC_bKw1n)" stroke-linecap="round"><g transform="translate(1449.935 131) rotate(0 -497.663 33.625)"><path d="M-1.19 0.16 C-19.3 11.49, -70.77 56.49, -109.53 67.85 C-148.29 79.21, -184.45 68.43, -233.76 68.33 C-283.06 68.22, -337.86 67.51, -405.39 67.21 C-472.91 66.92, -558.44 66.68, -638.91 66.57 C-719.38 66.47, -828.79 73.9, -888.2 66.59 C-947.61 59.28, -977.74 30.01, -995.39 22.69 M0.39 -0.8 C-17.78 10.19, -71.24 54.82, -110.37 66.04 C-149.51 77.27, -184.79 66.18, -234.44 66.55 C-284.08 66.93, -341.1 68.29, -408.25 68.3 C-475.4 68.31, -557.48 66.52, -637.31 66.61 C-717.15 66.71, -827.7 76.31, -887.28 68.86 C-946.86 61.42, -976.91 29.59, -994.79 21.93" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(1449.935 131) rotate(0 -497.663 33.625)"><path d="M-970.28 26.87 C-975.53 25.85, -980.32 24.67, -994.79 21.93 M-970.28 26.87 C-980.83 24.37, -990.21 22.46, -994.79 21.93" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(1449.935 131) rotate(0 -497.663 33.625)"><path d="M-979.19 41.46 C-982.41 37.24, -985.2 32.78, -994.79 21.93 M-979.19 41.46 C-986.39 33.28, -992.3 25.68, -994.79 21.93" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g></g><mask id="mask-vvlVmA-chAzzhTC_bKw1n"><rect x="0" y="0" fill="#fff" width="2545.261" height="298.25"></rect><rect x="1009.3447265625" y="185.75" fill="#000" width="68.310546875" height="25" opacity="1"></rect></mask><g transform="translate(1009.3447265625 185.75) rotate(0 -56.914628955239436 -18.62237487383922)"><text x="34.1552734375" y="17.619999999999997" font-family="Excalifont, Xiaolai, Segoe UI Emoji" font-size="20px" fill="#1b1b1b" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">next day</text></g><g mask="url(#mask-Kx1tAl1Ge3ubZVdaPpP_z)" stroke-linecap="round"><g transform="translate(471.688 117.571) rotate(0 88.34699999999998 -7.035499999999999)"><path d="M0.16 0.2 C15.45 -1.92, 61.98 -13.03, 91.59 -13.91 C121.19 -14.78, 163.59 -6.17, 177.77 -5.06 M-1.21 -0.74 C13.98 -2.54, 61.16 -11.27, 90.95 -12.28 C120.75 -13.3, 163.25 -7.77, 177.57 -6.85" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(471.688 117.571) rotate(0 88.34699999999998 -7.035499999999999)"><path d="M153.4 -0.47 C160.82 -1.36, 167.77 -2.41, 177.57 -6.85 M153.4 -0.47 C162.2 -3.5, 171.58 -5.24, 177.57 -6.85" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(471.688 117.571) rotate(0 88.34699999999998 -7.035499999999999)"><path d="M154.96 -17.5 C161.75 -13.44, 168.26 -9.55, 177.57 -6.85 M154.96 -17.5 C163.15 -13.94, 171.93 -9.09, 177.57 -6.85" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g></g><mask id="mask-Kx1tAl1Ge3ubZVdaPpP_z"><rect x="0" y="0" fill="#fff" width="748.382" height="231.642"></rect><rect x="515.181765625" y="91" fill="#000" width="94.98046875" height="25" opacity="1"></rect></mask><g transform="translate(515.181765625 91) rotate(0 44.78747076642881 19.686801939825514)"><text x="47.490234375" y="17.619999999999997" font-family="Excalifont, Xiaolai, Segoe UI Emoji" font-size="20px" fill="#1b1b1b" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">season ends</text></g><g mask="url(#mask-gTqofXiutvYCGbkWJbXG1)" stroke-linecap="round"><g transform="translate(653.656 143.016) rotate(0 -88.36299999999997 3.3375000000000057)"><path d="M0.2 0.6 C-14.74 2.33, -61.51 11.14, -90.82 10.56 C-120.13 9.99, -161.17 -0.5, -175.68 -2.84 M-1.15 -0.13 C-16.13 1.28, -62.56 9.24, -91.68 9.01 C-120.81 8.77, -161.47 0.41, -175.89 -1.55" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(653.656 143.016) rotate(0 -88.36299999999997 3.3375000000000057)"><path d="M-151.33 -6.21 C-155.26 -4.96, -159.39 -2.55, -175.89 -1.55 M-151.33 -6.21 C-159.45 -5.52, -166.02 -2.65, -175.89 -1.55" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g><g transform="translate(653.656 143.016) rotate(0 -88.36299999999997 3.3375000000000057)"><path d="M-154.08 10.66 C-157.47 8.52, -161.06 7.54, -175.89 -1.55 M-154.08 10.66 C-161.22 6.37, -166.98 4.22, -175.89 -1.55" stroke="#1e1e1e" stroke-width="2" fill="none"></path></g></g><mask id="mask-gTqofXiutvYCGbkWJbXG1"><rect x="0" y="0" fill="#fff" width="930.3819999999998" height="255.309"></rect><rect x="516.295046875" y="139.99999999999997" fill="#000" width="92.75390625" height="25" opacity="1"></rect></mask><g transform="translate(516.295046875 140) rotate(0 49.51501703259902 6.888318025391229)"><text x="46.376953125" y="17.619999999999997" font-family="Excalifont, Xiaolai, Segoe UI Emoji" font-size="20px" fill="#1b1b1b" text-anchor="middle" style="white-space: pre;" direction="ltr" dominant-baseline="alphabetic">next season</text></g></svg></div><div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>Repeats per game / per day</span></div><p class="diagram-caption">Brains never mutate the world directly — they return decisions that <code>sim</code> executes. The story engine only observes. That one-way rule keeps the loop deterministic.</p></section><section id="domains" class="section"><div class="section-header"><h2 class="section-title">The 7 domains</h2><span class="section-badge">3 with pages</span></div><p class="section-intro">Each domain owns one slice of the simulation. Three have full deep-dive pages; the rest are mapped here and get pages on demand.</p><div class="domain-grid"><a class="domain-tile is-linked" href="domain-sim.html"><div class="domain-tile-head"><span class="domain-tile-name">sim</span><span class="domain-tile-path">lib/sim</span><span class="layer-chip layer-engine">Engine</span></div><p class="domain-tile-purpose">The deterministic, low-allocation game engine and the multi-season loop. Resolves hockey shift-by-shift at &lt;2 ms/game and orchestrates the whole season.</p><div class="domain-tile-meta"><span><span class="dm-k">~77</span> files</span><span><span class="dm-k">types</span> <code>GameContext</code> · <code>SimResult</code></span></div><div class="domain-tile-deps"><span class="dep-label">depends on</span><span class="dep-chip">world</span><span class="dep-chip">profiles</span><span class="dep-chip">brain</span><span class="dep-chip">story</span></div><div class="domain-tile-foot">Open domain <span class="dtf-arrow" aria-hidden="true">&rarr;</span></div></a><a class="domain-tile is-linked" href="domain-brain.html"><div class="domain-tile-head"><span class="domain-tile-name">brain</span><span class="domain-tile-path">lib/brain</span><span class="layer-chip layer-intelligence">Intelligence</span></div><p class="domain-tile-purpose">Six role-based AI brains — GM, Coach, Owner, Player, Scout, Agent — each with its own skill-scaled, noisy perception. No god-mode; weak decision-makers genuinely mis-see the league.</p><div class="domain-tile-meta"><span><span class="dm-k">~76</span> files</span><span><span class="dm-k">types</span> <code>StrategicPlan</code> · <code>GMAssessment</code></span></div><div class="domain-tile-deps"><span class="dep-label">depends on</span><span class="dep-chip">sim</span><span class="dep-chip">world</span><span class="dep-chip">profiles</span></div><div class="domain-tile-foot">Open domain <span class="dtf-arrow" aria-hidden="true">&rarr;</span></div></a><a class="domain-tile is-linked" href="domain-story.html"><div class="domain-tile-head"><span class="domain-tile-name">story</span><span class="domain-tile-path">lib/story</span><span class="layer-chip layer-narrative">Narrative</span></div><p class="domain-tile-purpose">Turns discrete simulation events into a living narrative: multi-beat story arcs, two-tier memory, news feeds, on-demand prose, and evolving franchise identity.</p><div class="domain-tile-meta"><span><span class="dm-k">~78</span> files</span><span><span class="dm-k">types</span> <code>Arc</code> · <code>KMEvent</code> · <code>BeefState</code></span></div><div class="domain-tile-deps"><span class="dep-label">depends on</span><span class="dep-chip">world</span><span class="dep-chip">sim</span><span class="dep-chip">brain</span></div><div class="domain-tile-foot">Open domain <span class="dtf-arrow" aria-hidden="true">&rarr;</span></div></a><div class="domain-tile is-pending"><div class="domain-tile-head"><span class="domain-tile-name">world</span><span class="domain-tile-path">lib/world</span><span class="layer-chip layer-foundation">Foundation</span></div><p class="domain-tile-purpose">The institutional data model and procedural generator: franchises, teams, players, contracts, schedule, plus the identity/reputation system. The schema everything else reads.</p><div class="domain-tile-meta"><span><span class="dm-k">~40</span> files</span><span><span class="dm-k">types</span> <code>League</code> · <code>Franchise</code> · <code>Player</code></span></div><div class="domain-tile-deps"><span class="dep-label">depends on</span><span class="dep-chip">profiles</span></div><div class="domain-tile-foot">Page pending</div></div><div class="domain-tile is-pending"><div class="domain-tile-head"><span class="domain-tile-name">profiles</span><span class="domain-tile-path">lib/profiles</span><span class="layer-chip layer-foundation">Foundation</span></div><p class="domain-tile-purpose">Per-entity attributes: player skills, condition, and development; coach, GM, owner, and scout personality and competencies. The numbers the brains perceive and the engine resolves.</p><div class="domain-tile-meta"><span><span class="dm-k">~4</span> files</span><span><span class="dm-k">types</span> <code>SkaterSkills</code> · <code>GMProfile</code></span></div><div class="domain-tile-deps"><span class="dep-label">depends on</span><span class="dep-chip">world</span></div><div class="domain-tile-foot">Page pending</div></div><div class="domain-tile is-pending"><div class="domain-tile-head"><span class="domain-tile-name">store</span><span class="domain-tile-path">lib/store</span><span class="layer-chip layer-surface">Surface</span></div><p class="domain-tile-purpose">The in-memory Zustand league state. Its <code>simSeason()</code> action orchestrates generate → sim → standings, and the <code>app/</code> routes subscribe to it. The boundary between the simulation and the UI.</p><div class="domain-tile-meta"><span><span class="dm-k">~1</span> file</span><span><span class="dm-k">export</span> <code>useLeagueStore</code></span></div><div class="domain-tile-deps"><span class="dep-label">depends on</span><span class="dep-chip">sim</span><span class="dep-chip">world</span></div><div class="domain-tile-foot">Page pending</div></div><div class="domain-tile is-pending"><div class="domain-tile-head"><span class="domain-tile-name">calibration</span><span class="domain-tile-path">lib/calibration</span><span class="layer-chip layer-harness">Harness</span></div><p class="domain-tile-purpose">The multi-season test harness: runs N seasons from a fixed seed, collects 200+ metrics (talent spread, PP/PK, comeback rates, re-injury…) and compares them against reference baselines.</p><div class="domain-tile-meta"><span><span class="dm-k">~5</span> files</span><span><span class="dm-k">export</span> <code>runCalibration</code></span></div><div class="domain-tile-deps"><span class="dep-label">depends on</span><span class="dep-chip">sim</span><span class="dep-chip">world</span><span class="dep-chip">brain</span><span class="dep-chip">story</span></div><div class="domain-tile-foot">Page pending</div></div></div></section></main></div><div id="zoom-overlay" class="zoom-overlay" aria-hidden="true"><div class="zoom-controls"><button id="zoom-out" type="button" aria-label="Zoom out">&#8722;</button><button id="zoom-reset" type="button">Reset</button><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-close" type="button" aria-label="Close">&#10006;</button></div><div id="zoom-stage" class="zoom-stage"></div></div><script>(function() {
+  'use strict';
+
+  // Sidebar toggle
+  var toggle = document.getElementById('sidebar-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+
+  function openSidebar() {
+    sidebar.classList.add('is-open');
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('is-open');
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function() {
+      if (sidebar.classList.contains('is-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  // Close sidebar on nav click (mobile)
+  var outlineLinks = document.querySelectorAll('.outline-item, .file-item');
+  outlineLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 900) {
+        closeSidebar();
+      }
+    });
+  });
+
+  // Scroll-spy for outline
+  var outlineItems = document.querySelectorAll('.outline-item[data-target]');
+  var sections = Array.prototype.map.call(outlineItems, function(it) {
+    var t = it.getAttribute('data-target');
+    return { id: t, target: t };
+  });
+
+  function updateActive(activeId) {
+    outlineItems.forEach(function(item) {
+      var t = item.getAttribute('data-target');
+      if (t === activeId) {
+        item.classList.add('is-active');
+      } else {
+        item.classList.remove('is-active');
+      }
+    });
+  }
+
+  var topbarH = 52;
+
+  function onScroll() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var winH = window.innerHeight;
+    var active = null;
+
+    for (var i = sections.length - 1; i >= 0; i--) {
+      var el = document.getElementById(sections[i].id);
+      if (el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.top <= topbarH + 32) {
+          active = sections[i].target;
+          break;
+        }
+      }
+    }
+
+    if (active) {
+      updateActive(active);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Progress rail: highlight chapter based on scroll
+  var progressSteps = document.querySelectorAll('.progress-step');
+  var chapters = Array.prototype.map.call(progressSteps, function(s) {
+    var h = s.getAttribute('href') || '';
+    return h.charAt(0) === '#' ? document.getElementById(h.slice(1)) : null;
+  });
+
+  function updateProgress() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = 0;
+    for (var i = chapters.length - 1; i >= 0; i--) {
+      if (chapters[i]) {
+        var rect = chapters[i].getBoundingClientRect();
+        if (rect.top <= topbarH + 48) {
+          active = i;
+          break;
+        }
+      }
+    }
+    progressSteps.forEach(function(step, idx) {
+      if (idx === active) {
+        step.classList.add('is-active');
+      } else {
+        step.classList.remove('is-active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+})();
+
+(function(){
+  'use strict';
+  var ov=document.getElementById('zoom-overlay'), stage=document.getElementById('zoom-stage');
+  var cur,scale=1,tx=0,ty=0,drag=false,moved=false,lx=0,ly=0;
+  function apply(){ if(cur) cur.style.transform='translate('+tx+'px,'+ty+'px) scale('+scale+')'; }
+  function openSvg(svg){ stage.innerHTML=''; cur=svg.cloneNode(true); cur.removeAttribute('width'); cur.removeAttribute('height'); stage.appendChild(cur); scale=1;tx=0;ty=0;apply(); ov.classList.add('is-open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+  function closeOv(){ ov.classList.remove('is-open'); ov.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  document.querySelectorAll('.diagram-box').forEach(function(box){
+    var svg=box.querySelector('svg.diagram-svg'); if(!svg) return;
+    box.addEventListener('click', function(){ openSvg(svg); });
+  });
+  document.getElementById('zoom-close').addEventListener('click', closeOv);
+  document.getElementById('zoom-reset').addEventListener('click', function(){ scale=1;tx=0;ty=0;apply(); });
+  document.getElementById('zoom-in').addEventListener('click', function(){ scale=Math.min(8,scale*1.25); apply(); });
+  document.getElementById('zoom-out').addEventListener('click', function(){ scale=Math.max(0.3,scale/1.25); apply(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeOv(); });
+  stage.addEventListener('wheel', function(e){ e.preventDefault(); scale=Math.min(8,Math.max(0.3, scale*(e.deltaY<0?1.12:0.89))); apply(); }, {passive:false});
+  stage.addEventListener('pointerdown', function(e){ drag=true; moved=false; lx=e.clientX; ly=e.clientY; try{stage.setPointerCapture(e.pointerId);}catch(_){} });
+  stage.addEventListener('pointermove', function(e){ if(!drag)return; moved=true; tx+=e.clientX-lx; ty+=e.clientY-ly; lx=e.clientX; ly=e.clientY; apply(); });
+  stage.addEventListener('pointerup', function(){ drag=false; });
+  stage.addEventListener('pointercancel', function(){ drag=false; });
+  stage.addEventListener('click', function(e){ if(!moved && e.target===stage) closeOv(); });
+})();
+
+(function(){
+  'use strict';
+  function openTo(hash){
+    if(!hash || hash.charAt(0) !== '#') return;
+    var el = document.getElementById(hash.slice(1));
+    if(!el) return;
+    var p = el;
+    while(p){ if(p.tagName && p.tagName.toLowerCase() === 'details') p.open = true; p = p.parentElement; }
+    if(el.tagName && el.tagName.toLowerCase() === 'details') el.open = true;
+    var d = el.querySelector && el.querySelector('details.file-diff');
+    if(d) d.open = true;
+  }
+  window.addEventListener('hashchange', function(){ openTo(location.hash); });
+  if(location.hash) openTo(location.hash);
+})();
+</script></body></html>
