@@ -136,3 +136,38 @@ describe("domain-page renderers (lead + cards + arch)", () => {
     expect(h).toContain('class="callout"');
   });
 });
+
+describe("depth + owns + seams", () => {
+  it("depth renders a full subsection per component", async () => {
+    const map = new Map((await renderAll([{ type: "diagram", id: "gm-plan", title: "", kind: "architecture", d2: "a -> b" }])).map((r) => [r.id, r]));
+    const h = await renderAtlasBlock({ type: "depth", id: "depth", title: "In depth", components: [
+      { id: "c-gm", name: "gm", path: "lib/brain/gm", detail: ["First para.", "Second `code` para."],
+        diagrams: [{ id: "gm-plan", kind: "architecture", d2: "a -> b", legend: [{ label: "x", fill: "#fff", stroke: "#000" }] }],
+        codeHtml: '<div class="code-block"><pre>x</pre></div>',
+        files: [{ name: "gm/plan/types.ts", desc: "the plan" }],
+        exports: [{ name: "computeGMAssessment()", desc: "the read" }],
+        connections: [{ dir: "produces", body: "a `StrategicPlan`" }] },
+    ] }, map);
+    expect(h).toContain('class="subsection" id="c-gm"');
+    expect(h).toContain('class="subsection-title">gm <span class="subsection-path">lib/brain/gm');
+    expect(h).toContain('subsection-back');
+    expect(h).toContain('class="detail-p"');
+    expect(h).toContain('class="code-block"');
+    expect(h.match(/class="conns-label"/g)?.length).toBe(3);
+    expect(h).toContain('class="owns-name">gm/plan/types.ts');
+    expect(h).toContain('class="conn-dir">produces');
+  });
+  it("owns renders a name/desc list + note", async () => {
+    const h = await renderAtlasBlock({ type: "owns", id: "data", title: "Data it owns", rows: [{ name: "BrainState", desc: "cross-season" }], note: "reads x" }, new Map());
+    expect(h).toContain('class="owns-name">BrainState');
+    expect(h).toContain('class="diagram-caption">');
+  });
+  it("seams renders exposes list + neighbor chips (linked vs flat)", async () => {
+    const h = await renderAtlasBlock({ type: "seams", id: "seams", title: "Seams",
+      exposes: [{ api: "runDayTriggers()", note: "daily" }],
+      depends: [{ name: "sim", path: "lib/sim", href: "domain-sim.html" }, { name: "world", path: "lib/world" }] }, new Map());
+    expect(h).toContain('class="seam-api"');
+    expect(h).toContain('a class="neighbor-chip" href="domain-sim.html"');
+    expect(h).toContain('class="neighbor-chip is-flat"');
+  });
+});

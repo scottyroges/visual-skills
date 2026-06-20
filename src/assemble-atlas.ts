@@ -5,6 +5,7 @@ import { escapeHtml } from "./html.js";
 import {
   assertUniqueAtlasIds, isAtlasChapter, atlasChapterLabel, LAYER_DOTS,
   type AtlasBlock, type AtlasOpts, type DomainOpts, type AtlasDiagram,
+  type KV, type ComponentDeep,
 } from "./atlas-blocks.js";
 import { renderInlineMarkdown } from "./renderers/markdown.js";
 import { type DiagramResult } from "./render-diagram.js";
@@ -233,6 +234,61 @@ async function renderDiagramSection(b: Extract<AtlasBlock, { type: "diagram-sect
     `${await renderAtlasDiagram(b.diagram, diagrams)}${callout}`;
 }
 
+async function kvList(rows: KV[]): Promise<string> {
+  return Promise.all(rows.map(async (r) =>
+    `<div class="owns-row"><span class="owns-name">${escapeHtml(r.name)}</span>` +
+    `<span class="owns-desc">${await mi(r.desc)}</span></div>`)).then((x) => `<div class="owns-list">${x.join("")}</div>`);
+}
+
+function labeled(label: string, body: string): string { return `<div class="conns-label">${label}</div>${body}`; }
+
+async function renderComponentDeep(c: ComponentDeep, diagrams: Map<string, DiagramResult>): Promise<string> {
+  const head = `<div class="subsection-header"><h3 class="subsection-title">${escapeHtml(c.name)} ` +
+    `<span class="subsection-path">${escapeHtml(c.path)}</span></h3>` +
+    `<a href="#components" class="subsection-back">&uarr; back to cards</a></div>`;
+  const detail = (await Promise.all(c.detail.map(async (p) => `<p class="detail-p">${await mi(p)}</p>`))).join("");
+  const diags = (await Promise.all((c.diagrams ?? []).map((d) => renderAtlasDiagram(d, diagrams)))).join("");
+  const code = c.codeHtml ?? "";
+  const files = c.files?.length ? labeled("Key files", await kvList(c.files)) : "";
+  const exports = c.exports?.length ? labeled("Key exports", await kvList(c.exports)) : "";
+  const conns = c.connections?.length
+    ? labeled("Connections", `<div class="conns">${(await Promise.all(c.connections.map(async (k) =>
+        `<div class="conn"><span class="conn-dir">${escapeHtml(k.dir)}</span><span class="conn-body">${await mi(k.body)}</span></div>`))).join("")}</div>`)
+    : "";
+  return `<div class="subsection" id="${escapeHtml(c.id)}">${head}${detail}${diags}${code}${files}${exports}${conns}</div>`;
+}
+
+async function renderDepth(b: Extract<AtlasBlock, { type: "depth" }>, diagrams: Map<string, DiagramResult>): Promise<string> {
+  const subs = (await Promise.all(b.components.map((c) => renderComponentDeep(c, diagrams)))).join("");
+  return sectionHeader(b.title, b.badge) +
+    `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}${subs}`;
+}
+
+async function renderOwns(b: Extract<AtlasBlock, { type: "owns" }>): Promise<string> {
+  return sectionHeader(b.title) +
+    `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}${await kvList(b.rows)}` +
+    `${b.note ? `<p class="diagram-caption">${await mi(b.note)}</p>` : ""}`;
+}
+
+async function renderSeams(b: Extract<AtlasBlock, { type: "seams" }>): Promise<string> {
+  const exposes = b.exposes.map((e) =>
+    `<li>${escapeHtml(e.api)}${e.note ? ` <span class="api-note">— ${escapeHtml(e.note)}</span>` : ""}</li>`).join("");
+  const neighbors = b.depends.map((d) => {
+    const inner = `${escapeHtml(d.name)} <span class="nc-path">${escapeHtml(d.path)}</span>`;
+    return d.href
+      ? `<a class="neighbor-chip" href="${escapeHtml(d.href)}">${inner}</a>`
+      : `<span class="neighbor-chip is-flat">${inner}</span>`;
+  }).join("");
+  const note = b.note ? `<p class="diagram-caption" style="margin-top:14px;">${await mi(b.note)}</p>` : "";
+  return sectionHeader(b.title) +
+    `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}` +
+    `<div class="seam-cols">` +
+    `<div class="seam-col seam-exposes"><div class="seam-head"><span aria-hidden="true">&#8593;</span> Exposes</div>` +
+    `<div class="seam-body"><ul class="seam-api">${exposes}</ul></div></div>` +
+    `<div class="seam-col seam-depends"><div class="seam-head"><span aria-hidden="true">&#8595;</span> Depends on</div>` +
+    `<div class="seam-body"><div class="seam-neighbors">${neighbors}</div>${note}</div></div></div>`;
+}
+
 /** Dispatch one block to its renderer, wrapped in its <section>. Domain-page block cases are
  *  added in later tasks; the default warns. */
 export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, DiagramResult>, onWarn?: (m: string) => void): Promise<string> {
@@ -244,6 +300,9 @@ export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, Diag
       case "domain-tldr": return renderDomainTldr(b);
       case "components": return renderComponents(b);
       case "diagram-section": return renderDiagramSection(b, diagrams);
+      case "depth": return renderDepth(b, diagrams);
+      case "owns": return renderOwns(b);
+      case "seams": return renderSeams(b);
       default: onWarn?.(`atlas: no renderer for block type "${(b as AtlasBlock).type}"`); return "";
     }
   })();
