@@ -81,6 +81,24 @@ async function main() {
   if (values.repo) {
     if (!isAbsolute(values.repo)) { console.error("--repo must be an absolute path"); process.exit(2); }
     await mkdir(outDir, { recursive: true });
+    if (values.domain) {
+      const cfgPath = join(outDir, "atlas.domains.json");
+      if (!existsSync(cfgPath)) { console.error(`--domain needs an existing ${cfgPath} (run a full scan first)`); process.exit(2); }
+      const config = JSON.parse(await fsReadFile(cfgPath, "utf8")) as AtlasConfig;
+      const domain = config.domains.find((d) => d.slug === values.domain);
+      if (!domain) { console.error(`unknown domain "${values.domain}" — not in atlas.domains.json`); process.exit(2); }
+      const inv = await scanInventory(values.repo, config.srcRoots);
+      const { drift } = reconcile(config, inv.modules.map((m) => m.path));
+      const edges = aggregateDomainEdges(config, inv);
+      await writeFile(join(outDir, `domain-${domain.slug}.json`),
+        JSON.stringify(buildDomainDraft(domain.slug, config, inv, edges, { date: today() }), null, 2));
+      const { outName, warnings } = await renderFile(join(outDir, `domain-${domain.slug}.json`), outDir);
+      console.log(`refreshed ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
+      // tile-only note (do not recompute the atlas map; see spec "Resolved during review")
+      console.log(`note: atlas tile for "${domain.slug}" — ${domain.modules.length} files, deps: ${[...(edges.get(domain.slug) ?? [])].sort().join(", ") || "none"} (update atlas.json's tile if changed)`);
+      printDrift(drift);
+      return; // end main()
+    }
     const config0 = await loadOrGuessConfig(values.repo, outDir);
     const inv = await scanInventory(values.repo, config0.srcRoots);
     const { config, drift } = reconcile(config0, inv.modules.map((m) => m.path));

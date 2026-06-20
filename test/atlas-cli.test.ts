@@ -68,3 +68,29 @@ it("--repo full scan: creates config + drafts, renders, is idempotent (no clobbe
     rmSync(out, { recursive: true, force: true });
   }
 }, 30_000);
+
+it("--domain refreshes only that domain page and reports tile drift", () => {
+  const repo = join(__dirname, "fixtures", "atlas-repo");
+  const out = mkdtempSync(join(tmpdir(), "atlas-dom-"));
+  try {
+    runCli(["--repo", repo, "--out", out]);               // seed config + drafts
+    const atlasBefore = readFileSync(join(out, "atlas.json"), "utf8");
+    rmSync(join(out, "domain-sim.json"));                  // simulate wanting a fresh sim draft
+    runCli(["--repo", repo, "--domain", "sim", "--out", out]);
+    expect(existsSync(join(out, "domain-sim.json"))).toBe(true);
+    expect(existsSync(join(out, "domain-sim.html"))).toBe(true);
+    expect(readFileSync(join(out, "atlas.json"), "utf8")).toBe(atlasBefore); // atlas untouched
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+}, 30_000);
+
+it("--domain errors clearly without a config", () => {
+  const repo = join(__dirname, "fixtures", "atlas-repo");
+  const out = mkdtempSync(join(tmpdir(), "atlas-dom2-"));
+  try {
+    expect(() => runCli(["--repo", repo, "--domain", "sim", "--out", out])).toThrow();
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+}, 30_000);
