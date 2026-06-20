@@ -54,29 +54,6 @@
 /* svg text inherits the page sans (the hand-authored domain map reuses .flow-svg from spec.css) */
 .map-svg text { font-family: var(--font-sans); }
 
-/* ---- season spine: the runtime topology as a stepped flow ---- */
-.spine { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; margin-bottom: 12px; }
-.spine-step {
-  flex: 1 1 150px; min-width: 140px; border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 12px 14px; background: var(--panel); display: flex; flex-direction: column; gap: 4px;
-}
-.spine-step.is-loop { background: var(--tier-intelligence-bg); border-color: var(--change-border); }
-.spine-k { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); }
-.spine-step.is-loop .spine-k { color: var(--tier-intelligence); }
-.spine-t { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 700; color: var(--ink); letter-spacing: -0.01em; line-height: 1.35; overflow-wrap: anywhere; }
-.spine-d { font-size: var(--text-xs); color: var(--ink-muted); line-height: 1.45; }
-.spine-arrow { display: flex; align-items: center; justify-content: center; padding: 0 9px; color: var(--ink-faint); font-size: 18px; flex-shrink: 0; }
-.spine-loop-tag {
-  display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px;
-  font-size: var(--text-sm); color: var(--tier-intelligence); font-weight: 600;
-}
-.spine-loop-tag .sl-mark { font-size: 1.1em; }
-@media (max-width: 760px) {
-  .spine { flex-direction: column; }
-  .spine-arrow { padding: 6px 0; }
-  .spine-arrow span { transform: rotate(90deg); display: inline-block; }
-}
-
 /* ---- domain index: a tile grid (the onboarding map AND the reference index) ---- */
 .domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
 .domain-tile {
