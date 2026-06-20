@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 import { scanInventory } from "../src/gather-atlas.js";
+import { aggregateDomainEdges, domainMapDiagram } from "../src/gather-atlas.js";
+import type { AtlasConfig } from "../src/atlas-config.js";
 
 const REPO = join(__dirname, "fixtures", "atlas-repo");
 
@@ -22,5 +24,37 @@ describe("scanInventory", () => {
     const inv = await scanInventory(REPO, ["lib"]);
     expect(inv.modules.find((m) => m.path === "lib/api/root.ts")!.isRouter).toBe(true);
     expect(inv.models.sort()).toEqual(["Game", "Team"]);
+  });
+});
+
+const CONFIG: AtlasConfig = {
+  repo: "demo",
+  srcRoots: ["lib"],
+  domains: [
+    { slug: "sim", name: "sim", globs: ["lib/sim/**"], modules: ["lib/sim/engine.ts", "lib/sim/loop.ts"] },
+    { slug: "brain", name: "brain", globs: ["lib/brain/**"], modules: ["lib/brain/gm.ts"] },
+    { slug: "api", name: "api", globs: ["lib/api/**"], modules: ["lib/api/root.ts"] },
+  ],
+};
+
+describe("aggregateDomainEdges", () => {
+  it("maps module edges to cross-domain edges, dropping intra-domain", async () => {
+    const inv = await scanInventory(REPO, ["lib"]);
+    const edges = aggregateDomainEdges(CONFIG, inv);
+    expect([...(edges.get("sim") ?? [])].sort()).toEqual(["brain"]); // engine→gm; loop→engine dropped
+    expect([...(edges.get("api") ?? [])].sort()).toEqual(["sim"]);   // root→engine
+    expect(edges.get("brain") ?? new Set()).toEqual(new Set());      // gm imports nothing in-repo
+  });
+});
+
+describe("domainMapDiagram", () => {
+  it("emits an architecture diagram-section with a node per domain and an edge per dep", async () => {
+    const inv = await scanInventory(REPO, ["lib"]);
+    const edges = aggregateDomainEdges(CONFIG, inv);
+    const diag = domainMapDiagram(CONFIG, edges);
+    expect(diag.kind).toBe("architecture");
+    expect(diag.d2).toContain("sim -> brain");
+    expect(diag.d2).toContain("api -> sim");
+    expect(diag.mermaid).toContain("graph");
   });
 });
