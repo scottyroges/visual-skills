@@ -11,9 +11,9 @@ async function main() {
   const { values } = parseArgs({
     options: {
       blocks: { type: "string" },
-      title: { type: "string", default: "Plan" },
+      title: { type: "string", default: "Doc" },
       source: { type: "string", default: "" },
-      out: { type: "string", default: "plan" },
+      out: { type: "string", default: "doc" },
     },
   });
   if (!values.blocks) throw new Error("--blocks <path-to-blocks.json> is required");
@@ -23,7 +23,7 @@ async function main() {
   // --out is a directory (a trailing .html is stripped for convenience). The HTML
   // and any .excalidraw sidecars are written together inside it.
   const outDir = values.out!.replace(/\.html?$/i, "");
-  const htmlPath = join(outDir, "plan.html");
+  const htmlPath = join(outDir, "doc.html");
   await mkdir(outDir, { recursive: true });
   const generator = await generatorStamp();
   const html = await assemble(promoted, {
@@ -35,7 +35,7 @@ async function main() {
   });
   await writeFile(htmlPath, html);
   // Keep the source grouped with the doc: persist the input blocks inside the folder so it is
-  // self-contained and re-renders in place (plan --blocks <dir>/blocks.json --out <dir>).
+  // self-contained and re-renders in place (doc --blocks <dir>/blocks.json --out <dir>).
   await writeFile(join(outDir, "blocks.json"), JSON.stringify(blocks, null, 2));
   console.log(`wrote ${htmlPath}`);
 }

@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { dirname, join, resolve } from "node:path";
 
-const SKILLS = ["visual-recap", "visual-plan", "visual-spec", "visual-atlas"];
+const SKILLS = ["visual-recap", "visual-doc", "visual-spec", "visual-atlas"];
 
 export interface SkillLink {
   source: string;

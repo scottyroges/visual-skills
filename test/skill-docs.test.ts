@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 const blocks = read("../src/blocks.ts");
 const specBlocks = read("../src/spec-blocks.ts");
-const planSkill = read("../skills/visual-plan/SKILL.md");
+const docSkill = read("../skills/visual-doc/SKILL.md");
 const recapSkill = read("../skills/visual-recap/SKILL.md");
 const specSkill = read("../skills/visual-spec/SKILL.md");
 const atlasBlocks = read("../src/atlas-blocks.ts");
@@ -19,12 +19,12 @@ const atlasBlockTypes = [...new Set([...atlasBlocks.matchAll(/\btype:\s*"([^"]+)
   .filter((t) => t !== "diagram");
 
 describe("skill docs stay in sync", () => {
-  it("documents every Block type in the visual-plan skill", () => {
+  it("documents every Block type in the visual-doc skill", () => {
     expect(blockTypes.length).toBeGreaterThanOrEqual(8);
     for (const t of blockTypes) {
       // Require the backtick-quoted form (e.g. `prose`) so the check is non-vacuous —
       // a bare substring like "api" or "schema" can match incidentally in examples/prose.
-      expect(planSkill, `visual-plan SKILL.md must document block type \`${t}\``).toContain(`\`${t}\``);
+      expect(docSkill, `visual-doc SKILL.md must document block type \`${t}\``).toContain(`\`${t}\``);
     }
   });
 
@@ -57,7 +57,7 @@ describe("skill docs stay in sync", () => {
   });
 
   it("all skills have name + description frontmatter", () => {
-    for (const md of [planSkill, recapSkill, specSkill, atlasSkill]) {
+    for (const md of [docSkill, recapSkill, specSkill, atlasSkill]) {
       expect(md.startsWith("---")).toBe(true);
       expect(md).toMatch(/\nname:\s*\S+/);
       expect(md).toMatch(/\ndescription:\s*\S+/);
@@ -73,7 +73,7 @@ describe("skill docs stay in sync", () => {
   });
 
   it("both skills reference the shared diagram catalog", () => {
-    for (const md of [planSkill, recapSkill]) {
+    for (const md of [docSkill, recapSkill]) {
       expect(md).toContain("skills/shared/diagrams.md");
     }
   });

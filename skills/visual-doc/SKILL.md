@@ -1,9 +1,9 @@
 ---
-name: visual-plan
-description: Use when the user asks to turn a spec, plan, or design markdown into a self-contained, visually readable HTML document grounded in the real codebase — with diagrams, a file tree, annotated code, and open questions.
+name: visual-doc
+description: Use when the user asks to turn a spec, plan, or design markdown into a self-contained, visually readable HTML document grounded in the real codebase — with diagrams, a file tree, annotated code, and open questions. The general-purpose illustrated-doc renderer (for an approval-focused design spec use visual-spec; for a code change use visual-recap).
 ---
 
-# Visual Plan
+# Visual Doc
 
 Turn a spec/plan into a single self-contained, hand-drawn-styled HTML document by authoring
 a typed block array and rendering it. Unlike the recap (which is automatic), you compose the
@@ -24,13 +24,13 @@ blocks — so ground every reference in the real repo.
 5. **Render it** from the tool directory:
 
        cd "$VISUAL_SKILLS_DIR"
-       npx tsx bin/plan.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "<Title>" \
+       npx tsx bin/doc.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "<Title>" \
          --source "<source path or label>" --out <ABSOLUTE_OUT_DIR>
 
-   `--out` is a *directory* (e.g. `<repo>/.visual/plans/<label>`, absolute path); the HTML
-   (`plan.html`) and any `.excalidraw` sidecars are written together inside it.
+   `--out` is a *directory* (e.g. `<repo>/.visual/docs/<label>`, absolute path); the HTML
+   (`doc.html`) and any `.excalidraw` sidecars are written together inside it.
 
-6. **Open it:** `open <ABSOLUTE_OUT_DIR>/plan.html` (macOS), else report the path.
+6. **Open it:** `open <ABSOLUTE_OUT_DIR>/doc.html` (macOS), else report the path.
 
 ## Content -> block mapping
 
@@ -107,6 +107,6 @@ for visual-recap when the subject is a code change rather than a plan.
 ## Example
 
     cd "$VISUAL_SKILLS_DIR"
-    npx tsx bin/plan.ts --blocks /tmp/plan-blocks.json --title "Payments migration" \
-      --source docs/specs/payments.md --out /Users/me/Projects/app/.visual/plans/payments
-    open /Users/me/Projects/app/.visual/plans/payments/plan.html
+    npx tsx bin/doc.ts --blocks /tmp/plan-blocks.json --title "Payments migration" \
+      --source docs/specs/payments.md --out /Users/me/Projects/app/.visual/docs/payments
+    open /Users/me/Projects/app/.visual/docs/payments/doc.html

@@ -10,12 +10,12 @@ self-contained, hand-drawn-styled HTML document grounded in the real repo.
 
 ## Usage
 
-`--out` is a per-doc **folder**: the tool writes `plan.html` / `recap.html` plus any
+`--out` is a per-doc **folder**: the tool writes `doc.html` / `recap.html` plus any
 `.excalidraw` sidecars together inside it (a trailing `.html` is stripped for convenience).
 
-Plan (hand-authored blocks):
+Doc (hand-authored blocks):
 
-    npx tsx bin/plan.ts --blocks blocks.json --title "My Plan" --out .visual/plans/x   # -> .visual/plans/x/plan.html
+    npx tsx bin/doc.ts --blocks blocks.json --title "My Doc" --out .visual/docs/x   # -> .visual/docs/x/doc.html
 
 Recap (from a git target):
 
@@ -25,10 +25,10 @@ Recap (from a git target):
 
 Every recap includes a synthesized summary and a "where it fits" dependency graph. To
 enrich it with an agent-authored behavioral diagram, emit the gathered blocks as JSON,
-augment them, and render via the plan CLI (this is what the `visual-recap` skill does):
+augment them, and render via the doc CLI (this is what the `visual-recap` skill does):
 
     npx tsx bin/recap.ts --repo /path/to/repo --commit <sha> --emit-blocks blocks.json
-    npx tsx bin/plan.ts --blocks blocks.json --out .visual/recaps/x   # -> .visual/recaps/x/plan.html
+    npx tsx bin/doc.ts --blocks blocks.json --out .visual/recaps/x   # -> .visual/recaps/x/doc.html
 
 ## Optional: editable Excalidraw diagrams
 
@@ -48,7 +48,7 @@ Install the skills once so Claude Code can discover them from any repo:
 
     npm run skills:install
 
-This symlinks `visual-recap` / `visual-plan` / `visual-spec` / `visual-atlas` into
+This symlinks `visual-recap` / `visual-doc` / `visual-spec` / `visual-atlas` into
 `~/.claude/skills/` **and stamps each `SKILL.md`'s `VISUAL_SKILLS_DIR` to this clone**, so the
 skills work from wherever you cloned the repo — no hand-editing of paths after a clone. (It's
 idempotent: a `SKILL.md` already pointing here is left untouched.) To install into a different
@@ -58,13 +58,13 @@ Claude config root, pass `--dir`:
 
 After that, ask Claude Code to "make a visual atlas of this codebase" to trigger `visual-atlas`,
 "visualize this PR" / "make a visual recap of <commit>" for `visual-recap`, or "turn this spec
-into a visual plan" for `visual-plan`. The skills invoke the CLIs above; their tool path is the
+or plan markdown into a readable doc" for `visual-doc`. The skills invoke the CLIs above; their tool path is the
 `VISUAL_SKILLS_DIR` constant near the top of each `SKILL.md`, set automatically by the installer.
 
 ## Scope
 Implemented: D2 floor + assembler + recap gatherer (Prisma+tRPC adapter) (M0/M1),
 Shiki syntax highlighting + full renderer set (M2), the opt-in editable Excalidraw
-upgrade with API-surface + plan-mermaid diagram producers (M3), and the `visual-plan` /
+upgrade with API-surface + plan-mermaid diagram producers (M3), and the `visual-doc` /
 `visual-recap` Claude Code skills (M4), and contextual recaps — synthesized summary +
 "where it fits" dependency graph + `--emit-blocks` enrichment with agent-selected
 behavioral diagrams (M6), and review-narrative recaps — agent-authored "Summary",

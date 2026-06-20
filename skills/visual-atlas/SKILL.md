@@ -1,6 +1,6 @@
 ---
 name: visual-atlas
-description: Use when the user asks to map, document, or "make sense of" a whole codebase's domains and architecture as a standing self-contained HTML atlas — an onboarding map of the system plus per-domain deep-dive/reference pages. For orienting newcomers and as a lookup reference; not a single change (visual-recap), proposal (visual-spec), or plan (visual-plan), but the architecture that already exists.
+description: Use when the user asks to map, document, or "make sense of" a whole codebase's domains and architecture as a standing self-contained HTML atlas — an onboarding map of the system plus per-domain deep-dive/reference pages. For orienting newcomers and as a lookup reference; not a single change (visual-recap), proposal (visual-spec), or plan (visual-doc), but the architecture that already exists.
 ---
 
 # Visual Atlas

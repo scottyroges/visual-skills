@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "bin": {
-    "visual-plan": "bin/plan.ts",
+    "visual-doc": "bin/doc.ts",
     "visual-recap": "bin/recap.ts",
     "visual-spec": "bin/spec.ts",
     "visual-atlas": "bin/atlas.ts"
   },
   "scripts": {
-    "plan": "tsx bin/plan.ts",
+    "doc": "tsx bin/doc.ts",
     "recap": "tsx bin/recap.ts",
     "spec": "tsx bin/spec.ts",
     "atlas": "tsx bin/atlas.ts",
