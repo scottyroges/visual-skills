@@ -17,6 +17,24 @@ describe("importsOf", () => {
   it("returns an empty array for source with no imports", () => {
     expect(importsOf("const x = 1;\nexport const y = x + 1;")).toEqual([]);
   });
+
+  it("valueOnly drops fully type-only import/export decls but keeps mixed, value, side-effect, dynamic", () => {
+    const src = [
+      `import type { T } from "./types.js";`,        // type-only — dropped
+      `export type { U } from "./more-types.js";`,   // type-only re-export — dropped
+      `import { fn, type V } from "./mixed.js";`,     // mixed (has a value) — kept
+      `import { val } from "./value.js";`,            // value — kept
+      `import "./side-effect.js";`,                   // side-effect — kept
+      `const z = await import("./dyn.js");`,          // dynamic — kept
+    ].join("\n");
+    expect(importsOf(src, { valueOnly: true }).sort()).toEqual(
+      ["./dyn.js", "./mixed.js", "./side-effect.js", "./value.js"].sort(),
+    );
+    // default (no opts) still includes the type-only specifiers
+    expect(importsOf(src).sort()).toEqual(
+      ["./dyn.js", "./mixed.js", "./more-types.js", "./side-effect.js", "./types.js", "./value.js"].sort(),
+    );
+  });
 });
 
 describe("exportsOf", () => {

@@ -1,18 +1,23 @@
 import ts from "typescript";
 
-/** Extract module specifiers from import/export-from/dynamic-import in TS/JS source. */
-export function importsOf(source: string): string[] {
+/**
+ * Extract module specifiers from import/export-from/dynamic-import in TS/JS source.
+ * With `valueOnly`, fully type-only declarations (`import type … from`, `export type … from`)
+ * are skipped — they carry no runtime dependency, so they shouldn't count as architectural
+ * edges. A mixed import (`import { type T, value }`) still counts (it imports a value).
+ */
+export function importsOf(source: string, opts: { valueOnly?: boolean } = {}): string[] {
   const sf = ts.createSourceFile("f.ts", source, ts.ScriptTarget.Latest, true);
   const specs: string[] = [];
   const visit = (n: ts.Node): void => {
     if (ts.isImportDeclaration(n) && ts.isStringLiteral(n.moduleSpecifier)) {
-      specs.push(n.moduleSpecifier.text);
+      if (!(opts.valueOnly && n.importClause?.isTypeOnly)) specs.push(n.moduleSpecifier.text);
     } else if (
       ts.isExportDeclaration(n) &&
       n.moduleSpecifier &&
       ts.isStringLiteral(n.moduleSpecifier)
     ) {
-      specs.push(n.moduleSpecifier.text);
+      if (!(opts.valueOnly && n.isTypeOnly)) specs.push(n.moduleSpecifier.text);
     } else if (
       ts.isCallExpression(n) &&
       n.expression.kind === ts.SyntaxKind.ImportKeyword &&
