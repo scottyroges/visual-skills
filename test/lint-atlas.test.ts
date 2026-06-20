@@ -36,7 +36,7 @@ describe("lintAtlas", () => {
 
 describe("lintDomain", () => {
   it("is clean on the canonical domain page", () => {
-    expect(lintDomain(load("domain-brain.json"))).toEqual([]);
+    expect(lintDomain(load("domain-brain/domain-brain.json"))).toEqual([]);
   });
 
   it("warns on a bare domain: missing tldr, components, seams", () => {

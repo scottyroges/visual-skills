@@ -246,7 +246,7 @@
           "connections": [
             {
               "dir": "reads",
-              "body": "`SimPlayerStats` from [sim](domain-sim.html) via `gameCompleted`"
+              "body": "`SimPlayerStats` from [sim](../domain-sim/domain-sim.html) via `gameCompleted`"
             },
             {
               "dir": "writes",
@@ -397,7 +397,7 @@
           "connections": [
             {
               "dir": "consumes",
-              "body": "`ArcSeed`s queued by [sim](domain-sim.html) / [brain](domain-brain.html) mutations; tags from the [observer](#c-observer)"
+              "body": "`ArcSeed`s queued by [sim](../domain-sim/domain-sim.html) / [brain](../domain-brain/domain-brain.html) mutations; tags from the [observer](#c-observer)"
             },
             {
               "dir": "dispatches",
@@ -405,7 +405,7 @@
             },
             {
               "dir": "calls",
-              "body": "[brain](domain-brain.html#c-agent) for arc-decision resolution (`pickArcOption`)"
+              "body": "[brain](../domain-brain/domain-brain.html#c-agent) for arc-decision resolution (`pickArcOption`)"
             }
           ]
         },
@@ -439,11 +439,11 @@
           "connections": [
             {
               "dir": "called by",
-              "body": "[sim](domain-sim.html#c-events) — the `km/yield` hook"
+              "body": "[sim](../domain-sim/domain-sim.html#c-events) — the `km/yield` hook"
             },
             {
               "dir": "uses",
-              "body": "[brain](domain-brain.html) archetype preferences to pick"
+              "body": "[brain](../domain-brain/domain-brain.html) archetype preferences to pick"
             }
           ]
         },
@@ -630,12 +630,12 @@
         {
           "name": "sim",
           "path": "lib/sim",
-          "href": "domain-sim.html"
+          "href": "../domain-sim/domain-sim.html"
         },
         {
           "name": "brain",
           "path": "lib/brain",
-          "href": "domain-brain.html"
+          "href": "../domain-brain/domain-brain.html"
         },
         {
           "name": "profiles",

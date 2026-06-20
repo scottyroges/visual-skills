@@ -51,7 +51,7 @@ function domainTopbar(o: DomainOpts): string {
   if (o.count) chips.push(chip("chip-count", o.count));
   if (o.depends) { chips.push(`<span class="topbar-sep" aria-hidden="true"></span>`); chips.push(chip("chip-stat", `depends on ${o.depends}`)); }
   return `<header class="topbar" role="banner">${TOGGLE}` +
-    `<a class="topbar-back" href="${escapeHtml(o.backHref ?? "atlas.html")}"><span aria-hidden="true">&larr;</span> Atlas</a>` +
+    `<a class="topbar-back" href="${escapeHtml(o.backHref ?? "../atlas.html")}"><span aria-hidden="true">&larr;</span> Atlas</a>` +
     `<span class="topbar-title">${escapeHtml(o.title)}</span><div class="topbar-meta">${chips.join("")}</div></header>`;
 }
 

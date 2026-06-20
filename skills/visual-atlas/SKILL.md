@@ -1,6 +1,6 @@
 ---
 name: visual-atlas
-description: Use when the user asks to map, document, or "make sense of" a whole codebase's domains and architecture as a standing self-contained HTML atlas — an onboarding map of the system plus per-domain deep-dive/reference pages. For orienting newcomers and as a lookup reference; not a single change (visual-recap), proposal (visual-spec), or plan (visual-plan), but the architecture that already exists.
+description: Use when the user asks to map, document, or "make sense of" a whole codebase's domains and architecture as a standing self-contained HTML atlas — an onboarding map of the system plus per-domain deep-dive/reference pages. For orienting newcomers and as a lookup reference; not a single change (visual-recap), proposal (visual-spec), or plan (visual-doc), but the architecture that already exists.
 ---
 
 # Visual Atlas
@@ -59,11 +59,20 @@ If any of these is true, the atlas is **not done** — keep going:
 ## Workflow (three modes)
 
 `bin/atlas.ts` has three operation modes. The artifact set lives in `--out` (a *directory*, absolute
-path — e.g. `<repo>/.atlas`), all committable and re-renderable:
+path — e.g. `<repo>/.visual/atlas`), all committable and re-renderable. **Each domain gets its own
+folder** so its diagram sidecars stay self-contained (no cross-domain collisions):
 
-- `atlas.domains.json` — the grouping config (human-owned source of truth).
-- `atlas.json` + `domain-<slug>.json` — the page blocks.
-- `atlas.html` + `domain-<slug>.html` — the rendered, cross-linked output.
+    .visual/atlas/
+      atlas.domains.json        # the grouping config (human-owned source of truth)
+      atlas.json  atlas.html    # the atlas page blocks + rendered output
+      <atlas diagrams>.excalidraw
+      domain-<slug>/
+        domain-<slug>.json  domain-<slug>.html
+        <that domain's diagrams>.excalidraw
+
+Cross-page links follow the layout: an atlas tile → `domain-<slug>/domain-<slug>.html`; a domain's
+"← Atlas" back-link → `../atlas.html`; a domain→domain link (seams/connections) →
+`../domain-<other>/domain-<other>.html#anchor`.
 
 ### 1. Full scan (the main path)
 
@@ -85,7 +94,7 @@ path — e.g. `<repo>/.atlas`), all committable and re-renderable:
    a small or already feature-foldered repo, **rewrite the domains as feature/bounded-context slices**
    with file-precise `globs` (e.g. `["src/server/routers/picks*.ts", "src/server/services/pick*.ts"]`)
    and re-run the scan. Regrouping is deterministic; the `globs` are the human lever. After a
-   regroup, **delete any orphaned `domain-<slug>.json`** for domains you renamed or removed — the
+   regroup, **delete any orphaned `domain-<slug>/` folder** for domains you renamed or removed — the
    scan warns about them (it never deletes files), and a stale one would still render a dead page.
    You may write `atlas.domains.json` by hand with just `slug` / `name` / `globs`; the scanner fills
    in the resolved `modules`.
@@ -184,12 +193,12 @@ Don't pad — but a repo with several real domains warrants a page per domain. A
 
     cd "$VISUAL_SKILLS_DIR"
     # 1. scan
-    npx tsx bin/atlas.ts --repo /Users/me/Projects/app --out /Users/me/Projects/app/.atlas
+    npx tsx bin/atlas.ts --repo /Users/me/Projects/app --out /Users/me/Projects/app/.visual/atlas
     # 2-4. curate atlas.domains.json; read the code; enrich the draft JSON per the catalog
     # 5. re-render + open, fix warnings
-    npx tsx bin/atlas.ts --all /Users/me/Projects/app/.atlas --out /Users/me/Projects/app/.atlas
-    open /Users/me/Projects/app/.atlas/atlas.html
+    npx tsx bin/atlas.ts --all /Users/me/Projects/app/.visual/atlas --out /Users/me/Projects/app/.visual/atlas
+    open /Users/me/Projects/app/.visual/atlas/atlas.html
 
 The canonical reference build (what good looks like):
 
-    $VISUAL_SKILLS_DIR/example/atlas-sports-rpg/   (atlas.json + domain-*.json → *.html)
+    $VISUAL_SKILLS_DIR/example/atlas-sports-rpg/   (atlas.{json,html} + domain-<slug>/domain-<slug>.{json,html})

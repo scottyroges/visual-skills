@@ -58,7 +58,7 @@ If any of these is true, the page is **not done** — keep going:
 ## Workflow (one required path)
 
 1. **Identify** the spec file (absolute path) and the output folder (`--out` is a *directory*, e.g.
-   `<repo>/.specs/<short-label>` or alongside the spec, absolute path).
+   `<repo>/.visual/specs/<short-label>` or alongside the spec, absolute path).
 
 2. **Read the whole spec AND the code/specs it references.** Open the referenced source modules and
    sibling specs so every section is grounded in what the change actually does — do not work from the
@@ -183,9 +183,9 @@ See the catalog for the exact field shape of every block.
     # 2–5. read the spec + referenced code; author spec.json per the catalog
     # 6. render + open
     npx tsx bin/spec.ts \
-      --blocks /Users/me/Projects/app/.specs/auth-rework/spec.json \
-      --out    /Users/me/Projects/app/.specs/auth-rework
-    open /Users/me/Projects/app/.specs/auth-rework/spec.html
+      --blocks /Users/me/Projects/app/.visual/specs/auth-rework/spec.json \
+      --out    /Users/me/Projects/app/.visual/specs/auth-rework
+    open /Users/me/Projects/app/.visual/specs/auth-rework/spec.html
     # 7. fix any warnings the render printed, then re-render
 
 The canonical reference build (what good looks like):

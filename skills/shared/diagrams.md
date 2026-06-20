@@ -1,6 +1,7 @@
 # Diagram Catalog
 
-Shared selection guide + tested recipes for the `visual-plan` and `visual-recap` skills. Every
+Shared selection guide + tested recipes for the visual-skills (`visual-doc`, `visual-recap`,
+`visual-spec`, `visual-atlas`). Every
 recipe's `d2` is the dependable render floor; entries marked **editable: yes** also carry a
 `mermaid` source so the optional Excalidraw upgrade produces an editable scene.
 

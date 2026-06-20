@@ -7,8 +7,13 @@ that links down to per-domain `domain-<slug>.html` deep-dive + reference pages. 
 [Spec-Component Catalog](spec-components.md) (whose card vocabulary the domain pages reuse).
 
 **Worked reference:** [`example/atlas-sports-rpg/`](../../example/atlas-sports-rpg/) — `atlas.json →
-atlas.html` plus `domain-{brain,sim,story}.json → domain-*.html`. The canonical "what good looks
-like" build; every recipe below is lifted from it.
+atlas.html` plus a `domain-<slug>/` folder per domain (`domain-<slug>.json → domain-<slug>.html`).
+The canonical "what good looks like" build; every recipe below is lifted from it.
+
+**Layout.** The atlas page sits at the top of the out dir; **each domain lives in its own
+`domain-<slug>/` folder** holding its page, JSON, and diagram sidecars — so two domains' editable
+`.excalidraw` scenes never collide. Cross-page links account for the nesting (see the recipes:
+tiles link `domain-<slug>/…`, back-links and cross-domain links go `../`).
 
 > **Vocabulary is generic.** The component/section names here (`spine`, `domain-map`, tiles,
 > `seams`, "Key files", "Key exports") are the reusable atlas grammar and stay generic on every
@@ -154,7 +159,7 @@ header gives context). On the atlas it's the **spine** (the runtime loop); on a 
 
 The grid that is simultaneously the onboarding map and the reference index. Each tile:
 
-    <a class="domain-tile layer-engine" href="domain-sim.html">
+    <a class="domain-tile layer-engine" href="domain-sim/domain-sim.html">
       <div class="domain-tile-head"><span class="domain-tile-name">sim</span>
         <span class="layer-chip layer-engine">Engine</span></div>
       <div class="domain-tile-path">lib/sim</div>
@@ -194,7 +199,8 @@ A `ComponentDeep` is the heart of the reference layer:
       "codeHtml": "…" }               // optional raw highlighted code block
 
 Connections are where a domain page earns its keep — link to neighbor pages by anchor, e.g.
-`[sim](domain-sim.html#c-contracts)`.
+`[sim](../domain-sim/domain-sim.html#c-contracts)` (each domain is its own folder, so cross-domain
+links go up one level: `../domain-<other>/domain-<other>.html#anchor`).
 
 ### Data owned (`owns`)
 
@@ -209,7 +215,7 @@ The bounded-context edges — what the domain exposes and what it leans on:
 
     { "type": "seams", "id": "seams", "title": "Seams", "intro": "…",
       "exposes": [{ "api": "computeGMAssessment()", "note": "…" }],
-      "depends": [{ "name": "sim", "path": "lib/sim", "href": "domain-sim.html" }],
+      "depends": [{ "name": "sim", "path": "lib/sim", "href": "../domain-sim/domain-sim.html" }],
       "note": "…" }
 
 A `depends` entry with an `href` links to that neighbor's page; without one it renders flat (a

@@ -139,7 +139,7 @@ export function buildAtlasDraft(
     purpose: "",                                   // agent fills
     meta: [{ key: `~${d.modules.length}`, value: "files" }],
     deps: [...(edges.get(d.slug) ?? [])].sort(),
-    href: `domain-${d.slug}.html`,
+    href: `domain-${d.slug}/domain-${d.slug}.html`,   // each domain is its own folder
   }));
 
   const blocks: AtlasBlock[] = [
@@ -213,7 +213,7 @@ export function buildDomainDraft(
         mermaid: ["graph LR", ...groups.map((g, i) => `  a${i}["${g.name}"]`)].join("\n") } },
     { type: "depth", id: "depth", title: "In depth", components },
     { type: "seams", id: "seams", title: "Seams", exposes,
-      depends: deps.map((s) => ({ name: s, path: commonPath(config.domains.find((d) => d.slug === s)!.modules, s), href: `domain-${s}.html` })) },
+      depends: deps.map((s) => ({ name: s, path: commonPath(config.domains.find((d) => d.slug === s)!.modules, s), href: `../domain-${s}/domain-${s}.html` })) },
   ];
 
   return {

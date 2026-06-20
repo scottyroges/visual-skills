@@ -1,6 +1,6 @@
 // render-diagram.ts
 //
-// Dual diagram renderer for the visual-plan / visual-recap skills.
+// Dual diagram renderer for the visual-doc / visual-recap skills.
 //
 //   D2 sketch  = the dependable floor. Renders every diagram type in a
 //                hand-drawn style via the `d2` binary. No browser, fast.

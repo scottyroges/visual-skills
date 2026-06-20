@@ -1,9 +1,9 @@
 ---
-name: visual-plan
-description: Use when the user asks to turn a spec, plan, or design markdown into a self-contained, visually readable HTML document grounded in the real codebase — with diagrams, a file tree, annotated code, and open questions.
+name: visual-doc
+description: Use when the user asks to turn a spec, plan, or design markdown into a self-contained, visually readable HTML document grounded in the real codebase — with diagrams, a file tree, annotated code, and open questions. The general-purpose illustrated-doc renderer (for an approval-focused design spec use visual-spec; for a code change use visual-recap).
 ---
 
-# Visual Plan
+# Visual Doc
 
 Turn a spec/plan into a single self-contained, hand-drawn-styled HTML document by authoring
 a typed block array and rendering it. Unlike the recap (which is automatic), you compose the
@@ -24,13 +24,13 @@ blocks — so ground every reference in the real repo.
 5. **Render it** from the tool directory:
 
        cd "$VISUAL_SKILLS_DIR"
-       npx tsx bin/plan.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "<Title>" \
+       npx tsx bin/doc.ts --blocks <ABSOLUTE_BLOCKS_JSON> --title "<Title>" \
          --source "<source path or label>" --out <ABSOLUTE_OUT_DIR>
 
-   `--out` is a *directory*; the HTML (`plan.html`) and any `.excalidraw` sidecars are
-   written together inside it.
+   `--out` is a *directory* (e.g. `<repo>/.visual/docs/<label>`, absolute path); the HTML
+   (`doc.html`) and any `.excalidraw` sidecars are written together inside it.
 
-6. **Open it:** `open <ABSOLUTE_OUT_DIR>/plan.html` (macOS), else report the path.
+6. **Open it:** `open <ABSOLUTE_OUT_DIR>/doc.html` (macOS), else report the path.
 
 ## Content -> block mapping
 
@@ -40,7 +40,7 @@ compile-tested recipes, consult the shared catalog: `$VISUAL_SKILLS_DIR/skills/s
 Color diagrams with the catalog's semantic palette (the "Color vocabulary" section) — mark the
 `changed`/subject node and tag actors / external systems / datastores by role.
 
-Primary blocks you author for plans:
+Primary blocks you author for a doc:
 
 - **narrative / sections -> `prose`** (Markdown; GitHub-flavored). A fenced `mermaid`
   flowchart inside prose is auto-promoted to a diagram (and becomes editable if the
@@ -75,7 +75,7 @@ Primary blocks you author for plans:
 
 - **grouping -> `group`** — a titled, collapsible set of related blocks; add an optional `description`
   (markdown) summarizing what the group covers. Shape: `{ "type":"group", "id":"…", "title":"…", "blocks":[ … ] }` (one level deep). Used mainly by recaps to order diffs into a
-  narrative; available for plans too.
+  narrative; available for any doc too.
 
 - **multiple views of one thing -> `tabs`** — a CSS-only tab switcher (no JS) presenting
   complementary diagrams as switchable panels. Each tab holds ONE block, one level deep (a tab
@@ -87,7 +87,7 @@ Primary blocks you author for plans:
 
 - **lead summary -> `overview`** — a scannable callout placed first: a one-line `headline`, short
   `points` (each `href` linking to a section by `#id`), and an optional lead `diagram`
-  (`DiagramBlock` or `tabs`) rendered before the points. Author it for larger plans.
+  (`DiagramBlock` or `tabs`) rendered before the points. Author it for larger docs.
 
       { "type": "overview", "id": "overview", "headline": "Add PayPal capture",
         "points": [ { "text": "new `capture` [route](#flow)" } ],
@@ -107,6 +107,6 @@ for visual-recap when the subject is a code change rather than a plan.
 ## Example
 
     cd "$VISUAL_SKILLS_DIR"
-    npx tsx bin/plan.ts --blocks /tmp/plan-blocks.json --title "Payments migration" \
-      --source docs/specs/payments.md --out /tmp/payments-plan
-    open /tmp/payments-plan/plan.html
+    npx tsx bin/doc.ts --blocks /tmp/doc-blocks.json --title "Payments migration" \
+      --source docs/specs/payments.md --out /Users/me/Projects/app/.visual/docs/payments
+    open /Users/me/Projects/app/.visual/docs/payments/doc.html

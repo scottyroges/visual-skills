@@ -92,7 +92,7 @@ describe("buildAtlasDraft", () => {
     const index = draft.blocks.find((b) => b.type === "domain-index") as any;
     expect(index.tiles.map((t: any) => t.name)).toEqual(["sim", "brain", "api"]);
     const sim = index.tiles.find((t: any) => t.name === "sim");
-    expect(sim.href).toBe("domain-sim.html");
+    expect(sim.href).toBe("domain-sim/domain-sim.html");
     expect(sim.deps).toEqual(["brain"]);
     expect(sim.meta[0]).toEqual({ key: "~2", value: "files" });
     expect(sim.purpose).toBe(""); // placeholder for the agent
@@ -123,7 +123,7 @@ describe("buildDomainDraft", () => {
 
     const seams = draft.blocks.find((b) => b.type === "seams") as any;
     expect(seams.depends.map((x: any) => x.name)).toEqual(["brain"]);
-    expect(seams.depends[0].href).toBe("domain-brain.html");
+    expect(seams.depends[0].href).toBe("../domain-brain/domain-brain.html");
   });
 
   it("never emits an owns block; throws on an unknown slug", async () => {

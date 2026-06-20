@@ -2,12 +2,14 @@
 // visual-atlas CLI.
 //   atlas --repo <ABS> --out <ABS dir>              # full scan: config + drift + draft-when-absent + render
 //   atlas --repo <ABS> --domain <slug> --out <DIR>  # single domain: rescan + regenerate that page
-//   atlas --all <ABS dir> --out <ABS dir>           # render every committed atlas.json + domain-*.json
+//   atlas --all <ABS dir> --out <ABS dir>           # render the atlas + every domain-<slug>/ folder
 //   atlas --blocks <ABS file.json> --out <ABS dir>  # render one committed page
 // Add --force to overwrite existing draft JSON (default: never clobber authored prose).
+// Layout: atlas.{html,json} + atlas.domains.json at the top; each domain in its own
+// domain-<slug>/ folder (domain-<slug>.{html,json} + that domain's diagram sidecars).
 import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { join, isAbsolute, basename } from "node:path";
+import { join, isAbsolute, basename, dirname } from "node:path";
 import { parseArgs } from "node:util";
 import { assembleAtlas, assembleDomain } from "../src/assemble-atlas.js";
 import type { AtlasBlock, AtlasOpts, DomainOpts } from "../src/atlas-blocks.js";
@@ -28,24 +30,48 @@ async function renderFile(file: string, outDir: string): Promise<{ outName: stri
   const kind = raw["kind"] as string;
   const warnings: string[] = [];
   const onWarn = (m: string) => warnings.push(m);
-  let html: string, outName: string;
+  // A domain page lives in its own folder so its diagram sidecars stay self-contained; the atlas
+  // page sits at the top of outDir. pageDir is both where the HTML/JSON land and the diagram outDir.
+  let html: string, outName: string, jsonName: string, pageDir: string, rel: string;
   if (kind === "domain") {
     const d = doc as DomainDoc;
+    pageDir = join(outDir, `domain-${d.slug}`);
+    await mkdir(pageDir, { recursive: true });
     const o: DomainOpts = { ...d, title: d.title ?? d.slug, layer: d.layer ?? "engine",
-      layerLabel: d.layerLabel ?? "Engine", outDir, onWarn, generator: d.generator ?? "visual-skills · visual-atlas" };
+      layerLabel: d.layerLabel ?? "Engine", outDir: pageDir, onWarn, generator: d.generator ?? "visual-skills · visual-atlas" };
     html = await assembleDomain(d.blocks, o);
     outName = `domain-${d.slug}.html`;
+    jsonName = `domain-${d.slug}.json`;
+    rel = `domain-${d.slug}/${outName}`;
   } else {
     if (kind !== "atlas") console.warn(`⚠ ${basename(file)}: unknown kind "${kind}", rendering as atlas`);
     const a = doc as AtlasDoc;
-    const o: AtlasOpts = { ...a, title: a.title ?? "System Atlas", outDir, onWarn, generator: a.generator ?? "visual-skills · visual-atlas" };
+    pageDir = outDir;
+    const o: AtlasOpts = { ...a, title: a.title ?? "System Atlas", outDir: pageDir, onWarn, generator: a.generator ?? "visual-skills · visual-atlas" };
     html = await assembleAtlas(a.blocks, o);
     outName = "atlas.html";
+    jsonName = "atlas.json";
+    rel = outName;
   }
-  await writeFile(join(outDir, outName), html);
-  await writeFile(join(outDir, basename(file)), JSON.stringify(doc, null, 2));
+  await writeFile(join(pageDir, outName), html);
+  await writeFile(join(pageDir, jsonName), JSON.stringify(doc, null, 2));
   for (const w of warnings) console.warn(`⚠ ${basename(file)}: ${w}`);
-  return { outName, warnings: warnings.length };
+  return { outName: rel, warnings: warnings.length };
+}
+
+/** Discover the doc JSONs in an atlas dir: atlas.json (top) + each domain-<slug>/domain-<slug>.json. */
+async function listDocJsons(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  if (existsSync(join(dir, "atlas.json"))) out.push(join(dir, "atlas.json"));
+  const subs: string[] = [];
+  for (const e of await readdir(dir, { withFileTypes: true })) {
+    if (e.isDirectory() && e.name.startsWith("domain-")) {
+      const j = join(dir, e.name, `${e.name}.json`);
+      if (existsSync(j)) subs.push(j);
+    }
+  }
+  subs.sort();
+  return [...out, ...subs];
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -76,6 +102,7 @@ function printDrift(drift: { newModules: string[]; stalePaths: { slug: string; p
 async function writeDraftIfAbsent(outDir: string, name: string, doc: unknown, force: boolean): Promise<boolean> {
   const path = join(outDir, name);
   if (existsSync(path) && !force) return false;
+  await mkdir(dirname(path), { recursive: true });   // name may be nested (domain-<slug>/domain-<slug>.json)
   await writeFile(path, JSON.stringify(doc, null, 2));
   return true;
 }
@@ -100,9 +127,11 @@ async function main() {
       const { config: live, drift } = reconcile(config, inv.modules.map((m) => m.path));
       const liveDomain = live.domains.find((d) => d.slug === values.domain)!;
       const edges = aggregateDomainEdges(live, inv);
-      await writeFile(join(outDir, `domain-${liveDomain.slug}.json`),
-        JSON.stringify(buildDomainDraft(liveDomain.slug, live, inv, edges, { date: today() }), null, 2));
-      const { outName, warnings } = await renderFile(join(outDir, `domain-${liveDomain.slug}.json`), outDir);
+      const slugDir = join(outDir, `domain-${liveDomain.slug}`);
+      await mkdir(slugDir, { recursive: true });
+      const domJson = join(slugDir, `domain-${liveDomain.slug}.json`);
+      await writeFile(domJson, JSON.stringify(buildDomainDraft(liveDomain.slug, live, inv, edges, { date: today() }), null, 2));
+      const { outName, warnings } = await renderFile(domJson, outDir);
       console.log(`refreshed ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
       // tile-only note (do not recompute the atlas map; see spec "Resolved during review")
       console.log(`note: atlas tile for "${liveDomain.slug}" — ${liveDomain.modules.length} files, deps: ${[...(edges.get(liveDomain.slug) ?? [])].sort().join(", ") || "none"} (update atlas.json's tile if changed)`);
@@ -119,31 +148,27 @@ async function main() {
     let wrote = 0;
     if (await writeDraftIfAbsent(outDir, "atlas.json", buildAtlasDraft(config, inv, edges, { date }), !!values.force)) wrote++;
     for (const d of config.domains)
-      if (await writeDraftIfAbsent(outDir, `domain-${d.slug}.json`, buildDomainDraft(d.slug, config, inv, edges, { date }), !!values.force)) wrote++;
+      if (await writeDraftIfAbsent(outDir, `domain-${d.slug}/domain-${d.slug}.json`, buildDomainDraft(d.slug, config, inv, edges, { date }), !!values.force)) wrote++;
     console.log(`scanned ${inv.modules.length} module(s) → ${config.domains.length} domain(s); wrote ${wrote} new draft(s)`);
     printDrift(drift);
 
-    // render every present JSON (reuses --all behavior)
-    const entries = (await readdir(outDir)).filter((f) => f === "atlas.json" || (f.startsWith("domain-") && f.endsWith(".json")));
-    entries.sort((a, b) => (a === "atlas.json" ? -1 : b === "atlas.json" ? 1 : a.localeCompare(b)));
-    // Orphaned domain pages: a domain-<slug>.json with no matching domain in the (re)grouped config
+    // Orphaned domain folders: a domain-<slug>/ with no matching domain in the (re)grouped config
     // — left behind after a regroup. Warn so the human can delete it (we never delete files).
     const slugs = new Set(config.domains.map((d) => d.slug));
-    for (const f of entries) {
-      const m = /^domain-(.+)\.json$/.exec(f);
-      if (m && !slugs.has(m[1])) console.warn(`⚠ ${f}: no matching domain in atlas.domains.json (stale after a regroup? delete it)`);
+    for (const e of await readdir(outDir, { withFileTypes: true })) {
+      if (e.isDirectory() && e.name.startsWith("domain-") && !slugs.has(e.name.slice("domain-".length)))
+        console.warn(`⚠ ${e.name}/: no matching domain in atlas.domains.json (stale after a regroup? delete it)`);
     }
-    for (const f of entries) {
-      const { outName, warnings } = await renderFile(join(outDir, f), outDir);
+
+    for (const f of await listDocJsons(outDir)) {
+      const { outName, warnings } = await renderFile(f, outDir);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
     }
   } else if (values.all) {
     if (!isAbsolute(values.all)) { console.error("--all must be an absolute path"); process.exit(2); }
     await mkdir(outDir, { recursive: true });
-    const entries = (await readdir(values.all)).filter((f) => f === "atlas.json" || (f.startsWith("domain-") && f.endsWith(".json")));
-    entries.sort((a, b) => (a === "atlas.json" ? -1 : b === "atlas.json" ? 1 : a.localeCompare(b)));
-    for (const f of entries) {
-      const { outName, warnings } = await renderFile(join(values.all, f), outDir);
+    for (const f of await listDocJsons(values.all)) {
+      const { outName, warnings } = await renderFile(f, outDir);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
     }
   } else if (values.blocks) {
