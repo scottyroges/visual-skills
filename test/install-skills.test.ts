@@ -8,6 +8,7 @@ describe("skillLinks", () => {
       { source: "/repo/skills/visual-recap", target: "/home/me/.claude/skills/visual-recap" },
       { source: "/repo/skills/visual-plan", target: "/home/me/.claude/skills/visual-plan" },
       { source: "/repo/skills/visual-spec", target: "/home/me/.claude/skills/visual-spec" },
+      { source: "/repo/skills/visual-atlas", target: "/home/me/.claude/skills/visual-atlas" },
     ]);
   });
 
@@ -17,6 +18,7 @@ describe("skillLinks", () => {
       "/custom/cc/skills/visual-recap",
       "/custom/cc/skills/visual-plan",
       "/custom/cc/skills/visual-spec",
+      "/custom/cc/skills/visual-atlas",
     ]);
   });
 });

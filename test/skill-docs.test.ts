@@ -7,10 +7,16 @@ const specBlocks = read("../src/spec-blocks.ts");
 const planSkill = read("../skills/visual-plan/SKILL.md");
 const recapSkill = read("../skills/visual-recap/SKILL.md");
 const specSkill = read("../skills/visual-spec/SKILL.md");
+const atlasBlocks = read("../src/atlas-blocks.ts");
+const atlasSkill = read("../skills/visual-atlas/SKILL.md");
 
 // Discriminant literals like `type: "diagram"` across the Block interfaces.
 const blockTypes = [...new Set([...blocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))];
 const specBlockTypes = [...new Set([...specBlocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))];
+// Exclude "diagram": it's the embedded DiagramBlock primitive returned by atlasDiagramToBlock,
+// not a member of the AtlasBlock union (which is what the SKILL must document).
+const atlasBlockTypes = [...new Set([...atlasBlocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))]
+  .filter((t) => t !== "diagram");
 
 describe("skill docs stay in sync", () => {
   it("documents every Block type in the visual-plan skill", () => {
@@ -29,8 +35,29 @@ describe("skill docs stay in sync", () => {
     }
   });
 
+  it("documents every atlas block type in the visual-atlas skill", () => {
+    expect(atlasBlockTypes.length).toBeGreaterThanOrEqual(8);
+    for (const t of atlasBlockTypes) {
+      expect(atlasSkill, `visual-atlas SKILL.md must document block type \`${t}\``).toContain(`\`${t}\``);
+    }
+  });
+
+  it("visual-atlas has frontmatter and references both the catalog and diagram catalog", () => {
+    expect(atlasSkill.startsWith("---")).toBe(true);
+    expect(atlasSkill).toMatch(/\nname:\s*visual-atlas/);
+    expect(atlasSkill).toMatch(/\ndescription:\s*\S+/);
+    expect(atlasSkill).toContain("skills/shared/atlas-components.md");
+    expect(atlasSkill).toContain("skills/shared/diagrams.md");
+  });
+
+  it("visual-atlas mandates the standard and the three modes", () => {
+    for (const s of ["atlas-tldr", "domain-map", "domain-index", "seams", "--repo", "--domain", "--blocks", "atlas.domains.json"]) {
+      expect(atlasSkill, `visual-atlas SKILL.md must mention "${s}"`).toContain(s);
+    }
+  });
+
   it("all skills have name + description frontmatter", () => {
-    for (const md of [planSkill, recapSkill, specSkill]) {
+    for (const md of [planSkill, recapSkill, specSkill, atlasSkill]) {
       expect(md.startsWith("---")).toBe(true);
       expect(md).toMatch(/\nname:\s*\S+/);
       expect(md).toMatch(/\ndescription:\s*\S+/);

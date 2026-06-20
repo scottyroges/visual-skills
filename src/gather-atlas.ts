@@ -7,6 +7,11 @@ import { walkSource, moduleKey, loadAliases, resolveModule } from "./dep-graph.j
 import type { AtlasConfig } from "./atlas-config.js";
 import type { AtlasDiagram } from "./atlas-blocks.js";
 
+/** Path segments that are never their own domain in an architecture atlas — generated code and
+ *  test trees. Excluded from the inventory so they form no domain, no edges, and no drift noise.
+ *  (Build/vendor dirs are already skipped by walkSource.) */
+const NON_DOMAIN_DIRS = new Set(["generated", "__generated__", "test", "tests", "__tests__", "__mocks__"]);
+
 /** One scanned source module: resolved in-repo import keys + exported names. */
 export interface ModuleInfo {
   path: string;          // repo-relative, e.g. "lib/sim/engine.ts"
@@ -31,6 +36,8 @@ export async function scanInventory(repoRoot: string, srcRoots: string[]): Promi
       const path = `${root.replace(/\/$/, "")}/${rel}`.replace(/\\/g, "/");
       if (seen.has(path)) continue;
       seen.add(path);
+      if (path.split("/").some((seg) => NON_DOMAIN_DIRS.has(seg))) continue; // codegen / tests aren't domains
+
       const src = await readFile(join(repoRoot, path), "utf8").catch(() => null);
       if (src == null) continue;
       const imports = [...new Set(

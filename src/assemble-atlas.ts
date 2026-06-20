@@ -10,6 +10,7 @@ import {
 import { renderInlineMarkdown } from "./renderers/markdown.js";
 import { renderAll, type DiagramResult } from "./render-diagram.js";
 import { withDiagramSvgClass } from "./review/sections.js";
+import { lintAtlas, lintDomain } from "./lint-atlas.js";
 
 const mi = (s: string) => renderInlineMarkdown(s);
 
@@ -332,12 +333,14 @@ async function renderMain(blocks: AtlasBlock[], opts: { outDir?: string; excalid
 
 export async function assembleAtlas(blocks: AtlasBlock[], opts: AtlasOpts): Promise<string> {
   assertUniqueAtlasIds(blocks);
+  if (opts.onWarn) for (const w of lintAtlas(blocks)) opts.onWarn(w); // demo-standard floor: lead / map / index
   const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, atlasTopbar(opts), sidebar(blocks, opts, null, true), main);
 }
 
 export async function assembleDomain(blocks: AtlasBlock[], opts: DomainOpts): Promise<string> {
   assertUniqueAtlasIds(blocks);
+  if (opts.onWarn) for (const w of lintDomain(blocks)) opts.onWarn(w); // demo-standard floor: lead / components / arch / seams
   const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, domainTopbar(opts), sidebar(blocks, opts, opts.layer, false), main);
 }

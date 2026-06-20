@@ -20,6 +20,13 @@ describe("scanInventory", () => {
     expect(engine.imports).toEqual(["lib/brain/gm"]);
   });
 
+  it("excludes generated code and test trees from the inventory", async () => {
+    const inv = await scanInventory(REPO, ["lib"]);
+    const paths = inv.modules.map((m) => m.path);
+    expect(paths).not.toContain("lib/generated/client.ts");        // codegen
+    expect(paths).not.toContain("lib/sim/__tests__/helper.ts"); // nested test tree
+  });
+
   it("flags routers and collects prisma models", async () => {
     const inv = await scanInventory(REPO, ["lib"]);
     expect(inv.modules.find((m) => m.path === "lib/api/root.ts")!.isRouter).toBe(true);

@@ -173,6 +173,8 @@ describe("depth + owns + seams", () => {
 });
 
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { lintAtlas } from "../src/lint-atlas.js";
 const fix = (p: string) => JSON.parse(readFileSync(new URL("../example/atlas-sports-rpg/" + p, import.meta.url), "utf8"));
 
 describe("canonical regeneration (acceptance)", () => {
@@ -223,4 +225,25 @@ describe("full page assembly", () => {
     expect(html).toContain('id="c-x"');
     expect(html).toContain("diagram-svg");
   });
+});
+
+it("surfaces completeness warnings through onWarn for a bare atlas", async () => {
+  const warns: string[] = [];
+  await assembleAtlas(
+    [{ type: "domain-index", id: "domains", title: "Domains", tiles: [] }] as any,
+    { title: "Bare", onWarn: (m) => warns.push(m) },
+  );
+  expect(warns.some((w) => /atlas-tldr|start here/i.test(w))).toBe(true);
+  expect(warns.some((w) => /domain map/i.test(w))).toBe(true);
+});
+
+it("emits no completeness warnings for the canonical atlas blocks", async () => {
+  const blocks = JSON.parse(
+    readFileSync(join(__dirname, "..", "example", "atlas-sports-rpg", "atlas.json"), "utf8"),
+  ).blocks;
+  const warns: string[] = [];
+  await assembleAtlas(blocks, { title: "Canonical", onWarn: (m) => warns.push(m) });
+  // Only completeness lint should be silent; diagram-compile warnings (no d2 binary) are separate.
+  expect(lintAtlas(blocks)).toEqual([]);
+  expect(warns.filter((w) => /no atlas-tldr|no domain map|no domain-index|no purpose/i.test(w))).toEqual([]);
 });
