@@ -1,0 +1,287 @@
+{
+  "kind": "atlas",
+  "title": "System Atlas · sports-rpg",
+  "stack": "Next.js · TypeScript",
+  "count": "7 domains",
+  "date": "generated 2026-06-19",
+  "note": "in-memory state",
+  "meta": [
+    {
+      "key": "Root",
+      "value": "lib/ & app/"
+    },
+    {
+      "key": "Domains",
+      "value": "7 (3 with pages)"
+    },
+    {
+      "key": "Read first",
+      "value": "sim → brain → story"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "atlas-tldr",
+      "id": "tldr",
+      "eyebrow": "Start here",
+      "heading": "A deterministic hockey-league life-sim: generate a world, simulate seasons, let role-based AI run the franchises, and narrate what happens.",
+      "rows": [
+        {
+          "key": "What",
+          "value": "A single-player sports RPG where you watch a whole NHL-shaped league live: games, careers, trades, firings, and storylines, all simulated."
+        },
+        {
+          "key": "Shape",
+          "value": "Domain logic in `lib/` (7 domains); a Next.js `app/` reads it through an in-memory store. No database — state lives in memory for the session."
+        },
+        {
+          "key": "Spine",
+          "value": "Everything hangs off one loop: `generateLeague` → `simSeason` → (per day) brains decide & the story engine narrates → offseason → repeat."
+        }
+      ],
+      "primer": [
+        {
+          "h": "No god-mode AI — four roles each perceive their own (wrong) world.",
+          "p": "GMs, coaches, owners, and players each evaluate the league through noisy, skill-scaled perception. A weak GM literally *mis-sees* talent. This is the heart of `lib/brain`."
+        },
+        {
+          "h": "Determinism is a hard contract — same seed, same league, same season.",
+          "p": "Every random draw comes from a seeded RNG (`createRng`); nothing calls `Math.random()`. This is what makes the calibration harness and replays possible."
+        },
+        {
+          "h": "One season loop is the spine the whole codebase hangs off.",
+          "p": "If you read one function, read `simSeason`: it walks the schedule, calls the game engine, fires the brains between games, and ticks the story engine. Section 2 traces it."
+        },
+        {
+          "h": "State is ephemeral and lives in one Zustand store.",
+          "p": "There is no persistence layer yet — the generated league lives in `lib/store` for the session and the UI subscribes to it. Reference data (calibration baselines) is the only thing on disk."
+        }
+      ]
+    },
+    {
+      "type": "domain-map",
+      "id": "map",
+      "title": "The domain map",
+      "badge": "layered",
+      "intro": "The seven domains in four architectural layers. Higher layers depend on the ones below; the engine sits on the data model, intelligence and narrative sit on the engine. The test harness exercises the whole stack.",
+      "svg": "<svg class=\"diagram-svg map-svg flow-svg\" viewBox=\"0 0 1180 700\" role=\"img\" aria-label=\"Layered domain map: a Surface/State layer (app, store) over an Intelligence/Narrative layer (brain, story) over the Engine layer (sim) over the Foundation layer (world, profiles), with calibration exercising the whole stack.\">\n<defs><marker id=\"ar\" markerWidth=\"9\" markerHeight=\"9\" refX=\"7\" refY=\"3\" orient=\"auto\"><path d=\"M0 0 L7 3 L0 6 z\" fill=\"#868e96\"/></marker></defs>\n<!-- tier bars + labels -->\n<rect x=\"12\" y=\"44\" width=\"5\" height=\"116\" rx=\"2.5\" fill=\"#2563eb\"/><rect x=\"28\" y=\"48\" width=\"156\" height=\"22\" rx=\"11\" fill=\"#eff4ff\" stroke=\"#bfdbfe\"/><text x=\"106\" y=\"63\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\" fill=\"#2563eb\">SURFACE · STATE</text>\n<rect x=\"12\" y=\"180\" width=\"5\" height=\"164\" rx=\"2.5\" fill=\"#b3791a\"/><rect x=\"28\" y=\"184\" width=\"218\" height=\"22\" rx=\"11\" fill=\"#fff6e2\" stroke=\"#fde68a\"/><text x=\"137\" y=\"199\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\" fill=\"#b3791a\">INTELLIGENCE · NARRATIVE</text>\n<rect x=\"12\" y=\"384\" width=\"5\" height=\"112\" rx=\"2.5\" fill=\"#1971c2\"/><rect x=\"28\" y=\"388\" width=\"96\" height=\"22\" rx=\"11\" fill=\"#e7f1fb\" stroke=\"#bcdcf5\"/><text x=\"76\" y=\"403\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\" fill=\"#1971c2\">ENGINE</text>\n<rect x=\"12\" y=\"520\" width=\"5\" height=\"120\" rx=\"2.5\" fill=\"#6d4ed8\"/><rect x=\"28\" y=\"524\" width=\"132\" height=\"22\" rx=\"11\" fill=\"#f1ecfd\" stroke=\"#d6c8f7\"/><text x=\"94\" y=\"539\" text-anchor=\"middle\" font-size=\"11\" font-weight=\"700\" fill=\"#6d4ed8\">FOUNDATION</text>\n<!-- surface boxes -->\n<rect x=\"40\" y=\"78\" width=\"300\" height=\"60\" rx=\"8\" fill=\"#eff4ff\" stroke=\"#2563eb\"/><text x=\"58\" y=\"105\" font-size=\"15\" font-weight=\"700\" fill=\"#1b1b1b\">app/</text><text x=\"58\" y=\"124\" font-size=\"11.5\" fill=\"#495057\">Next.js routes — the UI</text>\n<rect x=\"372\" y=\"78\" width=\"300\" height=\"60\" rx=\"8\" fill=\"#eff4ff\" stroke=\"#2563eb\"/><text x=\"390\" y=\"105\" font-size=\"15\" font-weight=\"700\" fill=\"#1b1b1b\">store</text><text x=\"390\" y=\"124\" font-size=\"11.5\" fill=\"#495057\">Zustand league state</text>\n<!-- intelligence / narrative boxes -->\n<rect x=\"40\" y=\"220\" width=\"390\" height=\"104\" rx=\"9\" fill=\"#ffd43b\" stroke=\"#f08c00\" stroke-width=\"2\"/><text x=\"60\" y=\"256\" font-size=\"19\" font-weight=\"800\" fill=\"#1b1b1b\">brain</text><text x=\"60\" y=\"282\" font-size=\"12.5\" fill=\"#5a4a18\">6 role AI brains — independent, noisy perception</text><text x=\"60\" y=\"302\" font-size=\"12.5\" fill=\"#5a4a18\">GM · Coach · Owner · Player · Scout · Agent</text>\n<rect x=\"470\" y=\"220\" width=\"390\" height=\"104\" rx=\"9\" fill=\"#d3f9d8\" stroke=\"#37b24d\"/><text x=\"490\" y=\"256\" font-size=\"19\" font-weight=\"800\" fill=\"#1b1b1b\">story</text><text x=\"490\" y=\"282\" font-size=\"12.5\" fill=\"#1d6230\">turns sim events into narrative</text><text x=\"490\" y=\"302\" font-size=\"12.5\" fill=\"#1d6230\">arcs · memory · news · prose · identity</text>\n<!-- engine box -->\n<rect x=\"40\" y=\"416\" width=\"820\" height=\"64\" rx=\"9\" fill=\"#d0ebff\" stroke=\"#4dabf7\"/><text x=\"60\" y=\"445\" font-size=\"19\" font-weight=\"800\" fill=\"#1b1b1b\">sim</text><text x=\"60\" y=\"467\" font-size=\"12.5\" fill=\"#1a5a86\">deterministic game engine + multi-season loop — &lt;2 ms/game, struct-of-arrays</text>\n<!-- foundation boxes -->\n<rect x=\"40\" y=\"556\" width=\"390\" height=\"64\" rx=\"9\" fill=\"#e5dbff\" stroke=\"#9775fa\"/><text x=\"60\" y=\"585\" font-size=\"17\" font-weight=\"800\" fill=\"#1b1b1b\">world</text><text x=\"60\" y=\"606\" font-size=\"11.5\" fill=\"#4a3a78\">institutional data model + generation</text>\n<rect x=\"470\" y=\"556\" width=\"390\" height=\"64\" rx=\"9\" fill=\"#ede7fb\" stroke=\"#b197e0\"/><text x=\"490\" y=\"585\" font-size=\"17\" font-weight=\"800\" fill=\"#1b1b1b\">profiles</text><text x=\"490\" y=\"606\" font-size=\"11.5\" fill=\"#4a3a78\">skills · personality · condition</text>\n<!-- harness column -->\n<rect x=\"956\" y=\"220\" width=\"200\" height=\"400\" rx=\"9\" fill=\"#f1f3f5\" stroke=\"#adb5bd\" stroke-dasharray=\"6 4\"/><text x=\"1056\" y=\"262\" text-anchor=\"middle\" font-size=\"16\" font-weight=\"800\" fill=\"#1b1b1b\">calibration</text><text x=\"1056\" y=\"286\" text-anchor=\"middle\" font-size=\"11.5\" fill=\"#5a626c\">multi-season</text><text x=\"1056\" y=\"303\" text-anchor=\"middle\" font-size=\"11.5\" fill=\"#5a626c\">test harness</text><line x1=\"996\" y1=\"324\" x2=\"1116\" y2=\"324\" stroke=\"#ced4da\"/><text x=\"1056\" y=\"520\" text-anchor=\"middle\" font-size=\"11.5\" fill=\"#868e96\">exercises</text><text x=\"1056\" y=\"537\" text-anchor=\"middle\" font-size=\"11.5\" fill=\"#868e96\">the full stack</text>\n<!-- arrows (depends on) -->\n<line x1=\"340\" y1=\"108\" x2=\"368\" y2=\"108\" stroke=\"#868e96\" stroke-width=\"1.6\" marker-end=\"url(#ar)\"/>\n<polyline points=\"522,138 522,168 450,168 450,412\" fill=\"none\" stroke=\"#868e96\" stroke-width=\"1.6\" marker-end=\"url(#ar)\"/><text x=\"458\" y=\"300\" font-size=\"12\" fill=\"#6c757d\">drives</text>\n<line x1=\"235\" y1=\"324\" x2=\"235\" y2=\"412\" stroke=\"#868e96\" stroke-width=\"1.6\" marker-end=\"url(#ar)\"/>\n<line x1=\"665\" y1=\"324\" x2=\"665\" y2=\"412\" stroke=\"#868e96\" stroke-width=\"1.6\" marker-end=\"url(#ar)\"/>\n<line x1=\"466\" y1=\"272\" x2=\"434\" y2=\"272\" stroke=\"#868e96\" stroke-width=\"1.6\" marker-end=\"url(#ar)\"/>\n<line x1=\"235\" y1=\"480\" x2=\"235\" y2=\"552\" stroke=\"#868e96\" stroke-width=\"1.6\" marker-end=\"url(#ar)\"/><text x=\"243\" y=\"520\" font-size=\"12\" fill=\"#6c757d\">reads</text>\n<line x1=\"665\" y1=\"480\" x2=\"665\" y2=\"552\" stroke=\"#868e96\" stroke-width=\"1.6\" marker-end=\"url(#ar)\"/>\n<polyline points=\"40,300 24,300 24,588 36,588\" fill=\"none\" stroke=\"#868e96\" stroke-width=\"1.6\" marker-end=\"url(#ar)\"/>\n<!-- harness dashed arrows -->\n<line x1=\"952\" y1=\"272\" x2=\"864\" y2=\"272\" stroke=\"#adb5bd\" stroke-width=\"1.5\" stroke-dasharray=\"5 4\" marker-end=\"url(#ar)\"/>\n<line x1=\"952\" y1=\"448\" x2=\"864\" y2=\"448\" stroke=\"#adb5bd\" stroke-width=\"1.5\" stroke-dasharray=\"5 4\" marker-end=\"url(#ar)\"/>\n<line x1=\"952\" y1=\"588\" x2=\"864\" y2=\"588\" stroke=\"#adb5bd\" stroke-width=\"1.5\" stroke-dasharray=\"5 4\" marker-end=\"url(#ar)\"/>\n</svg>",
+      "legend": [
+        {
+          "label": "Surface · state",
+          "fill": "#eff4ff",
+          "stroke": "#2563eb"
+        },
+        {
+          "label": "Intelligence",
+          "fill": "#ffd43b",
+          "stroke": "#f08c00"
+        },
+        {
+          "label": "Narrative",
+          "fill": "#d3f9d8",
+          "stroke": "#37b24d"
+        },
+        {
+          "label": "Engine",
+          "fill": "#d0ebff",
+          "stroke": "#4dabf7"
+        },
+        {
+          "label": "Foundation",
+          "fill": "#e5dbff",
+          "stroke": "#9775fa"
+        },
+        {
+          "label": "Harness",
+          "fill": "#f1f3f5",
+          "stroke": "#adb5bd"
+        }
+      ],
+      "caption": "Solid arrow = **depends on**; dashed = **exercises**. Higher layers sit on the layers below."
+    },
+    {
+      "type": "diagram-section",
+      "id": "spine",
+      "title": "Spine",
+      "badge": "runtime",
+      "intro": "The one runtime flow worth memorizing. `store.simSeason()` kicks it off; the gold steps repeat for every game and every day across the 82-game season — that inner loop is where the brains and the story engine do their work — then the offseason runs and the whole thing repeats for the next season.",
+      "diagram": {
+        "id": "season-spine",
+        "kind": "flowchart",
+        "d2": "direction: right\ngen: { label: \"generateLeague(seed)\\n32 teams · rosters · schedule\" }\nseason: { label: \"simSeason()\\nwalks the schedule\" }\ngame: { label: \"simGame()\\n120 shifts → SimResult\"; class: changed }\nday: { label: \"runDayTriggers()\\nbrains decide\"; class: changed }\nstory: { label: \"storyTick.dailyTick()\\ntags · arcs · news\"; class: changed }\noff: { label: \"offseason\\ndraft · FA · retire\" }\ngen -> season\nseason -> game: per game\ngame -> day\nday -> story\nstory -> season: next day\nseason -> off: season ends\noff -> season: next season, age +1\n",
+        "mermaid": "flowchart LR\n  gen[\"generateLeague(seed)\"] --> season[\"simSeason()\"]\n  season -->|per game| game[\"simGame()\"]\n  game --> day[\"runDayTriggers()\"]\n  day --> story[\"storyTick.dailyTick()\"]\n  story -->|next day| season\n  season -->|season ends| off[\"offseason: draft, FA, retire\"]\n  off -->|next season| season\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  class game,day,story changed;",
+        "legend": [
+          {
+            "label": "Repeats per game / per day",
+            "fill": "#ffd43b",
+            "stroke": "#f08c00"
+          }
+        ],
+        "caption": "Brains never mutate the world directly — they return decisions that `sim` executes. The story engine only observes. That one-way rule keeps the loop deterministic."
+      }
+    },
+    {
+      "type": "domain-index",
+      "id": "domains",
+      "title": "The 7 domains",
+      "badge": "3 with pages",
+      "intro": "Each domain owns one slice of the simulation. Three have full deep-dive pages; the rest are mapped here and get pages on demand.",
+      "tiles": [
+        {
+          "name": "sim",
+          "path": "lib/sim",
+          "layer": "engine",
+          "layerLabel": "Engine",
+          "purpose": "The deterministic, low-allocation game engine and the multi-season loop. Resolves hockey shift-by-shift at <2 ms/game and orchestrates the whole season.",
+          "meta": [
+            {
+              "key": "~77",
+              "value": "files"
+            },
+            {
+              "key": "types",
+              "value": "`GameContext` · `SimResult`"
+            }
+          ],
+          "deps": [
+            "world",
+            "profiles",
+            "brain",
+            "story"
+          ],
+          "href": "domain-sim.html"
+        },
+        {
+          "name": "brain",
+          "path": "lib/brain",
+          "layer": "intelligence",
+          "layerLabel": "Intelligence",
+          "purpose": "Six role-based AI brains — GM, Coach, Owner, Player, Scout, Agent — each with its own skill-scaled, noisy perception. No god-mode; weak decision-makers genuinely mis-see the league.",
+          "meta": [
+            {
+              "key": "~76",
+              "value": "files"
+            },
+            {
+              "key": "types",
+              "value": "`StrategicPlan` · `GMAssessment`"
+            }
+          ],
+          "deps": [
+            "sim",
+            "world",
+            "profiles"
+          ],
+          "href": "domain-brain.html"
+        },
+        {
+          "name": "story",
+          "path": "lib/story",
+          "layer": "narrative",
+          "layerLabel": "Narrative",
+          "purpose": "Turns discrete simulation events into a living narrative: multi-beat story arcs, two-tier memory, news feeds, on-demand prose, and evolving franchise identity.",
+          "meta": [
+            {
+              "key": "~78",
+              "value": "files"
+            },
+            {
+              "key": "types",
+              "value": "`Arc` · `KMEvent` · `BeefState`"
+            }
+          ],
+          "deps": [
+            "world",
+            "sim",
+            "brain"
+          ],
+          "href": "domain-story.html"
+        },
+        {
+          "name": "world",
+          "path": "lib/world",
+          "layer": "foundation",
+          "layerLabel": "Foundation",
+          "purpose": "The institutional data model and procedural generator: franchises, teams, players, contracts, schedule, plus the identity/reputation system. The schema everything else reads.",
+          "meta": [
+            {
+              "key": "~40",
+              "value": "files"
+            },
+            {
+              "key": "types",
+              "value": "`League` · `Franchise` · `Player`"
+            }
+          ],
+          "deps": [
+            "profiles"
+          ]
+        },
+        {
+          "name": "profiles",
+          "path": "lib/profiles",
+          "layer": "foundation",
+          "layerLabel": "Foundation",
+          "purpose": "Per-entity attributes: player skills, condition, and development; coach, GM, owner, and scout personality and competencies. The numbers the brains perceive and the engine resolves.",
+          "meta": [
+            {
+              "key": "~4",
+              "value": "files"
+            },
+            {
+              "key": "types",
+              "value": "`SkaterSkills` · `GMProfile`"
+            }
+          ],
+          "deps": [
+            "world"
+          ]
+        },
+        {
+          "name": "store",
+          "path": "lib/store",
+          "layer": "surface",
+          "layerLabel": "Surface",
+          "purpose": "The in-memory Zustand league state. Its `simSeason()` action orchestrates generate → sim → standings, and the `app/` routes subscribe to it. The boundary between the simulation and the UI.",
+          "meta": [
+            {
+              "key": "~1",
+              "value": "file"
+            },
+            {
+              "key": "export",
+              "value": "`useLeagueStore`"
+            }
+          ],
+          "deps": [
+            "sim",
+            "world"
+          ]
+        },
+        {
+          "name": "calibration",
+          "path": "lib/calibration",
+          "layer": "harness",
+          "layerLabel": "Harness",
+          "purpose": "The multi-season test harness: runs N seasons from a fixed seed, collects 200+ metrics (talent spread, PP/PK, comeback rates, re-injury…) and compares them against reference baselines.",
+          "meta": [
+            {
+              "key": "~5",
+              "value": "files"
+            },
+            {
+              "key": "export",
+              "value": "`runCalibration`"
+            }
+          ],
+          "deps": [
+            "sim",
+            "world",
+            "brain",
+            "story"
+          ]
+        }
+      ]
+    }
+  ]
+}
