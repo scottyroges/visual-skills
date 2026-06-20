@@ -172,6 +172,34 @@ describe("depth + owns + seams", () => {
   });
 });
 
+import { readFileSync } from "node:fs";
+const fix = (p: string) => JSON.parse(readFileSync(new URL("../example/atlas-sports-rpg/" + p, import.meta.url), "utf8"));
+
+describe("canonical regeneration (acceptance)", () => {
+  it("atlas.json renders the spine, the domain map, and 7 tiles", async () => {
+    const doc = fix("atlas.json");
+    const html = await assembleAtlas(doc.blocks, { ...doc, title: doc.title });
+    expect(html).toContain('id="spine" class="section"');
+    expect(html).toContain("map-svg");
+    expect(html).toContain('class="progress-step-label">Spine');
+    expect((html.match(/class="domain-tile /g) || []).length).toBe(7);
+    expect(html).not.toMatch(/season spine/i);
+  });
+  it("domain-brain.json renders 6 deep sections each with files + exports + connections", async () => {
+    const doc = fix("domain-brain.json");
+    const html = await assembleDomain(doc.blocks, { ...doc, title: doc.title });
+    for (const id of ["c-gm","c-coach","c-owner","c-player","c-scout","c-agent"]) expect(html).toContain(`id="${id}"`);
+    expect((html.match(/conns-label">Key files/g) || []).length).toBe(6);
+    expect((html.match(/conns-label">Connections/g) || []).length).toBe(6);
+  });
+  it("domain-story.json renders 7 deep sections", async () => {
+    const doc = fix("domain-story.json");
+    const html = await assembleDomain(doc.blocks, { ...doc, title: doc.title });
+    for (const id of ["c-observer","c-memory","c-director","c-km","c-prose","c-news","c-identity"]) expect(html).toContain(`id="${id}"`);
+    expect((html.match(/conns-label">Connections/g) || []).length).toBe(7);
+  });
+});
+
 describe("full page assembly", () => {
   it("atlas places the rail after the tldr and renders all blocks", async () => {
     const blocks: AtlasBlock[] = [
