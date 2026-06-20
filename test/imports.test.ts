@@ -37,4 +37,14 @@ describe("exportsOf", () => {
   it("returns [] for a module with no exports", () => {
     expect(exportsOf("const x = 1;")).toEqual([]);
   });
+
+  it("captures export interface, export type, and export enum alongside value exports", () => {
+    const src = `
+      export interface Foo {}
+      export type Bar = string;
+      export enum Baz { A }
+      export const VALUE = 1;
+    `;
+    expect(exportsOf(src).sort()).toEqual(["Bar", "Baz", "Foo", "VALUE"].sort());
+  });
 });

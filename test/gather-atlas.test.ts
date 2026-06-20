@@ -86,7 +86,7 @@ describe("buildAtlasDraft", () => {
 import { buildDomainDraft } from "../src/gather-atlas.js";
 
 describe("buildDomainDraft", () => {
-  it("emits tldr + components + arch diagram-section + depth + owns + seams for a domain", async () => {
+  it("emits tldr + components + arch diagram-section + depth + seams for a domain", async () => {
     const inv = await scanInventory(REPO, ["lib"]);
     const edges = aggregateDomainEdges(CONFIG, inv);
     const draft = buildDomainDraft("sim", CONFIG, inv, edges, { date: "2026-06-20" });

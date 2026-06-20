@@ -5,7 +5,6 @@ import { parseRouter } from "./trpc-parse.js";
 import { parsePrismaModels } from "./prisma-schema.js";
 import { walkSource, moduleKey, loadAliases, resolveModule } from "./dep-graph.js";
 import type { AtlasConfig } from "./atlas-config.js";
-import { matchGlob } from "./atlas-config.js";
 import type { AtlasDiagram } from "./atlas-blocks.js";
 
 /** One scanned source module: resolved in-repo import keys + exported names. */
@@ -110,7 +109,7 @@ export function domainMapDiagram(config: AtlasConfig, edges: Map<string, Set<str
   const mlines = ["graph LR", ...slugs.map((s) => `  ${mid.get(s)}["${s}"]`),
     ...slugs.flatMap((s) => [...(edges.get(s) ?? [])].sort().map((t) => `  ${mid.get(s)} --> ${mid.get(t)}`))];
 
-  return { id: "map", kind: "architecture", d2, mermaid: mlines.join("\n") };
+  return { id: "domain-map", kind: "architecture", d2, mermaid: mlines.join("\n") };
 }
 
 export function buildAtlasDraft(
