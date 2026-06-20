@@ -123,9 +123,9 @@ function rail(blocks: AtlasBlock[]): string {
   if (!chapters.length) return "";
   const steps = chapters.map((e, i) =>
     `<a class="progress-step${i === 0 ? " is-active" : ""}" href="#${escapeHtml(e.id)}">` +
-    `<span class="progress-step-num">${escapeHtml(e.num)}</span>` +
+    `<div class="progress-step-num" aria-hidden="true">${escapeHtml(e.num)}</div>` +
     `<span class="progress-step-label">${escapeHtml(e.label)}</span></a>`).join("");
-  return `<div class="progress-rail" aria-label="Section progress">${steps}</div>`;
+  return `<nav class="progress-rail" aria-label="Section progress">${steps}</nav>`;
 }
 
 export async function assembleAtlas(blocks: AtlasBlock[], opts: AtlasOpts): Promise<string> {
