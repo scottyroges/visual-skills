@@ -24,9 +24,9 @@ export function matchGlob(glob: string, path: string): boolean {
     "^" +
       glob
         .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-        .replace(/\*\*/g, " ")        // placeholder so the next step doesn't touch it
+        .replace(/\*\*/g, "\x00")     // NUL placeholder — cannot appear in a real path/glob
         .replace(/\*/g, "[^/]*")
-        .replace(/ /g, ".*") +
+        .replace(/\x00/g, ".*") +
       "$",
   );
   return re.test(path);
@@ -50,7 +50,7 @@ export function firstGuessConfig(repo: string, srcRoots: string[], modules: stri
       let d = bySlug.get(slug);
       if (!d) { d = { slug, name: slug, globs: [glob], modules: [] }; bySlug.set(slug, d); }
       if (!d.globs.includes(glob)) d.globs.push(glob);
-      d.modules.push(mod);
+      if (!d.modules.includes(mod)) d.modules.push(mod);
     }
   }
   const domains = [...bySlug.values()].sort((a, b) => a.slug.localeCompare(b.slug));
@@ -65,14 +65,14 @@ export function firstGuessConfig(repo: string, srcRoots: string[], modules: stri
  * from the prior modules list), and domains whose globs resolve to nothing (emptyDomains).
  */
 export function reconcile(config: AtlasConfig, liveModules: string[]): { config: AtlasConfig; drift: Drift } {
-  const live = liveModules.map(norm);
+  const live = [...new Set(liveModules.map(norm))];
   const liveSet = new Set(live);
   const assigned = new Set<string>();
 
   const domains: DomainConfig[] = config.domains.map((d) => {
     const modules = live.filter((m) => d.globs.some((g) => matchGlob(g, m)));
     for (const m of modules) assigned.add(m);
-    return { ...d, modules: [...modules].sort() };
+    return { ...d, globs: [...d.globs], modules: [...modules].sort() };
   });
 
   const newModules = live.filter((m) => !assigned.has(m)).sort();

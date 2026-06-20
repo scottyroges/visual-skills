@@ -9,6 +9,16 @@ describe("matchGlob", () => {
     expect(matchGlob("lib/*/index.ts", "lib/sim/index.ts")).toBe(true);
     expect(matchGlob("lib/*/index.ts", "lib/sim/loop/index.ts")).toBe(false);
   });
+
+  it("does not match a prefix segment that is shorter than the directory name", () => {
+    // "lib/sim" is a strict prefix of "lib/simulation" but should not match
+    expect(matchGlob("lib/sim/**", "lib/simulation/x.ts")).toBe(false);
+  });
+
+  it("escapes literal dots and confines * to a single segment", () => {
+    expect(matchGlob("lib/sim/*.ts", "lib/sim/engine.ts")).toBe(true);
+    expect(matchGlob("lib/sim/*.ts", "lib/sim/sub/engine.ts")).toBe(false);
+  });
 });
 
 describe("firstGuessConfig", () => {
@@ -52,5 +62,11 @@ describe("reconcile", () => {
     expect(drift.newModules).toEqual(["lib/store/cart.ts"]);
     expect(drift.stalePaths).toEqual([{ slug: "sim", path: "lib/sim/old.ts" }]);
     expect(drift.emptyDomains).toEqual(["empty"]);
+  });
+
+  it("does not mutate the input config (globs and modules arrays are independent copies)", () => {
+    const snapshot = JSON.stringify(config);
+    reconcile(config, live);
+    expect(JSON.stringify(config)).toBe(snapshot);
   });
 });
