@@ -6,12 +6,14 @@
   "bin": {
     "visual-plan": "bin/plan.ts",
     "visual-recap": "bin/recap.ts",
-    "visual-spec": "bin/spec.ts"
+    "visual-spec": "bin/spec.ts",
+    "visual-atlas": "bin/atlas.ts"
   },
   "scripts": {
     "plan": "tsx bin/plan.ts",
     "recap": "tsx bin/recap.ts",
     "spec": "tsx bin/spec.ts",
+    "atlas": "tsx bin/atlas.ts",
     "setup:excalidraw": "node scripts/setup-excalidraw.mjs",
     "skills:install": "tsx scripts/install-skills.ts",
     "test": "vitest run",
