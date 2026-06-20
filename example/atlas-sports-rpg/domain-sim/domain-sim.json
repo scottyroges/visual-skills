@@ -275,7 +275,7 @@
           "name": "sim-season",
           "path": "lib/sim/sim-season.ts · sim-multi-season.ts",
           "detail": [
-            "`simSeason` walks the schedule day by day: it runs each game, reconciles standings and injuries post-game, then runs a daily tick (fatigue recovery, injury advance, chemistry) and fires the brain triggers. `sim-multi-season` wraps it with the offseason — playoffs, awards, retirements, draft, free agency, development, and the identity season tick — and emits season events to the story engine. The full path is the [spine](atlas.html#spine) on the atlas."
+            "`simSeason` walks the schedule day by day: it runs each game, reconciles standings and injuries post-game, then runs a daily tick (fatigue recovery, injury advance, chemistry) and fires the brain triggers. `sim-multi-season` wraps it with the offseason — playoffs, awards, retirements, draft, free agency, development, and the identity season tick — and emits season events to the story engine. The full path is the [spine](../atlas.html#spine) on the atlas."
           ],
           "files": [
             {
