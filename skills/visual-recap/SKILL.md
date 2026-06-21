@@ -204,8 +204,9 @@ per-diff annotations are not.
   head commit SHA (e.g. via `gh`, the GitHub UI, or `git log`) and re-run with `--commit <sha>`.
 - **`d2` missing:** diagrams degrade to visible placeholders (the recap still produces) — tell the
   user to `brew install d2` for proper rendered diagrams.
-- Editable Excalidraw diagrams are an optional upgrade — see the tool's README
-  (`npm run setup:excalidraw`). Without it, diagrams render as static D2 images.
+- **d2 vs Excalidraw:** diagrams render as static D2 images by default; once the editable upgrade is
+  installed (`npm run setup:excalidraw`) editable-eligible diagrams are **promoted to `.excalidraw`
+  scenes automatically**. Pass **`--no-excalidraw`** to force the static D2 floor (no sidecars).
 
 ## Which diagram(s) to add
 

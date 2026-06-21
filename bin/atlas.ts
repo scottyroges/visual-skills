@@ -20,7 +20,7 @@ interface AtlasDoc extends Partial<AtlasOpts> { kind: "atlas"; blocks: AtlasBloc
 interface DomainDoc extends Partial<DomainOpts> { kind: "domain"; slug: string; blocks: AtlasBlock[]; }
 type Doc = AtlasDoc | DomainDoc;
 
-async function renderFile(file: string, outDir: string): Promise<{ outName: string; warnings: number }> {
+async function renderFile(file: string, outDir: string, noExcalidraw = false): Promise<{ outName: string; warnings: number }> {
   const raw = JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
   if (!Array.isArray(raw["blocks"])) {
     console.error(`${file}: expected a { "blocks": [...] } object`);
@@ -38,7 +38,9 @@ async function renderFile(file: string, outDir: string): Promise<{ outName: stri
     pageDir = join(outDir, `domain-${d.slug}`);
     await mkdir(pageDir, { recursive: true });
     const o: DomainOpts = { ...d, title: d.title ?? d.slug, layer: d.layer ?? "engine",
-      layerLabel: d.layerLabel ?? "Engine", outDir: pageDir, onWarn, generator: d.generator ?? "visual-skills · visual-atlas" };
+      layerLabel: d.layerLabel ?? "Engine", outDir: pageDir, onWarn, generator: d.generator ?? "visual-skills · visual-atlas",
+      // --no-excalidraw forces the d2 floor; otherwise honor the doc's own excalidraw field.
+      excalidraw: noExcalidraw ? false : d.excalidraw };
     html = await assembleDomain(d.blocks, o);
     outName = `domain-${d.slug}.html`;
     jsonName = `domain-${d.slug}.json`;
@@ -47,7 +49,8 @@ async function renderFile(file: string, outDir: string): Promise<{ outName: stri
     if (kind !== "atlas") console.warn(`⚠ ${basename(file)}: unknown kind "${kind}", rendering as atlas`);
     const a = doc as AtlasDoc;
     pageDir = outDir;
-    const o: AtlasOpts = { ...a, title: a.title ?? "System Atlas", outDir: pageDir, onWarn, generator: a.generator ?? "visual-skills · visual-atlas" };
+    const o: AtlasOpts = { ...a, title: a.title ?? "System Atlas", outDir: pageDir, onWarn, generator: a.generator ?? "visual-skills · visual-atlas",
+      excalidraw: noExcalidraw ? false : a.excalidraw };
     html = await assembleAtlas(a.blocks, o);
     outName = "atlas.html";
     jsonName = "atlas.json";
@@ -111,9 +114,11 @@ async function main() {
   const { values } = parseArgs({ options: {
     blocks: { type: "string" }, all: { type: "string" }, out: { type: "string" },
     repo: { type: "string" }, domain: { type: "string" }, force: { type: "boolean" },
+    "no-excalidraw": { type: "boolean" },
   } });
   const outDir = values.out;
-  if (!outDir || !isAbsolute(outDir)) { console.error("usage: atlas --repo <abs> [--domain <slug>] [--force] --out <abs> | --all <dir> --out <abs> | --blocks <file> --out <abs>"); process.exit(2); }
+  const noExcalidraw = !!values["no-excalidraw"];   // force the d2 floor, skip editable upgrade
+  if (!outDir || !isAbsolute(outDir)) { console.error("usage: atlas --repo <abs> [--domain <slug>] [--force] [--no-excalidraw] --out <abs> | --all <dir> --out <abs> | --blocks <file> --out <abs>"); process.exit(2); }
   if (values.repo) {
     if (!isAbsolute(values.repo)) { console.error("--repo must be an absolute path"); process.exit(2); }
     await mkdir(outDir, { recursive: true });
@@ -131,7 +136,7 @@ async function main() {
       await mkdir(slugDir, { recursive: true });
       const domJson = join(slugDir, `domain-${liveDomain.slug}.json`);
       await writeFile(domJson, JSON.stringify(buildDomainDraft(liveDomain.slug, live, inv, edges, { date: today() }), null, 2));
-      const { outName, warnings } = await renderFile(domJson, outDir);
+      const { outName, warnings } = await renderFile(domJson, outDir, noExcalidraw);
       console.log(`refreshed ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
       // tile-only note (do not recompute the atlas map; see spec "Resolved during review")
       console.log(`note: atlas tile for "${liveDomain.slug}" — ${liveDomain.modules.length} files, deps: ${[...(edges.get(liveDomain.slug) ?? [])].sort().join(", ") || "none"} (update atlas.json's tile if changed)`);
@@ -161,21 +166,21 @@ async function main() {
     }
 
     for (const f of await listDocJsons(outDir)) {
-      const { outName, warnings } = await renderFile(f, outDir);
+      const { outName, warnings } = await renderFile(f, outDir, noExcalidraw);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
     }
   } else if (values.all) {
     if (!isAbsolute(values.all)) { console.error("--all must be an absolute path"); process.exit(2); }
     await mkdir(outDir, { recursive: true });
     for (const f of await listDocJsons(values.all)) {
-      const { outName, warnings } = await renderFile(f, outDir);
+      const { outName, warnings } = await renderFile(f, outDir, noExcalidraw);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
     }
   } else if (values.blocks) {
     if (!isAbsolute(values.blocks)) { console.error("--blocks must be an absolute path"); process.exit(2); }
     await mkdir(outDir, { recursive: true });
-    const { outName, warnings } = await renderFile(values.blocks, outDir);
+    const { outName, warnings } = await renderFile(values.blocks, outDir, noExcalidraw);
     console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
-  } else { console.error("usage: atlas --repo <abs> [--domain <slug>] [--force] --out <abs> | --all <dir> --out <abs> | --blocks <file> --out <abs>"); process.exit(2); }
+  } else { console.error("usage: atlas --repo <abs> [--domain <slug>] [--force] [--no-excalidraw] --out <abs> | --all <dir> --out <abs> | --blocks <file> --out <abs>"); process.exit(2); }
 }
 main().catch((e) => { console.error(e); process.exit(1); });

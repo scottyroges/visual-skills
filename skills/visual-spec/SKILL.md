@@ -171,8 +171,10 @@ See the catalog for the exact field shape of every block.
 
 - **`d2` missing:** the hero degrades to a visible placeholder (the page still produces) — tell the
   user to `brew install d2` for a proper rendered diagram.
-- Editable Excalidraw diagrams are an optional upgrade — see the tool's README
-  (`npm run setup:excalidraw`). Without it, the hero renders as a static D2 image.
+- **d2 vs Excalidraw:** diagrams render as static D2 images by default; once the editable upgrade is
+  installed (`npm run setup:excalidraw`) editable-eligible diagrams are **promoted to `.excalidraw`
+  scenes automatically**. Pass **`--no-excalidraw`** (or set `"excalidraw": false` in the spec JSON)
+  to force the static D2 floor.
 - The reference drawers accept either `markdown` (fenced code + tables) or raw `html` (for
   syntax-highlighted code using the `.kw`/`.ty`/`.cm` token spans). Prefer `markdown`; use `html`
   only when you need the token coloring.

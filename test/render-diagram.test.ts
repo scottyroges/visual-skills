@@ -93,6 +93,23 @@ describe("renderDiagram (D2 floor)", () => {
     }
   }, 30_000);
 
+  it("excalidraw:false forces the d2 floor even when the toolchain is ready (the --no-excalidraw path)", async () => {
+    const block: DiagramBlock = {
+      type: "diagram", id: "seq", title: "Seq", kind: "sequence",
+      d2: "shape: sequence_diagram\na -> b: hi",
+      mermaid: "sequenceDiagram\n  a->>b: hi",
+    };
+    let converted = false;
+    const out = await renderDiagram(
+      block,
+      { excalidraw: false },
+      { ready: async () => true, convert: async () => { converted = true; return { svg: "<svg id='x'/>", scene: {} }; } },
+    );
+    expect(converted).toBe(false);       // never attempted the upgrade
+    expect(out.renderer).toBe("d2");
+    expect(out.editable).toBeNull();     // no .excalidraw sidecar
+  }, 30_000);
+
   it("injects the color prelude so a class resolves, and leaves class-less diagrams intact", async () => {
     const colored = await renderDiagram(
       { type: "diagram", id: "k", title: "k", kind: "flowchart", d2: "n: { class: external }" },

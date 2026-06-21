@@ -8,7 +8,7 @@ import { gatherRecap } from "../src/gather-recap.js";
 import { assembleReview } from "../src/assemble-review.js";
 import { generatorStamp } from "../src/version.js";
 
-function parseTarget(values: Record<string, string | undefined>): Target {
+function parseTarget(values: { pr?: string; commit?: string; branch?: string; base?: string }): Target {
   if (values.pr) return { kind: "pr", number: Number(values.pr) };
   if (values.commit) return { kind: "commit", ref: values.commit };
   if (values.branch) return { kind: "branch", ref: values.branch, base: values.base };
@@ -28,8 +28,11 @@ async function main() {
       blocks: { type: "string" },
       title: { type: "string" },
       source: { type: "string" },
+      "no-excalidraw": { type: "boolean" },
     },
   });
+  // --no-excalidraw forces the d2 floor; otherwise editable diagrams promote when the toolchain is present.
+  const excalidraw = values["no-excalidraw"] ? false : undefined;
 
   // --blocks: render an existing (e.g. enriched) blocks.json through the review shell,
   // skipping git gather. This is the enrichment round-trip target for the visual-recap skill.
@@ -43,6 +46,7 @@ async function main() {
       title: values.title ?? "Recap",
       source: values.source ?? "",
       outDir,
+      excalidraw,
       onWarn: (m) => console.warn(m),
       generator,
     });
@@ -75,6 +79,7 @@ async function main() {
     source: `${repoRoot} · base ${scope.baseRef.slice(0, 10)} → head ${scope.headRef.slice(0, 10)} · stack ${adapter}`,
     status: { level: "green", text: `${blocks.length} blocks` },
     outDir,
+    excalidraw,
     onWarn: (m) => console.warn(m),
     generator,
   });

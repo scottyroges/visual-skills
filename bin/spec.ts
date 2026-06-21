@@ -20,12 +20,13 @@ async function main() {
       out: { type: "string" },
       title: { type: "string" },
       excalidraw: { type: "boolean" },
+      "no-excalidraw": { type: "boolean" },
     },
   });
   const blocksPath = values.blocks;
   const outDir = values.out;
   if (!blocksPath || !outDir) {
-    console.error("usage: spec --blocks <spec.json> --out <dir> [--title …] [--excalidraw]");
+    console.error("usage: spec --blocks <spec.json> --out <dir> [--title …] [--excalidraw] [--no-excalidraw]");
     process.exit(2);
   }
   if (!isAbsolute(blocksPath) || !isAbsolute(outDir)) {
@@ -50,7 +51,7 @@ async function main() {
     related: doc.related,
     meta: doc.meta,
     outDir,
-    excalidraw: values.excalidraw ?? doc.excalidraw,
+    excalidraw: values["no-excalidraw"] ? false : (values.excalidraw ?? doc.excalidraw),
     generator: doc.generator ?? "visual-skills · visual-spec",
     onWarn: (m) => warnings.push(m),
   };

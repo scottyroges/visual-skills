@@ -14,9 +14,12 @@ async function main() {
       title: { type: "string", default: "Doc" },
       source: { type: "string", default: "" },
       out: { type: "string", default: "doc" },
+      "no-excalidraw": { type: "boolean" },
     },
   });
   if (!values.blocks) throw new Error("--blocks <path-to-blocks.json> is required");
+  // --no-excalidraw forces the d2 floor; otherwise editable diagrams promote when the toolchain is present.
+  const excalidraw = values["no-excalidraw"] ? false : undefined;
 
   const blocks = JSON.parse(await readFile(values.blocks, "utf8")) as Block[];
   const promoted = promoteMermaidFences(blocks);
@@ -30,6 +33,7 @@ async function main() {
     title: values.title!,
     source: values.source || values.blocks,
     outDir,
+    excalidraw,
     onWarn: (m) => console.warn(m),
     generator,
   });
