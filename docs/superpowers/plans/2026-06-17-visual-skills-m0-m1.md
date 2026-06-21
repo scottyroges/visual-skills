@@ -2007,7 +2007,7 @@ main().catch((e) => { console.error(e.message); process.exit(1); });
 
 Run:
 ```bash
-npx tsx bin/recap.ts --repo /Users/scottrogener/Projects/ppgl --commit 3559f61 --out /tmp/recap-183.html && open /tmp/recap-183.html
+npx tsx bin/recap.ts --repo ~/Projects/ppgl --commit 3559f61 --out /tmp/recap-183.html && open /tmp/recap-183.html
 ```
 Expected: `/tmp/recap-183.html` opens offline and contains:
 - a **Files changed** tree (≈23 files, incl. `src/lib/paypal.ts` added, `src/lib/stripe.ts` deleted),

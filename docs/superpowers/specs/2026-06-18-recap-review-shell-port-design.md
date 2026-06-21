@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-18
 **Status:** Approved (brainstorming complete)
-**Canonical visual reference:** `/Users/scottrogener/Projects/ppgl/.recaps/pr-180-redesign/variant-c-color.html`
+**Canonical visual reference:** `~/Projects/ppgl/.recaps/pr-180-redesign/variant-c-color.html`
 (the agreed "variant C, with touches" mockup — the single source of truth for the design system).
 
 ## Problem & Goal

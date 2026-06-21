@@ -936,7 +936,7 @@ Expected: every test passes; no type errors.
 Run:
 
 ```bash
-npm run recap -- --repo /Users/scottrogener/Projects/ppgl --commit 3559f61 --out /tmp/recap-m3.html 2>/tmp/recap-m3.err
+npm run recap -- --repo ~/Projects/ppgl --commit 3559f61 --out /tmp/recap-m3.html 2>/tmp/recap-m3.err
 echo "--- exit=$? ---"
 echo "--- stderr (expect empty) ---"; cat /tmp/recap-m3.err
 echo "--- script tags (expect 0) ---"; grep -c "<script" /tmp/recap-m3.html

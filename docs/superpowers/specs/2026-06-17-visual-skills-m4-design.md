@@ -49,7 +49,7 @@ Body (thin wrapper — mostly intent→flag mapping):
    optional M3 opt-in.
 
 `<VISUAL_SKILLS_DIR>` is a single constant line near the top of the body
-(`/Users/scottrogener/Projects/visual-skills`), edited if the repo moves.
+(`~/Projects/visual-skills`), edited if the repo moves.
 
 ### `skills/visual-plan/SKILL.md`
 

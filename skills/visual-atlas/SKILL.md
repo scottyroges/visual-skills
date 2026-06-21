@@ -19,7 +19,7 @@ favor the newcomer.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=/Users/scottrogener/Projects/visual-skills
+    VISUAL_SKILLS_DIR=~/Projects/visual-skills
 
 Unlike `visual-spec` (pure authoring), the atlas is **hybrid**: a mechanical scanner walks the repo
 and emits *draft* JSON; you **enrich** the drafts (write the meaning) and render. The scanner does

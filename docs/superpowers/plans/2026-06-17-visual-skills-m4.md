@@ -25,7 +25,7 @@
 - **Modify** `package.json` — add `skills:install` script.
 - **Modify** `README.md` — add an "Invoking from Claude Code" section.
 
-The skills hardcode the repo path in one constant per file: `/Users/scottrogener/Projects/visual-skills`.
+The skills hardcode the repo path in one constant per file: `~/Projects/visual-skills`.
 
 ---
 
@@ -172,7 +172,7 @@ hand-drawn-styled HTML document and open it.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=/Users/scottrogener/Projects/visual-skills
+    VISUAL_SKILLS_DIR=~/Projects/visual-skills
 
 ## Steps
 
@@ -221,8 +221,8 @@ Run the example pattern against the ppgl repo to confirm the skill's instruction
 accurate:
 
 ```bash
-cd /Users/scottrogener/Projects/visual-skills
-npx tsx bin/recap.ts --repo /Users/scottrogener/Projects/ppgl --commit 3559f61 --out /tmp/skill-recap.html && echo "OK $(wc -c < /tmp/skill-recap.html) bytes"
+cd ~/Projects/visual-skills
+npx tsx bin/recap.ts --repo ~/Projects/ppgl --commit 3559f61 --out /tmp/skill-recap.html && echo "OK $(wc -c < /tmp/skill-recap.html) bytes"
 ```
 
 Expected: `wrote /tmp/skill-recap.html (adapter: prisma-trpc)` and an `OK <bytes>` line.
@@ -264,7 +264,7 @@ blocks — so ground every reference in the real repo.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=/Users/scottrogener/Projects/visual-skills
+    VISUAL_SKILLS_DIR=~/Projects/visual-skills
 
 ## Steps
 
@@ -350,7 +350,7 @@ cat > /tmp/skill-plan-blocks.json <<'EOF'
   { "type": "questions", "id": "open", "title": "Open", "questions": [ { "question": "Refund window?", "recommendedDefault": "30 days" } ] }
 ]
 EOF
-cd /Users/scottrogener/Projects/visual-skills
+cd ~/Projects/visual-skills
 npx tsx bin/plan.ts --blocks /tmp/skill-plan-blocks.json --title "Skill smoke" --out /tmp/skill-plan.html && grep -c "failed to render" /tmp/skill-plan.html
 ```
 
@@ -466,9 +466,9 @@ Expected: every test passes (61 now: 58 prior + install-skills + 2 skill-docs); 
 - [ ] **Step 2: Confirm both skills' documented commands run end-to-end**
 
 ```bash
-cd /Users/scottrogener/Projects/visual-skills
+cd ~/Projects/visual-skills
 echo "--- recap skill command ---"
-npx tsx bin/recap.ts --repo /Users/scottrogener/Projects/ppgl --commit 3559f61 --out /tmp/m4-recap.html 2>/tmp/m4-recap.err; echo "exit=$?"; cat /tmp/m4-recap.err
+npx tsx bin/recap.ts --repo ~/Projects/ppgl --commit 3559f61 --out /tmp/m4-recap.html 2>/tmp/m4-recap.err; echo "exit=$?"; cat /tmp/m4-recap.err
 echo "--- plan skill command ---"
 cat > /tmp/m4-blocks.json <<'EOF'
 [ { "type": "prose", "id": "o", "markdown": "## Plan\n\n```mermaid\ngraph TD\nA-->B\n```" },
@@ -483,7 +483,7 @@ Expected: both commands exit 0, recap stderr empty, and both `grep -c "failed to
 - [ ] **Step 3: Confirm the install script's dry mapping**
 
 ```bash
-cd /Users/scottrogener/Projects/visual-skills
+cd ~/Projects/visual-skills
 npx tsx -e "import('./scripts/install-skills.js').then(m => console.log(m.skillLinks(process.env.HOME, process.cwd())))"
 ```
 
@@ -517,6 +517,6 @@ portion of M4 is complete; the manual skill-trigger check (Step 4) remains for t
   (Task 4) and the smoke tests (Tasks 2–3 Step 2) validate it.
 - **Do not run `npm run skills:install`** during implementation — it mutates `~/.claude`.
   Only the path-mapping is exercised automatically; the symlink creation is the user's step.
-- **The absolute tool path** `/Users/scottrogener/Projects/visual-skills` appears in both
+- **The absolute tool path** `~/Projects/visual-skills` appears in both
   SKILL.md files and is correct for this machine.
 - **Run single tests** during a task; run the full suite in Tasks 4 and 5.

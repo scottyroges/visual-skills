@@ -702,9 +702,9 @@ Expected: every test passes; no type errors.
 - [ ] **Step 2: ppgl recap regression (bare CLI now titles the summary)**
 
 ```bash
-cd /Users/scottrogener/Projects/visual-skills
+cd ~/Projects/visual-skills
 rm -rf /tmp/m7r
-npx tsx bin/recap.ts --repo /Users/scottrogener/Projects/ppgl --commit 3559f61 --out /tmp/m7r 2>/tmp/m7r.err
+npx tsx bin/recap.ts --repo ~/Projects/ppgl --commit 3559f61 --out /tmp/m7r 2>/tmp/m7r.err
 echo "exit=$?"; cat /tmp/m7r.err
 echo "--- <script (expect 0) ---"; grep -c "<script" /tmp/m7r/recap.html
 echo "--- <h2>Summary</h2> (expect >=1) ---"; grep -c "<h2>Summary</h2>" /tmp/m7r/recap.html
@@ -719,7 +719,7 @@ Expected: exit 0; no warnings; 0 `<script>`; the summary heading present; `id="s
 Exercise the full M7 block set through `plan` to prove the renderer end-to-end:
 
 ```bash
-cd /Users/scottrogener/Projects/visual-skills
+cd ~/Projects/visual-skills
 cat > /tmp/m7-blocks.json <<'EOF'
 [
   { "type": "prose", "id": "summary", "title": "Summary", "markdown": "Replaces Stripe with PayPal. See [the core change](#diff-0)." },

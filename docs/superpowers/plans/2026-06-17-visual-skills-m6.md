@@ -692,8 +692,8 @@ Then, after the `gatherRecap(...)` call and before building HTML, add the emit b
 Run:
 
 ```bash
-cd /Users/scottrogener/Projects/visual-skills
-npx tsx bin/recap.ts --repo /Users/scottrogener/Projects/ppgl --commit 3559f61 --emit-blocks /tmp/m6-blocks.json
+cd ~/Projects/visual-skills
+npx tsx bin/recap.ts --repo ~/Projects/ppgl --commit 3559f61 --emit-blocks /tmp/m6-blocks.json
 node -e "const b=require('/tmp/m6-blocks.json'); if(!Array.isArray(b)||!b.length) throw new Error('not a block array'); console.log('blocks:', b.length, 'types:', [...new Set(b.map(x=>x.type))].join(','))"
 npx tsx bin/plan.ts --blocks /tmp/m6-blocks.json --title "round-trip" --out /tmp/m6-rt.html && grep -c "failed to render" /tmp/m6-rt.html
 ```
@@ -832,8 +832,8 @@ Expected: every test passes; no type errors.
 - [ ] **Step 2: ppgl recap regression (now with summary + where-it-fits)**
 
 ```bash
-cd /Users/scottrogener/Projects/visual-skills
-npx tsx bin/recap.ts --repo /Users/scottrogener/Projects/ppgl --commit 3559f61 --out /tmp/m6-recap.html 2>/tmp/m6-recap.err
+cd ~/Projects/visual-skills
+npx tsx bin/recap.ts --repo ~/Projects/ppgl --commit 3559f61 --out /tmp/m6-recap.html 2>/tmp/m6-recap.err
 echo "exit=$?"; echo "stderr:"; cat /tmp/m6-recap.err
 echo "--- <script (expect 0) ---"; grep -c "<script" /tmp/m6-recap.html
 echo "--- summary 'Areas touched' present (expect >=1) ---"; grep -c "Areas touched" /tmp/m6-recap.html
@@ -846,8 +846,8 @@ Expected: exit 0; stderr empty; `<script>` 0; "Areas touched" >= 1; "Where it fi
 - [ ] **Step 3: Enrichment round-trip (emit → render)**
 
 ```bash
-cd /Users/scottrogener/Projects/visual-skills
-npx tsx bin/recap.ts --repo /Users/scottrogener/Projects/ppgl --commit 3559f61 --emit-blocks /tmp/m6-blocks.json
+cd ~/Projects/visual-skills
+npx tsx bin/recap.ts --repo ~/Projects/ppgl --commit 3559f61 --emit-blocks /tmp/m6-blocks.json
 npx tsx bin/plan.ts --blocks /tmp/m6-blocks.json --title "round-trip" --out /tmp/m6-rt.html
 echo "--- round-trip placeholder leaks (expect 0) ---"; grep -c "failed to render" /tmp/m6-rt.html
 echo "--- round-trip script (expect 0) ---"; grep -c "<script" /tmp/m6-rt.html

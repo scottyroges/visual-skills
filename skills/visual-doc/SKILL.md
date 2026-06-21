@@ -11,7 +11,7 @@ blocks — so ground every reference in the real repo.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=/Users/scottrogener/Projects/visual-skills
+    VISUAL_SKILLS_DIR=~/Projects/visual-skills
 
 ## Steps
 

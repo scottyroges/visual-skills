@@ -1275,7 +1275,7 @@ For each page, translate its sections into blocks using the model. Source the ex
 
 Run:
 ```bash
-cd /Users/scottrogener/Projects/visual-skills
+cd ~/Projects/visual-skills
 npx tsx bin/atlas.ts --all "$PWD/example/atlas-sports-rpg" --out "$PWD/example/atlas-sports-rpg"
 ```
 Expected: `wrote atlas.html` + three `wrote domain-*.html`, zero warnings. Open `example/atlas-sports-rpg/atlas.html` and the three domain pages; confirm they match the committed canonical (lead, hero, spine, tiles; per-domain cards → deep sections with diagrams/files/exports/connections). Diff against the pre-regeneration HTML (`git diff --stat`) — expect only formatting-level differences, not structural ones.

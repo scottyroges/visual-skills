@@ -16,7 +16,7 @@ into the component ladder is.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=/Users/scottrogener/Projects/visual-skills
+    VISUAL_SKILLS_DIR=~/Projects/visual-skills
 
 You author a `spec.json` (page options + an ordered array of blocks) and render it. There is no
 mechanical gather step — the spec's prose is the raw material; your judgment turns it into blocks.

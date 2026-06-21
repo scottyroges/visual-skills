@@ -907,7 +907,7 @@ Expected: every test passes; no type errors.
 Run:
 
 ```bash
-npm run recap -- --repo /Users/scottrogener/Projects/ppgl --pr 183 --out /tmp/recap-183.html 2>/tmp/recap-183.err
+npm run recap -- --repo ~/Projects/ppgl --pr 183 --out /tmp/recap-183.html 2>/tmp/recap-183.err
 echo "--- stderr warnings ---"; cat /tmp/recap-183.err
 echo "--- script tags (expect 0) ---"; grep -c "<script" /tmp/recap-183.html || true
 echo "--- shiki-highlighted diffs present (expect >0) ---"; grep -c 'style="color:' /tmp/recap-183.html || true

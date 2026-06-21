@@ -9,7 +9,7 @@
 **Tech Stack:** TypeScript (ESM, `.js` import specifiers), vitest, d2 binary, marked + sanitize-html, Shiki, playwright (excalidraw opt-in). Tests: `npm test -- <substr>`, typecheck: `npm run typecheck`.
 
 **Spec:** `docs/superpowers/specs/2026-06-18-recap-review-shell-port-design.md`
-**Canonical visual reference:** `/Users/scottrogener/Projects/ppgl/.recaps/pr-180-redesign/variant-c-color.html` (the "variant C with touches" mockup — the source of truth for every CSS/JS/structure detail). In the steps below, `MOCKUP` = this file.
+**Canonical visual reference:** `~/Projects/ppgl/.recaps/pr-180-redesign/variant-c-color.html` (the "variant C with touches" mockup — the source of truth for every CSS/JS/structure detail). In the steps below, `MOCKUP` = this file.
 
 **File structure:**
 - Create `assets/review.css` — the full variant-C stylesheet (extracted verbatim from `MOCKUP` `<style>`).
@@ -78,7 +78,7 @@ Expected: FAIL — assets do not exist.
 Copy the CSS verbatim out of `MOCKUP` (the content BETWEEN `<style>` on line 7 and `</style>` on line 1024 — exclusive of the tags):
 
 ```bash
-sed -n '8,1023p' /Users/scottrogener/Projects/ppgl/.recaps/pr-180-redesign/variant-c-color.html > assets/review.css
+sed -n '8,1023p' ~/Projects/ppgl/.recaps/pr-180-redesign/variant-c-color.html > assets/review.css
 ```
 
 Then open `assets/review.css` and confirm it starts at `:root {` (the token block) and ends with the last rule (the craft-pass block ending in the `prefers-reduced-motion` media query). Do not edit the rules — this is the agreed design system.
@@ -88,9 +88,9 @@ Then open `assets/review.css` and confirm it starts at `:root {` (the token bloc
 `MOCKUP` has two `<script>` IIFEs: lines 1700–1831 (sidebar toggle + scroll-spy) and 1844–1866 (zoom overlay). Concatenate both (script contents only, not the `<script>` tags) into one file:
 
 ```bash
-{ sed -n '1700,1831p' /Users/scottrogener/Projects/ppgl/.recaps/pr-180-redesign/variant-c-color.html;
+{ sed -n '1700,1831p' ~/Projects/ppgl/.recaps/pr-180-redesign/variant-c-color.html;
   echo "";
-  sed -n '1844,1866p' /Users/scottrogener/Projects/ppgl/.recaps/pr-180-redesign/variant-c-color.html; } > assets/review-viewer.js
+  sed -n '1844,1866p' ~/Projects/ppgl/.recaps/pr-180-redesign/variant-c-color.html; } > assets/review-viewer.js
 ```
 
 Confirm the file contains the sidebar toggle, the scroll-spy (`progressSteps` / `updateProgress`), and the zoom overlay IIFE (`zoom-overlay`, pointer pan, wheel zoom). Leave the code as-is.
@@ -1239,7 +1239,7 @@ git commit -m "docs: author TL;DR facets/risk in the recap skill"
 - [ ] **Step 1: Render a real recap end-to-end**
 
 ```bash
-npx tsx bin/recap.ts --repo /Users/scottrogener/Projects/ppgl --commit 174b773 --out /tmp/review-e2e
+npx tsx bin/recap.ts --repo ~/Projects/ppgl --commit 174b773 --out /tmp/review-e2e
 open /tmp/review-e2e/recap.html   # macOS
 ```
 

@@ -50,7 +50,7 @@ export const adminRouter = router({
 
 - [ ] **Step 3: Run the test to confirm it fails**
 
-Run: `cd /Users/scottrogener/Projects/visual-skills && npx vitest run test/trpc-parse.test.ts`
+Run: `cd ~/Projects/visual-skills && npx vitest run test/trpc-parse.test.ts`
 Expected: the new case FAILS (`admin.list` auth is `"unknown"`, expected `"admin"`).
 
 - [ ] **Step 4: Generalize builder detection in `src/trpc-parse.ts`**
@@ -81,7 +81,7 @@ Run:
 npx tsx -e "
 import { readFileSync } from 'node:fs';
 import { parseRouter } from './src/trpc-parse.ts';
-const src = readFileSync('/Users/scottrogener/Projects/ppgl/src/server/routers/admin.ts','utf8');
+const src = readFileSync('~/Projects/ppgl/src/server/routers/admin.ts','utf8');
 const procs = parseRouter(src,'admin');
 const auths = [...new Set(procs.map(p=>p.auth))];
 console.log('admin procs:', procs.length, 'distinct auth labels:', auths, 'unknown count:', procs.filter(p=>p.auth==='unknown').length);
@@ -132,7 +132,7 @@ Add this `it` block inside the existing describe:
 
 - [ ] **Step 2: Run it to confirm it fails**
 
-Run: `cd /Users/scottrogener/Projects/visual-skills && npx vitest run test/render-diagram.test.ts`
+Run: `cd ~/Projects/visual-skills && npx vitest run test/render-diagram.test.ts`
 Expected: the new case FAILS — `renderDiagram` currently rejects (the unguarded `renderViaD2` throws) rather than returning a placeholder.
 
 (If `d2` happens to accept `"x: {"`, change the source in the test to `"x ->"` or another source you confirm makes `d2` exit non-zero — verify by running `printf 'x: {' | d2 - -` and checking it errors. Use a source that reliably fails.)
@@ -359,7 +359,7 @@ Add this `it` block (it uses a stub adapter whose schema/api throw, asserting th
 
 - [ ] **Step 7: Run gather-recap tests + tsc**
 
-Run: `cd /Users/scottrogener/Projects/visual-skills && npx vitest run test/gather-recap.test.ts && npx tsc --noEmit`
+Run: `cd ~/Projects/visual-skills && npx vitest run test/gather-recap.test.ts && npx tsc --noEmit`
 Expected: both the original and new cases PASS; tsc clean.
 
 - [ ] **Step 8: Full suite + commit**
@@ -383,14 +383,14 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 1: Full suite + typecheck**
 
-Run: `cd /Users/scottrogener/Projects/visual-skills && npx vitest run && npx tsc --noEmit`
+Run: `cd ~/Projects/visual-skills && npx vitest run && npx tsc --noEmit`
 Expected: all tests pass; tsc clean. Report totals.
 
 - [ ] **Step 2: Re-verify ppgl #183 recap is unchanged for valid input**
 
 Run:
 ```bash
-npx tsx bin/recap.ts --repo /Users/scottrogener/Projects/ppgl --commit 3559f61 --out /tmp/recap-hardened.html
+npx tsx bin/recap.ts --repo ~/Projects/ppgl --commit 3559f61 --out /tmp/recap-hardened.html
 echo "scripts: $(grep -o '<script' /tmp/recap-hardened.html | wc -l | tr -d ' ')"
 echo "diff blocks: $(grep -o 'vs-block vs-diff' /tmp/recap-hardened.html | wc -l | tr -d ' ')"
 echo "captureOrder added: $(grep -o 'data-change=\"added\"' /tmp/recap-hardened.html | wc -l | tr -d ' ')"
