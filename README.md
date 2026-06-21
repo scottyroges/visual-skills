@@ -93,6 +93,14 @@ builds an offline bundle. It's heavy (~hundreds of MB). When it's not installed,
 to the D2 sketch and nothing breaks. To force the static D2 floor even when this is installed, pass
 `--no-excalidraw` to any CLI command.
 
+> **Note — Excalidraw support is in beta and is currently an _export_ only.** At render time each
+> diagram produces two artifacts from its source: the **static SVG that's inlined into the HTML**
+> (what you see when you open the doc) and a separate **`.excalidraw` sidecar** reachable via the
+> "open in Excalidraw" link. The HTML never reads the sidecar, so **editing a `.excalidraw` file does
+> not change the rendered document** — the inline SVG is a snapshot, and re-rendering regenerates the
+> sidecar from the source (overwriting hand-edits). Treat the `.excalidraw` files as an export for
+> reuse elsewhere. To change a diagram *in the doc*, edit its source and re-render.
+
 ## Using the skills
 
 Open Claude Code in **any** repo (not this one) and just ask. The skill activates, reads your real
