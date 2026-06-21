@@ -1,0 +1,517 @@
+{
+  "kind": "domain",
+  "slug": "core",
+  "title": "Rendering core",
+  "layer": "engine",
+  "layerLabel": "Engine",
+  "path": "src",
+  "count": "15 files",
+  "depends": "diagrams",
+  "date": "2026-06-20",
+  "generator": "visual-skills · visual-atlas",
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "eyebrow": "Domain",
+      "heading": "The shared block→HTML rendering engine every generator builds on — define a typed `Block[]`, hand it to one `assemble()`, get a self-contained HTML document back.",
+      "rows": [
+        {
+          "key": "Path",
+          "value": "`src` (the engine modules) + `src/renderers/*` (one renderer per block type)."
+        },
+        {
+          "key": "Files",
+          "value": "15 — `blocks.ts`, `assemble.ts`, `html.ts`, `highlight.ts`, `lint-blocks.ts`, `version.ts`, and nine renderers."
+        },
+        {
+          "key": "Role",
+          "value": "Owns the `Block` union and the single render pipeline. Every product (recap, atlas, spec, doc) is just a different array of these blocks fed to `assemble()`."
+        }
+      ],
+      "bigIdea": {
+        "label": "The load-bearing idea",
+        "line": "\"Every product is just a different array of the same Block union, rendered by one assemble().\"",
+        "sub": "There is no per-product render path. A product's whole job is to build a `Block[]` — diagrams, diffs, prose, file trees, annotated code — and `assemble()` walks it, dispatches each block to its renderer by a `switch (b.type)`, inlines the CSS + viewer JS, and returns one portable HTML string. Add a capability once here and all four generators get it."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "The pieces",
+      "badge": "engine + renderers",
+      "intro": "A typed block model at the center, one `assemble()` that walks it into an HTML shell, a fan-out of per-type renderers, and three helpers (highlight, lint, version). Tap a card to jump to its full section.",
+      "cards": [
+        {
+          "name": "block-model",
+          "purpose": "The `Block` discriminated union — the contract between products and the engine. Every renderable thing (diagram, diff, prose, api, file-tree, annotated-code, questions, group, tabs, overview) is one variant, keyed by `type`.",
+          "exports": [
+            {
+              "name": "Block"
+            },
+            {
+              "name": "DiagramBlock"
+            },
+            {
+              "name": "isDiagramBlock",
+              "deputy": true
+            }
+          ],
+          "href": "#c-blocks"
+        },
+        {
+          "name": "assemble + shell",
+          "purpose": "The pipeline: validate unique ids, render diagrams up front, dispatch each block to its renderer, then wrap the fragments in an HTML shell with inlined CSS + viewer JS. `html.ts` supplies the escaping and safe-href guards the whole engine shares.",
+          "exports": [
+            {
+              "name": "assemble"
+            },
+            {
+              "name": "AssembleOpts",
+              "deputy": true
+            },
+            {
+              "name": "escapeHtml"
+            },
+            {
+              "name": "SAFE_HREF",
+              "deputy": true
+            }
+          ],
+          "href": "#c-assemble"
+        },
+        {
+          "name": "renderers",
+          "purpose": "Nine pure `Block → HTML` functions, one per non-container type. `assemble`'s `switch` calls the right one; groups and tabs recurse back through `assemble`. Markdown is the shared substrate the prose/diff/overview renderers lean on.",
+          "exports": [
+            {
+              "name": "renderProse"
+            },
+            {
+              "name": "renderDiff"
+            },
+            {
+              "name": "renderMarkdown"
+            },
+            {
+              "name": "renderAnnotatedCode",
+              "deputy": true
+            }
+          ],
+          "href": "#c-renderers"
+        },
+        {
+          "name": "highlight",
+          "purpose": "Shiki-backed syntax highlighting behind a lazy singleton. `highlightCode` returns a full `<pre>`; `highlightLines` returns per-line inner HTML for the gutter-aligned diff and annotated-code grids. Both degrade to escaped plaintext on any failure.",
+          "exports": [
+            {
+              "name": "highlightCode"
+            },
+            {
+              "name": "highlightLines"
+            },
+            {
+              "name": "langFromPath",
+              "deputy": true
+            }
+          ],
+          "href": "#c-highlight"
+        },
+        {
+          "name": "lint",
+          "purpose": "Non-blocking authoring guards. Walks the `Block[]` and warns — never throws — when a group lacks a description, a diff description is a wall of text, a diagram applies no color, an editable kind drops its mermaid, or there are too many / oversize diagrams.",
+          "exports": [
+            {
+              "name": "lintBlocks"
+            }
+          ],
+          "href": "#c-lint"
+        },
+        {
+          "name": "version",
+          "purpose": "The provenance stamp: `visual-skills@<git-sha>[-dirty] · <ISO timestamp>`, stamped into the page `<meta generator>` and footer. Falls back to the package.json version, then `\"unknown\"`, when git is unavailable.",
+          "exports": [
+            {
+              "name": "generatorStamp"
+            }
+          ],
+          "href": "#c-version"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "How a document is assembled",
+      "badge": "architecture",
+      "intro": "A product hands `assemble()` a `Block[]`. It validates ids, renders every diagram up front via the `diagrams` domain, then dispatches each block to its renderer and wraps the result in the `html.ts` shell. `highlight` and `lint` are helpers along the way; `version` stamps the page.",
+      "diagram": {
+        "id": "core-arch",
+        "kind": "architecture",
+        "d2": "direction: right\nblocks: { label: \"Block[]\\n(blocks.ts union)\"; class: actor }\nassemble: { label: \"assemble()\\nwalk + dispatch\"; class: changed }\nrenderers: { label: \"renderers/*\\nprose · diff · api · …\" }\ndiagrams: { label: \"diagrams\\nrenderDiagram\"; class: external }\nshell: { label: \"html.ts shell\\nescapeHtml · CSS · viewer.js\"; class: store }\nhighlight: { label: \"highlight\\nShiki\" }\nlint: { label: \"lintBlocks\\nwarnings\" }\nversion: { label: \"generatorStamp\" }\nblocks -> assemble: typed array\nassemble -> lint: warn (non-blocking)\nassemble -> diagrams: render up front\nassemble -> renderers: per block type\nrenderers -> highlight: code spans\nrenderers -> shell: HTML fragments\nversion -> shell: generator meta\nassemble -> shell: inline CSS + JS",
+        "mermaid": "flowchart LR\n  B[\"Block[] (blocks.ts union)\"] --> A[\"assemble() walk + dispatch\"]\n  A -->|warn non-blocking| L[\"lintBlocks warnings\"]\n  A -->|render up front| D[\"diagrams renderDiagram\"]\n  A -->|per block type| R[\"renderers/* prose · diff · api\"]\n  R -->|code spans| H[\"highlight Shiki\"]\n  R --> S[\"html.ts shell escapeHtml · CSS · viewer.js\"]\n  V[\"generatorStamp\"] --> S\n  A -->|inline CSS + JS| S\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class A changed;\n  class B actor;\n  class D external;\n  class S store;",
+        "legend": [
+          {
+            "label": "the array in",
+            "fill": "#d0ebff",
+            "stroke": "#4dabf7"
+          },
+          {
+            "label": "assemble (the pipeline)",
+            "fill": "#ffd43b",
+            "stroke": "#f08c00"
+          },
+          {
+            "label": "diagrams (external domain)",
+            "fill": "#f1f3f5",
+            "stroke": "#adb5bd"
+          },
+          {
+            "label": "the HTML shell",
+            "fill": "#e5dbff",
+            "stroke": "#9775fa"
+          }
+        ]
+      }
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "The pieces, in depth",
+      "badge": "6 pieces",
+      "intro": "A full section per piece — what it does, how it works, its files and exports, and how it connects to the rest of the engine and the products that call it.",
+      "components": [
+        {
+          "id": "c-blocks",
+          "name": "block-model",
+          "path": "src/blocks.ts",
+          "detail": [
+            "`Block` is a discriminated union keyed on `type` — `diagram`, `schema`, `api`, `file-tree`, `diff`, `prose`, `annotated-code`, `questions`, `group`, `tabs`, `overview`. This is the entire contract between a product and the engine: a generator never touches HTML, it only constructs typed blocks. `assemble`'s exhaustive `switch (b.type)` is checked against this union, so adding a variant is a compile error until a renderer handles it.",
+            "Two variants are containers that nest **one level deep**: `group` (a labelled `<details>` of child blocks) and `tabs` (a CSS-only switcher, max 6 tabs). `diff` and `overview` may each carry an optional embedded `diagram`. The only logic here is `isDiagramBlock`, the type guard `assemble` and `lint` use to find every `diagram`/`schema` block — including those nested inside groups, tabs, diffs, and overviews — so they can be rendered through the diagrams domain up front."
+          ],
+          "files": [
+            {
+              "name": "blocks.ts",
+              "desc": "The `Block` union, every variant interface, and the `isDiagramBlock` guard."
+            }
+          ],
+          "exports": [
+            {
+              "name": "Block",
+              "desc": "The discriminated union every product builds and `assemble` walks."
+            },
+            {
+              "name": "DiagramBlock · DiffBlock · ProseBlock · ApiBlock · …",
+              "desc": "One interface per renderable variant, keyed by `type`."
+            },
+            {
+              "name": "isDiagramBlock()",
+              "desc": "Type guard — is this block rendered through the d2/mermaid diagram path?"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "[assemble()](#c-assemble) — the `switch (b.type)` dispatches on this union"
+            },
+            {
+              "dir": "built by",
+              "body": "[recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), [authoring](../domain-authoring/domain-authoring.html) — each assembles its own `Block[]`"
+            },
+            {
+              "dir": "extended by",
+              "body": "atlas-page blocks (`src/atlas-blocks.ts`) compile down to `DiagramBlock` via this same model"
+            }
+          ]
+        },
+        {
+          "id": "c-assemble",
+          "name": "assemble + shell",
+          "path": "src/assemble.ts · src/html.ts",
+          "detail": [
+            "`assemble(blocks, opts)` is the one entry point every product calls. It first asserts every block id is unique recursively (anchors and in-page `#cross-links` depend on it), runs `lintBlocks` through `opts.onWarn`, then collects every diagram/schema block — including nested ones — and renders them up front through the diagrams domain, keyed by id. It then maps each top-level block to HTML via `renderBlock`, a `switch (b.type)` that calls the matching renderer; `group` and `tabs` recurse. Finally it inlines `assets/template.css` and `assets/viewer.js`, stamps an optional `<meta generator>` and footer, and returns a single self-contained HTML string — no external assets, by design.",
+            "`html.ts` is the tiny shared safety layer: `escapeHtml` (used by every renderer for any text that reaches HTML) and `SAFE_HREF`, the regex that allows only `#fragment` and `http(s)://` links so a `javascript:`/`data:` URL can't slip through the overview and review link renderers. `assemble` also injects each block's id as an anchor on its `<section>` so the cross-links resolve."
+          ],
+          "files": [
+            {
+              "name": "assemble.ts",
+              "desc": "Id validation, diagram pre-render, the `renderBlock` dispatch switch, and the HTML shell."
+            },
+            {
+              "name": "html.ts",
+              "desc": "`escapeHtml` and the `SAFE_HREF` link-scheme allowlist shared across renderers."
+            }
+          ],
+          "exports": [
+            {
+              "name": "assemble()",
+              "desc": "→ `Promise<string>` — `Block[]` + opts to one self-contained HTML document."
+            },
+            {
+              "name": "AssembleOpts · DocStatus",
+              "desc": "Title, source, optional status banner, outDir, excalidraw, onWarn, generator."
+            },
+            {
+              "name": "escapeHtml() · SAFE_HREF",
+              "desc": "HTML-text escaping and the link-scheme guard every renderer reuses."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "dispatches to",
+              "body": "every [renderer](#c-renderers) by block `type`"
+            },
+            {
+              "dir": "renders via",
+              "body": "[diagrams](../domain-diagrams/domain-diagrams.html) `renderAll` — all diagram/schema blocks, up front"
+            },
+            {
+              "dir": "runs",
+              "body": "[lintBlocks](#c-lint) through `opts.onWarn` before rendering"
+            },
+            {
+              "dir": "called by",
+              "body": "[recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), [authoring](../domain-authoring/domain-authoring.html) — the single render entry point"
+            }
+          ]
+        },
+        {
+          "id": "c-renderers",
+          "name": "renderers",
+          "path": "src/renderers/*.ts",
+          "detail": [
+            "Nine pure functions, one per non-container block type — `renderProse`, `renderDiff`, `renderApi`, `renderFileTree`, `renderAnnotatedCode`, `renderOverview`, `renderQuestions`, `renderLegend`, plus the shared `renderMarkdown`. Each takes its block (and an optional `onWarn`) and returns an HTML fragment wrapped in a `vs-block` section; `assemble` adds the anchor and stitches them together. There is no shared base class — the union + the dispatch switch are the only structure.",
+            "`markdown.ts` is the substrate: `renderMarkdown` parses GitHub-flavored markdown, highlights fenced code via the highlight module, and runs the result through `sanitize-html` with a strict tag/attribute allowlist; `renderInlineMarkdown` does the one-line variant for headlines and bullets. `prose`, `diff`, and `overview` all build on it. `diff` and `annotated-code` use `highlightLines` to align highlighted code to a gutter; `file-tree` collapses single-child directory chains and links filenames back to their diff blocks; `legend` paints the auto-derived diagram color key."
+          ],
+          "files": [
+            {
+              "name": "markdown.ts",
+              "desc": "`renderMarkdown` / `renderInlineMarkdown` — GFM + Shiki + sanitize-html. The shared substrate."
+            },
+            {
+              "name": "prose.ts · overview.ts · questions.ts",
+              "desc": "Narrative blocks: prose body, the TL;DR headline + points, and Q&A cards."
+            },
+            {
+              "name": "diff.ts · annotated-code.ts",
+              "desc": "Gutter-aligned code grids built on `highlightLines`."
+            },
+            {
+              "name": "api.ts · file-tree.ts · legend.ts",
+              "desc": "The tRPC procedure table, the change tree, and the diagram color key."
+            }
+          ],
+          "exports": [
+            {
+              "name": "renderMarkdown() · renderInlineMarkdown()",
+              "desc": "Sanitized GFM → HTML; the substrate the prose/diff/overview renderers reuse."
+            },
+            {
+              "name": "renderProse · renderDiff · renderApi · renderFileTree · renderOverview · renderQuestions · renderAnnotatedCode · renderLegend",
+              "desc": "One pure `Block → HTML` function per non-container type."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[assemble()](#c-assemble) — one per block `type` from the dispatch switch"
+            },
+            {
+              "dir": "uses",
+              "body": "[highlight](#c-highlight) for code spans; [html.ts](#c-assemble) `escapeHtml` for all text"
+            },
+            {
+              "dir": "leaned on by",
+              "body": "[diagrams](../domain-diagrams/domain-diagrams.html) — `renderLegend` paints the diagram color key"
+            }
+          ]
+        },
+        {
+          "id": "c-highlight",
+          "name": "highlight",
+          "path": "src/highlight.ts",
+          "detail": [
+            "A thin wrapper over Shiki (`github-light` theme, a fixed set of loaded languages) behind a lazy promise singleton, so the highlighter is created at most once per process. `highlightCode` returns a complete Shiki `<pre>` for fenced markdown code; `highlightLines` returns the inner HTML of each source line so `diff` and `annotated-code` can interleave code with gutters and per-line notes. `langFromPath` maps a file extension to a Shiki language id.",
+            "Every path is defensive: an unloaded language, a Shiki error, or a line-count mismatch degrades to escaped plaintext (and an `onWarn` note) rather than throwing — a highlighting failure must never break a document."
+          ],
+          "files": [
+            {
+              "name": "highlight.ts",
+              "desc": "The Shiki singleton, `highlightCode`, `highlightLines`, and `langFromPath`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "highlightCode()",
+              "desc": "→ a full highlighted `<pre>`, or escaped plain `<pre>` on failure."
+            },
+            {
+              "name": "highlightLines()",
+              "desc": "→ per-line inner HTML (or `null`) for gutter-aligned grids."
+            },
+            {
+              "name": "langFromPath()",
+              "desc": "File extension → Shiki language id; unknown → `\"text\"`."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "used by",
+              "body": "[renderers](#c-renderers) — markdown fenced code, diff hunks, annotated code"
+            },
+            {
+              "dir": "degrades to",
+              "body": "escaped plaintext via [html.ts](#c-assemble) `escapeHtml` on any failure"
+            }
+          ]
+        },
+        {
+          "id": "c-lint",
+          "name": "lint",
+          "path": "src/lint-blocks.ts",
+          "detail": [
+            "`lintBlocks(blocks)` returns authoring warnings in document order — it never throws and never blocks rendering. `assemble` pipes them to `opts.onWarn`. The guards nudge quality: a `group` with no description, a `diff` description that is a long single paragraph (a wall of text), a `diagram` that applies no semantic color, an editable-eligible diagram kind that dropped its mermaid source (silently losing the Excalidraw upgrade), and too-many / oversize-edge diagrams overall.",
+            "It walks the same nested structure `assemble` does — groups, tabs, embedded diff/overview diagrams — using the diagram-color helpers to detect which roles a d2/mermaid source applies. The intent is to catch the mistakes that make a document read worse without making the build fail."
+          ],
+          "files": [
+            {
+              "name": "lint-blocks.ts",
+              "desc": "The group / diff-prose / diagram authoring guards, recursing through nested blocks."
+            }
+          ],
+          "exports": [
+            {
+              "name": "lintBlocks()",
+              "desc": "→ `string[]` of non-blocking authoring warnings in document order."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "run by",
+              "body": "[assemble()](#c-assemble) — emitted through `opts.onWarn`, never blocking"
+            },
+            {
+              "dir": "inspects",
+              "body": "diagram color roles via the [diagrams](../domain-diagrams/domain-diagrams.html) color helpers"
+            }
+          ]
+        },
+        {
+          "id": "c-version",
+          "name": "version",
+          "path": "src/version.ts",
+          "detail": [
+            "`generatorStamp()` produces the provenance string `visual-skills@<git-short-sha>[-dirty] · <ISO timestamp>`. It shells out to git for the short SHA and a porcelain status (the `-dirty` suffix when the tree has uncommitted changes); if git is unavailable it falls back to the package.json version, then to `\"unknown\"`. Products pass the result as `opts.generator`, which `assemble` writes into the page `<meta generator>` and footer so any saved document records exactly which build produced it."
+          ],
+          "files": [
+            {
+              "name": "version.ts",
+              "desc": "`generatorStamp` — git SHA / dirty / timestamp with package.json fallback."
+            }
+          ],
+          "exports": [
+            {
+              "name": "generatorStamp()",
+              "desc": "→ `Promise<string>` provenance stamp for the page meta + footer."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "[recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), [authoring](../domain-authoring/domain-authoring.html) — passed as `opts.generator`"
+            },
+            {
+              "dir": "stamped by",
+              "body": "[assemble()](#c-assemble) into `<meta generator>` and the footer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "The block model it owns",
+      "intro": "Core owns the `Block` discriminated union — the type model every product builds against and the engine renders. These are the variants it defines.",
+      "rows": [
+        {
+          "name": "Block",
+          "desc": "The discriminated union itself — the contract between products and `assemble()`."
+        },
+        {
+          "name": "DiagramBlock · SchemaBlock",
+          "desc": "A d2 (+ optional mermaid) diagram, and the d2-only ERD schema variant."
+        },
+        {
+          "name": "ApiBlock",
+          "desc": "A tRPC procedure table — name, kind, auth, input, and change marker per row."
+        },
+        {
+          "name": "DiffBlock",
+          "desc": "A file diff: path, optional markdown description, optional embedded diagram, and hunks."
+        },
+        {
+          "name": "FileTreeBlock",
+          "desc": "A change tree of `FileChange` entries, linkable back to their diff blocks."
+        },
+        {
+          "name": "ProseBlock · OverviewBlock",
+          "desc": "A markdown prose section, and the TL;DR headline + key points (with optional lead diagram)."
+        },
+        {
+          "name": "AnnotatedCodeBlock",
+          "desc": "A code listing with per-line margin notes, gutter-aligned to highlighted source."
+        },
+        {
+          "name": "QuestionsBlock",
+          "desc": "Open-question cards, each with a recommended default."
+        },
+        {
+          "name": "GroupBlock · TabsBlock",
+          "desc": "The two one-level-deep containers: a labelled `<details>` group and a CSS-only tab switcher."
+        }
+      ],
+      "note": "All HTML is produced at render time and inlined — core owns no persisted data, only the in-memory block types and the document string `assemble()` returns."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "A small typed surface: products build blocks and call one `assemble()`; core in turn calls the diagrams domain to render every diagram up front.",
+      "exposes": [
+        {
+          "api": "assemble()",
+          "note": "the one render entry point"
+        },
+        {
+          "api": "Block (union)",
+          "note": "the type products build against"
+        },
+        {
+          "api": "escapeHtml() · SAFE_HREF",
+          "note": "shared HTML-safety helpers"
+        },
+        {
+          "api": "highlightCode() · highlightLines()",
+          "note": "Shiki highlighting"
+        },
+        {
+          "api": "lintBlocks()",
+          "note": "non-blocking authoring warnings"
+        },
+        {
+          "api": "generatorStamp()",
+          "note": "provenance stamp"
+        }
+      ],
+      "depends": [
+        {
+          "name": "diagrams",
+          "path": "src",
+          "href": "../domain-diagrams/domain-diagrams.html"
+        }
+      ],
+      "note": "Called by [recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), and [authoring](../domain-authoring/domain-authoring.html) — all three build a `Block[]` and hand it to `assemble()`. Core's only dependency is [diagrams](../domain-diagrams/domain-diagrams.html): `assemble` renders every diagram/schema block through it before dispatching the rest."
+    }
+  ]
+}

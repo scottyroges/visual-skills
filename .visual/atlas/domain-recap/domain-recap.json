@@ -1,0 +1,557 @@
+{
+  "kind": "domain",
+  "slug": "recap",
+  "title": "Recap (diff review)",
+  "layer": "surface",
+  "layerLabel": "Surface",
+  "path": "recap",
+  "count": "19 files",
+  "depends": "core · diagrams · code-intel",
+  "date": "2026-06-20",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Surface"
+    },
+    {
+      "key": "Path",
+      "value": "bin/recap.ts · src/ · src/review/"
+    },
+    {
+      "key": "Files",
+      "value": "19 (CLI + pipeline + review shell)"
+    },
+    {
+      "key": "Depends on",
+      "value": "core · diagrams · code-intel"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "eyebrow": "Domain",
+      "heading": "Turn a git target into a self-contained HTML review — and own the **review shell** every other product page reuses.",
+      "rows": [
+        {
+          "key": "Path",
+          "value": "`bin/recap.ts` (CLI) · `src/*.ts` (pipeline) · `src/review/*.ts` (the app-shell renderers)"
+        },
+        {
+          "key": "Files",
+          "value": "19 — one CLI entry, eight pipeline modules, ten review-shell renderers."
+        },
+        {
+          "key": "Role",
+          "value": "The **visual-recap** product: resolve a PR / commit / branch / working-tree into a diff, parse and rank it, fold it into a `Block[]`, and render the standing review document. The shell it renders is shared infrastructure — **atlas** and **authoring** assemble their pages on top of the same topbar / sidebar / sections."
+        }
+      ],
+      "bigIdea": {
+        "label": "The load-bearing idea",
+        "line": "\"recap is a pipeline, and its renderer is everyone's renderer.\"",
+        "sub": "`Target → git.ts → parse-diff → diff-order → gather-recap → assemble-review → recap.html`. The gather half is mechanical and TS/JS-aware; the render half (`assemble-review` + `src/review/*`) is the **app-shell** — topbar, sidebar, TL;DR, files-table, walkthrough, diagrams — that `assemble-atlas` and `assemble-spec` reuse to draw *their* pages. Enrich the gathered `blocks.json`, re-render with `recap --blocks`, and nothing in the pipeline needs to change."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "The pieces",
+      "badge": "pipeline + shell",
+      "intro": "A thin CLI drives a mechanical gather pipeline (git target → diff → ranked `Block[]`) into a shared render shell. Tap a card to jump to its full section.",
+      "cards": [
+        {
+          "name": "CLI",
+          "purpose": "The entry point: parse `--pr` / `--commit` / `--branch` / `--working` into a `Target`, gather blocks, and write `recap.html` + `blocks.json`. The `--blocks` path re-renders an enriched `blocks.json` straight through the shell, skipping git.",
+          "exports": [
+            {
+              "name": "main"
+            },
+            {
+              "name": "parseTarget",
+              "deputy": true
+            }
+          ],
+          "exportsLabel": "covers",
+          "href": "#c-cli"
+        },
+        {
+          "name": "git targets",
+          "purpose": "Resolve a `Target` into a `Scope` — base/head refs, label, and the raw unified diff — via `git` (and `gh` for PRs). Also reads file contents at a ref and a structured changed-files list.",
+          "exports": [
+            {
+              "name": "resolveScope"
+            },
+            {
+              "name": "changedFiles"
+            },
+            {
+              "name": "fileAtRef",
+              "deputy": true
+            }
+          ],
+          "href": "#c-git"
+        },
+        {
+          "name": "diff parsing",
+          "purpose": "Pure string work: `parseUnifiedDiff` turns the raw diff into one `DiffBlock` (with hunks) per file; `sortByImportance` ranks files so source leads and lockfiles trail.",
+          "exports": [
+            {
+              "name": "parseUnifiedDiff"
+            },
+            {
+              "name": "sortByImportance"
+            }
+          ],
+          "href": "#c-parse"
+        },
+        {
+          "name": "gather",
+          "purpose": "The orchestrator. `gatherRecap` runs the whole pipeline; `buildBlocks` composes the ordered `Block[]` — summary, file-tree, where-it-fits, schema/api diagrams, then the ranked diffs. `summaryMarkdown` writes the mechanical lead.",
+          "exports": [
+            {
+              "name": "gatherRecap"
+            },
+            {
+              "name": "buildBlocks"
+            },
+            {
+              "name": "summaryMarkdown",
+              "deputy": true
+            }
+          ],
+          "href": "#c-gather"
+        },
+        {
+          "name": "review shell",
+          "purpose": "The app-shell — `assembleReview` plus the `src/review/*` renderers (topbar, sidebar, TL;DR, files-table, sections, walkthrough, diagrams, normalize). The shared HTML surface every product page is built on.",
+          "exports": [
+            {
+              "name": "assembleReview"
+            },
+            {
+              "name": "renderTopbar · renderSidebar",
+              "deputy": true
+            },
+            {
+              "name": "renderWalkthrough",
+              "deputy": true
+            }
+          ],
+          "exportsLabel": "covers",
+          "href": "#c-shell"
+        },
+        {
+          "name": "api-diagram",
+          "purpose": "Builds an architecture diagram of the changed API surface (routers → procedures, colored by add/change/remove) — d2 floor plus an editable mermaid upgrade.",
+          "exports": [
+            {
+              "name": "apiSurfaceDiagram"
+            }
+          ],
+          "href": "#c-api"
+        },
+        {
+          "name": "completeness lint",
+          "purpose": "The diff-size-aware \"demo standard\" lint: warns (never blocks) when a code recap lacks a lead overview, leaves non-trivial diffs unannotated, or piles ungrouped diffs into a flat list.",
+          "exports": [
+            {
+              "name": "lintCompleteness"
+            }
+          ],
+          "href": "#c-lint"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "Internal architecture",
+      "badge": "pipeline",
+      "intro": "`gatherRecap` is the spine. A `Target` resolves through `git.ts` to a `Scope` (base/head + raw diff); `parse-diff` and `diff-order` turn the diff into ranked `DiffBlock`s; `buildBlocks` folds them — plus a summary, where-it-fits, and api-surface diagrams — into a `Block[]`; `assembleReview` renders that through the `src/review/*` shell to `recap.html`. The shell is a shared seam: `assemble-atlas` and `assemble-spec` render *their* pages through it too.",
+      "diagram": {
+        "id": "recap-pipeline",
+        "kind": "flowchart",
+        "d2": "direction: right\ntarget: { label: \"Target\\nPR · commit · branch · working\"; class: actor }\ngit: { label: \"git.ts\\nresolveScope · changedFiles\" }\ngitcli: { label: \"git / gh\"; class: external }\nparse: { label: \"parse-diff\\nparseUnifiedDiff\" }\norder: { label: \"diff-order\\nsortByImportance\" }\ngather: { label: \"gather-recap\\nbuildBlocks → Block[]\"; class: changed }\nassemble: { label: \"assemble-review\\n+ src/review/*\" }\nhtml: { label: \"recap.html\"; class: store }\nshared: { label: \"assemble-atlas\\nassemble-spec\"; class: external }\ntarget -> git\ngit -> gitcli: spawns\ngit -> parse: \"unifiedDiff\"\nparse -> order: \"DiffBlock[]\"\norder -> gather\ngit -> gather: \"Scope · changedFiles\"\ngather -> assemble: \"Block[]\"\nassemble -> html: render\nshared -> assemble: \"reuse the shell\"\n",
+        "mermaid": "graph LR\n  target[\"Target: PR / commit / branch / working\"] --> git[\"git.ts: resolveScope, changedFiles\"]\n  git -->|spawns| gitcli[\"git / gh\"]\n  git -->|unifiedDiff| parse[\"parse-diff: parseUnifiedDiff\"]\n  parse -->|DiffBlock array| order[\"diff-order: sortByImportance\"]\n  order --> gather[\"gather-recap: buildBlocks -> Block array\"]\n  git -->|Scope, changedFiles| gather\n  gather -->|Block array| assemble[\"assemble-review + src/review/*\"]\n  assemble -->|render| html[\"recap.html\"]\n  shared[\"assemble-atlas, assemble-spec\"] -->|reuse the shell| assemble\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class gather changed;\n  class target actor;\n  class gitcli,shared external;\n  class html store;",
+        "legend": [
+          {
+            "label": "Target (input)",
+            "fill": "#d0ebff",
+            "stroke": "#4dabf7"
+          },
+          {
+            "label": "gather (central)",
+            "fill": "#ffd43b",
+            "stroke": "#f08c00"
+          },
+          {
+            "label": "git / gh · reused-by (external)",
+            "fill": "#f1f3f5",
+            "stroke": "#adb5bd"
+          },
+          {
+            "label": "recap.html (output)",
+            "fill": "#e5dbff",
+            "stroke": "#9775fa"
+          }
+        ]
+      },
+      "callout": "The render half (`assemble-review` + `src/review/*`) is the **shared review shell**; `assemble-atlas` and `assemble-spec` enter it from the right to draw their own pages."
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "The pieces, in depth",
+      "badge": "7 pieces",
+      "intro": "A full section per piece — what it does, how it works, its files and exports, and how it connects to the rest of the domain.",
+      "components": [
+        {
+          "id": "c-cli",
+          "name": "CLI",
+          "path": "bin/recap.ts",
+          "detail": [
+            "`bin/recap.ts` is the whole command-line surface. `parseArgs` reads `--pr` / `--commit` / `--branch` (`--base` to override) / default `--working`, which `parseTarget` folds into a `Target` discriminated union. The normal path calls [gatherRecap](#c-gather) to get `{ scope, blocks, adapter }`, then [assembleReview](#c-shell) to produce `recap.html`. Output is written into a directory (a trailing `.html` is stripped): the HTML, any `.excalidraw` sidecars, and a sibling `blocks.json` all live together so the recap is self-contained.",
+            "The `--blocks` flag is the enrichment round-trip: it loads an already-gathered (and hand-enriched) `blocks.json` and renders it straight through [assembleReview](#c-shell), skipping git entirely. That separation — gather once, enrich the JSON, re-render — is what lets the visual-recap skill add overviews, annotations, and groupings without re-running the diff. `--emit-blocks` writes the raw `Block[]` without HTML, for the same loop."
+          ],
+          "files": [
+            {
+              "name": "bin/recap.ts",
+              "desc": "Arg parsing, the gather→assemble path, and the `--blocks` re-render path."
+            }
+          ],
+          "exports": [
+            {
+              "name": "main()",
+              "desc": "The CLI entry; `main().catch` exits non-zero on error."
+            },
+            {
+              "name": "parseTarget()",
+              "desc": "Flag values → a `Target` (`pr` / `commit` / `branch` / `working`)."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[gatherRecap](#c-gather) to build blocks; [assembleReview](#c-shell) to render"
+            },
+            {
+              "dir": "writes",
+              "body": "`recap.html` + `blocks.json` (+ `.excalidraw` sidecars) into one folder"
+            }
+          ]
+        },
+        {
+          "id": "c-git",
+          "name": "git targets",
+          "path": "src/git.ts",
+          "detail": [
+            "`resolveScope` is the only place that shells out. It maps each `Target` kind to a base/head pair: a commit diffs against its `^` parent, a branch against an explicit `--base` or the merge-base with `main`/`master` (`defaultBase`), the working tree against `HEAD`, and a PR is first `gh pr checkout`'d (the one hard dependency on the `gh` CLI) then treated as `HEAD` vs its merge-base. It returns a `Scope` — `repoRoot`, `baseRef`, `headRef`, a human `label`, and the raw `unifiedDiff`.",
+            "`changedFiles` is the structured companion: it merges `git diff --numstat -z` and `--name-status -z` into `FileChange` rows (path, A/M/D/R status, added/deleted counts). The NUL-delimited (`-z`) form is deliberate — it expands renames into explicit old/new tokens so a renamed file keeps its real new path and an `R` status. `fileAtRef` reads a file's contents at a ref (falling back to a working-tree read), used by the schema/api adapters downstream."
+          ],
+          "exports": [
+            {
+              "name": "resolveScope()",
+              "desc": "→ `Scope` — base/head refs, label, and the raw unified diff."
+            },
+            {
+              "name": "changedFiles()",
+              "desc": "→ `FileChange[]` — path, status, +/- counts, rename-aware."
+            },
+            {
+              "name": "fileAtRef()",
+              "desc": "File contents at a ref (or working tree), `\"\"` if absent."
+            },
+            {
+              "name": "Target · Scope",
+              "desc": "The target union and the resolved scope it produces."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "spawns",
+              "body": "`git` for diffs; `gh pr checkout` for PR targets"
+            },
+            {
+              "dir": "feeds",
+              "body": "[gather](#c-gather) the `Scope` (raw diff) and `changedFiles`"
+            }
+          ]
+        },
+        {
+          "id": "c-parse",
+          "name": "diff parsing",
+          "path": "src/parse-diff.ts · src/diff-order.ts",
+          "detail": [
+            "`parseUnifiedDiff` is a small, pure state machine over the raw diff text: a `diff --git` line opens a new `DiffBlock` (title = basename, `path` = the `b/` path), an `@@` line opens a `DiffHunk`, and `+`/`-`/` ` lines append to the current hunk (the `+++`/`---` file headers are skipped). No git, no I/O — just string work, which keeps it trivially testable.",
+            "`sortByImportance` is a stable rank sort so the reader meets the substance first: source code ranks 0, schema/config 2, styles 3, tests 4, and lockfiles/generated files 5 — ties preserve input order. [buildBlocks](#c-gather) runs both together (`sortByImportance(parseUnifiedDiff(...))`) so the diffs land in the block array already ordered."
+          ],
+          "exports": [
+            {
+              "name": "parseUnifiedDiff()",
+              "desc": "Raw diff → one `DiffBlock` (with `DiffHunk`s) per file."
+            },
+            {
+              "name": "sortByImportance()",
+              "desc": "Stable rank sort: source → config → styles → tests → generated."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumes",
+              "body": "`scope.unifiedDiff` from [git targets](#c-git)"
+            },
+            {
+              "dir": "called by",
+              "body": "[buildBlocks](#c-gather) — parse then sort the diffs"
+            }
+          ]
+        },
+        {
+          "id": "c-gather",
+          "name": "gather",
+          "path": "src/gather-recap.ts · src/recap-summary.ts",
+          "detail": [
+            "`gatherRecap` is the top of the pipeline: resolve the [scope](#c-git), get the [changed files](#c-git), `selectAdapter` (currently the Prisma/tRPC adapter, else a no-op default), then hand off to `buildBlocks`. It returns `{ scope, blocks, adapter }` for the [CLI](#c-cli) to render.",
+            "`buildBlocks` composes the ordered `Block[]` that *is* the recap. It pushes a `file-tree`, asks the adapter for a schema diff and an API diff (each guarded so a failure only warns), unshifts a mechanical `summaryMarkdown` lead to the front, appends the code-intel `dependencyNeighborhood` \"where it fits\" diagram and the [api-surface](#c-api) diagram, then the [ranked diffs](#c-parse) last. `summaryMarkdown` writes that lead — file/line totals, areas touched, and added/removed/changed procedures — as pure Markdown from the already-gathered data. The result is raw material: the visual-recap skill enriches it (overviews, annotations, groups) before the final render."
+          ],
+          "exports": [
+            {
+              "name": "gatherRecap()",
+              "desc": "Target → `{ scope, blocks, adapter }` — the whole pipeline."
+            },
+            {
+              "name": "buildBlocks()",
+              "desc": "Compose the ordered `Block[]`: summary, files, diagrams, diffs."
+            },
+            {
+              "name": "summaryMarkdown()",
+              "desc": "The mechanical Markdown lead (totals, areas, procedure deltas)."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[git targets](#c-git), [parse/order](#c-parse), [api-diagram](#c-api), and the [core](../domain-core/domain-core.html) Block model"
+            },
+            {
+              "dir": "uses",
+              "body": "[code-intel](../domain-code-intel/domain-code-intel.html) `dependencyNeighborhood` + adapter schema/api diffs"
+            },
+            {
+              "dir": "feeds",
+              "body": "[the review shell](#c-shell) the `Block[]` it renders"
+            }
+          ]
+        },
+        {
+          "id": "c-shell",
+          "name": "review shell",
+          "path": "src/assemble-review.ts · src/review/*.ts",
+          "detail": [
+            "`assembleReview(blocks, opts)` is the app-shell: it asserts unique ids, normalizes loose top-level diffs into walkthrough chapters (`groupLooseDiffs`), inlines `review.css` + the viewer script, renders every diagram once, then walks the blocks emitting `<section>`s — TL;DR + overview, files-changed, the guided walkthrough (progress rail + chapters), standalone diagram/schema/api/prose sections — into one self-contained HTML document. Along the way it runs `lintBlocks` and [lintCompleteness](#c-lint), surfacing warnings (including any diagram that failed to compile) through `onWarn`.",
+            "The `src/review/*` renderers are the shell's vocabulary, each a focused function: `topbar` (title + risk/stat chips), `sidebar` (files + walkthrough outline + meta + progress rail), `tldr` (the What/Why/Risk/Size card + overview points), `files-table`, `walkthrough` (chapters and per-file subsections with diff bodies), `diff` (the raw +/- body), `sections` (diagram cards, the rendered legend, api-surface cards, reused-block fallbacks), `diagrams` (collect + render all), and `normalize` (`stripChapterOrdinal`, `groupLooseDiffs`). **This shell is the domain's biggest shared seam** — `assemble-atlas` and `assemble-spec` import these same renderers to draw the atlas and spec pages, so the topbar/sidebar/sections look and behave identically across all three products."
+          ],
+          "diagrams": [
+            {
+              "id": "shell-render",
+              "kind": "architecture",
+              "d2": "direction: right\nblocks: { label: \"Block[]\"; class: actor }\nassemble: { label: \"assembleReview\"; class: changed }\ntopbar: { label: \"topbar\\ntitle · risk chips\" }\nsidebar: { label: \"sidebar\\nfiles · outline · rail\" }\ntldr: { label: \"tldr\\nWhat · Why · Size\" }\nfiles: { label: \"files-table\" }\nwalk: { label: \"walkthrough\\nchapters · subsections\" }\nsections: { label: \"sections\\ndiagrams · api · prose\" }\nhtml: { label: \"recap.html\"; class: store }\nblocks -> assemble\nassemble -> topbar\nassemble -> sidebar\nassemble -> tldr\nassemble -> files\nassemble -> walk\nassemble -> sections\ntopbar -> html\nsidebar -> html\ntldr -> html\nfiles -> html\nwalk -> html\nsections -> html\n",
+              "mermaid": "graph LR\n  blocks[\"Block array\"] --> assemble[\"assembleReview\"]\n  assemble --> topbar[\"topbar: title, risk chips\"]\n  assemble --> sidebar[\"sidebar: files, outline, rail\"]\n  assemble --> tldr[\"tldr: What, Why, Size\"]\n  assemble --> files[\"files-table\"]\n  assemble --> walk[\"walkthrough: chapters\"]\n  assemble --> sections[\"sections: diagrams, api, prose\"]\n  topbar --> html[\"recap.html\"]\n  sidebar --> html\n  tldr --> html\n  files --> html\n  walk --> html\n  sections --> html\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class assemble changed;\n  class blocks actor;\n  class html store;",
+              "legend": [
+                {
+                  "label": "Block[] (input)",
+                  "fill": "#d0ebff",
+                  "stroke": "#4dabf7"
+                },
+                {
+                  "label": "assembleReview (orchestrator)",
+                  "fill": "#ffd43b",
+                  "stroke": "#f08c00"
+                },
+                {
+                  "label": "recap.html (output)",
+                  "fill": "#e5dbff",
+                  "stroke": "#9775fa"
+                }
+              ]
+            }
+          ],
+          "files": [
+            {
+              "name": "assemble-review.ts",
+              "desc": "The orchestrator: normalize, render diagrams, emit sections, lint, write HTML."
+            },
+            {
+              "name": "review/topbar.ts · sidebar.ts",
+              "desc": "The chrome — title/risk/stat chips; files + outline + progress rail."
+            },
+            {
+              "name": "review/tldr.ts · files-table.ts",
+              "desc": "The TL;DR card + overview points; the files-changed table."
+            },
+            {
+              "name": "review/walkthrough.ts · diff.ts · sections.ts",
+              "desc": "Chapters & subsections; the raw diff body; diagram/api/prose section cards."
+            },
+            {
+              "name": "review/diagrams.ts · normalize.ts · constants.ts",
+              "desc": "Diagram collection/render; ordinal-strip & loose-diff grouping; risk labels."
+            }
+          ],
+          "exports": [
+            {
+              "name": "assembleReview()",
+              "desc": "→ the full self-contained review HTML; `ReviewOpts` / `ReviewStatus` shape its inputs."
+            },
+            {
+              "name": "renderTopbar · renderSidebar · renderTldr · renderFilesTable",
+              "desc": "The chrome and lead renderers."
+            },
+            {
+              "name": "renderWalkthrough · renderDiffBody · renderDiagramCard · renderApiSurface",
+              "desc": "The body renderers — chapters, diffs, diagram cards, api-surface cards."
+            },
+            {
+              "name": "groupLooseDiffs · assertUniqueIds · collectDiagrams",
+              "desc": "Normalization and the diagram-collection helpers `assembleReview` orchestrates."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumes",
+              "body": "the `Block[]` from [gather](#c-gather) and the [core](../domain-core/domain-core.html) block types"
+            },
+            {
+              "dir": "renders via",
+              "body": "[diagrams](../domain-diagrams/domain-diagrams.html) — `renderAll` for every d2/mermaid figure"
+            },
+            {
+              "dir": "reused by",
+              "body": "`assemble-atlas` (atlas pages) and `assemble-spec` (authoring) — the shared app-shell seam"
+            }
+          ]
+        },
+        {
+          "id": "c-api",
+          "name": "api-diagram",
+          "path": "src/api-diagram.ts",
+          "detail": [
+            "`apiSurfaceDiagram` turns a list of `ApiProcedure`s (gathered by the stack adapter) into an architecture diagram of the changed API surface. It groups procedures by router, emits a d2 floor (`client -> router`, each procedure a node colored by its `change` — added/changed/removed), and a parallel mermaid upgrade with `subgraph` routers and the shared `classDef`s so the figure is editable in Excalidraw. It returns `null` when there are no procedures, so [buildBlocks](#c-gather) simply skips the section."
+          ],
+          "exports": [
+            {
+              "name": "apiSurfaceDiagram()",
+              "desc": "→ `DiagramBlock | null` — routers→procedures, colored by change."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[buildBlocks](#c-gather) with the adapter's gathered procedures"
+            },
+            {
+              "dir": "rendered by",
+              "body": "[the review shell](#c-shell) via the shared [diagrams](../domain-diagrams/domain-diagrams.html) renderer"
+            }
+          ]
+        },
+        {
+          "id": "c-lint",
+          "name": "completeness lint",
+          "path": "src/lint-completeness.ts",
+          "detail": [
+            "`lintCompleteness` is the diff-size-aware \"demo standard\" check — warnings only, it never throws or blocks rendering. If a recap has no diffs it is not a code recap and nothing is enforced. Otherwise it checks three things: a lead `overview` block exists with complete What/Why/Size facets and a risk level; every non-trivial diff (more than `TRIVIAL_DIFF_LINES` changed lines) carries a description; and once there are `GROUP_THRESHOLD`+ top-level diffs they are wrapped into `group` chapters rather than left as a flat pile. [assembleReview](#c-shell) runs it over the *original* blocks and routes its messages through `onWarn`, nudging the visual-recap skill to enrich the gather output past raw material."
+          ],
+          "exports": [
+            {
+              "name": "lintCompleteness()",
+              "desc": "→ `string[]` of completeness warnings, in document order."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[assembleReview](#c-shell) — alongside `lintBlocks`, surfaced via `onWarn`"
+            },
+            {
+              "dir": "inspects",
+              "body": "the [core](../domain-core/domain-core.html) `OverviewBlock` / `DiffBlock` shapes"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "recap owns the **review app-shell vocabulary** and the diff model; it borrows the generic `Block` union from core.",
+      "rows": [
+        {
+          "name": "Review app-shell",
+          "desc": "The standing page vocabulary — **topbar**, **sidebar**, **TL;DR**, **files-table**, **sections**, **walkthrough** (chapters + subsections + progress rail) — defined by `assemble-review.ts` + `src/review/*` and reused by atlas + authoring."
+        },
+        {
+          "name": "FileChange",
+          "desc": "A changed file: `path`, `status` (A/M/D/R), and added/deleted line counts — rename-aware via `git diff -z`."
+        },
+        {
+          "name": "DiffBlock · DiffHunk",
+          "desc": "The parsed diff model: one block per file (title, path, hunks), each hunk an `@@` header plus its `+`/`-`/` ` lines."
+        },
+        {
+          "name": "Target · Scope",
+          "desc": "The git input union (`pr` / `commit` / `branch` / `working`) and the resolved scope (base/head refs, label, raw diff)."
+        },
+        {
+          "name": "ReviewOpts · ReviewStatus",
+          "desc": "The render options (title, source, status, outDir) and the topbar status pill (`green`/`yellow`/`red`)."
+        }
+      ],
+      "note": "Reads (never owns): the generic `Block` union, `OverviewBlock`, `ApiProcedure`, and `DiagramBlock` from `src/blocks.ts` ([core](../domain-core/domain-core.html))."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "A git target in; a self-contained review document out — and a render shell shared with every other product.",
+      "exposes": [
+        {
+          "api": "the review app-shell",
+          "note": "`assembleReview` + `src/review/*` — reused by `assemble-atlas` and `assemble-spec`"
+        },
+        {
+          "api": "recap CLI",
+          "note": "`bin/recap.ts` — `--pr` / `--commit` / `--branch` / `--working`, `--blocks` re-render"
+        },
+        {
+          "api": "gatherRecap() · buildBlocks()",
+          "note": "the gather pipeline → `Block[]`"
+        },
+        {
+          "api": "resolveScope() · changedFiles()",
+          "note": "git-target resolution"
+        }
+      ],
+      "depends": [
+        {
+          "name": "core",
+          "path": "src/blocks.ts · assemble",
+          "href": "../domain-core/domain-core.html"
+        },
+        {
+          "name": "diagrams",
+          "path": "src render-diagram",
+          "href": "../domain-diagrams/domain-diagrams.html"
+        },
+        {
+          "name": "code-intel",
+          "path": "src dep-graph · api-diff",
+          "href": "../domain-code-intel/domain-code-intel.html"
+        }
+      ],
+      "note": "It borrows the `Block` model + diagram rendering from `core`/`diagrams`, and the `dependencyNeighborhood` (where-it-fits) graph and api/schema diffs from `code-intel`. In return it **exposes the review shell** that atlas (`assemble-atlas`) and authoring (`assemble-spec`) build their pages on — the one seam where this surface domain is infrastructure for the rest."
+    }
+  ]
+}

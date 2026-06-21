@@ -1,0 +1,364 @@
+{
+  "kind": "domain",
+  "slug": "diagrams",
+  "title": "Diagram pipeline",
+  "layer": "foundation",
+  "layerLabel": "Foundation",
+  "path": "src",
+  "count": "4 files",
+  "date": "2026-06-20",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Foundation"
+    },
+    {
+      "key": "Path",
+      "value": "src"
+    },
+    {
+      "key": "Files",
+      "value": "4 (render-diagram, diagram-colors, mermaid-to-d2, promote-mermaid)"
+    },
+    {
+      "key": "Depends on",
+      "value": "the external `d2` binary only"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "eyebrow": "Domain",
+      "heading": "The shared service that turns a d2 or mermaid diagram source into a rendered SVG — the render floor every generator stands on.",
+      "rows": [
+        {
+          "key": "Path",
+          "value": "`src` — `render-diagram.ts`, `diagram-colors.ts`, `mermaid-to-d2.ts`, `promote-mermaid.ts`"
+        },
+        {
+          "key": "Files",
+          "value": "4 modules, no dependencies on the rest of the toolkit — a leaf at the bottom of the stack."
+        },
+        {
+          "key": "Role",
+          "value": "Compile diagram sources to SVG via the `d2` CLI, optionally upgrade flowchart-class diagrams to an editable Excalidraw scene, and own the **semantic color palette** every diagram speaks."
+        }
+      ],
+      "bigIdea": {
+        "label": "The load-bearing idea",
+        "line": "\"One palette drives BOTH the d2 prelude and the mermaid classDefs.\"",
+        "sub": "`PALETTE` in `diagram-colors.ts` is the single source of truth. From it we generate the d2 `classes {}` block injected before every render **and** the matching mermaid `classDef` lines — so a `changed` node is the same amber whether it renders as a static d2 image or an editable mermaid→Excalidraw scene. Diagrams never drift between the two representations because there is only one place a color lives."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "The pieces",
+      "badge": "render + palette + convert",
+      "intro": "A renderer with a hard floor and an opt-in upgrade, fed by one palette and two source-shaping helpers (mermaid→d2 conversion and prose-fence promotion). Tap a card to jump to its full section.",
+      "cards": [
+        {
+          "name": "render-diagram",
+          "purpose": "The renderer. Compiles a diagram's d2 source to SVG via the external `d2` CLI (the floor), then — for flowchart-class diagrams only — optionally upgrades to an editable Excalidraw scene. A bad diagram degrades to a visible placeholder, never a broken document.",
+          "exports": [
+            {
+              "name": "renderDiagram"
+            },
+            {
+              "name": "renderAll"
+            },
+            {
+              "name": "DiagramResult",
+              "deputy": true
+            }
+          ],
+          "href": "#c-render-diagram"
+        },
+        {
+          "name": "palette",
+          "purpose": "The semantic color vocabulary and the single source of truth for it. `PALETTE` generates both the d2 `classes` prelude and the matching mermaid classDefs, plus the legend logic that lists only the roles actually applied.",
+          "exports": [
+            {
+              "name": "PALETTE"
+            },
+            {
+              "name": "D2_CLASS_PRELUDE"
+            },
+            {
+              "name": "MERMAID_CLASSDEFS"
+            },
+            {
+              "name": "legendRolesForRender",
+              "deputy": true
+            }
+          ],
+          "href": "#c-palette"
+        },
+        {
+          "name": "mermaid-to-d2",
+          "purpose": "A focused converter for the common mermaid flowchart subset → d2, so a mermaid-authored diagram still has a dependable d2 floor. Returns `null` for anything outside the subset rather than guessing.",
+          "exports": [
+            {
+              "name": "mermaidFlowchartToD2"
+            }
+          ],
+          "href": "#c-mermaid-to-d2"
+        },
+        {
+          "name": "promote-mermaid",
+          "purpose": "Walks prose blocks and lifts each convertible ```mermaid fence into a real diagram block (d2 floor + mermaid source) so authored markdown gets rendered diagrams for free.",
+          "exports": [
+            {
+              "name": "promoteMermaidFences"
+            }
+          ],
+          "href": "#c-promote-mermaid"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "How a diagram renders",
+      "badge": "architecture",
+      "intro": "A diagram source is either native d2 or mermaid. `renderDiagram` is the hub: it prepends the palette's `D2_CLASS_PRELUDE`, shells out to the external `d2` CLI for the SVG floor, and — only for eligible flowchart-class kinds — upgrades the mermaid source to an editable Excalidraw scene. `mermaidFlowchartToD2` is the converter branch that gives a mermaid-authored diagram its d2 floor.",
+      "diagram": {
+        "id": "render-pipeline",
+        "kind": "architecture",
+        "d2": "direction: right\nsrc: { label: \"diagram source\\nd2 or mermaid\"; class: actor }\nconv: { label: \"mermaidFlowchartToD2\\nmermaid subset -> d2\" }\npalette: { label: \"PALETTE\\nD2_CLASS_PRELUDE\"; class: store }\nrender: { label: \"renderDiagram\\n(the hub)\"; class: changed }\nd2cli: { label: \"d2 CLI\"; class: external }\nsvg: { label: \"SVG / <img>\" }\nexcal: { label: \"Excalidraw scene\\n(editable, opt-in)\" }\nsrc -> conv: mermaid\nconv -> render: d2 floor\nsrc -> render: d2\npalette -> render: prelude + classDefs\nrender -> d2cli: exec d2\nd2cli -> svg: floor SVG\nrender -> excal: flowchart-class only\n",
+        "mermaid": "flowchart LR\n  src[\"diagram source d2 or mermaid\"] -->|mermaid| conv[\"mermaidFlowchartToD2\"]\n  conv -->|d2 floor| render[\"renderDiagram the hub\"]\n  src -->|d2| render\n  palette[\"PALETTE prelude + classDefs\"] --> render\n  render -->|exec d2| d2cli[\"d2 CLI\"]\n  d2cli -->|floor SVG| svg[\"SVG img\"]\n  render -->|flowchart-class only| excal[\"Excalidraw scene editable\"]\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class render changed;\n  class src actor;\n  class d2cli external;\n  class palette store;\n",
+        "caption": "`renderDiagram` is the hub; the `d2` CLI is the only external dependency. The Excalidraw upgrade is opt-in and falls back to the d2 SVG on any error."
+      }
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "The pieces, in depth",
+      "badge": "4 pieces",
+      "intro": "A full section per piece — what it does, how it works, its files and exports, and how it connects to the generators that consume it.",
+      "components": [
+        {
+          "id": "c-render-diagram",
+          "name": "render-diagram",
+          "path": "src/render-diagram.ts",
+          "detail": [
+            "`renderDiagram(block, opts, deps)` is the heart of the domain. It first compiles the block's **d2 source** to an SVG by writing `D2_CLASS_PRELUDE` + the source to a temp file and shelling out to the `d2` binary (`d2 --theme 0 --pad 24`). This is the dependable floor: it renders every diagram kind with no browser. If `d2` is missing or the source is invalid, the call degrades to a visible placeholder SVG (a warning box) rather than throwing — so one bad diagram never breaks a whole document.",
+            "The second stage is an **opt-in upgrade**. Routing is by diagram *kind*, not by toolchain availability: only `flowchart`, `architecture`, `sequence`, and `class` kinds are eligible, because those are the ones `mermaid-to-excalidraw` converts to native *editable* elements (ERD and stateDiagram silently rasterize, which is worse than the d2 sketch). When eligible and the opt-in Excalidraw toolchain is present, it converts the mermaid source to an editable `.excalidraw` scene plus a display SVG, forcing all text to dark `INK` for legibility. Any failure falls back to the d2 SVG already in hand — same aesthetic, never broken. `renderAll` maps this over many blocks in order."
+          ],
+          "diagrams": [
+            {
+              "id": "render-floor-upgrade",
+              "kind": "flowchart",
+              "d2": "direction: right\nfloor: { label: \"d2 compile\\n(the floor)\"; class: changed }\nok: { label: \"SVG\" }\nph: { label: \"placeholder\\n(visible warning)\"; class: removed }\neligible: { label: \"kind eligible +\\nexcalidraw ready?\" }\nup: { label: \"Excalidraw scene\\n(editable)\"; class: added }\nfloor -> ok: success\nfloor -> ph: d2 missing / invalid\nok -> eligible\neligible -> up: yes\neligible -> ok: no / fails -> fall back\n",
+              "mermaid": "flowchart LR\n  floor[\"d2 compile the floor\"] -->|success| ok[\"SVG\"]\n  floor -->|d2 missing or invalid| ph[\"placeholder visible warning\"]\n  ok --> eligible[\"kind eligible + excalidraw ready?\"]\n  eligible -->|yes| up[\"Excalidraw scene editable\"]\n  eligible -->|no or fails| ok\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef added fill:#d3f9d8,stroke:#37b24d,color:#1b1b1b;\n  classDef removed fill:#ffe3e3,stroke:#f03e3e,color:#1b1b1b;\n  class floor changed;\n  class up added;\n  class ph removed;\n"
+            }
+          ],
+          "files": [
+            {
+              "name": "render-diagram.ts",
+              "desc": "The d2 floor, the placeholder fallback, and the opt-in Excalidraw upgrade path."
+            }
+          ],
+          "exports": [
+            {
+              "name": "renderDiagram()",
+              "desc": "→ `DiagramResult` — compile one block to SVG (+ optional editable scene)."
+            },
+            {
+              "name": "renderAll()",
+              "desc": "Renders many blocks, preserving order."
+            },
+            {
+              "name": "DiagramResult · RenderOpts · RenderDeps",
+              "desc": "Result shape, render options (`outDir`/`excalidraw`/`onWarn`), and the injectable Excalidraw seam for tests."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "uses",
+              "body": "[palette](#c-palette) — `D2_CLASS_PRELUDE` is prepended to every d2 source; `INK` recolors Excalidraw text"
+            },
+            {
+              "dir": "execs",
+              "body": "the external `d2` binary on PATH (the only hard dependency)"
+            },
+            {
+              "dir": "called by",
+              "body": "[core](../domain-core/domain-core.html) render shell, [recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), and [authoring](../domain-authoring/domain-authoring.html) — every generator that embeds a rendered diagram"
+            }
+          ]
+        },
+        {
+          "id": "c-palette",
+          "name": "palette",
+          "path": "src/diagram-colors.ts",
+          "detail": [
+            "`PALETTE` is the single source of truth for the six semantic roles (`changed`, `added`, `removed`, `actor`, `external`, `store`), each a `{ fill, stroke, bold? }`. From this one object two representations are generated so they can never drift: `D2_CLASS_PRELUDE` (the d2 `classes {}` block that `render-diagram` injects before every render, letting any source apply `class: <role>`) and `MERMAID_CLASSDEFS` (the matching `classDef` lines an editable flowchart includes so its Excalidraw scene stays colored). `INK` is the dark label color that guarantees readable contrast on every fill.",
+            "The legend logic keeps the rendered legend honest. `rolesInSource` scans a source for roles that are *applied* (`class: role` in d2, `:::role` or `class a,b role;` in mermaid) — excluding mere `classDef` definitions — and `legendRolesForRender` keys off the actual renderer: the d2 SVG carries d2 `class:` colors, but an Excalidraw scene carries only the mermaid classDefs, so a mermaid *sequence* (which has no class mechanism) renders colorless and correctly shows no legend even though its d2 floor defined roles."
+          ],
+          "files": [
+            {
+              "name": "diagram-colors.ts",
+              "desc": "`PALETTE`, the generated d2 prelude + mermaid classDefs, `INK`, and the legend-role scanners."
+            }
+          ],
+          "exports": [
+            {
+              "name": "PALETTE · ColorRole · INK",
+              "desc": "The role→color map, the role union, and the dark label ink."
+            },
+            {
+              "name": "D2_CLASS_PRELUDE · MERMAID_CLASSDEFS",
+              "desc": "The two generated representations of the palette — injected / included into sources."
+            },
+            {
+              "name": "rolesInSource() · legendRolesForRender() · ROLE_LABELS",
+              "desc": "Which roles a source applies, which to legend per renderer, and human labels."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "[render-diagram](#c-render-diagram) — prelude prepended to every render; `INK` recolors Excalidraw text"
+            },
+            {
+              "dir": "spoken by",
+              "body": "[recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), [authoring](../domain-authoring/domain-authoring.html) — every diagram recipe applies these role classes"
+            },
+            {
+              "dir": "owns",
+              "body": "the [semantic role vocabulary](#data) below"
+            }
+          ]
+        },
+        {
+          "id": "c-mermaid-to-d2",
+          "name": "mermaid-to-d2",
+          "path": "src/mermaid-to-d2.ts",
+          "detail": [
+            "`mermaidFlowchartToD2(mermaid)` translates the common mermaid flowchart subset into equivalent d2, so a mermaid-authored diagram still has the dependable d2 render floor. It parses the `graph`/`flowchart` header for direction, walks each edge line splitting on the mermaid arrow forms (`-->`, `-.->`, `---`, `==>`), captures bracketed node labels and pipe edge labels, and emits `direction:`, node, and edge lines with everything quoted for safety.",
+            "Crucially it returns **`null`** for anything outside the subset (a missing header, an unparseable node shape) rather than emitting a half-broken diagram — the caller is expected to leave such a fence as inline code. That null-or-clean contract is what makes [promote-mermaid](#c-promote-mermaid) safe to run over arbitrary authored prose."
+          ],
+          "files": [
+            {
+              "name": "mermaid-to-d2.ts",
+              "desc": "The mermaid-flowchart-subset → d2 parser (header, nodes, edges) with a strict null fallback."
+            }
+          ],
+          "exports": [
+            {
+              "name": "mermaidFlowchartToD2()",
+              "desc": "→ `string | null` — d2 source, or null when the mermaid is outside the supported subset."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[promote-mermaid](#c-promote-mermaid) — to give each promoted fence its d2 floor"
+            },
+            {
+              "dir": "produces",
+              "body": "the d2 source consumed by [render-diagram](#c-render-diagram)"
+            }
+          ]
+        },
+        {
+          "id": "c-promote-mermaid",
+          "name": "promote-mermaid",
+          "path": "src/promote-mermaid.ts",
+          "detail": [
+            "`promoteMermaidFences(blocks)` lets authored markdown carry diagrams for free. It walks prose blocks and, for each fenced ```mermaid block, calls [mermaidFlowchartToD2](#c-mermaid-to-d2). When conversion succeeds it splits the prose, emitting the surrounding text as prose blocks and the fence as a real `diagram` block (kind `flowchart`, carrying both the converted d2 floor and the original mermaid source for the editable upgrade). When conversion returns `null` the fence is left untouched inline, so nothing is ever rendered half-broken.",
+            "This is the bridge from human-written markdown into the same render pipeline the structured generators use — the same `DiagramBlock` shape `render-diagram` consumes, so a hand-written mermaid diagram and a programmatically authored one render identically."
+          ],
+          "files": [
+            {
+              "name": "promote-mermaid.ts",
+              "desc": "Prose-block walker that lifts convertible ```mermaid fences into diagram blocks."
+            }
+          ],
+          "exports": [
+            {
+              "name": "promoteMermaidFences()",
+              "desc": "→ `Block[]` — prose blocks with convertible mermaid fences promoted to diagram blocks."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[mermaid-to-d2](#c-mermaid-to-d2) for the d2 floor of each promoted fence"
+            },
+            {
+              "dir": "called by",
+              "body": "[authoring](../domain-authoring/domain-authoring.html) and [recap](../domain-recap/domain-recap.html) — markdown ingestion before render"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "Diagrams owns the **semantic role vocabulary** — the six color roles every diagram across the toolkit speaks. `PALETTE` is the single source; the d2 prelude and mermaid classDefs are generated from it.",
+      "rows": [
+        {
+          "name": "changed",
+          "desc": "Modified / the subject — bold amber (`#ffd43b`/`#f08c00`). The one role drawn with extra stroke weight so the subject pops."
+        },
+        {
+          "name": "added",
+          "desc": "New — green (`#d3f9d8`/`#37b24d`)."
+        },
+        {
+          "name": "removed",
+          "desc": "Deleted — red (`#ffe3e3`/`#f03e3e`)."
+        },
+        {
+          "name": "actor",
+          "desc": "User / initiator — blue (`#d0ebff`/`#4dabf7`)."
+        },
+        {
+          "name": "external",
+          "desc": "Third-party system — gray (`#f1f3f5`/`#adb5bd`). The `d2` CLI itself is tagged this in the arch diagram."
+        },
+        {
+          "name": "store",
+          "desc": "Datastore — db / cache / queue — violet (`#e5dbff`/`#9775fa`)."
+        }
+      ],
+      "note": "Roles are *applied* in sources (`class: <role>` in d2, `class X <role>;` in mermaid), never redefined — sources must not author their own top-level `classes:` block, since d2 silently merges it and would let a recipe shadow the canonical palette."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "A foundation leaf: it exposes a render API and a color vocabulary, and depends on nothing in the toolkit — only the external `d2` binary.",
+      "exposes": [
+        {
+          "api": "renderDiagram() · renderAll()",
+          "note": "compile diagram blocks to SVG (+ optional editable scene)"
+        },
+        {
+          "api": "PALETTE · D2_CLASS_PRELUDE · MERMAID_CLASSDEFS",
+          "note": "the semantic color classes"
+        },
+        {
+          "api": "promoteMermaidFences()",
+          "note": "lift mermaid fences in prose to diagrams"
+        },
+        {
+          "api": "mermaidFlowchartToD2()",
+          "note": "mermaid-subset → d2 conversion"
+        },
+        {
+          "api": "legendRolesForRender() · rolesInSource()",
+          "note": "honest per-renderer legend roles"
+        }
+      ],
+      "depends": [],
+      "note": "No meaningful internal dependencies — this is the foundation layer. The only runtime requirement is the external `d2` binary on PATH; when it is absent, `renderDiagram` degrades to a visible placeholder rather than failing. Consumers: [core](../domain-core/domain-core.html), [recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), and [authoring](../domain-authoring/domain-authoring.html) all render through it."
+    }
+  ]
+}

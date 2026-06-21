@@ -1,0 +1,153 @@
+{
+  "repo": "visual-skills",
+  "srcRoots": [
+    "src",
+    "bin",
+    "lib"
+  ],
+  "domains": [
+    {
+      "slug": "core",
+      "name": "Rendering core",
+      "globs": [
+        "src/blocks.ts",
+        "src/html.ts",
+        "src/highlight.ts",
+        "src/assemble.ts",
+        "src/lint-blocks.ts",
+        "src/version.ts",
+        "src/renderers/**"
+      ],
+      "modules": [
+        "src/assemble.ts",
+        "src/blocks.ts",
+        "src/highlight.ts",
+        "src/html.ts",
+        "src/lint-blocks.ts",
+        "src/renderers/annotated-code.ts",
+        "src/renderers/api.ts",
+        "src/renderers/diff.ts",
+        "src/renderers/file-tree.ts",
+        "src/renderers/legend.ts",
+        "src/renderers/markdown.ts",
+        "src/renderers/overview.ts",
+        "src/renderers/prose.ts",
+        "src/renderers/questions.ts",
+        "src/version.ts"
+      ]
+    },
+    {
+      "slug": "diagrams",
+      "name": "Diagram pipeline",
+      "globs": [
+        "src/render-diagram.ts",
+        "src/diagram-colors.ts",
+        "src/mermaid-to-d2.ts",
+        "src/promote-mermaid.ts"
+      ],
+      "modules": [
+        "src/diagram-colors.ts",
+        "src/mermaid-to-d2.ts",
+        "src/promote-mermaid.ts",
+        "src/render-diagram.ts"
+      ]
+    },
+    {
+      "slug": "code-intel",
+      "name": "Code intelligence",
+      "globs": [
+        "src/adapters/**",
+        "src/prisma-schema.ts",
+        "src/trpc-parse.ts",
+        "src/imports.ts",
+        "src/dep-graph.ts",
+        "src/api-diff.ts"
+      ],
+      "modules": [
+        "src/adapters/generic.ts",
+        "src/adapters/prisma-trpc.ts",
+        "src/adapters/stack-adapter.ts",
+        "src/api-diff.ts",
+        "src/dep-graph.ts",
+        "src/imports.ts",
+        "src/prisma-schema.ts",
+        "src/trpc-parse.ts"
+      ]
+    },
+    {
+      "slug": "recap",
+      "name": "Recap (diff review)",
+      "globs": [
+        "bin/recap.ts",
+        "src/gather-recap.ts",
+        "src/recap-summary.ts",
+        "src/assemble-review.ts",
+        "src/parse-diff.ts",
+        "src/diff-order.ts",
+        "src/git.ts",
+        "src/api-diagram.ts",
+        "src/lint-completeness.ts",
+        "src/review/**"
+      ],
+      "modules": [
+        "bin/recap.ts",
+        "src/api-diagram.ts",
+        "src/assemble-review.ts",
+        "src/diff-order.ts",
+        "src/gather-recap.ts",
+        "src/git.ts",
+        "src/lint-completeness.ts",
+        "src/parse-diff.ts",
+        "src/recap-summary.ts",
+        "src/review/constants.ts",
+        "src/review/diagrams.ts",
+        "src/review/diff.ts",
+        "src/review/files-table.ts",
+        "src/review/normalize.ts",
+        "src/review/sections.ts",
+        "src/review/sidebar.ts",
+        "src/review/tldr.ts",
+        "src/review/topbar.ts",
+        "src/review/walkthrough.ts"
+      ]
+    },
+    {
+      "slug": "atlas",
+      "name": "Atlas (codebase map)",
+      "globs": [
+        "bin/atlas.ts",
+        "src/atlas-blocks.ts",
+        "src/atlas-config.ts",
+        "src/gather-atlas.ts",
+        "src/assemble-atlas.ts",
+        "src/lint-atlas.ts"
+      ],
+      "modules": [
+        "bin/atlas.ts",
+        "src/assemble-atlas.ts",
+        "src/atlas-blocks.ts",
+        "src/atlas-config.ts",
+        "src/gather-atlas.ts",
+        "src/lint-atlas.ts"
+      ]
+    },
+    {
+      "slug": "authoring",
+      "name": "Authoring (spec + doc)",
+      "globs": [
+        "bin/spec.ts",
+        "bin/doc.ts",
+        "src/spec-blocks.ts",
+        "src/assemble-spec.ts",
+        "src/lint-spec.ts"
+      ],
+      "modules": [
+        "bin/doc.ts",
+        "bin/spec.ts",
+        "src/assemble-spec.ts",
+        "src/lint-spec.ts",
+        "src/spec-blocks.ts"
+      ]
+    }
+  ]
+}

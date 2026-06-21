@@ -1,0 +1,473 @@
+{
+  "kind": "domain",
+  "slug": "authoring",
+  "title": "Authoring (spec + doc)",
+  "layer": "surface",
+  "layerLabel": "Surface",
+  "path": "authoring",
+  "count": "5 files",
+  "depends": "core · diagrams · recap",
+  "date": "2026-06-20",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Surface"
+    },
+    {
+      "key": "Path",
+      "value": "bin/ · src/"
+    },
+    {
+      "key": "Files",
+      "value": "5 (2 CLIs + 3 src)"
+    },
+    {
+      "key": "Depends on",
+      "value": "core · diagrams · recap"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "eyebrow": "Domain",
+      "heading": "The two pure-authoring products — render a hand-written spec or doc straight into self-contained HTML, with no codebase scan.",
+      "rows": [
+        {
+          "key": "Path",
+          "value": "`bin/spec.ts` · `bin/doc.ts` · `src/spec-blocks.ts` · `src/assemble-spec.ts` · `src/lint-spec.ts`"
+        },
+        {
+          "key": "Files",
+          "value": "5 — two thin CLIs over `src/` (one extra render path, one extra block model, one lint floor)"
+        },
+        {
+          "key": "Role",
+          "value": "Unlike `recap` / `atlas`, the input is **hand-authored blocks JSON**, not a scan. `spec` renders an approval-focused design spec; `doc` is the general illustrated-doc renderer."
+        }
+      ],
+      "bigIdea": {
+        "label": "The load-bearing idea",
+        "line": "\"Two thin CLIs over the shared engine.\"",
+        "sub": "`doc` reuses **core's generic `Block` model** directly — `bin/doc.ts` just promotes mermaid fences and calls `assemble`, with almost no domain code of its own. `spec` adds its **own approval-focused block vocabulary** (`SpecBlock` — tldr, decisions, scope, rollout, approve) plus a dedicated `assembleSpec` renderer and a completeness `lintSpec` floor. Both ride the same diagram pipeline."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "The pieces",
+      "badge": "2 CLIs + 3 src",
+      "intro": "`doc` is the thin one — it leans on core + diagrams with no domain-specific model. `spec` is the substantial one: its own block model, its own renderer, and its own lint. Tap a card to jump to its full section.",
+      "cards": [
+        {
+          "name": "spec CLI",
+          "purpose": "`bin/spec.ts` — parses `--blocks <spec.json> --out <dir>`, maps page-level fields to `SpecOpts`, calls `assembleSpec`, and writes `spec.html` + re-writes `spec.json` so the folder re-renders in place.",
+          "exports": [
+            {
+              "name": "main()"
+            },
+            {
+              "name": "SpecDoc",
+              "deputy": true
+            }
+          ],
+          "href": "#c-spec-cli"
+        },
+        {
+          "name": "doc CLI",
+          "purpose": "`bin/doc.ts` — the thinner CLI: reads `--blocks` as core's generic `Block[]`, promotes mermaid fences, calls core's `assemble`, writes `doc.html` + `blocks.json`. No spec model, no lint.",
+          "exports": [
+            {
+              "name": "main()"
+            }
+          ],
+          "href": "#c-doc-cli"
+        },
+        {
+          "name": "spec block model",
+          "purpose": "`src/spec-blocks.ts` — the `SpecBlock` union: the approval vocabulary (`tldr`, `decisions`, `scope`, `rollout`, `approve`, `risks`, `done`, `reference`, …) plus id-uniqueness, chapter labelling, and diagram collection.",
+          "exports": [
+            {
+              "name": "SpecBlock"
+            },
+            {
+              "name": "collectSpecDiagrams"
+            },
+            {
+              "name": "isChapter",
+              "deputy": true
+            }
+          ],
+          "href": "#c-spec-model"
+        },
+        {
+          "name": "spec render",
+          "purpose": "`src/assemble-spec.ts` — `assembleSpec` renders each block to a `<section>`, derives the sidebar outline + progress rail from the chapters, and reuses the recap's `renderDiagramCard` for diagrams.",
+          "exports": [
+            {
+              "name": "assembleSpec"
+            },
+            {
+              "name": "SpecOpts",
+              "deputy": true
+            }
+          ],
+          "href": "#c-spec-render"
+        },
+        {
+          "name": "spec lint",
+          "purpose": "`src/lint-spec.ts` — the demo-standard completeness floor: warns (never crashes) when the lead, decisions, or scope are missing, scaling stricter for large specs.",
+          "exports": [
+            {
+              "name": "lintSpec"
+            }
+          ],
+          "href": "#c-spec-lint"
+        }
+      ],
+      "note": "`doc` has no card of its own in `src/` — it borrows core's `assemble` and the diagrams domain's `promoteMermaidFences` wholesale. The four spec pieces (`bin/spec.ts` + the three `src/` files) are what this domain actually owns."
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "Two entrypoints, one core",
+      "badge": "architecture",
+      "intro": "`spec.json` flows through `bin/spec.ts` → `assembleSpec` (using `spec-blocks` + `lintSpec`); `blocks.json` flows through `bin/doc.ts` → core's `assemble`. Both share the diagrams pipeline (`promote-mermaid` for doc, `renderAll` for both) and the core renderers.",
+      "diagram": {
+        "id": "arch-diagram",
+        "kind": "architecture",
+        "d2": "direction: right\nspecjson: { label: \"spec.json\\n(authored blocks)\"; class: store }\nblocksjson: { label: \"blocks.json\\n(authored blocks)\"; class: store }\nspecbin: { label: \"bin/spec.ts\"; class: actor }\ndocbin: { label: \"bin/doc.ts\"; class: actor }\nspecmodel: { label: \"spec-blocks\\n+ lint-spec\" }\nasmspec: { label: \"assembleSpec\"; class: changed }\nasmcore: { label: \"core / assemble\" }\npromote: { label: \"promote-mermaid\\n(diagrams)\" }\nspechtml: { label: \"spec.html\" }\ndochtml: { label: \"doc.html\" }\nspecjson -> specbin\nspecbin -> asmspec\nasmspec -> specmodel: blocks + lint\nasmspec -> spechtml\nblocksjson -> docbin\ndocbin -> promote: promote fences\npromote -> asmcore\nasmcore -> dochtml\nasmspec -> asmcore: shares renderers\n",
+        "mermaid": "flowchart LR\n  specjson[\"spec.json (authored blocks)\"] --> specbin[\"bin/spec.ts\"]\n  specbin --> asmspec[\"assembleSpec\"]\n  asmspec -->|blocks + lint| specmodel[\"spec-blocks + lint-spec\"]\n  asmspec --> spechtml[\"spec.html\"]\n  blocksjson[\"blocks.json (authored blocks)\"] --> docbin[\"bin/doc.ts\"]\n  docbin -->|promote fences| promote[\"promote-mermaid (diagrams)\"]\n  promote --> asmcore[\"core / assemble\"]\n  asmcore --> dochtml[\"doc.html\"]\n  asmspec -->|shares renderers| asmcore\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class specjson,blocksjson store;\n  class specbin,docbin actor;\n  class asmspec changed;",
+        "legend": [
+          {
+            "label": "CLI entrypoint",
+            "fill": "#d0ebff",
+            "stroke": "#4dabf7"
+          },
+          {
+            "label": "spec renderer (this domain)",
+            "fill": "#ffd43b",
+            "stroke": "#f08c00"
+          },
+          {
+            "label": "authored input",
+            "fill": "#e5dbff",
+            "stroke": "#9775fa"
+          }
+        ]
+      },
+      "callout": "The lone amber box — `assembleSpec` — is the only substantial renderer authoring owns. Everything below it (`core / assemble`, the diagram pipeline) is borrowed; `bin/doc.ts` is just wiring."
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "The pieces, in depth",
+      "badge": "5 pieces",
+      "intro": "A full section per piece — what it does, its files and exports, and how it connects to core, diagrams, and recap.",
+      "components": [
+        {
+          "id": "c-spec-cli",
+          "name": "spec CLI",
+          "path": "bin/spec.ts",
+          "detail": [
+            "`bin/spec.ts` is the visual-spec entrypoint. It `parseArgs` for `--blocks <spec.json>` and `--out <dir>` (both required, both must be absolute), reads the JSON as a `SpecDoc` (page options + a `blocks` array), maps the page-level fields onto `SpecOpts`, and calls [`assembleSpec`](#c-spec-render). It writes `<out>/spec.html` and re-writes `<out>/spec.json`, so the doc folder stays self-contained and re-renders in place — mirroring `recap --blocks`. Author warnings collected via `onWarn` are printed after the write."
+          ],
+          "files": [
+            {
+              "name": "bin/spec.ts",
+              "desc": "Arg parsing, `SpecDoc` → `SpecOpts` mapping, and the write-back of `spec.html` + `spec.json`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "main()",
+              "desc": "The CLI body — reads, assembles, writes; exits 2 on usage errors."
+            },
+            {
+              "name": "SpecDoc",
+              "desc": "`Partial<SpecOpts> & { blocks: SpecBlock[] }` — the on-disk `spec.json` shape."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[spec render](#c-spec-render) — `assembleSpec(doc.blocks, opts)`"
+            },
+            {
+              "dir": "types from",
+              "body": "[spec block model](#c-spec-model) — `SpecBlock`"
+            },
+            {
+              "dir": "writes",
+              "body": "`spec.html` + a re-written `spec.json` into `--out`"
+            }
+          ]
+        },
+        {
+          "id": "c-doc-cli",
+          "name": "doc CLI",
+          "path": "bin/doc.ts",
+          "detail": [
+            "`bin/doc.ts` is the thinnest product in the toolkit. It reads `--blocks` as core's **generic `Block[]`** (no spec model involved), runs [`promoteMermaidFences`](../domain-diagrams/domain-diagrams.html) to lift ```mermaid``` code fences into real diagram blocks, then hands the result to core's [`assemble`](../domain-core/domain-core.html#c-assemble). It writes `doc.html` plus a copy of `blocks.json` into the `--out` directory so the doc is self-contained and re-renders in place. There is no `assemble-doc`, no `doc-blocks`, and no lint — doc is wiring over core + diagrams."
+          ],
+          "files": [
+            {
+              "name": "bin/doc.ts",
+              "desc": "Reads `Block[]`, promotes mermaid fences, calls core `assemble`, writes `doc.html` + `blocks.json`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "main()",
+              "desc": "The CLI body — promote + assemble + write; throws on missing `--blocks`."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[core](../domain-core/domain-core.html#c-assemble) `assemble` — the shared page builder"
+            },
+            {
+              "dir": "uses",
+              "body": "[diagrams](../domain-diagrams/domain-diagrams.html) `promoteMermaidFences` to lift fences into diagrams"
+            },
+            {
+              "dir": "reuses",
+              "body": "core's generic `Block` model directly — no domain-specific block types"
+            }
+          ]
+        },
+        {
+          "id": "c-spec-model",
+          "name": "spec block model",
+          "path": "src/spec-blocks.ts",
+          "detail": [
+            "The `SpecBlock` discriminated union — the approval-focused vocabulary that distinguishes a spec from a generic doc: `tldr` (the lead), `diagram` (info-flow hero / where-it-fits), `components` (with the optional two-layer anatomy explainer), `fits`, `decisions` (the highest-value content for an approver), `scope` (in/out boundaries), `rollout` (gated phases), `done`, `risks`, `approve` (the commit / scrutinize / open-questions band), `reference` (drill-down drawers), and the `spec-prose` escape hatch. Helpers derive the page structure: `isChapter` (tldr + reference are not numbered chapters), `assertUniqueSpecIds`, `chapterLabel`, and `collectSpecDiagrams` / `toDiagramBlock` to feed the shared diagram pipeline."
+          ],
+          "files": [
+            {
+              "name": "spec-blocks.ts",
+              "desc": "The `SpecBlock` union, every block interface, and the chapter / id / diagram helpers."
+            }
+          ],
+          "exports": [
+            {
+              "name": "SpecBlock",
+              "desc": "The block union — `TldrBlock | DecisionsBlock | ScopeBlock | RolloutBlock | ApproveBlock | …`."
+            },
+            {
+              "name": "collectSpecDiagrams() · toDiagramBlock()",
+              "desc": "Maps spec `diagram` blocks into core's `DiagramBlock` for the shared pipeline."
+            },
+            {
+              "name": "isChapter() · chapterLabel() · assertUniqueSpecIds()",
+              "desc": "Drive the numbered outline, the progress rail, and id-collision detection."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "[spec render](#c-spec-render) and [spec lint](#c-spec-lint)"
+            },
+            {
+              "dir": "borrows",
+              "body": "[core](../domain-core/domain-core.html) `DiagramBlock` / `DiagramKind` / `TabsBlock`"
+            },
+            {
+              "dir": "distinct from",
+              "body": "core's generic `Block` model that [doc CLI](#c-doc-cli) uses"
+            }
+          ]
+        },
+        {
+          "id": "c-spec-render",
+          "name": "spec render",
+          "path": "src/assemble-spec.ts",
+          "detail": [
+            "`assembleSpec(blocks, opts)` is the spec page builder. It asserts unique ids, loads `review.css` + `spec.css` + the shared viewer JS, collects the spec diagrams and renders them via the diagrams domain's `renderAll`, then runs the page through `validateSpecOpts` and [`lintSpec`](#c-spec-lint) (warnings only). Each block becomes a `<section>` via a per-type renderer; the sidebar outline and the progress rail are derived from the chapters (the rail is injected right after the TL;DR). For diagram blocks it reuses the **recap's** `renderDiagramCard` — the one piece of review-shell rendering authoring borrows."
+          ],
+          "diagrams": [
+            {
+              "id": "spec-render-internals",
+              "kind": "architecture",
+              "d2": "direction: right\nblocks: { label: \"SpecBlock[]\"; class: actor }\nrenderAll: { label: \"renderAll\\n(diagrams)\" }\nlint: { label: \"lintSpec\\nwarnings\"; class: changed }\nsection: { label: \"renderBlock\\nper-type <section>\" }\ncard: { label: \"renderDiagramCard\\n(recap shell)\" }\nrail: { label: \"sidebar + progress rail\" }\nhtml: { label: \"spec.html\" }\nblocks -> renderAll: collectSpecDiagrams\nblocks -> lint\nblocks -> section\nsection -> card: diagram blocks\nblocks -> rail: chapters\nsection -> html\nrail -> html\n",
+              "mermaid": "flowchart LR\n  blocks[\"SpecBlock[]\"] -->|collectSpecDiagrams| renderAll[\"renderAll (diagrams)\"]\n  blocks --> lint[\"lintSpec warnings\"]\n  blocks --> section[\"renderBlock per-type section\"]\n  section -->|diagram blocks| card[\"renderDiagramCard (recap shell)\"]\n  blocks -->|chapters| rail[\"sidebar + progress rail\"]\n  section --> html[\"spec.html\"]\n  rail --> html\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  class blocks actor;\n  class lint changed;",
+              "legend": [
+                {
+                  "label": "input blocks",
+                  "fill": "#d0ebff",
+                  "stroke": "#4dabf7"
+                },
+                {
+                  "label": "completeness floor",
+                  "fill": "#ffd43b",
+                  "stroke": "#f08c00"
+                }
+              ]
+            }
+          ],
+          "files": [
+            {
+              "name": "assemble-spec.ts",
+              "desc": "Topbar / sidebar / rail, the per-block `<section>` renderers, and the page shell."
+            }
+          ],
+          "exports": [
+            {
+              "name": "assembleSpec()",
+              "desc": "→ a full self-contained HTML string for the spec page."
+            },
+            {
+              "name": "SpecOpts",
+              "desc": "Page options: title, phase, status, date, complexity, related, meta, outDir, excalidraw."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "reuses",
+              "body": "[recap](../domain-recap/domain-recap.html) `renderDiagramCard` from `review/sections`"
+            },
+            {
+              "dir": "uses",
+              "body": "[diagrams](../domain-diagrams/domain-diagrams.html) `renderAll` / `DiagramResult`"
+            },
+            {
+              "dir": "uses",
+              "body": "[core](../domain-core/domain-core.html) `escapeHtml`, `renderInlineMarkdown` / `renderMarkdown`"
+            },
+            {
+              "dir": "runs",
+              "body": "[spec lint](#c-spec-lint) and `validateSpecOpts` (warnings, never fatal)"
+            }
+          ]
+        },
+        {
+          "id": "c-spec-lint",
+          "name": "spec lint",
+          "path": "src/lint-spec.ts",
+          "detail": [
+            "`lintSpec(blocks)` is the demo-standard completeness floor — a mechanical backstop that keeps every spec at the bar. It returns warning strings (never throws): no `tldr` lead, an empty TL;DR, missing `decisions` (the load-bearing content for an approver) or a decision lacking a `why`, and a missing `scope` block. For a *large* spec (≥ 5 chapters) it also expects a hero `diagram`, a `rollout`, and an `approve` band, and nudges for a named rejected-alternative on contested decisions. `assembleSpec` surfaces these through `onWarn`."
+          ],
+          "files": [
+            {
+              "name": "lint-spec.ts",
+              "desc": "The heuristic checks (lead / decisions / scope, scaled stricter past `LARGE_CHAPTERS = 5`)."
+            }
+          ],
+          "exports": [
+            {
+              "name": "lintSpec()",
+              "desc": "→ `string[]` of completeness warnings, in document priority order."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[spec render](#c-spec-render) — emitted via `opts.onWarn`"
+            },
+            {
+              "dir": "inspects",
+              "body": "[spec block model](#c-spec-model) — `TldrBlock`, `DecisionsBlock`, block types present"
+            },
+            {
+              "dir": "philosophy",
+              "body": "heuristics, not hard errors — the page still renders, the author is nudged"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "Authoring owns the **spec block model** — the approval-focused vocabulary in `spec-blocks.ts`. `doc` owns no model of its own; it borrows core's generic `Block`.",
+      "rows": [
+        {
+          "name": "TldrBlock",
+          "desc": "`type: \"tldr\"` — the lead: a one-line heading, What / Why / Closes / Size rows, and an optional big-idea line."
+        },
+        {
+          "name": "SpecDiagramBlock",
+          "desc": "`type: \"diagram\"` — a standalone d2/mermaid section (info-flow hero, where-it-fits); its id is both section and diagram id."
+        },
+        {
+          "name": "ComponentsBlock · ComponentCard",
+          "desc": "`type: \"components\"` — the component grid, with the optional two-layer anatomy (factual / perceived) explainer."
+        },
+        {
+          "name": "FitsBlock",
+          "desc": "`type: \"fits\"` — the where-it-fits chain plus an optional new-vs-reused layer stack."
+        },
+        {
+          "name": "DecisionsBlock · DecisionItem",
+          "desc": "`type: \"decisions\"` — Q / A / why / rejected cards; the highest-value content for an approver."
+        },
+        {
+          "name": "ScopeBlock",
+          "desc": "`type: \"scope\"` — in-scope goals vs out-of-scope anti-goals, with optional defer targets."
+        },
+        {
+          "name": "RolloutBlock · PhaseItem",
+          "desc": "`type: \"rollout\"` — gated sub-phases, each with a scope and an acceptance gate."
+        },
+        {
+          "name": "DoneBlock · RisksBlock",
+          "desc": "`type: \"done\"` (movers + before/after table) and `type: \"risks\"` (risk / mitigation cards)."
+        },
+        {
+          "name": "ApproveBlock",
+          "desc": "`type: \"approve\"` — the sign-off band: what you're approving, what to scrutinize, and open non-blocking questions."
+        },
+        {
+          "name": "ReferenceBlock · SpecProseBlock",
+          "desc": "`type: \"reference\"` (collapsed drill-down drawers) and `type: \"spec-prose\"` (the unmodeled-content escape hatch)."
+        }
+      ],
+      "note": "All of these compose into `SpecBlock`. Borrows (never owns): `DiagramBlock` / `DiagramKind` / `TabsBlock` from `core`; the generic `Block` model that `doc` renders."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "Two CLIs out; the shared engine, the diagram pipeline, and one recap shell piece in.",
+      "exposes": [
+        {
+          "api": "spec --blocks <spec.json> --out <dir>",
+          "note": "renders the approval-focused spec page"
+        },
+        {
+          "api": "doc --blocks <blocks.json> --out <dir>",
+          "note": "the general illustrated-doc renderer"
+        },
+        {
+          "api": "assembleSpec() · SpecOpts",
+          "note": "the spec page builder, used by the CLI"
+        },
+        {
+          "api": "lintSpec()",
+          "note": "the completeness floor"
+        }
+      ],
+      "depends": [
+        {
+          "name": "core",
+          "path": "src/assemble · blocks · html · markdown",
+          "href": "../domain-core/domain-core.html"
+        },
+        {
+          "name": "diagrams",
+          "path": "src/promote-mermaid · render-diagram",
+          "href": "../domain-diagrams/domain-diagrams.html"
+        },
+        {
+          "name": "recap",
+          "path": "src/review/sections",
+          "href": "../domain-recap/domain-recap.html"
+        }
+      ],
+      "note": "`doc` leans entirely on `core` (`assemble`, `Block`) and `diagrams` (`promoteMermaidFences`). `spec` adds its own model + renderer + lint, and reuses exactly one review-shell piece: the recap's `renderDiagramCard` for its diagram sections."
+    }
+  ]
+}

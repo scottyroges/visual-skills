@@ -1,0 +1,517 @@
+{
+  "kind": "domain",
+  "slug": "code-intel",
+  "title": "Code intelligence",
+  "layer": "intelligence",
+  "layerLabel": "Intelligence",
+  "path": "src",
+  "count": "8 files",
+  "depends": "diagrams",
+  "date": "2026-06-20",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Intelligence"
+    },
+    {
+      "key": "Path",
+      "value": "src · src/adapters"
+    },
+    {
+      "key": "Files",
+      "value": "8 (3 adapters + 5 parsers)"
+    },
+    {
+      "key": "Depends on",
+      "value": "diagrams (for the rendered blocks it emits)"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "eyebrow": "Domain",
+      "heading": "The layer that reads and *understands* a subject repo — schemas, routers, imports — so the products can ground their output in real code.",
+      "rows": [
+        {
+          "key": "Owns",
+          "value": "The parsed-code model: import edges and the module dependency graph, parsed Prisma models, tRPC procedures, and the diffs between two API or schema surfaces."
+        },
+        {
+          "key": "Role",
+          "value": "Pure analysis. It takes source text (a `schema.prisma`, a router `.ts`, any TS/JS file) and a git scope, and returns structured facts — never opinions, never narrative. The TypeScript compiler is its parser of choice."
+        },
+        {
+          "key": "Why",
+          "value": "Without it, every product would emit a generic file-tree and a raw diff. With it, a Prisma + tRPC repo gets schema- and router-level understanding a generic repo can't."
+        }
+      ],
+      "bigIdea": {
+        "label": "The load-bearing idea",
+        "line": "\"Adapters make the products stack-aware.\"",
+        "sub": "`selectAdapter` picks the first adapter whose `detect()` passes (a `prisma/schema.prisma` exists → **PrismaTrpcAdapter**), else falls back to **GenericAdapter** — which returns *nothing*. So a Prisma + tRPC repo gets schema- and router-level understanding that any other repo silently does without, with no special-casing in the products themselves."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "The pieces",
+      "badge": "3 adapters + 5 parsers",
+      "intro": "Two layers: thin **stack adapters** that detect a repo's stack and orchestrate, and the **parsers** they (and the atlas) call to turn source text into structured facts. Tap a card to jump to its full section.",
+      "cards": [
+        {
+          "name": "stack adapters",
+          "purpose": "The stack-aware front door. `StackAdapter` is the interface (detect / schemaDiff / apiDiff); `PrismaTrpcAdapter` wires the parsers together for a Prisma+tRPC repo; `GenericAdapter` is the no-op fallback. `selectAdapter` chooses.",
+          "exports": [
+            {
+              "name": "StackAdapter"
+            },
+            {
+              "name": "selectAdapter"
+            },
+            {
+              "name": "PrismaTrpcAdapter",
+              "deputy": true
+            },
+            {
+              "name": "GenericAdapter",
+              "deputy": true
+            }
+          ],
+          "href": "#c-adapters"
+        },
+        {
+          "name": "prisma-schema",
+          "purpose": "Parses a `schema.prisma` into models (name + typed fields), diffs two parsings into added / removed / kept fields, and renders the changed models as a D2 ERD.",
+          "exports": [
+            {
+              "name": "parsePrismaModels"
+            },
+            {
+              "name": "diffModels"
+            },
+            {
+              "name": "schemaDiffToBlock"
+            }
+          ],
+          "href": "#c-prisma-schema"
+        },
+        {
+          "name": "trpc-parse",
+          "purpose": "Walks a tRPC router source with the TS compiler: finds the `router({ ... })` object and reads each procedure's auth (`publicProcedure` → `public`), kind (query / mutation), and `.input(...)` shape.",
+          "exports": [
+            {
+              "name": "parseRouter"
+            }
+          ],
+          "href": "#c-trpc-parse"
+        },
+        {
+          "name": "imports",
+          "purpose": "Extracts import / export-from / dynamic-import specifiers from a source file (with a `valueOnly` mode that drops type-only edges), plus the exported binding names of a module.",
+          "exports": [
+            {
+              "name": "importsOf"
+            },
+            {
+              "name": "exportsOf"
+            }
+          ],
+          "href": "#c-imports"
+        },
+        {
+          "name": "dep-graph",
+          "purpose": "Resolves import specifiers through tsconfig path aliases and assembles a bounded 1-hop import neighborhood around a set of changed files — the mechanical `where-it-fits` diagram.",
+          "exports": [
+            {
+              "name": "dependencyNeighborhood"
+            },
+            {
+              "name": "resolveModule"
+            },
+            {
+              "name": "loadAliases",
+              "deputy": true
+            },
+            {
+              "name": "walkSource",
+              "deputy": true
+            }
+          ],
+          "href": "#c-dep-graph"
+        },
+        {
+          "name": "api-diff",
+          "purpose": "Diffs two `ApiProcedure[]` surfaces by name and signature (auth · kind · input) into an `ApiBlock` containing only the added / changed / removed procedures.",
+          "exports": [
+            {
+              "name": "diffProcedures"
+            }
+          ],
+          "href": "#c-api-diff"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "How a subject repo gets understood",
+      "badge": "data flow",
+      "intro": "`selectAdapter` probes the repo. If `prisma/schema.prisma` exists, the **PrismaTrpcAdapter** feeds that schema into `parsePrismaModels` and each changed `src/server/routers/*.ts` into `parseRouter`, then diffs both. Independently, the atlas gather walks every source file through `importsOf` and hands it to `dependencyNeighborhood`. Everything bare-package is dropped — only in-repo edges survive.",
+      "diagram": {
+        "id": "code-intel-flow",
+        "kind": "architecture",
+        "d2": "direction: right\nschema: { label: \"prisma/schema.prisma\"; class: external }\nrouters: { label: \"src/server/routers/*.ts\"; class: external }\nsrcfiles: { label: \"any *.ts / *.tsx\"; class: external }\nselect: { label: \"selectAdapter\\ndetect() → adapter\"; class: actor }\nadapter: { label: \"PrismaTrpcAdapter\" }\nprisma: { label: \"parsePrismaModels\\n+ diffModels\" }\ntrpc: { label: \"parseRouter\\n+ diffProcedures\" }\nimports: { label: \"importsOf\" }\ndep: { label: \"dependencyNeighborhood\\n1-hop neighborhood\" }\nmodels: { label: \"PrismaModel{}\\ntyped fields\"; class: store }\nselect -> adapter: picks (schema exists)\nschema -> adapter: schemaDiff()\nrouters -> adapter: apiDiff()\nadapter -> prisma\nadapter -> trpc\nprisma -> models\nsrcfiles -> imports\nimports -> dep: resolveModule()\n",
+        "mermaid": "graph LR\n  schema[\"prisma/schema.prisma\"]\n  routers[\"src/server/routers/*.ts\"]\n  srcfiles[\"any *.ts / *.tsx\"]\n  select[\"selectAdapter detect → adapter\"]\n  adapter[\"PrismaTrpcAdapter\"]\n  prisma[\"parsePrismaModels + diffModels\"]\n  trpc[\"parseRouter + diffProcedures\"]\n  imports[\"importsOf\"]\n  dep[\"dependencyNeighborhood\"]\n  models[\"PrismaModel typed fields\"]\n  select -->|picks| adapter\n  schema -->|schemaDiff| adapter\n  routers -->|apiDiff| adapter\n  adapter --> prisma\n  adapter --> trpc\n  prisma --> models\n  srcfiles --> imports\n  imports -->|resolveModule| dep\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class schema,routers,srcfiles external;\n  class select actor;\n  class models store;\n",
+        "legend": [
+          {
+            "label": "subject-repo source (external)",
+            "fill": "#f1f3f5",
+            "stroke": "#adb5bd"
+          },
+          {
+            "label": "the selector",
+            "fill": "#d0ebff",
+            "stroke": "#4dabf7"
+          },
+          {
+            "label": "parsed model",
+            "fill": "#e5dbff",
+            "stroke": "#9775fa"
+          }
+        ],
+        "caption": "The subject repo's files (gray) are *external input* — code-intel never writes them, only reads them."
+      }
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "The pieces, in depth",
+      "badge": "6 pieces",
+      "intro": "A full section per piece — what it does, how it works, its files and exports, and how it connects to the rest of the toolkit.",
+      "components": [
+        {
+          "id": "c-adapters",
+          "name": "stack adapters",
+          "path": "src/adapters/stack-adapter.ts · prisma-trpc.ts · generic.ts",
+          "detail": [
+            "`StackAdapter` is a four-method interface: `name`, `detect(repoRoot)`, `schemaDiff(scope)`, and `apiDiff(scope)`. `selectAdapter(repoRoot, adapters)` returns the first adapter whose `detect()` resolves true, falling back to a fresh `GenericAdapter` — so selection is just an ordered probe, and the fallback always wins last.",
+            "`PrismaTrpcAdapter` is the one concrete stack adapter. `detect` checks for `prisma/schema.prisma`. `schemaDiff` reads that file at the base and head refs (`fileAtRef`), parses both with [parsePrismaModels](#c-prisma-schema), diffs them, and returns a `SchemaBlock` — or `null` if nothing changed. `apiDiff` filters the changed files to `src/server/routers/*.ts` (excluding `_app.ts`), parses each with [parseRouter](#c-trpc-parse), and emits one `ApiBlock` per router via [diffProcedures](#c-api-diff). It is the seam where every other parser is wired together.",
+            "`GenericAdapter` is deliberately empty: `detect` always returns true, `schemaDiff` returns `null`, `apiDiff` returns `[]`. A non-Prisma repo therefore gets a clean file-tree-and-diff recap with no broken schema/API sections."
+          ],
+          "files": [
+            {
+              "name": "stack-adapter.ts",
+              "desc": "The `StackAdapter` interface and `selectAdapter` (first-passing-detect, else generic)."
+            },
+            {
+              "name": "prisma-trpc.ts",
+              "desc": "Detects `prisma/schema.prisma`; wires the schema + router parsers and diffs together."
+            },
+            {
+              "name": "generic.ts",
+              "desc": "The no-op fallback: `detect` true, no schema, no API."
+            }
+          ],
+          "exports": [
+            {
+              "name": "StackAdapter",
+              "desc": "The adapter interface: `detect` · `schemaDiff` · `apiDiff`."
+            },
+            {
+              "name": "selectAdapter()",
+              "desc": "→ first adapter whose `detect()` passes, else a new `GenericAdapter`."
+            },
+            {
+              "name": "PrismaTrpcAdapter · GenericAdapter",
+              "desc": "The concrete adapter and its fallback."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[prisma-schema](#c-prisma-schema), [trpc-parse](#c-trpc-parse), [api-diff](#c-api-diff) — the parsers it orchestrates"
+            },
+            {
+              "dir": "reads",
+              "body": "`fileAtRef` / `changedFiles` from `git.ts` to get source at the base & head refs"
+            },
+            {
+              "dir": "used by",
+              "body": "[recap](../domain-recap/domain-recap.html) — `gather-recap` calls `selectAdapter(repoRoot, [new PrismaTrpcAdapter()])` for schema + API blocks"
+            }
+          ]
+        },
+        {
+          "id": "c-prisma-schema",
+          "name": "prisma-schema",
+          "path": "src/prisma-schema.ts",
+          "detail": [
+            "`parsePrismaModels(schema)` regex-matches `model X { ... }` blocks into a `Map<name, PrismaModel>`, where each field is `{ name, type }` taken from the first two whitespace-separated tokens of a line (skipping comments and `@@` block attributes). It is a pragmatic parser, not a full Prisma grammar — enough to drive a diff and an ERD.",
+            "`diffModels(before, after)` unions the model names and, for each, computes added / removed / kept fields by name; a model that appears only on one side is also flagged. `schemaDiffToBlock(diffs)` then renders the changed models as a single D2 `sql_table` ERD with `(+ added)` / `(removed)` markers and the `changed` class — the `SchemaBlock` the recap shows."
+          ],
+          "files": [
+            {
+              "name": "prisma-schema.ts",
+              "desc": "Schema parse, field diff, and the D2-ERD `SchemaBlock` renderer."
+            }
+          ],
+          "exports": [
+            {
+              "name": "parsePrismaModels()",
+              "desc": "→ `Map<string, PrismaModel>` — `model` blocks into typed fields."
+            },
+            {
+              "name": "diffModels()",
+              "desc": "→ `ModelDiff[]` — added / removed / kept fields per model."
+            },
+            {
+              "name": "schemaDiffToBlock()",
+              "desc": "→ `SchemaBlock` — changed models as a D2 ERD with change markers."
+            },
+            {
+              "name": "PrismaModel · PrismaField · ModelDiff",
+              "desc": "The parsed-schema model types."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[PrismaTrpcAdapter](#c-adapters) `schemaDiff` (parse + diff + render)"
+            },
+            {
+              "dir": "called by",
+              "body": "[atlas](../domain-atlas/domain-atlas.html) — `gather-atlas` calls `parsePrismaModels` for the model inventory"
+            }
+          ]
+        },
+        {
+          "id": "c-trpc-parse",
+          "name": "trpc-parse",
+          "path": "src/trpc-parse.ts",
+          "detail": [
+            "`parseRouter(source, routerName)` builds a TS `SourceFile` and finds the first `router({ ... })` call's object literal. Each property is one procedure; it walks the property's call chain backward — `.query` / `.mutation` / `.subscription` sets the `kind`, `.input(...)` captures the raw input expression text, and a trailing `xxxProcedure` identifier yields the `auth` (e.g. `publicProcedure` → `public`).",
+            "The result is an `ApiProcedure[]` of `{ name: \"router.proc\", auth, kind, input }`. It is purely syntactic — it reads the builder chain, not the runtime types — which is exactly enough to diff two surfaces."
+          ],
+          "files": [
+            {
+              "name": "trpc-parse.ts",
+              "desc": "TS-AST walk of a `router({...})` object into per-procedure `{ auth, kind, input }`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "parseRouter()",
+              "desc": "→ `ApiProcedure[]` — one entry per router property."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[PrismaTrpcAdapter](#c-adapters) `apiDiff` — before & after for each changed router"
+            },
+            {
+              "dir": "called by",
+              "body": "[atlas](../domain-atlas/domain-atlas.html) — `gather-atlas` parses routers for the API inventory"
+            },
+            {
+              "dir": "feeds",
+              "body": "[api-diff](#c-api-diff) — its output is the input to `diffProcedures`"
+            }
+          ]
+        },
+        {
+          "id": "c-imports",
+          "name": "imports",
+          "path": "src/imports.ts",
+          "detail": [
+            "`importsOf(source, { valueOnly })` collects module specifiers from `import`, `export … from`, and dynamic `import(...)` via the TS AST, deduped. With `valueOnly`, fully type-only declarations are skipped — they carry no runtime dependency, so they shouldn't count as architectural edges (a mixed `import { type T, value }` still counts).",
+            "`exportsOf(source)` returns a module's exported binding names — named decls, `export { ... }`, re-exports, and `export default` as `\"default\"`. Together they are the raw material for both the dependency graph and the atlas's per-module inventory."
+          ],
+          "files": [
+            {
+              "name": "imports.ts",
+              "desc": "`importsOf` (specifiers, optional value-only) and `exportsOf` (binding names)."
+            }
+          ],
+          "exports": [
+            {
+              "name": "importsOf()",
+              "desc": "→ `string[]` — deduped import / export-from / dynamic-import specifiers."
+            },
+            {
+              "name": "exportsOf()",
+              "desc": "→ `string[]` — exported binding names of a module."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "feeds",
+              "body": "[dep-graph](#c-dep-graph) — every specifier `importsOf` finds becomes a candidate edge"
+            },
+            {
+              "dir": "called by",
+              "body": "[atlas](../domain-atlas/domain-atlas.html) — `gather-atlas` uses `importsOf({ valueOnly: true })` + `exportsOf` per module"
+            }
+          ]
+        },
+        {
+          "id": "c-dep-graph",
+          "name": "dep-graph",
+          "path": "src/dep-graph.ts",
+          "detail": [
+            "`dependencyNeighborhood(changedPaths, repoRoot)` builds the bounded 1-hop import neighborhood around the changed source files: their outgoing imports and the in-repo files that import them. It calls [importsOf](#c-imports) per file and `resolveModule` to turn each specifier into a `moduleKey` — relative specifiers join + normalize; bare packages resolve to `null` and are dropped as noise. `loadAliases` reads tsconfig `paths`/`baseUrl` so aliased imports (`@/...`) resolve too (a diagram-aid heuristic, not full module resolution).",
+            "Nodes are capped (default 15) by keeping all changed files plus the highest-degree neighbors, with a `+N more` placeholder for the rest. It emits both a D2 floor and an editable mermaid `graph LR` — the recap's mechanical **`where-it-fits`** diagram. `walkSource` (the recursive source lister, skipping `node_modules`/`dist`/…) backs the importer scan."
+          ],
+          "files": [
+            {
+              "name": "dep-graph.ts",
+              "desc": "Alias-aware module resolution, the 1-hop neighborhood, and dual D2 + mermaid output."
+            }
+          ],
+          "exports": [
+            {
+              "name": "dependencyNeighborhood()",
+              "desc": "→ `DiagramBlock | null` — the `where-it-fits` neighborhood, or null if no edges."
+            },
+            {
+              "name": "resolveModule()",
+              "desc": "Specifier (relative or tsconfig-alias) → in-repo `moduleKey`, else null."
+            },
+            {
+              "name": "loadAliases() · walkSource() · moduleKey()",
+              "desc": "tsconfig paths, the recursive source lister, and the path-normalizer."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[importsOf](#c-imports) per file to discover candidate edges"
+            },
+            {
+              "dir": "produces",
+              "body": "the `where-it-fits` `DiagramBlock` (D2 + editable mermaid)"
+            },
+            {
+              "dir": "used by",
+              "body": "[recap](../domain-recap/domain-recap.html) — `gather-recap` calls `dependencyNeighborhood` on the changed file set"
+            },
+            {
+              "dir": "used by",
+              "body": "[atlas](../domain-atlas/domain-atlas.html) — `gather-atlas` builds its module graph from the same import edges"
+            }
+          ]
+        },
+        {
+          "id": "c-api-diff",
+          "name": "api-diff",
+          "path": "src/api-diff.ts",
+          "detail": [
+            "`diffProcedures(before, after, title, id)` is the pure surface diff. It keys each side by procedure name and compares a signature string of `auth | kind | input`: a name missing before is `added`, a name with a changed signature is `changed`, a name missing after is `removed`. The result is an `ApiBlock` carrying *only* the changed procedures — unchanged ones are dropped so the recap shows just the delta.",
+            "It is stack-agnostic — it diffs `ApiProcedure[]`, not tRPC source — so the same diff would serve any future adapter that can produce that shape."
+          ],
+          "files": [
+            {
+              "name": "api-diff.ts",
+              "desc": "Name + signature (auth · kind · input) diff into an added/changed/removed `ApiBlock`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "diffProcedures()",
+              "desc": "→ `ApiBlock` — only the added / changed / removed procedures."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumes",
+              "body": "[parseRouter](#c-trpc-parse) output — the before/after `ApiProcedure[]`"
+            },
+            {
+              "dir": "called by",
+              "body": "[PrismaTrpcAdapter](#c-adapters) `apiDiff`, once per changed router"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "The **parsed-code model** — the structured facts it extracts from a subject repo's source. It owns these shapes; the products consume them.",
+      "rows": [
+        {
+          "name": "import specifiers · the dependency graph",
+          "desc": "Per-file import / export edges from `importsOf`, resolved to in-repo module keys and assembled into the bounded `where-it-fits` neighborhood."
+        },
+        {
+          "name": "PrismaModel · PrismaField · ModelDiff",
+          "desc": "Parsed Prisma models (name + typed fields) and the added / removed / kept field diff between two schema versions."
+        },
+        {
+          "name": "ApiProcedure",
+          "desc": "A parsed tRPC procedure: `{ name, auth, kind, input }`, read syntactically from the router builder chain."
+        },
+        {
+          "name": "Aliases",
+          "desc": "The tsconfig `paths` / `baseUrl` matchers used to resolve aliased import specifiers to module keys."
+        },
+        {
+          "name": "the API & schema surface diffs",
+          "desc": "`ApiBlock` (added/changed/removed procedures) and `SchemaBlock` (changed-model ERD) — the rendered deltas the recap shows."
+        }
+      ],
+      "note": "Reads (never owns): the subject repo's source files and `prisma/schema.prisma` — pure external input, accessed through `git.ts` (`fileAtRef`, `changedFiles`)."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "Source in (via git refs); structured facts and rendered diagram blocks out. The products call these parsers; code-intel calls nothing back.",
+      "exposes": [
+        {
+          "api": "selectAdapter() · StackAdapter",
+          "note": "stack detection + the adapter contract"
+        },
+        {
+          "api": "dependencyNeighborhood()",
+          "note": "the where-it-fits graph (recap)"
+        },
+        {
+          "api": "importsOf() · exportsOf()",
+          "note": "module edges + bindings (atlas)"
+        },
+        {
+          "api": "parseRouter()",
+          "note": "tRPC procedures (atlas + adapter)"
+        },
+        {
+          "api": "parsePrismaModels()",
+          "note": "Prisma models (atlas + adapter)"
+        },
+        {
+          "api": "diffProcedures() · diffModels() · schemaDiffToBlock()",
+          "note": "the surface diffs (adapter)"
+        }
+      ],
+      "depends": [
+        {
+          "name": "git",
+          "path": "src/git.ts"
+        },
+        {
+          "name": "typescript",
+          "path": "(compiler API)"
+        },
+        {
+          "name": "diagrams",
+          "path": "src",
+          "href": "../domain-diagrams/domain-diagrams.html"
+        }
+      ],
+      "note": "`dep-graph` and `prisma-schema` import from **diagrams** (`MERMAID_CLASSDEFS`, the `DiagramBlock` / `SchemaBlock` types) to emit colored, render-ready blocks. The TS compiler is the workhorse for `trpc-parse`, `imports`, and alias loading. No callbacks into the products — code-intel is a leaf the products pull from."
+    }
+  ]
+}

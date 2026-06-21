@@ -1,0 +1,238 @@
+{
+  "kind": "atlas",
+  "title": "System Atlas · visual-skills",
+  "stack": "TypeScript · Node CLI",
+  "count": "6 domains",
+  "date": "generated 2026-06-20",
+  "note": "static HTML output",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Root",
+      "value": "`src/` & `bin/`"
+    },
+    {
+      "key": "Domains",
+      "value": "6 (all with pages)"
+    },
+    {
+      "key": "Read first",
+      "value": "core → diagrams → a product"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "atlas-tldr",
+      "id": "tldr",
+      "eyebrow": "Start here",
+      "heading": "A toolkit of four CLI generators that turn code, diffs, and specs into self-contained, visually-readable HTML — all built on one shared block→HTML rendering engine.",
+      "rows": [
+        {
+          "key": "What",
+          "value": "Four generators ship as `bin/` CLIs: **visual-recap** (PR / commit / diff review), **visual-atlas** (this codebase-map), **visual-spec** (design-spec / RFC page), and **visual-doc** (general illustrated doc). Each emits one standalone `.html` that opens over `file://` — no server, no reader-side build."
+        },
+        {
+          "key": "Shape",
+          "value": "Logic lives in `src/` and is consumed by thin entrypoints in `bin/`. A **rendering core** turns a typed `Block[]` into a page; **diagrams** and **code-intelligence** are shared services the products lean on. Two products *scan* a real repo (recap, atlas); two are *pure authoring* (spec, doc)."
+        },
+        {
+          "key": "Spine",
+          "value": "Every product is the same pipeline: build a typed `Block[]` → `assemble()` walks it, calling one renderer per block type → rendered diagrams and highlighted code get inlined → one self-contained HTML file."
+        }
+      ],
+      "primer": [
+        {
+          "h": "One Block union, four products.",
+          "p": "There is no per-product renderer. Each CLI just assembles a different array of the *same* `Block` types. Read `src/blocks.ts` then `src/assemble.ts` and you have the spine of all four generators."
+        },
+        {
+          "h": "The output is a single self-contained file.",
+          "p": "Every generator inlines its CSS, syntax-highlighted code, and rendered diagrams into one `.html` that works over `file://`. Self-containment is a hard product constraint, not a nicety — it shapes how diagrams and assets are handled."
+        },
+        {
+          "h": "Two products read code; two only author.",
+          "p": "`recap` and `atlas` understand a real repo — git diffs, Prisma/tRPC parsing, import graphs — through the **code-intel** layer. `spec` and `doc` take hand-authored blocks JSON and never scan. That split explains why code-intel exists."
+        },
+        {
+          "h": "d2 is the diagram floor; the atlas is hybrid.",
+          "p": "Diagrams compile through the `d2` CLI to static SVG (with an optional editable-Excalidraw upgrade), and one palette colors every diagram. The atlas itself is *hybrid*: a mechanical scan drafts JSON, humans enrich the prose, and the committed JSON re-renders with no scan."
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "map",
+      "title": "The domain map",
+      "badge": "layered",
+      "intro": "Six domains in three tiers. A **foundation** (`diagrams`) and an **engine** (`core`) sit at the bottom; an **intelligence** layer (`code-intel`) reads real repos; three **surface** products stack on top. Arrows are *depends on* — and the two scanning products reuse `recap`'s review shell.",
+      "diagram": {
+        "id": "domain-map",
+        "kind": "architecture",
+        "d2": "direction: right\ndiagrams: { label: \"diagrams\\nd2/mermaid → SVG · palette\" }\ncore: { label: \"core\\nBlock[] → HTML engine\"; class: changed }\ncodeintel: { label: \"code-intel\\nparse repos · diff APIs\" }\nrecap: { label: \"recap\\nvisual-recap · diff review\" }\natlas: { label: \"atlas\\nvisual-atlas · this map\" }\nauthoring: { label: \"authoring\\nvisual-spec + visual-doc\" }\ncore -> diagrams: renders via\ncodeintel -> diagrams\nrecap -> core\nrecap -> codeintel\nrecap -> diagrams\natlas -> core\natlas -> codeintel\natlas -> recap: reuses shell\nauthoring -> core\nauthoring -> recap: reuses shell\n",
+        "mermaid": "graph LR\n  core[\"core · Block to HTML engine\"]\n  diagrams[\"diagrams · d2 to SVG\"]\n  codeintel[\"code-intel · parse repos\"]\n  recap[\"recap · diff review\"]\n  atlas[\"atlas · this map\"]\n  authoring[\"authoring · spec + doc\"]\n  core --> diagrams\n  codeintel --> diagrams\n  recap --> core\n  recap --> codeintel\n  recap --> diagrams\n  atlas --> core\n  atlas --> codeintel\n  atlas -->|reuses shell| recap\n  authoring --> core\n  authoring -->|reuses shell| recap\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  class core changed;",
+        "legend": [
+          {
+            "label": "Central engine (every product uses it)",
+            "fill": "#ffd43b",
+            "stroke": "#f08c00"
+          }
+        ],
+        "caption": "Read bottom-up: `diagrams` and `core` are shared infrastructure; `code-intel` reads real repos for the scanning products; `recap` / `atlas` / `authoring` are the user-facing CLIs. `core` is highlighted because all four products route through its `assemble()`."
+      }
+    },
+    {
+      "type": "diagram-section",
+      "id": "spine",
+      "title": "Spine",
+      "badge": "runtime",
+      "intro": "The one flow worth memorizing — it is identical across all four generators. A product builds a typed `Block[]`; `assemble()` walks it and dispatches one renderer per block type; diagram and code blocks get compiled and inlined; the result is a single self-contained HTML file.",
+      "diagram": {
+        "id": "render-spine",
+        "kind": "flowchart",
+        "d2": "direction: right\ngather: { label: \"gather\\nbuild a typed Block[]\" }\nassemble: { label: \"assemble()\\nwalk blocks, dispatch\"; class: changed }\nrenderers: { label: \"renderers\\none per block type\" }\nrd: { label: \"render-diagram\\nd2 → SVG\" }\nhl: { label: \"highlight\\ncode → token spans\" }\nout: { label: \"self-contained .html\"; class: store }\ngather -> assemble\nassemble -> renderers\nrenderers -> rd: diagram blocks\nrenderers -> hl: code blocks\nrenderers -> out\nrd -> out: inlined SVG\nhl -> out\n",
+        "mermaid": "flowchart LR\n  gather[\"gather: build Block[]\"] --> assemble[\"assemble() walk + dispatch\"]\n  assemble --> renderers[\"renderers: one per block type\"]\n  renderers -->|diagram blocks| rd[\"render-diagram d2 to SVG\"]\n  renderers -->|code blocks| hl[\"highlight to token spans\"]\n  renderers --> out[\"self-contained .html\"]\n  rd -->|inlined SVG| out\n  hl --> out\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class assemble changed;\n  class out store;",
+        "caption": "What differs between products is only the *left edge* — how the `Block[]` is gathered (a git diff, a repo scan, or hand-authored JSON). From `assemble()` rightward, the path is shared."
+      }
+    },
+    {
+      "type": "domain-index",
+      "id": "domains",
+      "title": "The 6 domains",
+      "badge": "all with pages",
+      "intro": "Each domain owns one slice of the toolkit. The bottom two are shared infrastructure; `code-intel` is the repo-reading layer; the top three are the user-facing products. Every tile links to a full deep-dive page.",
+      "tiles": [
+        {
+          "name": "core",
+          "path": "src/",
+          "layer": "engine",
+          "layerLabel": "Engine",
+          "purpose": "The shared block→HTML rendering engine. Defines the `Block` union every product targets, walks it with `assemble()`, dispatches one renderer per block type, highlights code, lints, and stamps the output. There is no per-product render path — only this one.",
+          "meta": [
+            {
+              "key": "~15",
+              "value": "files"
+            },
+            {
+              "key": "core",
+              "value": "`Block` · `assemble()`"
+            }
+          ],
+          "deps": [
+            "diagrams"
+          ],
+          "href": "domain-core/domain-core.html"
+        },
+        {
+          "name": "diagrams",
+          "path": "src/",
+          "layer": "foundation",
+          "layerLabel": "Foundation",
+          "purpose": "The diagram pipeline: compiles d2/mermaid sources to rendered SVG via the `d2` CLI (with a visible placeholder fallback and an optional editable-Excalidraw upgrade). One semantic palette drives both the d2 prelude and the matching mermaid classDefs.",
+          "meta": [
+            {
+              "key": "~4",
+              "value": "files"
+            },
+            {
+              "key": "core",
+              "value": "`renderDiagram` · `PALETTE`"
+            }
+          ],
+          "deps": [],
+          "href": "domain-diagrams/domain-diagrams.html"
+        },
+        {
+          "name": "code-intel",
+          "path": "src/adapters · src/",
+          "layer": "intelligence",
+          "layerLabel": "Intelligence",
+          "purpose": "Reads and understands real subject codebases: parses Prisma schemas and tRPC routers, extracts imports, builds dependency graphs, and diffs API surfaces. Stack adapters make the scanning products (recap, atlas) framework-aware instead of guessing.",
+          "meta": [
+            {
+              "key": "~8",
+              "value": "files"
+            },
+            {
+              "key": "core",
+              "value": "adapters · `dep-graph`"
+            }
+          ],
+          "deps": [
+            "diagrams"
+          ],
+          "href": "domain-code-intel/domain-code-intel.html"
+        },
+        {
+          "name": "recap",
+          "path": "bin/ · src/review",
+          "layer": "surface",
+          "layerLabel": "Surface",
+          "purpose": "The **visual-recap** product: resolve a git target (PR / commit / branch / working tree), gather and rank the diff, build a `Block[]`, and render a review document. It also owns the reusable **review app-shell** (topbar, sidebar, sections) that atlas and authoring borrow.",
+          "meta": [
+            {
+              "key": "~19",
+              "value": "files"
+            },
+            {
+              "key": "owns",
+              "value": "the review shell"
+            }
+          ],
+          "deps": [
+            "core",
+            "diagrams",
+            "code-intel"
+          ],
+          "href": "domain-recap/domain-recap.html"
+        },
+        {
+          "name": "atlas",
+          "path": "bin/ · src/atlas-*",
+          "layer": "surface",
+          "layerLabel": "Surface",
+          "purpose": "The **visual-atlas** product — the generator behind this very page. Scans a repo, groups modules into domains via `atlas.domains.json`, drafts JSON (never clobbering authored prose), and renders the two-level atlas. Hybrid: mechanical scan plus human enrichment.",
+          "meta": [
+            {
+              "key": "~6",
+              "value": "files"
+            },
+            {
+              "key": "modes",
+              "value": "scan · domain · render"
+            }
+          ],
+          "deps": [
+            "core",
+            "diagrams",
+            "code-intel",
+            "recap"
+          ],
+          "href": "domain-atlas/domain-atlas.html"
+        },
+        {
+          "name": "authoring",
+          "path": "bin/ · src/*spec*",
+          "layer": "surface",
+          "layerLabel": "Surface",
+          "purpose": "The two pure-authoring products: **visual-spec** (an approval-focused design-spec / RFC page with its own block vocabulary) and **visual-doc** (the general illustrated-doc renderer over core's blocks). No scan — the input is hand-authored blocks JSON.",
+          "meta": [
+            {
+              "key": "~5",
+              "value": "files"
+            },
+            {
+              "key": "core",
+              "value": "`SpecBlock` · `assembleSpec`"
+            }
+          ],
+          "deps": [
+            "core",
+            "diagrams",
+            "recap"
+          ],
+          "href": "domain-authoring/domain-authoring.html"
+        }
+      ]
+    }
+  ]
+}
