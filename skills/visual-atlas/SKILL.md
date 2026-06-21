@@ -190,6 +190,9 @@ Don't pad — but a repo with several real domains warrants a page per domain. A
   sidecars — pass **`--no-excalidraw`** to any scan/render command (e.g.
   `atlas --all <dir> --out <dir> --no-excalidraw`). The same flag exists on `recap`, `spec`, and
   `doc`. (Per-doc, you can also set `"excalidraw": false` in the JSON, but the flag is preferred.)
+  Excalidraw support is **beta and export-only**: the atlas pages inline a static snapshot SVG, so
+  editing a `.excalidraw` sidecar does not change the rendered page and re-rendering overwrites it —
+  to change a diagram, edit its `d2`/`mermaid` source in the JSON and re-render.
 - The `domain-map` can be the scanner's editable `architecture` diagram OR a hand-authored `svg`
   block — either satisfies the standard.
 

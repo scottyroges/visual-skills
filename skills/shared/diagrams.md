@@ -5,6 +5,13 @@ Shared selection guide + tested recipes for the visual-skills (`visual-doc`, `vi
 recipe's `d2` is the dependable render floor; entries marked **editable: yes** also carry a
 `mermaid` source so the optional Excalidraw upgrade produces an editable scene.
 
+> **Excalidraw support is beta and currently export-only.** "Editable" means the upgrade writes a
+> separate `.excalidraw` sidecar you can open in Excalidraw — it does **not** mean edits flow back
+> into the document. The page inlines a **static snapshot SVG** generated from the diagram source, so
+> editing a `.excalidraw` file does not change the rendered HTML, and re-rendering regenerates the
+> sidecar from the source (overwriting hand-edits). The source (`d2` + `mermaid`) is the single
+> source of truth; to change a diagram, edit its source and re-render.
+
 Pick the **fewest** diagrams that explain the change. One strong diagram beats three weak ones.
 When 2–3 different lenses each add distinct value, present them in a `tabs` block rather than
 forcing one. Ground every node label in real identifiers from the target repo.
