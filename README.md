@@ -1,91 +1,173 @@
 # visual-skills
 
-Self-hosted renderer that turns specs, code changes, and whole codebases into
-self-contained, hand-drawn-styled HTML documents grounded in the real repo. Four tools /
-Claude Code skills share one app shell + diagram pipeline: **visual-doc** (any authored
-doc), **visual-recap** (a code change), **visual-spec** (a design spec → approval), and
-**visual-atlas** (a codebase's domains & architecture).
+Turn specs, code changes, and whole codebases into **self-contained, hand-drawn-styled HTML
+documents** grounded in your real repo — diagrams, annotated code, file trees, and a guided
+narrative, all in one file that opens offline over `file://`.
 
-## Prerequisites
-- Node 20+
-- `d2` on PATH — `brew install d2` (the required rendering floor)
-- `gh` CLI (optional, only for `--pr`)
+It ships as **four [Claude Code](https://claude.com/claude-code) skills** over one shared app
+shell + diagram pipeline. Most people use it by talking to Claude Code; a direct CLI is available
+too ([further down](#direct-cli-usage-without-claude-code)).
 
-## Usage
+| Skill | Ask Claude Code… | Produces |
+|---|---|---|
+| **visual-atlas** | "make a visual atlas of this codebase" | A standing map of a codebase's domains & architecture |
+| **visual-recap** | "make a visual recap of this PR / commit" | A reviewable walkthrough of a code change |
+| **visual-spec** | "make this design spec readable so I can approve it" | A design doc / RFC laid out for approval |
+| **visual-doc** | "turn this plan into a readable doc" | Any hand-authored markdown as an illustrated doc |
 
-`--out` is a per-doc **folder**: the tool writes `doc.html` / `recap.html` plus any
-`.excalidraw` sidecars together inside it (a trailing `.html` is stripped for convenience).
+![visual-atlas — system map](docs/images/atlas.png)
 
-Doc (hand-authored blocks):
+## What the output looks like
 
-    npx tsx bin/doc.ts --blocks blocks.json --title "My Doc" --out .visual/docs/x   # -> .visual/docs/x/doc.html
+Every page uses the same app shell — a sticky sidebar + scrollspy, a TL;DR fold, progressively
+revealed sections, and rendered diagrams. Four example builds live in [`example/`](example/);
+open any `.html` in a browser (they need no server).
 
-Recap (from a git target):
+<table>
+  <tr>
+    <td width="50%"><a href="example/pr-180-weekly-standings/recap.html"><img src="docs/images/recap.png" alt="visual-recap"></a><br><b>visual-recap</b> — a PR as a guided walkthrough</td>
+    <td width="50%"><a href="example/spec-gm-planning-brain/spec.html"><img src="docs/images/spec.png" alt="visual-spec"></a><br><b>visual-spec</b> — a design spec for approval</td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="example/atlas-sports-rpg/atlas.html"><img src="docs/images/atlas.png" alt="visual-atlas overview"></a><br><b>visual-atlas</b> — the system onboarding map</td>
+    <td width="50%"><a href="example/atlas-sports-rpg/domain-sim/domain-sim.html"><img src="docs/images/atlas-domain.png" alt="visual-atlas domain page"></a><br><b>visual-atlas</b> — a per-domain deep-dive page</td>
+  </tr>
+</table>
 
-    npx tsx bin/recap.ts --repo /path/to/repo --commit <sha>  --out .visual/recaps/x  # -> .visual/recaps/x/recap.html
-    npx tsx bin/recap.ts --repo /path/to/repo --branch <name> --out .visual/recaps/x
-    npx tsx bin/recap.ts --repo /path/to/repo --pr <number>   --out .visual/recaps/x
+## Setup
 
-Every recap includes a synthesized summary and a "where it fits" dependency graph. To
-enrich it with an agent-authored behavioral diagram, emit the gathered blocks as JSON,
-augment them, and render via the doc CLI (this is what the `visual-recap` skill does):
+A one-time, ~5-minute setup gets the skills discoverable from any repo on your machine.
 
-    npx tsx bin/recap.ts --repo /path/to/repo --commit <sha> --emit-blocks blocks.json
-    npx tsx bin/doc.ts --blocks blocks.json --out .visual/recaps/x   # -> .visual/recaps/x/doc.html
+### 1. Clone and install
 
-Spec (a design doc / RFC, authored for approval):
+```sh
+git clone https://github.com/scottyroges/visual-skills.git ~/Projects/visual-skills
+cd ~/Projects/visual-skills
+npm install
+```
 
-    npx tsx bin/spec.ts --blocks spec.json --out .visual/specs/x    # -> .visual/specs/x/spec.html
+You can clone anywhere — the skill installer (step 3) records wherever this lives, so nothing is
+hard-coded to a fixed path.
 
-Atlas (a standing map of a codebase's domains & architecture):
+### 2. Install `d2` (the diagram rendering floor — required)
 
-    npx tsx bin/atlas.ts --repo /path/to/repo --out .visual/atlas   # scan -> draft JSON -> render
-    # enrich the draft JSON (domain purposes, connections, diagrams), then re-render:
-    npx tsx bin/atlas.ts --all .visual/atlas --out .visual/atlas    # atlas.html + domain-<slug>/ folders
+Diagrams compile through [`d2`](https://d2lang.com). Without it, diagrams degrade to visible
+placeholders (everything else still renders).
 
-## Optional: editable Excalidraw diagrams
+```sh
+brew install d2          # macOS / Linuxbrew
+# or see https://d2lang.com/tour/install for other platforms
+```
 
-By default, flowchart/architecture diagrams render as static D2 sketches. To make them
-editable `.excalidraw` scenes (opened in excalidraw.com or the VS Code Excalidraw
+### 3. Install the skills into Claude Code
+
+```sh
+npm run skills:install
+```
+
+This **symlinks** the four skill dirs into `~/.claude/skills/` and stamps each `SKILL.md`'s
+`VISUAL_SKILLS_DIR` to this clone — so the skills work from wherever you cloned the repo, with no
+hand-editing of paths. It's idempotent and never clobbers a real dir or a foreign symlink.
+
+Using a non-default Claude config root (a custom location, a sandbox, a per-project `.claude`)?
+Point it anywhere with `--dir`:
+
+```sh
+npm run skills:install -- --dir /path/to/.claude
+```
+
+Confirm Claude Code can see them by asking it to list skills, or check `ls ~/.claude/skills`.
+
+### 4. (Optional) Editable Excalidraw diagrams
+
+By default, flowchart/architecture diagrams render as static D2 sketches. To make them **editable
+`.excalidraw` scenes** (open in [excalidraw.com](https://excalidraw.com) or the VS Code Excalidraw
 extension), opt in once:
 
-    npm run setup:excalidraw
+```sh
+npm run setup:excalidraw
+```
 
-This installs Playwright + Chromium and `@excalidraw/excalidraw` (not saved to
-`package.json`) and builds an offline bundle. It is heavy (~hundreds of MB). When it is
-not installed, diagrams fall back to the D2 sketch — nothing breaks.
+This installs Playwright + Chromium and `@excalidraw/excalidraw` (not saved to `package.json`) and
+builds an offline bundle. It's heavy (~hundreds of MB). When it's not installed, diagrams fall back
+to the D2 sketch and nothing breaks. To force the static D2 floor even when this is installed, pass
+`--no-excalidraw` to any CLI command.
 
-## Invoking from Claude Code
+## Using the skills
 
-Install the skills once so Claude Code can discover them from any repo:
+Open Claude Code in **any** repo (not this one) and just ask. The skill activates, reads your real
+code, and writes a self-contained HTML file under that repo's `.visual/` folder, then offers to open
+it.
 
-    npm run skills:install
+```text
+# In your project, ask Claude Code:
+"make a visual atlas of this codebase"
+"make a visual recap of the last commit"        (or: "...of PR 142")
+"make this design spec readable so I can approve it"   (point it at a markdown spec)
+"turn docs/plan.md into a readable doc"
+```
 
-This symlinks `visual-recap` / `visual-doc` / `visual-spec` / `visual-atlas` into
-`~/.claude/skills/` **and stamps each `SKILL.md`'s `VISUAL_SKILLS_DIR` to this clone**, so the
-skills work from wherever you cloned the repo — no hand-editing of paths after a clone. (It's
-idempotent: a `SKILL.md` already pointing here is left untouched.) To install into a different
-Claude config root, pass `--dir`:
+### Try it on the bundled examples
 
-    npm run skills:install -- --dir /path/to/.claude
+The fastest way to see the *output* is to open the prebuilt examples in [`example/`](example/). To
+see the *skills working*, point Claude Code at any spec or git history you have and use the prompts
+above — each skill scans the real repo, so the result is specific to your code.
 
-After that, ask Claude Code to "make a visual atlas of this codebase" for `visual-atlas`,
-"visualize this PR" / "make a visual recap of <commit>" for `visual-recap`, "make this design
-spec readable so I can approve it" for `visual-spec`, or "turn this plan/markdown into a readable
-doc" for `visual-doc`. The skills invoke the CLIs above; their tool path is the `VISUAL_SKILLS_DIR`
-constant near the top of each `SKILL.md`, set automatically by the installer.
+## Direct CLI usage (without Claude Code)
+
+The skills drive these same CLIs; you can run them yourself. `--out` is a per-doc **folder**: the
+tool writes `*.html` plus any `.excalidraw` sidecars together inside it (a trailing `.html` is
+stripped for convenience). Run from this repo so deps resolve.
+
+**Atlas** — a standing map of a codebase's domains & architecture:
+
+```sh
+npx tsx bin/atlas.ts --repo /path/to/repo --out .visual/atlas   # scan -> draft JSON -> render
+# enrich the draft JSON (domain purposes, connections, diagrams), then re-render:
+npx tsx bin/atlas.ts --all .visual/atlas --out .visual/atlas    # atlas.html + domain-<slug>/ folders
+```
+
+**Recap** — from a git target (commit / branch / PR):
+
+```sh
+npx tsx bin/recap.ts --repo /path/to/repo --commit <sha>  --out .visual/recaps/x
+npx tsx bin/recap.ts --repo /path/to/repo --branch <name> --out .visual/recaps/x
+npx tsx bin/recap.ts --repo /path/to/repo --pr <number>   --out .visual/recaps/x   # needs `gh` CLI
+```
+
+Every recap includes a synthesized summary and a "where it fits" dependency graph. To enrich it with
+an agent-authored behavioral diagram, emit the gathered blocks as JSON, augment them, and render via
+the doc CLI (this is what the `visual-recap` skill does):
+
+```sh
+npx tsx bin/recap.ts --repo /path/to/repo --commit <sha> --emit-blocks blocks.json
+npx tsx bin/doc.ts --blocks blocks.json --out .visual/recaps/x
+```
+
+**Spec** — a design doc / RFC, authored for approval:
+
+```sh
+npx tsx bin/spec.ts --blocks spec.json --out .visual/specs/x
+```
+
+**Doc** — any hand-authored blocks:
+
+```sh
+npx tsx bin/doc.ts --blocks blocks.json --title "My Doc" --out .visual/docs/x
+```
+
+Add `--no-excalidraw` to any of these to force the static D2 floor.
+
+**Prerequisites:** Node 20+, `d2` on PATH, and `gh` (optional, only for `recap --pr`).
 
 ## Scope
-Implemented: D2 floor + assembler + recap gatherer (Prisma+tRPC adapter) (M0/M1),
-Shiki syntax highlighting + full renderer set (M2), the opt-in editable Excalidraw
-upgrade with API-surface + plan-mermaid diagram producers (M3), and the `visual-doc` /
-`visual-recap` Claude Code skills (M4), and contextual recaps — synthesized summary +
-"where it fits" dependency graph + `--emit-blocks` enrichment with agent-selected
-behavioral diagrams (M6), and review-narrative recaps — agent-authored "Summary",
-per-file diff descriptions with in-page cross-links, and importance-ordered `group`s
-(M7), and a shared diagram catalog with a `tabs` multi-view block plus widened
-Excalidraw editability (sequence/class) (M8), the `visual-spec` design-spec→approval skill
-(its own block model + completeness lint), and the `visual-atlas` codebase-map skill (a
-mechanical scanner + human-owned `atlas.domains.json` grouping, per-domain folders, and a
-demo-standard lint). Deprioritized: `gh pr comment` integration (M5). See
-`docs/superpowers/specs/`.
+
+Implemented: the D2 floor + assembler + recap gatherer (Prisma+tRPC adapter), Shiki syntax
+highlighting + full renderer set, the opt-in editable Excalidraw upgrade with API-surface +
+plan-mermaid diagram producers, contextual recaps (synthesized summary + "where it fits" graph +
+`--emit-blocks` enrichment), review-narrative recaps (agent-authored summary, per-file diff
+descriptions with in-page cross-links, importance-ordered groups), a shared diagram catalog with a
+`tabs` multi-view block and widened Excalidraw editability (sequence/class), the `visual-spec`
+design-spec→approval skill (its own block model + completeness lint), and the `visual-atlas`
+codebase-map skill (a mechanical scanner + human-owned `atlas.domains.json` grouping, per-domain
+folders, and a demo-standard lint). See [`docs/superpowers/specs/`](docs/superpowers/specs/).
