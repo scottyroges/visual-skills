@@ -29,9 +29,9 @@ blocks — so ground every reference in the real repo.
 
    `--out` is a *directory* (e.g. `<repo>/.visual/docs/<label>`, absolute path); the HTML
    (`doc.html`) and any `.excalidraw` sidecars are written together inside it. Diagrams render as
-   static D2 by default; if the editable upgrade is installed (`npm run setup:excalidraw`) they are
-   promoted to `.excalidraw` scenes automatically — pass `--no-excalidraw` to force the static D2
-   floor.
+   static D2 by default and stay that way unless you opt in: pass `--excalidraw` to promote
+   editable-eligible diagrams to `.excalidraw` scenes (requires the `npm run setup:excalidraw`
+   toolchain). Without the flag — or with `--no-excalidraw` — you get the static D2 floor.
 
 6. **Open it:** `open <ABSOLUTE_OUT_DIR>/doc.html` (macOS), else report the path.
 

@@ -28,11 +28,13 @@ async function main() {
       blocks: { type: "string" },
       title: { type: "string" },
       source: { type: "string" },
+      excalidraw: { type: "boolean" },
       "no-excalidraw": { type: "boolean" },
     },
   });
-  // --no-excalidraw forces the d2 floor; otherwise editable diagrams promote when the toolchain is present.
-  const excalidraw = values["no-excalidraw"] ? false : undefined;
+  // Excalidraw is off by default (the dependable d2 floor). --excalidraw opts in to editable
+  // diagrams when the toolchain is present; --no-excalidraw is kept as an explicit off.
+  const excalidraw = values["no-excalidraw"] ? false : values.excalidraw ? true : undefined;
 
   // --blocks: render an existing (e.g. enriched) blocks.json through the review shell,
   // skipping git gather. This is the enrichment round-trip target for the visual-recap skill.

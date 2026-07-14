@@ -62,7 +62,7 @@ describe("renderDiagram (D2 floor)", () => {
       let converted = false;
       const out = await renderDiagram(
         block,
-        { outDir: dir },
+        { outDir: dir, excalidraw: true },
         { ready: async () => true, convert: async () => { converted = true; return { svg: "<svg id='x'/>", scene: {} }; } },
       );
       expect(converted).toBe(true);
@@ -83,7 +83,7 @@ describe("renderDiagram (D2 floor)", () => {
       let converted = false;
       const out = await renderDiagram(
         block,
-        { outDir: dir },
+        { outDir: dir, excalidraw: true },
         { ready: async () => true, convert: async () => { converted = true; return { svg: "<svg id='x'/>", scene: {} }; } },
       );
       expect(converted).toBe(true);

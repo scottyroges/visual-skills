@@ -16,7 +16,7 @@ describe("renderDiagram excalidraw seam", () => {
     try {
       const out = await renderDiagram(
         flow,
-        { outDir: dir },
+        { outDir: dir, excalidraw: true },
         {
           ready: async () => true,
           convert: async () => ({ svg: "<svg id='fake'></svg>", scene: { type: "excalidraw" } }),
@@ -36,7 +36,7 @@ describe("renderDiagram excalidraw seam", () => {
     const warnings: string[] = [];
     const out = await renderDiagram(
       flow,
-      { onWarn: (m) => warnings.push(m) },
+      { excalidraw: true, onWarn: (m) => warnings.push(m) },
       { ready: async () => true, convert: async () => { throw new Error("boom-exc"); } },
     );
     expect(out.renderer).toBe("d2");
@@ -55,7 +55,7 @@ describe("renderDiagram excalidraw seam", () => {
         d2: "x: { class: changed }",
         mermaid: "graph TD\n  x[x]:::changed\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;",
       };
-      const out = await renderDiagram(colored, { outDir: dir });
+      const out = await renderDiagram(colored, { outDir: dir, excalidraw: true });
       expect(out.svg).toMatch(/<text[^>]*fill="#1b1b1b"/i);   // label text is dark ink
       expect(out.svg).not.toMatch(/<text[^>]*fill="#f08c00"/i); // never the stroke color
     } finally {
@@ -68,7 +68,7 @@ describe("renderDiagram excalidraw seam", () => {
     const erd: DiagramBlock = { type: "diagram", id: "e", title: "E", kind: "erd", d2: "a -> b", mermaid: "graph TD\nA-->B" };
     const out = await renderDiagram(
       erd,
-      {},
+      { excalidraw: true },
       { ready: async () => true, convert: async () => { called = true; throw new Error("should not run"); } },
     );
     expect(called).toBe(false);

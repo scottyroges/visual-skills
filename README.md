@@ -89,9 +89,10 @@ npm run setup:excalidraw
 ```
 
 This installs Playwright + Chromium and `@excalidraw/excalidraw` (not saved to `package.json`) and
-builds an offline bundle. It's heavy (~hundreds of MB). When it's not installed, diagrams fall back
-to the D2 sketch and nothing breaks. To force the static D2 floor even when this is installed, pass
-`--no-excalidraw` to any CLI command.
+builds an offline bundle. It's heavy (~hundreds of MB). Even with it installed, the Excalidraw
+upgrade is **off by default** — diagrams stay on the static D2 floor unless you opt in with
+`--excalidraw` (or `"excalidraw": true` in a spec/atlas JSON). `--no-excalidraw` remains an explicit
+off but is now the default.
 
 > **Note — Excalidraw support is in beta and is currently an _export_ only.** At render time each
 > diagram produces two artifacts from its source: the **static SVG that's inlined into the HTML**
@@ -164,7 +165,8 @@ npx tsx bin/spec.ts --blocks spec.json --out .visual/specs/x
 npx tsx bin/doc.ts --blocks blocks.json --title "My Doc" --out .visual/docs/x
 ```
 
-Add `--no-excalidraw` to any of these to force the static D2 floor.
+Diagrams use the static D2 floor by default. Add `--excalidraw` to any of these to opt into the
+editable Excalidraw upgrade (when the toolchain is installed); `--no-excalidraw` is the explicit off.
 
 **Prerequisites:** Node 20+, `d2` on PATH, and `gh` (optional, only for `recap --pr`).
 

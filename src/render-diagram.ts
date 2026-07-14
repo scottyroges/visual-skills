@@ -20,9 +20,11 @@
 //   - npm i @excalidraw/excalidraw @excalidraw/mermaid-to-excalidraw playwright
 //   - an excalidraw-bundle.html that loads the two UMD globals (see EXCALIDRAW_PAGE)
 //
-// The Excalidraw upgrade is OPT-IN: run `npm run setup:excalidraw` to install the
-// toolchain and build assets/excalidraw-bundle.js. Without it, excalidrawReady()
-// returns false and rendering falls back to the D2 SVG floor (no crash).
+// The Excalidraw upgrade is OPT-IN twice over: (1) it renders only when the caller
+// explicitly sets `excalidraw: true` (off by default — a missing/false value stays on
+// the D2 floor), and (2) even then it needs the toolchain — run `npm run setup:excalidraw`
+// to install it and build assets/excalidraw-bundle.js. Without the toolchain,
+// excalidrawReady() returns false and rendering falls back to the D2 SVG floor (no crash).
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -98,8 +100,10 @@ export async function renderDiagram(
     return { id, title, svg: placeholderSvg(title, message), editable: null, renderer: "d2", failed: true };
   }
 
-  // 2. Upgrade: editable Excalidraw, only when eligible + the opt-in toolchain is present.
-  const eligible = !!mermaid && EXCALIDRAW_EDITABLE.has(kind) && opts.excalidraw !== false;
+  // 2. Upgrade: editable Excalidraw, only when explicitly opted in (excalidraw === true),
+  //    the kind is eligible, and the opt-in toolchain is present. Off by default: a missing
+  //    or false `excalidraw` keeps the dependable D2 floor.
+  const eligible = !!mermaid && EXCALIDRAW_EDITABLE.has(kind) && opts.excalidraw === true;
   if (eligible && (await ready())) {
     try {
       const { svg, scene } = await convert(mermaid!);

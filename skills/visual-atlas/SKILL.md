@@ -184,12 +184,12 @@ Don't pad — but a repo with several real domains warrants a page per domain. A
 
 - **`d2` missing:** diagrams degrade to visible placeholders (the atlas still produces) — tell the
   user to `brew install d2` for proper rendered diagrams.
-- **d2 vs Excalidraw:** diagrams render as static D2 images by default, but once the editable
-  upgrade is installed (`npm run setup:excalidraw`) every editable-eligible diagram is **promoted to
-  an editable `.excalidraw` scene automatically**. To force the static D2 floor for a run — no
-  sidecars — pass **`--no-excalidraw`** to any scan/render command (e.g.
-  `atlas --all <dir> --out <dir> --no-excalidraw`). The same flag exists on `recap`, `spec`, and
-  `doc`. (Per-doc, you can also set `"excalidraw": false` in the JSON, but the flag is preferred.)
+- **d2 vs Excalidraw:** diagrams render as static D2 images by default and **stay that way unless you
+  explicitly opt in** — the editable Excalidraw upgrade is off by default even after
+  `npm run setup:excalidraw` is installed. To promote editable-eligible diagrams to `.excalidraw`
+  scenes for a run, set **`"excalidraw": true`** in the atlas/domain JSON (or pass **`--excalidraw`**
+  on `recap`, `spec`, and `doc`). `--no-excalidraw` (or `"excalidraw": false`) is still accepted as
+  an explicit off, but it is now the default.
   Excalidraw support is **beta and export-only**: the atlas pages inline a static snapshot SVG, so
   editing a `.excalidraw` sidecar does not change the rendered page and re-rendering overwrites it —
   to change a diagram, edit its `d2`/`mermaid` source in the JSON and re-render.
