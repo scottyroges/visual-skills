@@ -4,13 +4,14 @@ Turn specs, code changes, and whole codebases into **self-contained, hand-drawn-
 documents** grounded in your real repo — diagrams, annotated code, file trees, and a guided
 narrative, all in one file that opens offline over `file://`.
 
-It ships as **four [Claude Code](https://claude.com/claude-code) skills** over one shared app
+It ships as **five [Claude Code](https://claude.com/claude-code) skills** over one shared app
 shell + diagram pipeline. Most people use it by talking to Claude Code; a direct CLI is available
 too ([further down](#direct-cli-usage-without-claude-code)).
 
 | Skill | Ask Claude Code… | Produces |
 |---|---|---|
 | **visual-atlas** | "make a visual atlas of this codebase" | A standing map of a codebase's domains & architecture |
+| **atlas-review** | "review the atlas against the code" | An existing atlas re-verified, updated, and re-stamped |
 | **visual-recap** | "make a visual recap of this PR / commit" | A reviewable walkthrough of a code change |
 | **visual-spec** | "make this design spec readable so I can approve it" | A design doc / RFC laid out for approval |
 | **visual-doc** | "turn this plan into a readable doc" | Any hand-authored markdown as an illustrated doc |
@@ -65,7 +66,7 @@ brew install d2          # macOS / Linuxbrew
 npm run skills:install
 ```
 
-This **symlinks** the four skill dirs into `~/.claude/skills/` and stamps each `SKILL.md`'s
+This **symlinks** the skill dirs into `~/.claude/skills/` and stamps each `SKILL.md`'s
 `VISUAL_SKILLS_DIR` to this clone — so the skills work from wherever you cloned the repo, with no
 hand-editing of paths. It's idempotent and never clobbers a real dir or a foreign symlink.
 
@@ -111,6 +112,7 @@ it.
 ```text
 # In your project, ask Claude Code:
 "make a visual atlas of this codebase"
+"review the atlas against the code"             (maintenance of an existing atlas)
 "make a visual recap of the last commit"        (or: "...of PR 142")
 "make this design spec readable so I can approve it"   (point it at a markdown spec)
 "turn docs/plan.md into a readable doc"
@@ -121,6 +123,41 @@ it.
 The fastest way to see the *output* is to open the prebuilt examples in [`example/`](example/). To
 see the *skills working*, point Claude Code at any spec or git history you have and use the prompts
 above — each skill scans the real repo, so the result is specific to your code.
+
+## Keeping an atlas honest (drift check + review)
+
+An atlas is a *standing* document, so staleness is its failure mode. Two mechanisms keep it
+truthful — one deterministic, one semantic:
+
+**The drift checker (`atlas-check.mjs`)** — every atlas scan/render copies this self-contained
+Node script into the out dir (e.g. `<repo>/.visual/atlas/atlas-check.mjs`). Commit it with the
+atlas; it runs with plain Node, so pre-commit hooks and CI never need this repo checked out. It
+verifies three layers, all deterministic:
+
+1. **Coverage** — every source module under the config's `srcRoots` is matched by a domain glob
+   in `atlas.domains.json`; no recorded module is stale; no domain is empty or missing its page.
+2. **Grounding** — the structured claims on each domain page (component/depth `exports[].name`,
+   depth `files[].name`, seams `exposes[].api` routes) still exist in that domain's source.
+   Catches renamed exports, moved files, and changed routes even when file coverage is unchanged.
+3. **Stamps** — each domain page carries `verifiedAgainst: { hash, date, commit }`: a sha256 over
+   the domain's module contents (plus the git HEAD, when available) from the last time its prose
+   was verified. A mismatch means the code changed since anyone last read the page.
+
+```sh
+node .visual/atlas/atlas-check.mjs                 # check — exits 1 on any drift
+node .visual/atlas/atlas-check.mjs --stamp         # re-stamp every domain page
+node .visual/atlas/atlas-check.mjs --stamp <slug>  # re-stamp specific domains
+```
+
+Wire the check into the subject repo's pre-commit (e.g. a package.json script
+`"atlas:check": "node .visual/atlas/atlas-check.mjs"` invoked from the hook) or CI.
+
+**The review skill (`atlas-review`)** — the deterministic layers prove *coverage* and
+*attention*; only a reader can verify prose. When the stamp check fails, ask Claude Code to
+"review the atlas": the skill diffs each stale domain from its stamp's recorded commit, judges
+the page block-by-block against the diff, fixes what drifted (minimal edits), re-renders, and
+re-stamps exactly what it reviewed. Stamping is always explicit — nothing in the pipeline ever
+stamps a page nobody read.
 
 ## Direct CLI usage (without Claude Code)
 
@@ -178,6 +215,8 @@ plan-mermaid diagram producers, contextual recaps (synthesized summary + "where 
 `--emit-blocks` enrichment), review-narrative recaps (agent-authored summary, per-file diff
 descriptions with in-page cross-links, importance-ordered groups), a shared diagram catalog with a
 `tabs` multi-view block and widened Excalidraw editability (sequence/class), the `visual-spec`
-design-spec→approval skill (its own block model + completeness lint), and the `visual-atlas`
+design-spec→approval skill (its own block model + completeness lint), the `visual-atlas`
 codebase-map skill (a mechanical scanner + human-owned `atlas.domains.json` grouping, per-domain
-folders, and a demo-standard lint). See [`docs/superpowers/specs/`](docs/superpowers/specs/).
+folders, and a demo-standard lint), and the atlas honesty loop (an emitted self-contained drift
+checker — coverage/grounding/stamps — plus the `atlas-review` maintenance skill). See
+[`docs/superpowers/specs/`](docs/superpowers/specs/).

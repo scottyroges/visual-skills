@@ -9,6 +9,7 @@ const recapSkill = read("../skills/visual-recap/SKILL.md");
 const specSkill = read("../skills/visual-spec/SKILL.md");
 const atlasBlocks = read("../src/atlas-blocks.ts");
 const atlasSkill = read("../skills/visual-atlas/SKILL.md");
+const atlasReviewSkill = read("../skills/atlas-review/SKILL.md");
 
 // Discriminant literals like `type: "diagram"` across the Block interfaces.
 const blockTypes = [...new Set([...blocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))];
@@ -57,11 +58,33 @@ describe("skill docs stay in sync", () => {
   });
 
   it("all skills have name + description frontmatter", () => {
-    for (const md of [docSkill, recapSkill, specSkill, atlasSkill]) {
+    for (const md of [docSkill, recapSkill, specSkill, atlasSkill, atlasReviewSkill]) {
       expect(md.startsWith("---")).toBe(true);
       expect(md).toMatch(/\nname:\s*\S+/);
       expect(md).toMatch(/\ndescription:\s*\S+/);
     }
+  });
+
+  it("visual-atlas documents the drift checker and stamping", () => {
+    for (const s of ["atlas-check.mjs", "--stamp", "verifiedAgainst", "pre-commit"]) {
+      expect(atlasSkill, `visual-atlas SKILL.md must mention "${s}"`).toContain(s);
+    }
+  });
+
+  it("atlas-review mandates the review loop (diff → judge → re-render → re-stamp)", () => {
+    for (const s of [
+      "atlas-check.mjs",
+      "--stamp",
+      "verifiedAgainst.commit",
+      "git",
+      "re-render",
+      "visual-atlas",
+      "Never stamp",
+    ]) {
+      expect(atlasReviewSkill, `atlas-review SKILL.md must mention "${s}"`).toContain(s);
+    }
+    expect(atlasReviewSkill).toContain("skills/shared/atlas-components.md");
+    expect(atlasReviewSkill).toContain("src/atlas-blocks.ts");
   });
 
   it("visual-spec mandates the standard (lead, decisions+why, scope, approval) and references both catalogs", () => {

@@ -19,7 +19,7 @@ favor the newcomer.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=~/Projects/visual-skills
+    VISUAL_SKILLS_DIR=/home/srogener/visual-skills
 
 Unlike `visual-spec` (pure authoring), the atlas is **hybrid**: a mechanical scanner walks the repo
 and emits *draft* JSON; you **enrich** the drafts (write the meaning) and render. The scanner does
@@ -55,6 +55,8 @@ If any of these is true, the atlas is **not done** — keep going:
 - Connections / detail prose is still the empty placeholders the scanner emitted.
 - The tool printed completeness warnings. **Those mean below standard — enrich the JSON and re-render
   until they are gone.**
+- You enriched pages but never ran `atlas-check.mjs --stamp` — unstamped pages fail the drift check
+  in any repo that wires it into pre-commit.
 
 ## Workflow (three modes)
 
@@ -129,6 +131,15 @@ Cross-page links follow the layout: an atlas tile → `domain-<slug>/domain-<slu
    purpose, a domain page missing `domain-tldr` / `components` / `seams` / a large domain's
    internal-arch). **Edit the JSON and re-render until the warnings are gone.**
 
+6. **Stamp what you just verified.** Every scan/render also emits `atlas-check.mjs` into the out
+   dir (see "Keeping the atlas honest" below). Finish by stamping — this records, per domain page,
+   a hash of the source it was verified against:
+
+       node <ABSOLUTE_OUT_DIR>/atlas-check.mjs --stamp
+
+   Only stamp pages whose prose you actually wrote or reviewed this run — for a partial pass,
+   stamp just those domains (`--stamp <slug> …`).
+
 ### 2. Single domain
 
 Refresh one domain after its code changed — regenerates that page's draft and re-renders just it; the
@@ -138,7 +149,8 @@ if a cross-domain edge changed):
     npx tsx bin/atlas.ts --repo <ABSOLUTE_SUBJECT_REPO> --domain <slug> --out <ABSOLUTE_OUT_DIR>
 
 (`--domain` regenerates the draft — re-apply enrichment, or pass nothing and keep your committed page
-and just re-render via mode 3.)
+and just re-render via mode 3.) After re-enriching, re-stamp that domain:
+`node <ABSOLUTE_OUT_DIR>/atlas-check.mjs --stamp <slug>`.
 
 ### 3. Render-only (reproduce)
 
@@ -147,6 +159,38 @@ Re-render committed JSON with no scan — the recap/spec reproducibility pattern
     npx tsx bin/atlas.ts --blocks <ABSOLUTE_OUT_DIR>/atlas.json --out <ABSOLUTE_OUT_DIR>   # one page
     npx tsx bin/atlas.ts --all   <ABSOLUTE_OUT_DIR>          --out <ABSOLUTE_OUT_DIR>      # atlas + every domain page
     open <ABSOLUTE_OUT_DIR>/atlas.html
+
+## Keeping the atlas honest (drift + verification)
+
+Every scan and `--all` render copies **`atlas-check.mjs`** — a self-contained, tool-owned Node
+script — into the out dir. Target repos commit it and run it from pre-commit/CI with plain Node
+(no visual-skills checkout needed). It checks three deterministic layers:
+
+1. **Coverage** — every source module under the config's `srcRoots` is matched by a domain glob;
+   no recorded module is stale; no domain is empty or missing its page.
+2. **Grounding** — the structured claims on each domain page (`exports[].name`, depth
+   `files[].name`, seams `exposes[].api` routes) still exist in that domain's source. Catches
+   renamed exports, moved files, and changed routes even when file coverage is unchanged.
+3. **Stamps** — each domain page carries `verifiedAgainst: { hash, date }` (sha256 over the
+   domain's module contents when its prose was last verified). A mismatch means the code changed
+   since anyone last read the page.
+
+Commands (from the subject repo):
+
+    node .visual/atlas/atlas-check.mjs                 # check — wire this into pre-commit/CI
+    node .visual/atlas/atlas-check.mjs --stamp         # re-stamp every page
+    node .visual/atlas/atlas-check.mjs --stamp <slug>  # re-stamp one page
+
+**The maintenance loop this creates:** a failing stamp is a *review request*, not a formality.
+Re-read the changed domain's diff against its page, fix the prose (and re-render) if the change
+was architecturally meaningful, then re-stamp. Never stamp a page you haven't just read against
+the current code — the stamp's only value is that it means a human/Claude actually looked.
+Grounding and stamps verify structured claims and attention; only that review verifies prose.
+
+That review loop is its own skill: **atlas-review** (`skills/atlas-review/SKILL.md`). Use it —
+not a full rescan — when an existing atlas fails the check or the user asks to re-verify the
+atlas against the code. Stamps record the git commit they were made at, so atlas-review can diff
+precisely from the last verified state.
 
 ## The block model
 

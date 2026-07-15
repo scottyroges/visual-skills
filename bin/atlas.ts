@@ -7,9 +7,10 @@
 // Add --force to overwrite existing draft JSON (default: never clobber authored prose).
 // Layout: atlas.{html,json} + atlas.domains.json at the top; each domain in its own
 // domain-<slug>/ folder (domain-<slug>.{html,json} + that domain's diagram sidecars).
-import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, readdir, copyFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, isAbsolute, basename, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { assembleAtlas, assembleDomain } from "../src/assemble-atlas.js";
 import type { AtlasBlock, AtlasOpts, DomainOpts } from "../src/atlas-blocks.js";
@@ -79,6 +80,15 @@ async function listDocJsons(dir: string): Promise<string[]> {
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+/** Refresh the self-contained drift checker next to the atlas artifacts. Tool-owned (always
+ *  overwritten): target repos commit it and run it from pre-commit/CI with plain Node —
+ *  no visual-skills checkout needed. See assets/atlas-check.mjs for what it verifies. */
+async function emitChecker(outDir: string): Promise<void> {
+  const src = fileURLToPath(new URL("../assets/atlas-check.mjs", import.meta.url));
+  await copyFile(src, join(outDir, "atlas-check.mjs"));
+  console.log("wrote atlas-check.mjs (drift checker — wire `node .visual/atlas/atlas-check.mjs` into pre-commit)");
+}
+
 function parseConfig(cfgPath: string, raw: string): AtlasConfig {
   try {
     return JSON.parse(raw) as AtlasConfig;
@@ -141,6 +151,7 @@ async function main() {
       // tile-only note (do not recompute the atlas map; see spec "Resolved during review")
       console.log(`note: atlas tile for "${liveDomain.slug}" — ${liveDomain.modules.length} files, deps: ${[...(edges.get(liveDomain.slug) ?? [])].sort().join(", ") || "none"} (update atlas.json's tile if changed)`);
       printDrift(drift);
+      await emitChecker(outDir);
       return; // end main()
     }
     const config0 = await loadOrGuessConfig(values.repo, outDir);
@@ -169,6 +180,7 @@ async function main() {
       const { outName, warnings } = await renderFile(f, outDir, noExcalidraw);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
     }
+    await emitChecker(outDir);
   } else if (values.all) {
     if (!isAbsolute(values.all)) { console.error("--all must be an absolute path"); process.exit(2); }
     await mkdir(outDir, { recursive: true });
@@ -176,6 +188,7 @@ async function main() {
       const { outName, warnings } = await renderFile(f, outDir, noExcalidraw);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
     }
+    await emitChecker(outDir);
   } else if (values.blocks) {
     if (!isAbsolute(values.blocks)) { console.error("--blocks must be an absolute path"); process.exit(2); }
     await mkdir(outDir, { recursive: true });
