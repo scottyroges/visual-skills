@@ -24,3 +24,22 @@ describe("review assets", () => {
     expect(js).not.toContain("<script");                    // raw JS, not an HTML block
   });
 });
+
+describe("dark-mode surface variables", () => {
+  it("theme.css defines dark values for the shared surface variables", async () => {
+    const css = await readFile(asset("theme.css"), "utf8");
+    for (const v of ["--card", "--code-bg", "--add-bg", "--del-bg", "--paper", "--ink"]) {
+      expect(css).toContain(v);
+    }
+  });
+  it("no card/pill hex leaks remain unthemed in template.css", async () => {
+    const css = await readFile(asset("template.css"), "utf8");
+    // The hex still appears exactly once each as the light default inside :root{}
+    // (that default is what keeps light mode pixel-identical) — but every rule body
+    // that used to paint with the literal must now reference the variable instead.
+    expect(css).toMatch(/--add-bg:\s*#e6ffec/);
+    expect(css).toMatch(/--del-bg:\s*#ffebe9/);
+    expect(css).not.toMatch(/background:\s*#e6ffec/);
+    expect(css).not.toMatch(/background:\s*#ffebe9/);
+  });
+});

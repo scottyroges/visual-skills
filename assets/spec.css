@@ -20,6 +20,7 @@
   --reused-border: #ced4da;
   --store: #6d4ed8;              /* datastore ink */
   --proc: #1971c2;              /* perception / process ink */
+  --good: #15803d;               /* "positive/success" ink, reused by atlas.css */
 }
 
 /* ---- topbar: phase + status + complexity chips ---- */
@@ -156,7 +157,7 @@
 .scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .scope-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .scope-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
-.scope-in .scope-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.scope-in .scope-head { background: var(--add-bg); color: var(--good); border-bottom-color: var(--add-border); }
 .scope-out .scope-head { background: var(--reused-bg); color: var(--ink-muted); }
 .scope-count { font-size: var(--text-xs); font-weight: 600; opacity: 0.8; }
 .scope-list { list-style: none; padding: 8px 0; }
@@ -202,7 +203,7 @@
 .spec-table tr:hover td { background: var(--panel); }
 .spec-table code { font-family: var(--font-mono); font-size: 0.86em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
 .spec-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
-.spec-table .good { color: #15803d; font-weight: 700; }
+.spec-table .good { color: var(--good); font-weight: 700; }
 .tbl-note { font-size: var(--text-sm); color: var(--ink-muted); margin: 2px 2px 0; }
 
 /* ---- risks ---- */
@@ -211,7 +212,7 @@
 .risk-r { display: flex; gap: 9px; padding: 12px 15px; background: var(--remove-bg); border-bottom: 1px solid var(--remove-border); font-weight: 650; color: #991b1b; font-size: var(--text-sm); line-height: 1.45; }
 .risk-icon { flex-shrink: 0; }
 .risk-m { padding: 12px 15px; font-size: var(--text-sm); color: var(--ink); line-height: 1.55; }
-.risk-m b { color: #15803d; font-weight: 700; }
+.risk-m b { color: var(--good); font-weight: 700; }
 .risk-m code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
 
 /* ---- reference drill-downs ---- */
@@ -259,7 +260,7 @@ details.ref[open] .ref-chev { transform: rotate(90deg); }
 .approve-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
 .approve-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
 .approve-card.commit .approve-head { background: var(--accent-subtle); color: var(--accent); border-bottom-color: var(--accent-border); }
-.approve-card.scrutinize .approve-head { background: var(--change-bg); color: #92600a; border-bottom-color: var(--change-border); }
+.approve-card.scrutinize .approve-head { background: var(--change-bg); color: var(--perceived); border-bottom-color: var(--change-border); }
 .approve-card.open .approve-head { background: var(--panel-deep); color: var(--ink-muted); }
 .approve-body { padding: 13px 16px; font-size: var(--text-sm); color: var(--ink); line-height: 1.6; }
 .approve-body strong { font-weight: 700; }

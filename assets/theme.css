@@ -12,6 +12,11 @@
 :root[data-theme="dark"] {
   --ink:#e6e3dc; --paper:#16181d; --ctx:#9aa2ad; --line:#2c3038;
   --add:#3fb950; --del:#f85149;
+  --card:#1c1f26; --code-bg:#1b1e24;
+  --add-bg:rgba(63,185,80,0.15); --del-bg:rgba(248,81,73,0.15); --warn-bg:rgba(210,167,44,0.12);
+  --pill-green-bg:rgba(63,185,80,0.2); --pill-yellow-bg:rgba(210,167,44,0.2); --pill-red-bg:rgba(248,81,73,0.2);
+  --link:#6aa3ff;
+  --good:#3fb950;
 }
 
 /* Shiki dual-theme flip (Task 3 emits the --shiki-dark vars) */
