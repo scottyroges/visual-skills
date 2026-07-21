@@ -158,7 +158,7 @@
       "id": "arch",
       "title": "How a subject repo gets understood",
       "badge": "data flow",
-      "intro": "`selectAdapter` probes the repo. If `prisma/schema.prisma` exists, the **PrismaTrpcAdapter** feeds that schema into `parsePrismaModels` and each changed `src/server/routers/*.ts` into `parseRouter`, then diffs both. Independently, the atlas gather walks every source file through `importsOf` and hands it to `dependencyNeighborhood`. Everything bare-package is dropped — only in-repo edges survive.",
+      "intro": "`selectAdapter` probes the repo. If `prisma/schema.prisma` exists, the **PrismaTrpcAdapter** feeds that schema into `parsePrismaModels` and each changed `src/server/routers/*.ts` into `parseRouter`, then diffs both. Independently, the recap hands the changed file set to `dependencyNeighborhood`, which walks source files through `importsOf` (the atlas gather calls `importsOf` directly for its module graph). Everything bare-package is dropped — only in-repo edges survive.",
       "diagram": {
         "id": "code-intel-flow",
         "kind": "architecture",
@@ -196,7 +196,7 @@
           "name": "stack adapters",
           "path": "src/adapters/stack-adapter.ts · prisma-trpc.ts · generic.ts",
           "detail": [
-            "`StackAdapter` is a four-method interface: `name`, `detect(repoRoot)`, `schemaDiff(scope)`, and `apiDiff(scope)`. `selectAdapter(repoRoot, adapters)` returns the first adapter whose `detect()` resolves true, falling back to a fresh `GenericAdapter` — so selection is just an ordered probe, and the fallback always wins last.",
+            "`StackAdapter` is a small interface: a `name` string plus three methods — `detect(repoRoot)`, `schemaDiff(scope)`, and `apiDiff(scope)`. `selectAdapter(repoRoot, adapters)` returns the first adapter whose `detect()` resolves true, falling back to a fresh `GenericAdapter` — so selection is just an ordered probe, and the fallback always wins last.",
             "`PrismaTrpcAdapter` is the one concrete stack adapter. `detect` checks for `prisma/schema.prisma`. `schemaDiff` reads that file at the base and head refs (`fileAtRef`), parses both with [parsePrismaModels](#c-prisma-schema), diffs them, and returns a `SchemaBlock` — or `null` if nothing changed. `apiDiff` filters the changed files to `src/server/routers/*.ts` (excluding `_app.ts`), parses each with [parseRouter](#c-trpc-parse), and emits one `ApiBlock` per router via [diffProcedures](#c-api-diff). It is the seam where every other parser is wired together.",
             "`GenericAdapter` is deliberately empty: `detect` always returns true, `schemaDiff` returns `null`, `apiDiff` returns `[]`. A non-Prisma repo therefore gets a clean file-tree-and-diff recap with no broken schema/API sections."
           ],
@@ -224,8 +224,12 @@
               "desc": "→ first adapter whose `detect()` passes, else a new `GenericAdapter`."
             },
             {
-              "name": "PrismaTrpcAdapter · GenericAdapter",
-              "desc": "The concrete adapter and its fallback."
+              "name": "PrismaTrpcAdapter",
+              "desc": "The one concrete stack adapter (Prisma + tRPC)."
+            },
+            {
+              "name": "GenericAdapter",
+              "desc": "The no-op fallback."
             }
           ],
           "connections": [
@@ -271,8 +275,16 @@
               "desc": "→ `SchemaBlock` — changed models as a D2 ERD with change markers."
             },
             {
-              "name": "PrismaModel · PrismaField · ModelDiff",
-              "desc": "The parsed-schema model types."
+              "name": "PrismaModel",
+              "desc": "A parsed model: name + typed fields."
+            },
+            {
+              "name": "PrismaField",
+              "desc": "One field: `{ name, type }`."
+            },
+            {
+              "name": "ModelDiff",
+              "desc": "Per-model added / removed / kept fields."
             }
           ],
           "connections": [
@@ -380,8 +392,16 @@
               "desc": "Specifier (relative or tsconfig-alias) → in-repo `moduleKey`, else null."
             },
             {
-              "name": "loadAliases() · walkSource() · moduleKey()",
-              "desc": "tsconfig paths, the recursive source lister, and the path-normalizer."
+              "name": "loadAliases()",
+              "desc": "tsconfig `paths` / `baseUrl` → alias matchers."
+            },
+            {
+              "name": "walkSource()",
+              "desc": "The recursive source lister (skips vendor/build dirs)."
+            },
+            {
+              "name": "moduleKey()",
+              "desc": "The path-normalizer: strips extension and trailing `/index`."
             }
           ],
           "connections": [
@@ -463,7 +483,7 @@
           "desc": "`ApiBlock` (added/changed/removed procedures) and `SchemaBlock` (changed-model ERD) — the rendered deltas the recap shows."
         }
       ],
-      "note": "Reads (never owns): the subject repo's source files and `prisma/schema.prisma` — pure external input, accessed through `git.ts` (`fileAtRef`, `changedFiles`)."
+      "note": "Reads (never owns): the subject repo's source files and `prisma/schema.prisma` — pure external input, accessed through `git.ts` (`fileAtRef`, `changedFiles`) by the adapters, and read straight from the working tree by `dep-graph`."
     },
     {
       "type": "seams",
@@ -511,7 +531,12 @@
           "href": "../domain-diagrams/domain-diagrams.html"
         }
       ],
-      "note": "`dep-graph` and `prisma-schema` import from **diagrams** (`MERMAID_CLASSDEFS`, the `DiagramBlock` / `SchemaBlock` types) to emit colored, render-ready blocks. The TS compiler is the workhorse for `trpc-parse`, `imports`, and alias loading. No callbacks into the products — code-intel is a leaf the products pull from."
+      "note": "`dep-graph` imports `MERMAID_CLASSDEFS` from **diagrams** to emit colored, render-ready blocks (the `DiagramBlock` / `SchemaBlock` shapes it and `prisma-schema` emit are type-only imports from core's `blocks.ts` — no runtime edge). The TS compiler is the workhorse for `trpc-parse`, `imports`, and alias loading. No callbacks into the products — code-intel is a leaf the products pull from."
     }
-  ]
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:b3db2ff35a84580f4d3e6e3e45726bfda03ede92494b4686df61059266c0f870",
+    "date": "2026-07-21",
+    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+  }
 }

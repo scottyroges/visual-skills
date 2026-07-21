@@ -14,7 +14,7 @@
       "type": "domain-tldr",
       "id": "tldr",
       "eyebrow": "Domain",
-      "heading": "The shared block→HTML rendering engine every generator builds on — define a typed `Block[]`, hand it to one `assemble()`, get a self-contained HTML document back.",
+      "heading": "The shared block→HTML rendering engine every generator builds on — a typed `Block` vocabulary, per-type renderers and helpers, and an `assemble()` that turns a `Block[]` into one self-contained HTML document.",
       "rows": [
         {
           "key": "Path",
@@ -26,13 +26,13 @@
         },
         {
           "key": "Role",
-          "value": "Owns the `Block` union and the single render pipeline. Every product (recap, atlas, spec, doc) is just a different array of these blocks fed to `assemble()`."
+          "value": "Owns the `Block` union and the shared render primitives. `doc` feeds its `Block[]` straight to `assemble()`; recap, spec, and atlas ship their own shells that reuse core's renderers, markdown, and escaping."
         }
       ],
       "bigIdea": {
         "label": "The load-bearing idea",
-        "line": "\"Every product is just a different array of the same Block union, rendered by one assemble().\"",
-        "sub": "There is no per-product render path. A product's whole job is to build a `Block[]` — diagrams, diffs, prose, file trees, annotated code — and `assemble()` walks it, dispatches each block to its renderer by a `switch (b.type)`, inlines the CSS + viewer JS, and returns one portable HTML string. Add a capability once here and all four generators get it."
+        "line": "\"One Block vocabulary and one set of render primitives — every product's page is built from the same core pieces.\"",
+        "sub": "A product's job is to build blocks — diagrams, diffs, prose, file trees, annotated code. The plain-doc path is `assemble()`: it walks the `Block[]`, dispatches each block to its renderer by a `switch (b.type)`, inlines the CSS + viewer JS, and returns one portable HTML string. The recap, spec, and atlas shells live in their own domains but build on the same union, renderers, markdown, and escaping — add a primitive once here and every generator can use it."
       }
     },
     {
@@ -44,7 +44,7 @@
       "cards": [
         {
           "name": "block-model",
-          "purpose": "The `Block` discriminated union — the contract between products and the engine. Every renderable thing (diagram, diff, prose, api, file-tree, annotated-code, questions, group, tabs, overview) is one variant, keyed by `type`.",
+          "purpose": "The `Block` discriminated union — the contract between products and the engine. Every renderable thing (diagram, schema, diff, prose, api, file-tree, annotated-code, questions, group, tabs, overview) is one variant, keyed by `type`.",
           "exports": [
             {
               "name": "Block"
@@ -82,7 +82,7 @@
         },
         {
           "name": "renderers",
-          "purpose": "Nine pure `Block → HTML` functions, one per non-container type. `assemble`'s `switch` calls the right one; groups and tabs recurse back through `assemble`. Markdown is the shared substrate the prose/diff/overview renderers lean on.",
+          "purpose": "Nine renderer modules: seven pure `Block → HTML` functions (prose, diff, api, file-tree, annotated-code, questions, overview), plus the diagram color-key painter and the shared markdown substrate the prose/diff/overview renderers lean on. `assemble`'s `switch` calls the right one; groups and tabs recurse back through `assemble`.",
           "exports": [
             {
               "name": "renderProse"
@@ -144,12 +144,12 @@
       "id": "arch",
       "title": "How a document is assembled",
       "badge": "architecture",
-      "intro": "A product hands `assemble()` a `Block[]`. It validates ids, renders every diagram up front via the `diagrams` domain, then dispatches each block to its renderer and wraps the result in the `html.ts` shell. `highlight` and `lint` are helpers along the way; `version` stamps the page.",
+      "intro": "The `doc` product hands `assemble()` a `Block[]` (recap, spec, and atlas run their own shells on the same pieces). It validates ids, renders every diagram up front via the `diagrams` domain, then dispatches each block to its renderer and wraps the result in the HTML shell it builds — `escapeHtml` from `html.ts`, CSS + viewer JS inlined. `highlight` and `lint` are helpers along the way; `version` stamps the page.",
       "diagram": {
         "id": "core-arch",
         "kind": "architecture",
-        "d2": "direction: right\nblocks: { label: \"Block[]\\n(blocks.ts union)\"; class: actor }\nassemble: { label: \"assemble()\\nwalk + dispatch\"; class: changed }\nrenderers: { label: \"renderers/*\\nprose · diff · api · …\" }\ndiagrams: { label: \"diagrams\\nrenderDiagram\"; class: external }\nshell: { label: \"html.ts shell\\nescapeHtml · CSS · viewer.js\"; class: store }\nhighlight: { label: \"highlight\\nShiki\" }\nlint: { label: \"lintBlocks\\nwarnings\" }\nversion: { label: \"generatorStamp\" }\nblocks -> assemble: typed array\nassemble -> lint: warn (non-blocking)\nassemble -> diagrams: render up front\nassemble -> renderers: per block type\nrenderers -> highlight: code spans\nrenderers -> shell: HTML fragments\nversion -> shell: generator meta\nassemble -> shell: inline CSS + JS",
-        "mermaid": "flowchart LR\n  B[\"Block[] (blocks.ts union)\"] --> A[\"assemble() walk + dispatch\"]\n  A -->|warn non-blocking| L[\"lintBlocks warnings\"]\n  A -->|render up front| D[\"diagrams renderDiagram\"]\n  A -->|per block type| R[\"renderers/* prose · diff · api\"]\n  R -->|code spans| H[\"highlight Shiki\"]\n  R --> S[\"html.ts shell escapeHtml · CSS · viewer.js\"]\n  V[\"generatorStamp\"] --> S\n  A -->|inline CSS + JS| S\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class A changed;\n  class B actor;\n  class D external;\n  class S store;",
+        "d2": "direction: right\nblocks: { label: \"Block[]\\n(blocks.ts union)\"; class: actor }\nassemble: { label: \"assemble()\\nwalk + dispatch\"; class: changed }\nrenderers: { label: \"renderers/*\\nprose · diff · api · …\" }\ndiagrams: { label: \"diagrams\\nrenderDiagram\"; class: external }\nshell: { label: \"HTML shell\\nescapeHtml · CSS · viewer.js\"; class: store }\nhighlight: { label: \"highlight\\nShiki\" }\nlint: { label: \"lintBlocks\\nwarnings\" }\nversion: { label: \"generatorStamp\" }\nblocks -> assemble: typed array\nassemble -> lint: warn (non-blocking)\nassemble -> diagrams: render up front\nassemble -> renderers: per block type\nrenderers -> highlight: code spans\nrenderers -> shell: HTML fragments\nversion -> shell: generator meta\nassemble -> shell: inline CSS + JS",
+        "mermaid": "flowchart LR\n  B[\"Block[] (blocks.ts union)\"] --> A[\"assemble() walk + dispatch\"]\n  A -->|warn non-blocking| L[\"lintBlocks warnings\"]\n  A -->|render up front| D[\"diagrams renderDiagram\"]\n  A -->|per block type| R[\"renderers/* prose · diff · api\"]\n  R -->|code spans| H[\"highlight Shiki\"]\n  R --> S[\"HTML shell escapeHtml · CSS · viewer.js\"]\n  V[\"generatorStamp\"] --> S\n  A -->|inline CSS + JS| S\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class A changed;\n  class B actor;\n  class D external;\n  class S store;",
         "legend": [
           {
             "label": "the array in",
@@ -187,7 +187,7 @@
           "path": "src/blocks.ts",
           "detail": [
             "`Block` is a discriminated union keyed on `type` — `diagram`, `schema`, `api`, `file-tree`, `diff`, `prose`, `annotated-code`, `questions`, `group`, `tabs`, `overview`. This is the entire contract between a product and the engine: a generator never touches HTML, it only constructs typed blocks. `assemble`'s exhaustive `switch (b.type)` is checked against this union, so adding a variant is a compile error until a renderer handles it.",
-            "Two variants are containers that nest **one level deep**: `group` (a labelled `<details>` of child blocks) and `tabs` (a CSS-only switcher, max 6 tabs). `diff` and `overview` may each carry an optional embedded `diagram`. The only logic here is `isDiagramBlock`, the type guard `assemble` and `lint` use to find every `diagram`/`schema` block — including those nested inside groups, tabs, diffs, and overviews — so they can be rendered through the diagrams domain up front."
+            "Two variants are containers that nest **one level deep**: `group` (a labelled `<details>` of child blocks) and `tabs` (a CSS-only switcher, max 6 tabs). `diff` and `overview` may each carry an optional embedded `diagram`. The only logic here is `isDiagramBlock`, the type guard `assemble` uses to find every `diagram`/`schema` block — including those nested inside groups, tabs, diffs, and overviews — so they can be rendered through the diagrams domain up front."
           ],
           "files": [
             {
@@ -201,8 +201,20 @@
               "desc": "The discriminated union every product builds and `assemble` walks."
             },
             {
-              "name": "DiagramBlock · DiffBlock · ProseBlock · ApiBlock · …",
-              "desc": "One interface per renderable variant, keyed by `type`."
+              "name": "DiagramBlock",
+              "desc": "The `type: \"diagram\"` variant — required d2 source + optional mermaid."
+            },
+            {
+              "name": "DiffBlock",
+              "desc": "The `type: \"diff\"` variant — path, description, optional diagram, hunks."
+            },
+            {
+              "name": "ProseBlock",
+              "desc": "The `type: \"prose\"` variant — a markdown section."
+            },
+            {
+              "name": "ApiBlock",
+              "desc": "The `type: \"api\"` variant — tRPC procedure rows (one interface per variant, keyed by `type`)."
             },
             {
               "name": "isDiagramBlock()",
@@ -216,7 +228,7 @@
             },
             {
               "dir": "built by",
-              "body": "[recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), [authoring](../domain-authoring/domain-authoring.html) — each assembles its own `Block[]`"
+              "body": "[recap](../domain-recap/domain-recap.html) and [authoring](../domain-authoring/domain-authoring.html)'s `doc` — each assembles a full `Block[]`; the spec and atlas shells compile their diagrams down to `DiagramBlock`"
             },
             {
               "dir": "extended by",
@@ -229,7 +241,7 @@
           "name": "assemble + shell",
           "path": "src/assemble.ts · src/html.ts",
           "detail": [
-            "`assemble(blocks, opts)` is the one entry point every product calls. It first asserts every block id is unique recursively (anchors and in-page `#cross-links` depend on it), runs `lintBlocks` through `opts.onWarn`, then collects every diagram/schema block — including nested ones — and renders them up front through the diagrams domain, keyed by id. It then maps each top-level block to HTML via `renderBlock`, a `switch (b.type)` that calls the matching renderer; `group` and `tabs` recurse. Finally it inlines `assets/template.css` and `assets/viewer.js`, stamps an optional `<meta generator>` and footer, and returns a single self-contained HTML string — no external assets, by design.",
+            "`assemble(blocks, opts)` is the plain-document pipeline — the `doc` generator calls it directly, while the recap/spec/atlas shells reuse its pieces rather than the function itself. It first asserts every block id is unique recursively (anchors and in-page `#cross-links` depend on it), runs `lintBlocks` through `opts.onWarn`, then collects every diagram/schema block — including nested ones — and renders them up front through the diagrams domain, keyed by id. It then maps each top-level block to HTML via `renderBlock`, a `switch (b.type)` that calls the matching renderer; `group` and `tabs` recurse. Finally it inlines `assets/template.css` and `assets/viewer.js`, stamps an optional `<meta generator>` and footer, and returns a single self-contained HTML string — no external assets, by design.",
             "`html.ts` is the tiny shared safety layer: `escapeHtml` (used by every renderer for any text that reaches HTML) and `SAFE_HREF`, the regex that allows only `#fragment` and `http(s)://` links so a `javascript:`/`data:` URL can't slip through the overview and review link renderers. `assemble` also injects each block's id as an anchor on its `<section>` so the cross-links resolve."
           ],
           "files": [
@@ -248,12 +260,20 @@
               "desc": "→ `Promise<string>` — `Block[]` + opts to one self-contained HTML document."
             },
             {
-              "name": "AssembleOpts · DocStatus",
+              "name": "AssembleOpts",
               "desc": "Title, source, optional status banner, outDir, excalidraw, onWarn, generator."
             },
             {
-              "name": "escapeHtml() · SAFE_HREF",
-              "desc": "HTML-text escaping and the link-scheme guard every renderer reuses."
+              "name": "DocStatus",
+              "desc": "The optional green/yellow/red status banner shown in the header."
+            },
+            {
+              "name": "escapeHtml()",
+              "desc": "HTML-text escaping every renderer reuses."
+            },
+            {
+              "name": "SAFE_HREF",
+              "desc": "The `#fragment` / `http(s)://` link-scheme guard."
             }
           ],
           "connections": [
@@ -271,7 +291,7 @@
             },
             {
               "dir": "called by",
-              "body": "[recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), [authoring](../domain-authoring/domain-authoring.html) — the single render entry point"
+              "body": "[authoring](../domain-authoring/domain-authoring.html)'s `bin/doc` — recap, spec, and atlas ship their own shells (`assemble-review` / `assemble-spec` / `assemble-atlas`) that reuse core's renderers and helpers instead"
             }
           ]
         },
@@ -280,7 +300,7 @@
           "name": "renderers",
           "path": "src/renderers/*.ts",
           "detail": [
-            "Nine pure functions, one per non-container block type — `renderProse`, `renderDiff`, `renderApi`, `renderFileTree`, `renderAnnotatedCode`, `renderOverview`, `renderQuestions`, `renderLegend`, plus the shared `renderMarkdown`. Each takes its block (and an optional `onWarn`) and returns an HTML fragment wrapped in a `vs-block` section; `assemble` adds the anchor and stitches them together. There is no shared base class — the union + the dispatch switch are the only structure.",
+            "Nine modules: seven per-block-type functions — `renderProse`, `renderDiff`, `renderApi`, `renderFileTree`, `renderAnnotatedCode`, `renderOverview`, `renderQuestions` — plus `renderLegend` (the diagram color key) and the shared `renderMarkdown`. Each block renderer takes its block (some plus an `onWarn` or a pre-rendered extra) and returns an HTML fragment wrapped in a `vs-block` section; `assemble` adds the anchor and stitches them together. There is no shared base class — the union + the dispatch switch are the only structure.",
             "`markdown.ts` is the substrate: `renderMarkdown` parses GitHub-flavored markdown, highlights fenced code via the highlight module, and runs the result through `sanitize-html` with a strict tag/attribute allowlist; `renderInlineMarkdown` does the one-line variant for headlines and bullets. `prose`, `diff`, and `overview` all build on it. `diff` and `annotated-code` use `highlightLines` to align highlighted code to a gutter; `file-tree` collapses single-child directory chains and links filenames back to their diff blocks; `legend` paints the auto-derived diagram color key."
           ],
           "files": [
@@ -289,26 +309,78 @@
               "desc": "`renderMarkdown` / `renderInlineMarkdown` — GFM + Shiki + sanitize-html. The shared substrate."
             },
             {
-              "name": "prose.ts · overview.ts · questions.ts",
-              "desc": "Narrative blocks: prose body, the TL;DR headline + points, and Q&A cards."
+              "name": "prose.ts",
+              "desc": "`renderProse` — a markdown prose body with optional heading."
             },
             {
-              "name": "diff.ts · annotated-code.ts",
-              "desc": "Gutter-aligned code grids built on `highlightLines`."
+              "name": "overview.ts",
+              "desc": "`renderOverview` — the TL;DR headline + key points."
             },
             {
-              "name": "api.ts · file-tree.ts · legend.ts",
-              "desc": "The tRPC procedure table, the change tree, and the diagram color key."
+              "name": "questions.ts",
+              "desc": "`renderQuestions` — Q&A cards with recommended defaults."
+            },
+            {
+              "name": "diff.ts",
+              "desc": "`renderDiff` — gutter-aligned diff hunks built on `highlightLines`."
+            },
+            {
+              "name": "annotated-code.ts",
+              "desc": "`renderAnnotatedCode` — a code grid with per-line margin notes, built on `highlightLines`."
+            },
+            {
+              "name": "api.ts",
+              "desc": "`renderApi` — the tRPC procedure table."
+            },
+            {
+              "name": "file-tree.ts",
+              "desc": "`renderFileTree` — the change tree, filenames linked to their diffs."
+            },
+            {
+              "name": "legend.ts",
+              "desc": "`renderLegend` — the diagram color key."
             }
           ],
           "exports": [
             {
-              "name": "renderMarkdown() · renderInlineMarkdown()",
+              "name": "renderMarkdown()",
               "desc": "Sanitized GFM → HTML; the substrate the prose/diff/overview renderers reuse."
             },
             {
-              "name": "renderProse · renderDiff · renderApi · renderFileTree · renderOverview · renderQuestions · renderAnnotatedCode · renderLegend",
-              "desc": "One pure `Block → HTML` function per non-container type."
+              "name": "renderInlineMarkdown()",
+              "desc": "The one-line sanitized variant for headlines and bullets."
+            },
+            {
+              "name": "renderProse()",
+              "desc": "Markdown prose section with optional heading."
+            },
+            {
+              "name": "renderDiff()",
+              "desc": "Gutter-aligned diff hunks behind a `<details>` with +/− stats."
+            },
+            {
+              "name": "renderApi()",
+              "desc": "The tRPC procedure table."
+            },
+            {
+              "name": "renderFileTree()",
+              "desc": "The change tree, filenames linked to their diff blocks."
+            },
+            {
+              "name": "renderOverview()",
+              "desc": "TL;DR headline + key points with safe-href arrow links."
+            },
+            {
+              "name": "renderQuestions()",
+              "desc": "Open-question cards with recommended defaults."
+            },
+            {
+              "name": "renderAnnotatedCode()",
+              "desc": "Code listing with per-line margin notes."
+            },
+            {
+              "name": "renderLegend()",
+              "desc": "The diagram color key — role swatches from the diagrams palette."
             }
           ],
           "connections": [
@@ -321,8 +393,12 @@
               "body": "[highlight](#c-highlight) for code spans; [html.ts](#c-assemble) `escapeHtml` for all text"
             },
             {
-              "dir": "leaned on by",
-              "body": "[diagrams](../domain-diagrams/domain-diagrams.html) — `renderLegend` paints the diagram color key"
+              "dir": "draws on",
+              "body": "[diagrams](../domain-diagrams/domain-diagrams.html) — `renderLegend` paints swatches from its `PALETTE` / role labels"
+            },
+            {
+              "dir": "reused by",
+              "body": "the [recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), and [authoring](../domain-authoring/domain-authoring.html) shells — markdown everywhere; prose, questions, and annotated-code in the recap sections"
             }
           ]
         },
@@ -388,7 +464,7 @@
           "connections": [
             {
               "dir": "run by",
-              "body": "[assemble()](#c-assemble) — emitted through `opts.onWarn`, never blocking"
+              "body": "[assemble()](#c-assemble) and [recap](../domain-recap/domain-recap.html)'s `assembleReview` — emitted through `opts.onWarn`, never blocking"
             },
             {
               "dir": "inspects",
@@ -401,7 +477,7 @@
           "name": "version",
           "path": "src/version.ts",
           "detail": [
-            "`generatorStamp()` produces the provenance string `visual-skills@<git-short-sha>[-dirty] · <ISO timestamp>`. It shells out to git for the short SHA and a porcelain status (the `-dirty` suffix when the tree has uncommitted changes); if git is unavailable it falls back to the package.json version, then to `\"unknown\"`. Products pass the result as `opts.generator`, which `assemble` writes into the page `<meta generator>` and footer so any saved document records exactly which build produced it."
+            "`generatorStamp()` produces the provenance string `visual-skills@<git-short-sha>[-dirty] · <ISO timestamp>`. It shells out to git for the short SHA and a porcelain status (the `-dirty` suffix when the tree has uncommitted changes); if git is unavailable it falls back to the package.json version, then to `\"unknown\"`. The `recap` and `doc` CLIs pass the result as `opts.generator`, which the shell writes into the page `<meta generator>` and footer so any saved document records exactly which build produced it (the spec and atlas CLIs default to a static skill label instead)."
           ],
           "files": [
             {
@@ -418,7 +494,7 @@
           "connections": [
             {
               "dir": "consumed by",
-              "body": "[recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), [authoring](../domain-authoring/domain-authoring.html) — passed as `opts.generator`"
+              "body": "[recap](../domain-recap/domain-recap.html)'s `bin/recap` and [authoring](../domain-authoring/domain-authoring.html)'s `bin/doc` — passed as `opts.generator`"
             },
             {
               "dir": "stamped by",
@@ -456,7 +532,7 @@
         },
         {
           "name": "ProseBlock · OverviewBlock",
-          "desc": "A markdown prose section, and the TL;DR headline + key points (with optional lead diagram)."
+          "desc": "A markdown prose section, and the TL;DR headline + key points (optional lead diagram, plus optional review facets/risk)."
         },
         {
           "name": "AnnotatedCodeBlock",
@@ -477,7 +553,7 @@
       "type": "seams",
       "id": "seams",
       "title": "Seams",
-      "intro": "A small typed surface: products build blocks and call one `assemble()`; core in turn calls the diagrams domain to render every diagram up front.",
+      "intro": "A small typed surface: products build blocks against the `Block` union and render through core's primitives; core in turn calls the diagrams domain to render every diagram up front.",
       "exposes": [
         {
           "api": "assemble()",
@@ -511,7 +587,12 @@
           "href": "../domain-diagrams/domain-diagrams.html"
         }
       ],
-      "note": "Called by [recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), and [authoring](../domain-authoring/domain-authoring.html) — all three build a `Block[]` and hand it to `assemble()`. Core's only dependency is [diagrams](../domain-diagrams/domain-diagrams.html): `assemble` renders every diagram/schema block through it before dispatching the rest."
+      "note": "[Authoring](../domain-authoring/domain-authoring.html)'s `doc` hands a `Block[]` to `assemble()`; [recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), and the spec side of authoring ship their own shells that reuse core's `Block` union, renderers, and helpers. Core's only dependency is [diagrams](../domain-diagrams/domain-diagrams.html): `assemble` renders every diagram/schema block through it before dispatching the rest."
     }
-  ]
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:537fee213dbd85654822cd6a2a13711d9a120f71422da2c588efff96050d5df6",
+    "date": "2026-07-21",
+    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+  }
 }

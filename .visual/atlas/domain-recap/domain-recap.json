@@ -44,13 +44,13 @@
         },
         {
           "key": "Role",
-          "value": "The **visual-recap** product: resolve a PR / commit / branch / working-tree into a diff, parse and rank it, fold it into a `Block[]`, and render the standing review document. The shell it renders is shared infrastructure — **atlas** and **authoring** assemble their pages on top of the same topbar / sidebar / sections."
+          "value": "The **visual-recap** product: resolve a PR / commit / branch / working-tree into a diff, parse and rank it, fold it into a `Block[]`, and render the standing review document. The shell it renders is shared infrastructure — **atlas** and **authoring** assemble their pages on top of the same topbar / sidebar / sections vocabulary (shared CSS + viewer + section helpers)."
         }
       ],
       "bigIdea": {
         "label": "The load-bearing idea",
         "line": "\"recap is a pipeline, and its renderer is everyone's renderer.\"",
-        "sub": "`Target → git.ts → parse-diff → diff-order → gather-recap → assemble-review → recap.html`. The gather half is mechanical and TS/JS-aware; the render half (`assemble-review` + `src/review/*`) is the **app-shell** — topbar, sidebar, TL;DR, files-table, walkthrough, diagrams — that `assemble-atlas` and `assemble-spec` reuse to draw *their* pages. Enrich the gathered `blocks.json`, re-render with `recap --blocks`, and nothing in the pipeline needs to change."
+        "sub": "`Target → git.ts → parse-diff → diff-order → gather-recap → assemble-review → recap.html`. The gather half is mechanical and TS/JS-aware; the render half (`assemble-review` + `src/review/*`) is the **app-shell** — topbar, sidebar, TL;DR, files-table, walkthrough, diagrams — whose CSS, viewer script, and section helpers `assemble-atlas` and `assemble-spec` reuse to draw *their* pages. Enrich the gathered `blocks.json`, re-render with `recap --blocks`, and nothing in the pipeline needs to change."
       }
     },
     {
@@ -62,7 +62,7 @@
       "cards": [
         {
           "name": "CLI",
-          "purpose": "The entry point: parse `--pr` / `--commit` / `--branch` / `--working` into a `Target`, gather blocks, and write `recap.html` + `blocks.json`. The `--blocks` path re-renders an enriched `blocks.json` straight through the shell, skipping git.",
+          "purpose": "The entry point: parse `--pr` / `--commit` / `--branch` (default: the working tree) into a `Target`, gather blocks, and write `recap.html` + `blocks.json`. The `--blocks` path re-renders an enriched `blocks.json` straight through the shell, skipping git.",
           "exports": [
             {
               "name": "main"
@@ -130,7 +130,11 @@
               "name": "assembleReview"
             },
             {
-              "name": "renderTopbar · renderSidebar",
+              "name": "renderTopbar",
+              "deputy": true
+            },
+            {
+              "name": "renderSidebar",
               "deputy": true
             },
             {
@@ -168,12 +172,12 @@
       "id": "arch",
       "title": "Internal architecture",
       "badge": "pipeline",
-      "intro": "`gatherRecap` is the spine. A `Target` resolves through `git.ts` to a `Scope` (base/head + raw diff); `parse-diff` and `diff-order` turn the diff into ranked `DiffBlock`s; `buildBlocks` folds them — plus a summary, where-it-fits, and api-surface diagrams — into a `Block[]`; `assembleReview` renders that through the `src/review/*` shell to `recap.html`. The shell is a shared seam: `assemble-atlas` and `assemble-spec` render *their* pages through it too.",
+      "intro": "`gatherRecap` is the spine. A `Target` resolves through `git.ts` to a `Scope` (base/head + raw diff); `parse-diff` and `diff-order` turn the diff into ranked `DiffBlock`s; `buildBlocks` folds them — plus a summary, where-it-fits, and api-surface diagrams — into a `Block[]`; `assembleReview` renders that through the `src/review/*` shell to `recap.html`. The shell is a shared seam: `assemble-atlas` and `assemble-spec` draw *their* pages with its CSS, viewer script, and `sections.ts` helpers.",
       "diagram": {
         "id": "recap-pipeline",
         "kind": "flowchart",
-        "d2": "direction: right\ntarget: { label: \"Target\\nPR · commit · branch · working\"; class: actor }\ngit: { label: \"git.ts\\nresolveScope · changedFiles\" }\ngitcli: { label: \"git / gh\"; class: external }\nparse: { label: \"parse-diff\\nparseUnifiedDiff\" }\norder: { label: \"diff-order\\nsortByImportance\" }\ngather: { label: \"gather-recap\\nbuildBlocks → Block[]\"; class: changed }\nassemble: { label: \"assemble-review\\n+ src/review/*\" }\nhtml: { label: \"recap.html\"; class: store }\nshared: { label: \"assemble-atlas\\nassemble-spec\"; class: external }\ntarget -> git\ngit -> gitcli: spawns\ngit -> parse: \"unifiedDiff\"\nparse -> order: \"DiffBlock[]\"\norder -> gather\ngit -> gather: \"Scope · changedFiles\"\ngather -> assemble: \"Block[]\"\nassemble -> html: render\nshared -> assemble: \"reuse the shell\"\n",
-        "mermaid": "graph LR\n  target[\"Target: PR / commit / branch / working\"] --> git[\"git.ts: resolveScope, changedFiles\"]\n  git -->|spawns| gitcli[\"git / gh\"]\n  git -->|unifiedDiff| parse[\"parse-diff: parseUnifiedDiff\"]\n  parse -->|DiffBlock array| order[\"diff-order: sortByImportance\"]\n  order --> gather[\"gather-recap: buildBlocks -> Block array\"]\n  git -->|Scope, changedFiles| gather\n  gather -->|Block array| assemble[\"assemble-review + src/review/*\"]\n  assemble -->|render| html[\"recap.html\"]\n  shared[\"assemble-atlas, assemble-spec\"] -->|reuse the shell| assemble\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class gather changed;\n  class target actor;\n  class gitcli,shared external;\n  class html store;",
+        "d2": "direction: right\ntarget: { label: \"Target\\nPR · commit · branch · working\"; class: actor }\ngit: { label: \"git.ts\\nresolveScope · changedFiles\" }\ngitcli: { label: \"git / gh\"; class: external }\nparse: { label: \"parse-diff\\nparseUnifiedDiff\" }\norder: { label: \"diff-order\\nsortByImportance\" }\ngather: { label: \"gather-recap\\nbuildBlocks → Block[]\"; class: changed }\nassemble: { label: \"assemble-review\\n+ src/review/*\" }\nhtml: { label: \"recap.html\"; class: store }\nshared: { label: \"assemble-atlas\\nassemble-spec\"; class: external }\ntarget -> git\ngit -> gitcli: spawns\ngit -> parse: \"unifiedDiff\"\nparse -> order: \"DiffBlock[]\"\norder -> gather\ngit -> gather: \"Scope · changedFiles\"\ngather -> assemble: \"Block[]\"\nassemble -> html: render\nshared -> assemble: \"share css · helpers\"\n",
+        "mermaid": "graph LR\n  target[\"Target: PR / commit / branch / working\"] --> git[\"git.ts: resolveScope, changedFiles\"]\n  git -->|spawns| gitcli[\"git / gh\"]\n  git -->|unifiedDiff| parse[\"parse-diff: parseUnifiedDiff\"]\n  parse -->|DiffBlock array| order[\"diff-order: sortByImportance\"]\n  order --> gather[\"gather-recap: buildBlocks -> Block array\"]\n  git -->|Scope, changedFiles| gather\n  gather -->|Block array| assemble[\"assemble-review + src/review/*\"]\n  assemble -->|render| html[\"recap.html\"]\n  shared[\"assemble-atlas, assemble-spec\"] -->|share css + helpers| assemble\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class gather changed;\n  class target actor;\n  class gitcli,shared external;\n  class html store;",
         "legend": [
           {
             "label": "Target (input)",
@@ -197,7 +201,7 @@
           }
         ]
       },
-      "callout": "The render half (`assemble-review` + `src/review/*`) is the **shared review shell**; `assemble-atlas` and `assemble-spec` enter it from the right to draw their own pages."
+      "callout": "The render half (`assemble-review` + `src/review/*`) is the **shared review shell**; `assemble-atlas` and `assemble-spec` draw their own pages with its CSS, viewer script, and `sections.ts` helpers."
     },
     {
       "type": "depth",
@@ -211,7 +215,7 @@
           "name": "CLI",
           "path": "bin/recap.ts",
           "detail": [
-            "`bin/recap.ts` is the whole command-line surface. `parseArgs` reads `--pr` / `--commit` / `--branch` (`--base` to override) / default `--working`, which `parseTarget` folds into a `Target` discriminated union. The normal path calls [gatherRecap](#c-gather) to get `{ scope, blocks, adapter }`, then [assembleReview](#c-shell) to produce `recap.html`. Output is written into a directory (a trailing `.html` is stripped): the HTML, any `.excalidraw` sidecars, and a sibling `blocks.json` all live together so the recap is self-contained.",
+            "`bin/recap.ts` is the whole command-line surface. `parseArgs` reads `--pr` / `--commit` / `--branch` (`--base` to override), defaulting to the working tree when no flag is given, which `parseTarget` folds into a `Target` discriminated union. The normal path calls [gatherRecap](#c-gather) to get `{ scope, blocks, adapter }`, then [assembleReview](#c-shell) to produce `recap.html`. Output is written into a directory (a trailing `.html` is stripped): the HTML, any `.excalidraw` sidecars, and a sibling `blocks.json` all live together so the recap is self-contained.",
             "The `--blocks` flag is the enrichment round-trip: it loads an already-gathered (and hand-enriched) `blocks.json` and renders it straight through [assembleReview](#c-shell), skipping git entirely. That separation — gather once, enrich the JSON, re-render — is what lets the visual-recap skill add overviews, annotations, and groupings without re-running the diff. `--emit-blocks` writes the raw `Block[]` without HTML, for the same loop."
           ],
           "files": [
@@ -263,8 +267,12 @@
               "desc": "File contents at a ref (or working tree), `\"\"` if absent."
             },
             {
-              "name": "Target · Scope",
-              "desc": "The target union and the resolved scope it produces."
+              "name": "Target",
+              "desc": "The git-target union (`pr` / `commit` / `branch` / `working`)."
+            },
+            {
+              "name": "Scope",
+              "desc": "The resolved scope: base/head refs, label, raw diff."
             }
           ],
           "connections": [
@@ -350,7 +358,7 @@
           "path": "src/assemble-review.ts · src/review/*.ts",
           "detail": [
             "`assembleReview(blocks, opts)` is the app-shell: it asserts unique ids, normalizes loose top-level diffs into walkthrough chapters (`groupLooseDiffs`), inlines `review.css` + the viewer script, renders every diagram once, then walks the blocks emitting `<section>`s — TL;DR + overview, files-changed, the guided walkthrough (progress rail + chapters), standalone diagram/schema/api/prose sections — into one self-contained HTML document. Along the way it runs `lintBlocks` and [lintCompleteness](#c-lint), surfacing warnings (including any diagram that failed to compile) through `onWarn`.",
-            "The `src/review/*` renderers are the shell's vocabulary, each a focused function: `topbar` (title + risk/stat chips), `sidebar` (files + walkthrough outline + meta + progress rail), `tldr` (the What/Why/Risk/Size card + overview points), `files-table`, `walkthrough` (chapters and per-file subsections with diff bodies), `diff` (the raw +/- body), `sections` (diagram cards, the rendered legend, api-surface cards, reused-block fallbacks), `diagrams` (collect + render all), and `normalize` (`stripChapterOrdinal`, `groupLooseDiffs`). **This shell is the domain's biggest shared seam** — `assemble-atlas` and `assemble-spec` import these same renderers to draw the atlas and spec pages, so the topbar/sidebar/sections look and behave identically across all three products."
+            "The `src/review/*` renderers are the shell's vocabulary, each a focused function: `topbar` (title + risk/stat chips), `sidebar` (files + walkthrough outline + meta + progress rail), `tldr` (the What/Why/Risk/Size card + overview points), `files-table`, `walkthrough` (chapters and per-file subsections with diff bodies), `diff` (the raw +/- body), `sections` (diagram cards, the rendered legend, api-surface cards, reused-block fallbacks), `diagrams` (collect + render all), and `normalize` (`stripChapterOrdinal`, `groupLooseDiffs`). **This shell is the domain's biggest shared seam** — `assemble-atlas` and `assemble-spec` build the atlas and spec pages on the same `review.css` + viewer script and the same topbar/sidebar/section class vocabulary (importing `sections.ts` helpers like `renderDiagramCard` / `withDiagramSvgClass` directly, while emitting their own topbar/sidebar HTML), so the chrome looks and behaves identically across all three products."
           ],
           "diagrams": [
             {
@@ -383,20 +391,44 @@
               "desc": "The orchestrator: normalize, render diagrams, emit sections, lint, write HTML."
             },
             {
-              "name": "review/topbar.ts · sidebar.ts",
-              "desc": "The chrome — title/risk/stat chips; files + outline + progress rail."
+              "name": "review/topbar.ts",
+              "desc": "The topbar chrome — title plus risk/stat chips."
             },
             {
-              "name": "review/tldr.ts · files-table.ts",
-              "desc": "The TL;DR card + overview points; the files-changed table."
+              "name": "review/sidebar.ts",
+              "desc": "Files + walkthrough outline + meta; also the progress rail."
             },
             {
-              "name": "review/walkthrough.ts · diff.ts · sections.ts",
-              "desc": "Chapters & subsections; the raw diff body; diagram/api/prose section cards."
+              "name": "review/tldr.ts",
+              "desc": "The TL;DR card + numbered overview points."
             },
             {
-              "name": "review/diagrams.ts · normalize.ts · constants.ts",
-              "desc": "Diagram collection/render; ordinal-strip & loose-diff grouping; risk labels."
+              "name": "review/files-table.ts",
+              "desc": "The files-changed table."
+            },
+            {
+              "name": "review/walkthrough.ts",
+              "desc": "Chapters & per-file subsections with diff bodies."
+            },
+            {
+              "name": "review/diff.ts",
+              "desc": "The raw +/- diff body with line numbers."
+            },
+            {
+              "name": "review/sections.ts",
+              "desc": "Diagram/api/prose section cards + the rendered legend."
+            },
+            {
+              "name": "review/diagrams.ts",
+              "desc": "Diagram collection + render-all; unique-id assert."
+            },
+            {
+              "name": "review/normalize.ts",
+              "desc": "Ordinal-strip & loose-diff grouping."
+            },
+            {
+              "name": "review/constants.ts",
+              "desc": "`RISK_LABEL` — the shared risk-chip labels."
             }
           ],
           "exports": [
@@ -405,16 +437,48 @@
               "desc": "→ the full self-contained review HTML; `ReviewOpts` / `ReviewStatus` shape its inputs."
             },
             {
-              "name": "renderTopbar · renderSidebar · renderTldr · renderFilesTable",
-              "desc": "The chrome and lead renderers."
+              "name": "renderTopbar",
+              "desc": "The topbar chrome — title + risk/stat chips."
             },
             {
-              "name": "renderWalkthrough · renderDiffBody · renderDiagramCard · renderApiSurface",
-              "desc": "The body renderers — chapters, diffs, diagram cards, api-surface cards."
+              "name": "renderSidebar",
+              "desc": "The nav — files, walkthrough outline, meta."
             },
             {
-              "name": "groupLooseDiffs · assertUniqueIds · collectDiagrams",
-              "desc": "Normalization and the diagram-collection helpers `assembleReview` orchestrates."
+              "name": "renderTldr",
+              "desc": "The What/Why/Risk/Size TL;DR card."
+            },
+            {
+              "name": "renderFilesTable",
+              "desc": "The files-changed table."
+            },
+            {
+              "name": "renderWalkthrough",
+              "desc": "Chapters with per-file diff subsections."
+            },
+            {
+              "name": "renderDiffBody",
+              "desc": "The raw +/- diff body."
+            },
+            {
+              "name": "renderDiagramCard",
+              "desc": "Zoomable diagram card + legend."
+            },
+            {
+              "name": "renderApiSurface",
+              "desc": "One card per changed procedure."
+            },
+            {
+              "name": "groupLooseDiffs",
+              "desc": "Wrap loose top-level diffs into synthetic chapters."
+            },
+            {
+              "name": "assertUniqueIds",
+              "desc": "Throw on any duplicate block id."
+            },
+            {
+              "name": "collectDiagrams",
+              "desc": "Every diagram across the blocks, for one render pass."
             }
           ],
           "connections": [
@@ -428,7 +492,7 @@
             },
             {
               "dir": "reused by",
-              "body": "`assemble-atlas` (atlas pages) and `assemble-spec` (authoring) — the shared app-shell seam"
+              "body": "`assemble-atlas` (atlas pages) and `assemble-spec` (authoring) — shared `review.css`/viewer plus the `sections.ts` helpers"
             }
           ]
         },
@@ -509,7 +573,7 @@
           "desc": "The render options (title, source, status, outDir) and the topbar status pill (`green`/`yellow`/`red`)."
         }
       ],
-      "note": "Reads (never owns): the generic `Block` union, `OverviewBlock`, `ApiProcedure`, and `DiagramBlock` from `src/blocks.ts` ([core](../domain-core/domain-core.html))."
+      "note": "Reads (never owns): the generic `Block` union, `OverviewBlock`, `ApiProcedure`, and `DiagramBlock` from `src/blocks.ts` ([core](../domain-core/domain-core.html)). The `FileChange` / `DiffBlock` / `DiffHunk` types are declared there too — recap owns their meaning as sole producer, not the declarations."
     },
     {
       "type": "seams",
@@ -519,11 +583,11 @@
       "exposes": [
         {
           "api": "the review app-shell",
-          "note": "`assembleReview` + `src/review/*` — reused by `assemble-atlas` and `assemble-spec`"
+          "note": "`assembleReview` + `src/review/*` — `assemble-atlas` and `assemble-spec` reuse its CSS/viewer and `sections.ts` helpers"
         },
         {
           "api": "recap CLI",
-          "note": "`bin/recap.ts` — `--pr` / `--commit` / `--branch` / `--working`, `--blocks` re-render"
+          "note": "`bin/recap.ts` — `--pr` / `--commit` / `--branch` (default working tree), `--blocks` re-render"
         },
         {
           "api": "gatherRecap() · buildBlocks()",
@@ -553,5 +617,10 @@
       ],
       "note": "It borrows the `Block` model + diagram rendering from `core`/`diagrams`, and the `dependencyNeighborhood` (where-it-fits) graph and api/schema diffs from `code-intel`. In return it **exposes the review shell** that atlas (`assemble-atlas`) and authoring (`assemble-spec`) build their pages on — the one seam where this surface domain is infrastructure for the rest."
     }
-  ]
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:6a0da27b5f3ed1f30fbf6e752d84391f1ab1257f5d6ffd71b1d8d7abbe7d5da4",
+    "date": "2026-07-21",
+    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+  }
 }

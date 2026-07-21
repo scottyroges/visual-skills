@@ -65,7 +65,16 @@
           "purpose": "`bin/atlas.ts` — the entry with three modes: **full scan** (config + drift + draft-when-absent + render), **single-domain** (rescan one page), and **render-only** (`--all` / `--blocks`). Lays out `atlas.*` at the top and each domain in its own `domain-<slug>/` folder.",
           "exports": [
             {
-              "name": "--repo · --domain · --all · --blocks"
+              "name": "--repo"
+            },
+            {
+              "name": "--domain"
+            },
+            {
+              "name": "--all"
+            },
+            {
+              "name": "--blocks"
             }
           ],
           "exportsLabel": "modes",
@@ -203,23 +212,35 @@
           "name": "CLI",
           "path": "bin/atlas.ts",
           "detail": [
-            "The single entry point with three modes. **Full scan** (`--repo <abs> --out <abs>`) loads or first-guesses `atlas.domains.json`, scans the repo, reconciles + reports drift, writes the config, drafts `atlas.json` and each `domain-<slug>/domain-<slug>.json` **only when absent** (or always with `--force`), then renders every doc. **Single-domain** (`--domain <slug>`) rescans and regenerates just that page (and prints a tile-update note). **Render-only** replays committed JSON — `--all <dir>` re-renders the atlas plus every `domain-<slug>/` folder, `--blocks <file>` renders one page.",
-            "`writeDraftIfAbsent` is the no-clobber guarantee: it skips any existing draft unless `--force`. The layout puts `atlas.{html,json}` + `atlas.domains.json` at the top of the out dir, and each domain self-contained in its own `domain-<slug>/` folder (page + diagram sidecars). It also warns about orphaned `domain-*/` folders left after a regroup — but never deletes files."
+            "The single entry point with three modes (paths may be relative — they resolve against the cwd). **Full scan** (`--repo <dir> --out <dir>`) loads or first-guesses `atlas.domains.json`, scans the repo, reconciles + reports drift, writes the config, drafts `atlas.json` and each `domain-<slug>/domain-<slug>.json` **only when absent** (or always with `--force`), then renders every doc. **Single-domain** (`--domain <slug>`) rescans and regenerates just that page (and prints a tile-update note). **Render-only** replays committed JSON — `--all <dir>` re-renders the atlas plus every `domain-<slug>/` folder, `--blocks <file>` renders one page.",
+            "`writeDraftIfAbsent` is the no-clobber guarantee: it skips any existing draft unless `--force`. The layout puts `atlas.{html,json}` + `atlas.domains.json` at the top of the out dir, and each domain self-contained in its own `domain-<slug>/` folder (page + diagram sidecars). It also warns about orphaned `domain-*/` folders left after a regroup — but never deletes files. Every mode except `--blocks` also refreshes `atlas-check.mjs` in the out dir (`emitChecker` copies the tool-owned `assets/atlas-check.mjs`, always overwritten) — the self-contained drift checker target repos commit and run from pre-commit/CI with plain Node."
           ],
           "files": [
             {
               "name": "bin/atlas.ts",
-              "desc": "Arg parsing, the three modes, `renderFile`, `writeDraftIfAbsent`, `loadOrGuessConfig`, `printDrift`."
+              "desc": "Arg parsing, the three modes, `renderFile`, `writeDraftIfAbsent`, `loadOrGuessConfig`, `printDrift`, `emitChecker`."
             }
           ],
           "exports": [
             {
-              "name": "--repo [--domain] [--force] --out",
-              "desc": "Full scan, or single-domain refresh."
+              "name": "--repo",
+              "desc": "Full scan: config + drift + draft-when-absent + render."
             },
             {
-              "name": "--all <dir> · --blocks <file>",
-              "desc": "Render committed JSON without rescanning."
+              "name": "--domain",
+              "desc": "With `--repo`: rescan + regenerate one domain page."
+            },
+            {
+              "name": "--all",
+              "desc": "Re-render the atlas + every `domain-<slug>/` from committed JSON."
+            },
+            {
+              "name": "--blocks",
+              "desc": "Render one committed page JSON without rescanning."
+            },
+            {
+              "name": "--force",
+              "desc": "Overwrite existing draft JSON (default: never clobber)."
             }
           ],
           "connections": [
@@ -229,7 +250,7 @@
             },
             {
               "dir": "writes",
-              "body": "`atlas.domains.json`, draft JSON (when absent), and the rendered `.html`/`.json` per page"
+              "body": "`atlas.domains.json`, draft JSON (when absent), the rendered `.html`/`.json` per page, and `atlas-check.mjs` (drift checker, always overwritten)"
             }
           ]
         },
@@ -257,8 +278,12 @@
               "desc": "→ `{ config, drift }` — refills modules, reports drift, never auto-applies."
             },
             {
-              "name": "matchGlob() · AtlasConfig",
-              "desc": "The anchored glob matcher and the config shape."
+              "name": "matchGlob()",
+              "desc": "The anchored glob matcher — `**` spans segments, `*` within one."
+            },
+            {
+              "name": "AtlasConfig",
+              "desc": "The config shape (`repo` / `srcRoots` / `domains`)."
             }
           ],
           "connections": [
@@ -296,8 +321,12 @@
               "desc": "→ cross-domain slug→slug import edges."
             },
             {
-              "name": "buildAtlasDraft() · buildDomainDraft()",
-              "desc": "→ `AtlasDraft` / `DomainDraft` skeletons (blank prose)."
+              "name": "buildAtlasDraft()",
+              "desc": "→ `AtlasDraft` skeleton (blank prose)."
+            },
+            {
+              "name": "buildDomainDraft()",
+              "desc": "→ `DomainDraft` skeleton (blank prose)."
             }
           ],
           "connections": [
@@ -336,16 +365,32 @@
               "desc": "The nine-member block union every page is a list of."
             },
             {
-              "name": "ComponentDeep · AtlasDiagram",
-              "desc": "One depth section; one rendered d2/mermaid diagram."
+              "name": "ComponentDeep",
+              "desc": "One expandable depth section."
             },
             {
-              "name": "collectAtlasDiagrams() · assertUniqueAtlasIds()",
-              "desc": "Diagram collection in document order; id-uniqueness guard."
+              "name": "AtlasDiagram",
+              "desc": "One rendered d2/mermaid diagram."
             },
             {
-              "name": "LAYER_DOTS · AtlasOpts/DomainOpts",
-              "desc": "The layer-color table and page-option shapes."
+              "name": "collectAtlasDiagrams()",
+              "desc": "Every rendered diagram, in document order."
+            },
+            {
+              "name": "assertUniqueAtlasIds()",
+              "desc": "Id-uniqueness guard for block/component/diagram ids."
+            },
+            {
+              "name": "LAYER_DOTS",
+              "desc": "The layer → fill;stroke color table."
+            },
+            {
+              "name": "AtlasOpts",
+              "desc": "Atlas-page option shape (title, chips, meta)."
+            },
+            {
+              "name": "DomainOpts",
+              "desc": "Domain-page option shape (layer, path, backHref)."
             }
           ],
           "connections": [
@@ -355,7 +400,7 @@
             },
             {
               "dir": "imports",
-              "body": "[diagrams](../domain-diagrams/domain-diagrams.html) — `DiagramBlock`/`DiagramKind` for `atlasDiagramToBlock`"
+              "body": "[core](../domain-core/domain-core.html) — `DiagramBlock`/`DiagramKind` (from `blocks.ts`) for `atlasDiagramToBlock`"
             }
           ]
         },
@@ -364,7 +409,7 @@
           "name": "render",
           "path": "src/assemble-atlas.ts",
           "detail": [
-            "Turns a block list into a self-contained HTML page. `assembleAtlas` renders the map page (lead, domain-map, tile index); `assembleDomain` renders a domain page (lead, components, internal-arch, depth, owns, seams). `renderAtlasBlock` dispatches per block type, `renderAtlasDiagram` emits each diagram's d2/mermaid render with its auto-legend, and `atlasLegend` builds the legend rows.",
+            "Turns a block list into a self-contained HTML page. `assembleAtlas` renders the map page (lead, domain-map, tile index); `assembleDomain` renders a domain page (lead, components, internal-arch, depth, owns, seams). `renderAtlasBlock` dispatches per block type, `renderAtlasDiagram` emits each diagram's d2/mermaid render with its authored legend, and `atlasLegend` builds the legend rows.",
             "Every diagram is rendered through the diagrams domain up front (collected via `collectAtlasDiagrams`), then looked up by id while rendering. The output reuses the review app-shell/CSS from the recap domain, so atlas pages share the toolkit's look. The CLI calls these two functions and writes the HTML next to the page JSON."
           ],
           "files": [
@@ -375,12 +420,20 @@
           ],
           "exports": [
             {
-              "name": "assembleAtlas() · assembleDomain()",
-              "desc": "→ HTML for the map page / a domain page."
+              "name": "assembleAtlas()",
+              "desc": "→ HTML for the map page."
             },
             {
-              "name": "renderAtlasBlock() · renderAtlasDiagram()",
-              "desc": "Per-block dispatch and per-diagram render."
+              "name": "assembleDomain()",
+              "desc": "→ HTML for a domain page."
+            },
+            {
+              "name": "renderAtlasBlock()",
+              "desc": "Per-block dispatch, wrapped in its `<section>`."
+            },
+            {
+              "name": "renderAtlasDiagram()",
+              "desc": "Per-diagram render: svg box + legend + caption."
             }
           ],
           "connections": [
@@ -509,7 +562,12 @@
           "href": "../domain-recap/domain-recap.html"
         }
       ],
-      "note": "`gather-atlas` imports **code-intel** (`imports`/`dep-graph`/`trpc-parse`/`prisma-schema`) for the scan; `atlas-blocks` builds on **core**'s `Block`/`DiagramBlock`; `assemble-atlas` renders via **diagrams** and reuses the **recap** review app-shell + `review.css`. The dependency on the rest of the toolkit is by reuse, not control — atlas stays the driver."
+      "note": "`gather-atlas` imports **code-intel** (`imports`/`dep-graph`/`trpc-parse`/`prisma-schema`) for the scan; `atlas-blocks` builds on **core**'s `DiagramBlock`/`DiagramKind`; `assemble-atlas` renders via **diagrams** and reuses the **recap** review app-shell + `review.css`. The dependency on the rest of the toolkit is by reuse, not control — atlas stays the driver."
     }
-  ]
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:3f21a2d43be7cab01cb565390aee630359cf6da11b942c8498c485429c398da7",
+    "date": "2026-07-21",
+    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+  }
 }

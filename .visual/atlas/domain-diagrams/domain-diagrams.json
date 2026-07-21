@@ -123,7 +123,7 @@
       "id": "arch",
       "title": "How a diagram renders",
       "badge": "architecture",
-      "intro": "A diagram source is either native d2 or mermaid. `renderDiagram` is the hub: it prepends the palette's `D2_CLASS_PRELUDE`, shells out to the external `d2` CLI for the SVG floor, and — only for eligible flowchart-class kinds — upgrades the mermaid source to an editable Excalidraw scene. `mermaidFlowchartToD2` is the converter branch that gives a mermaid-authored diagram its d2 floor.",
+      "intro": "A diagram source is either native d2 or mermaid. `renderDiagram` is the hub: it prepends the palette's `D2_CLASS_PRELUDE`, shells out to the external `d2` CLI for the SVG floor, and — only when the caller opts in, for eligible flowchart-class kinds — upgrades the mermaid source to an editable Excalidraw scene. `mermaidFlowchartToD2` is the converter branch that gives a mermaid-authored diagram its d2 floor.",
       "diagram": {
         "id": "render-pipeline",
         "kind": "architecture",
@@ -145,14 +145,14 @@
           "path": "src/render-diagram.ts",
           "detail": [
             "`renderDiagram(block, opts, deps)` is the heart of the domain. It first compiles the block's **d2 source** to an SVG by writing `D2_CLASS_PRELUDE` + the source to a temp file and shelling out to the `d2` binary (`d2 --theme 0 --pad 24`). This is the dependable floor: it renders every diagram kind with no browser. If `d2` is missing or the source is invalid, the call degrades to a visible placeholder SVG (a warning box) rather than throwing — so one bad diagram never breaks a whole document.",
-            "The second stage is an **opt-in upgrade**. Routing is by diagram *kind*, not by toolchain availability: only `flowchart`, `architecture`, `sequence`, and `class` kinds are eligible, because those are the ones `mermaid-to-excalidraw` converts to native *editable* elements (ERD and stateDiagram silently rasterize, which is worse than the d2 sketch). When eligible and the opt-in Excalidraw toolchain is present, it converts the mermaid source to an editable `.excalidraw` scene plus a display SVG, forcing all text to dark `INK` for legibility. Any failure falls back to the d2 SVG already in hand — same aesthetic, never broken. `renderAll` maps this over many blocks in order."
+            "The second stage is an **opt-in upgrade** — off by default: a missing or false `excalidraw` option stays on the d2 floor. Routing is by diagram *kind*, not by toolchain availability: only `flowchart`, `architecture`, `sequence`, and `class` kinds are eligible, because those are the ones `mermaid-to-excalidraw` converts to native *editable* elements (ERD and stateDiagram silently rasterize, which is worse than the d2 sketch). When the caller explicitly opts in (`excalidraw: true`), the kind is eligible, and the Excalidraw toolchain is present, it converts the mermaid source to an editable `.excalidraw` scene plus a display SVG, forcing all text to dark `INK` for legibility. Any failure falls back to the d2 SVG already in hand — same aesthetic, never broken. `renderAll` maps this over many blocks in order."
           ],
           "diagrams": [
             {
               "id": "render-floor-upgrade",
               "kind": "flowchart",
-              "d2": "direction: right\nfloor: { label: \"d2 compile\\n(the floor)\"; class: changed }\nok: { label: \"SVG\" }\nph: { label: \"placeholder\\n(visible warning)\"; class: removed }\neligible: { label: \"kind eligible +\\nexcalidraw ready?\" }\nup: { label: \"Excalidraw scene\\n(editable)\"; class: added }\nfloor -> ok: success\nfloor -> ph: d2 missing / invalid\nok -> eligible\neligible -> up: yes\neligible -> ok: no / fails -> fall back\n",
-              "mermaid": "flowchart LR\n  floor[\"d2 compile the floor\"] -->|success| ok[\"SVG\"]\n  floor -->|d2 missing or invalid| ph[\"placeholder visible warning\"]\n  ok --> eligible[\"kind eligible + excalidraw ready?\"]\n  eligible -->|yes| up[\"Excalidraw scene editable\"]\n  eligible -->|no or fails| ok\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef added fill:#d3f9d8,stroke:#37b24d,color:#1b1b1b;\n  classDef removed fill:#ffe3e3,stroke:#f03e3e,color:#1b1b1b;\n  class floor changed;\n  class up added;\n  class ph removed;\n"
+              "d2": "direction: right\nfloor: { label: \"d2 compile\\n(the floor)\"; class: changed }\nok: { label: \"SVG\" }\nph: { label: \"placeholder\\n(visible warning)\"; class: removed }\neligible: { label: \"opted in + kind eligible\\n+ toolchain ready?\" }\nup: { label: \"Excalidraw scene\\n(editable)\"; class: added }\nfloor -> ok: success\nfloor -> ph: d2 missing / invalid\nok -> eligible\neligible -> up: yes\neligible -> ok: no / fails -> fall back\n",
+              "mermaid": "flowchart LR\n  floor[\"d2 compile the floor\"] -->|success| ok[\"SVG\"]\n  floor -->|d2 missing or invalid| ph[\"placeholder visible warning\"]\n  ok --> eligible[\"opted in + kind eligible + toolchain ready?\"]\n  eligible -->|yes| up[\"Excalidraw scene editable\"]\n  eligible -->|no or fails| ok\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef added fill:#d3f9d8,stroke:#37b24d,color:#1b1b1b;\n  classDef removed fill:#ffe3e3,stroke:#f03e3e,color:#1b1b1b;\n  class floor changed;\n  class up added;\n  class ph removed;\n"
             }
           ],
           "files": [
@@ -171,8 +171,16 @@
               "desc": "Renders many blocks, preserving order."
             },
             {
-              "name": "DiagramResult · RenderOpts · RenderDeps",
-              "desc": "Result shape, render options (`outDir`/`excalidraw`/`onWarn`), and the injectable Excalidraw seam for tests."
+              "name": "DiagramResult",
+              "desc": "The result shape — `svg`, optional `editable` scene path, `renderer`, `failed?`."
+            },
+            {
+              "name": "RenderOpts",
+              "desc": "Render options: `outDir` / `excalidraw` (the opt-in upgrade flag, off by default) / `onWarn`."
+            },
+            {
+              "name": "RenderDeps",
+              "desc": "The injectable Excalidraw seam (`ready`/`convert`) for tests."
             }
           ],
           "connections": [
@@ -206,16 +214,36 @@
           ],
           "exports": [
             {
-              "name": "PALETTE · ColorRole · INK",
-              "desc": "The role→color map, the role union, and the dark label ink."
+              "name": "PALETTE",
+              "desc": "The role→color map — the single source of truth."
             },
             {
-              "name": "D2_CLASS_PRELUDE · MERMAID_CLASSDEFS",
-              "desc": "The two generated representations of the palette — injected / included into sources."
+              "name": "ColorRole",
+              "desc": "The six-role union type."
             },
             {
-              "name": "rolesInSource() · legendRolesForRender() · ROLE_LABELS",
-              "desc": "Which roles a source applies, which to legend per renderer, and human labels."
+              "name": "INK",
+              "desc": "The dark label ink that guarantees contrast on every fill."
+            },
+            {
+              "name": "D2_CLASS_PRELUDE",
+              "desc": "The generated d2 `classes {}` block injected before every render."
+            },
+            {
+              "name": "MERMAID_CLASSDEFS",
+              "desc": "The matching generated mermaid `classDef` lines an editable flowchart includes."
+            },
+            {
+              "name": "rolesInSource()",
+              "desc": "Which roles a source *applies* (not merely defines)."
+            },
+            {
+              "name": "legendRolesForRender()",
+              "desc": "Which roles to legend for the artifact actually rendered."
+            },
+            {
+              "name": "ROLE_LABELS",
+              "desc": "Human-readable legend labels per role."
             }
           ],
           "connections": [
@@ -291,7 +319,7 @@
             },
             {
               "dir": "called by",
-              "body": "[authoring](../domain-authoring/domain-authoring.html) and [recap](../domain-recap/domain-recap.html) — markdown ingestion before render"
+              "body": "[authoring](../domain-authoring/domain-authoring.html) — `bin/doc.ts` markdown ingestion before render"
             }
           ]
         }
@@ -360,5 +388,10 @@
       "depends": [],
       "note": "No meaningful internal dependencies — this is the foundation layer. The only runtime requirement is the external `d2` binary on PATH; when it is absent, `renderDiagram` degrades to a visible placeholder rather than failing. Consumers: [core](../domain-core/domain-core.html), [recap](../domain-recap/domain-recap.html), [atlas](../domain-atlas/domain-atlas.html), and [authoring](../domain-authoring/domain-authoring.html) all render through it."
     }
-  ]
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:1fb1cd32409f8c0422e1f1f0614995d64b6afeaf750d50f0fae41446328bcb9d",
+    "date": "2026-07-21",
+    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+  }
 }

@@ -24,6 +24,8 @@
     "atlas": "tsx bin/atlas.ts",
     "setup:excalidraw": "node scripts/setup-excalidraw.mjs",
     "skills:install": "tsx scripts/install-skills.ts",
+    "atlas:check": "node .visual/atlas/atlas-check.mjs",
+    "prepare": "git config core.hooksPath .githooks",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"

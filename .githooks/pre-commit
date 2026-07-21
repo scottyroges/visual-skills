@@ -1,0 +1,5 @@
+#!/bin/sh
+# Dogfood the atlas honesty loop: refuse to commit while the self-atlas is out of
+# sync with the source tree. Fix + re-stamp via /atlas-review, or bypass once with
+# `git commit --no-verify` if you're intentionally committing ahead of the atlas.
+npm run --silent atlas:check

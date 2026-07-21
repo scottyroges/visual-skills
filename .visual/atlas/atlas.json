@@ -37,13 +37,13 @@
         },
         {
           "key": "Spine",
-          "value": "Every product is the same pipeline: build a typed `Block[]` → `assemble()` walks it, calling one renderer per block type → rendered diagrams and highlighted code get inlined → one self-contained HTML file."
+          "value": "Every product is the same pipeline: build a typed `Block[]` → its assembler walks it, calling one renderer per block type → rendered diagrams and highlighted code get inlined → one self-contained HTML file."
         }
       ],
       "primer": [
         {
-          "h": "One Block union, four products.",
-          "p": "There is no per-product renderer. Each CLI just assembles a different array of the *same* `Block` types. Read `src/blocks.ts` then `src/assemble.ts` and you have the spine of all four generators."
+          "h": "One pattern, four products.",
+          "p": "Each product pairs a block vocabulary with a thin assembler built on core's shared primitives — the renderers, lint, and highlighting. Only the doc CLI calls core's `assemble()` directly; recap, spec, and atlas each have their own assembler over the same parts. Read `src/blocks.ts` then `src/assemble.ts` and you have the pattern the other three follow."
         },
         {
           "h": "The output is a single self-contained file.",
@@ -64,12 +64,12 @@
       "id": "map",
       "title": "The domain map",
       "badge": "layered",
-      "intro": "Six domains in three tiers. A **foundation** (`diagrams`) and an **engine** (`core`) sit at the bottom; an **intelligence** layer (`code-intel`) reads real repos; three **surface** products stack on top. Arrows are *depends on* — and the two scanning products reuse `recap`'s review shell.",
+      "intro": "Six domains in three tiers. A **foundation** (`diagrams`) and an **engine** (`core`) sit at the bottom; an **intelligence** layer (`code-intel`) reads real repos; three **surface** products stack on top. Arrows are *depends on* — and `atlas` and `authoring` share `recap`'s review shell (its css, viewer script, and section helpers).",
       "diagram": {
         "id": "domain-map",
         "kind": "architecture",
-        "d2": "direction: right\ndiagrams: { label: \"diagrams\\nd2/mermaid → SVG · palette\" }\ncore: { label: \"core\\nBlock[] → HTML engine\"; class: changed }\ncodeintel: { label: \"code-intel\\nparse repos · diff APIs\" }\nrecap: { label: \"recap\\nvisual-recap · diff review\" }\natlas: { label: \"atlas\\nvisual-atlas · this map\" }\nauthoring: { label: \"authoring\\nvisual-spec + visual-doc\" }\ncore -> diagrams: renders via\ncodeintel -> diagrams\nrecap -> core\nrecap -> codeintel\nrecap -> diagrams\natlas -> core\natlas -> codeintel\natlas -> recap: reuses shell\nauthoring -> core\nauthoring -> recap: reuses shell\n",
-        "mermaid": "graph LR\n  core[\"core · Block to HTML engine\"]\n  diagrams[\"diagrams · d2 to SVG\"]\n  codeintel[\"code-intel · parse repos\"]\n  recap[\"recap · diff review\"]\n  atlas[\"atlas · this map\"]\n  authoring[\"authoring · spec + doc\"]\n  core --> diagrams\n  codeintel --> diagrams\n  recap --> core\n  recap --> codeintel\n  recap --> diagrams\n  atlas --> core\n  atlas --> codeintel\n  atlas -->|reuses shell| recap\n  authoring --> core\n  authoring -->|reuses shell| recap\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  class core changed;",
+        "d2": "direction: right\ndiagrams: { label: \"diagrams\\nd2/mermaid → SVG · palette\" }\ncore: { label: \"core\\nBlock[] → HTML engine\"; class: changed }\ncodeintel: { label: \"code-intel\\nparse repos · diff APIs\" }\nrecap: { label: \"recap\\nvisual-recap · diff review\" }\natlas: { label: \"atlas\\nvisual-atlas · this map\" }\nauthoring: { label: \"authoring\\nvisual-spec + visual-doc\" }\ncore -> diagrams: renders via\ncodeintel -> diagrams\nrecap -> core\nrecap -> codeintel\nrecap -> diagrams\natlas -> core\natlas -> codeintel\natlas -> recap: shares shell\nauthoring -> core\nauthoring -> recap: shares shell\n",
+        "mermaid": "graph LR\n  core[\"core · Block to HTML engine\"]\n  diagrams[\"diagrams · d2 to SVG\"]\n  codeintel[\"code-intel · parse repos\"]\n  recap[\"recap · diff review\"]\n  atlas[\"atlas · this map\"]\n  authoring[\"authoring · spec + doc\"]\n  core --> diagrams\n  codeintel --> diagrams\n  recap --> core\n  recap --> codeintel\n  recap --> diagrams\n  atlas --> core\n  atlas --> codeintel\n  atlas -->|shares shell| recap\n  authoring --> core\n  authoring -->|shares shell| recap\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  class core changed;",
         "legend": [
           {
             "label": "Central engine (every product uses it)",
@@ -77,7 +77,7 @@
             "stroke": "#f08c00"
           }
         ],
-        "caption": "Read bottom-up: `diagrams` and `core` are shared infrastructure; `code-intel` reads real repos for the scanning products; `recap` / `atlas` / `authoring` are the user-facing CLIs. `core` is highlighted because all four products route through its `assemble()`."
+        "caption": "Read bottom-up: `diagrams` and `core` are shared infrastructure; `code-intel` reads real repos for the scanning products; `recap` / `atlas` / `authoring` are the user-facing CLIs. `core` is highlighted because all four products build on its `Block` primitives and renderers."
       }
     },
     {
@@ -85,13 +85,13 @@
       "id": "spine",
       "title": "Spine",
       "badge": "runtime",
-      "intro": "The one flow worth memorizing — it is identical across all four generators. A product builds a typed `Block[]`; `assemble()` walks it and dispatches one renderer per block type; diagram and code blocks get compiled and inlined; the result is a single self-contained HTML file.",
+      "intro": "The one flow worth memorizing — it is identical across all four generators. A product builds a typed `Block[]`; its assembler walks it and dispatches one renderer per block type; diagram and code blocks get compiled and inlined; the result is a single self-contained HTML file.",
       "diagram": {
         "id": "render-spine",
         "kind": "flowchart",
-        "d2": "direction: right\ngather: { label: \"gather\\nbuild a typed Block[]\" }\nassemble: { label: \"assemble()\\nwalk blocks, dispatch\"; class: changed }\nrenderers: { label: \"renderers\\none per block type\" }\nrd: { label: \"render-diagram\\nd2 → SVG\" }\nhl: { label: \"highlight\\ncode → token spans\" }\nout: { label: \"self-contained .html\"; class: store }\ngather -> assemble\nassemble -> renderers\nrenderers -> rd: diagram blocks\nrenderers -> hl: code blocks\nrenderers -> out\nrd -> out: inlined SVG\nhl -> out\n",
-        "mermaid": "flowchart LR\n  gather[\"gather: build Block[]\"] --> assemble[\"assemble() walk + dispatch\"]\n  assemble --> renderers[\"renderers: one per block type\"]\n  renderers -->|diagram blocks| rd[\"render-diagram d2 to SVG\"]\n  renderers -->|code blocks| hl[\"highlight to token spans\"]\n  renderers --> out[\"self-contained .html\"]\n  rd -->|inlined SVG| out\n  hl --> out\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class assemble changed;\n  class out store;",
-        "caption": "What differs between products is only the *left edge* — how the `Block[]` is gathered (a git diff, a repo scan, or hand-authored JSON). From `assemble()` rightward, the path is shared."
+        "d2": "direction: right\ngather: { label: \"gather\\nbuild a typed Block[]\" }\nassemble: { label: \"assembler\\nwalk blocks, dispatch\"; class: changed }\nrenderers: { label: \"renderers\\none per block type\" }\nrd: { label: \"render-diagram\\nd2 → SVG\" }\nhl: { label: \"highlight\\ncode → token spans\" }\nout: { label: \"self-contained .html\"; class: store }\ngather -> assemble\nassemble -> renderers\nrenderers -> rd: diagram blocks\nrenderers -> hl: code blocks\nrenderers -> out\nrd -> out: inlined SVG\nhl -> out\n",
+        "mermaid": "flowchart LR\n  gather[\"gather: build Block[]\"] --> assemble[\"assembler: walk + dispatch\"]\n  assemble --> renderers[\"renderers: one per block type\"]\n  renderers -->|diagram blocks| rd[\"render-diagram d2 to SVG\"]\n  renderers -->|code blocks| hl[\"highlight to token spans\"]\n  renderers --> out[\"self-contained .html\"]\n  rd -->|inlined SVG| out\n  hl --> out\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class assemble changed;\n  class out store;",
+        "caption": "What differs between products is only the *left edge* — how the `Block[]` is gathered (a git diff, a repo scan, or hand-authored JSON). From the assembler rightward, the parts are shared: core's renderers, highlight, and lint."
       }
     },
     {
@@ -106,7 +106,7 @@
           "path": "src/",
           "layer": "engine",
           "layerLabel": "Engine",
-          "purpose": "The shared block→HTML rendering engine. Defines the `Block` union every product targets, walks it with `assemble()`, dispatches one renderer per block type, highlights code, lints, and stamps the output. There is no per-product render path — only this one.",
+          "purpose": "The shared block→HTML rendering engine. Defines the `Block` union and the renderers every product draws on, highlights code, lints, and stamps the output. `assemble()` is the doc CLI's assembler; the other products' assemblers reuse core's renderers, lint, and highlighting.",
           "meta": [
             {
               "key": "~15",
@@ -167,7 +167,7 @@
           "path": "bin/ · src/review",
           "layer": "surface",
           "layerLabel": "Surface",
-          "purpose": "The **visual-recap** product: resolve a git target (PR / commit / branch / working tree), gather and rank the diff, build a `Block[]`, and render a review document. It also owns the reusable **review app-shell** (topbar, sidebar, sections) that atlas and authoring borrow.",
+          "purpose": "The **visual-recap** product: resolve a git target (PR / commit / branch / working tree), gather and rank the diff, build a `Block[]`, and render a review document. It also owns the **review app-shell** (css, viewer script, section helpers) whose look atlas and authoring share.",
           "meta": [
             {
               "key": "~19",

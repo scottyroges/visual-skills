@@ -257,12 +257,20 @@
               "desc": "The block union — `TldrBlock | DecisionsBlock | ScopeBlock | RolloutBlock | ApproveBlock | …`."
             },
             {
-              "name": "collectSpecDiagrams() · toDiagramBlock()",
-              "desc": "Maps spec `diagram` blocks into core's `DiagramBlock` for the shared pipeline."
+              "name": "collectSpecDiagrams()",
+              "desc": "Gathers every `diagram` block as core `DiagramBlock`s for the shared pipeline."
             },
             {
-              "name": "isChapter() · chapterLabel() · assertUniqueSpecIds()",
-              "desc": "Drive the numbered outline, the progress rail, and id-collision detection."
+              "name": "toDiagramBlock()",
+              "desc": "The `DiagramBlock` view of one spec diagram section (same id)."
+            },
+            {
+              "name": "isChapter()",
+              "desc": "With `chapterLabel()`, drives the numbered outline and the progress rail."
+            },
+            {
+              "name": "assertUniqueSpecIds()",
+              "desc": "Id-collision detection across blocks and reference items (throws)."
             }
           ],
           "connections": [
@@ -347,12 +355,12 @@
           "name": "spec lint",
           "path": "src/lint-spec.ts",
           "detail": [
-            "`lintSpec(blocks)` is the demo-standard completeness floor — a mechanical backstop that keeps every spec at the bar. It returns warning strings (never throws): no `tldr` lead, an empty TL;DR, missing `decisions` (the load-bearing content for an approver) or a decision lacking a `why`, and a missing `scope` block. For a *large* spec (≥ 5 chapters) it also expects a hero `diagram`, a `rollout`, and an `approve` band, and nudges for a named rejected-alternative on contested decisions. `assembleSpec` surfaces these through `onWarn`."
+            "`lintSpec(blocks)` is the demo-standard completeness floor — a mechanical backstop that keeps every spec at the bar. It returns warning strings (never throws): no `tldr` lead, an empty TL;DR, missing `decisions` (the load-bearing content for an approver) or a decision lacking a `why`, and a missing `scope` block. For a *large* spec (≥ 5 chapters) it also expects a TL;DR big-idea line, a hero `diagram`, a `rollout`, and an `approve` band; independently of size, four-plus decisions with no named rejected-alternative earn a nudge to name the path not taken on the contested ones. `assembleSpec` surfaces these through `onWarn`."
           ],
           "files": [
             {
               "name": "lint-spec.ts",
-              "desc": "The heuristic checks (lead / decisions / scope, scaled stricter past `LARGE_CHAPTERS = 5`)."
+              "desc": "The heuristic checks (lead / decisions / scope, scaled stricter at `LARGE_CHAPTERS = 5`)."
             }
           ],
           "exports": [
@@ -469,5 +477,10 @@
       ],
       "note": "`doc` leans entirely on `core` (`assemble`, `Block`) and `diagrams` (`promoteMermaidFences`). `spec` adds its own model + renderer + lint, and reuses exactly one review-shell piece: the recap's `renderDiagramCard` for its diagram sections."
     }
-  ]
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:615bc156c26e5c960d6fc2dbf2adfe6aa22263899dccd797ff96a8551512351d",
+    "date": "2026-07-21",
+    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+  }
 }
