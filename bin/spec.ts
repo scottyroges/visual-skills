@@ -1,12 +1,13 @@
 #!/usr/bin/env -S node --import tsx
 // visual-spec CLI — render a spec.json (opts + blocks) into a single self-contained HTML page.
 //
-//   npx tsx bin/spec.ts --blocks <ABSOLUTE spec.json> --out <ABSOLUTE dir> [--title "…"] [--excalidraw]
+//   npx tsx bin/spec.ts --blocks <spec.json> --out <dir> [--title "…"] [--excalidraw]
+// Paths may be relative; they resolve against the current working directory.
 //
 // Writes <out>/spec.html and re-writes <out>/spec.json, so the doc folder stays self-contained
 // and re-renders in place. Mirrors `recap --blocks`.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { join, isAbsolute } from "node:path";
+import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { assembleSpec, type SpecOpts } from "../src/assemble-spec.js";
 import type { SpecBlock } from "../src/spec-blocks.js";
@@ -23,16 +24,13 @@ async function main() {
       "no-excalidraw": { type: "boolean" },
     },
   });
-  const blocksPath = values.blocks;
-  const outDir = values.out;
-  if (!blocksPath || !outDir) {
+  if (!values.blocks || !values.out) {
     console.error("usage: spec --blocks <spec.json> --out <dir> [--title …] [--excalidraw] [--no-excalidraw]");
     process.exit(2);
   }
-  if (!isAbsolute(blocksPath) || !isAbsolute(outDir)) {
-    console.error("--blocks and --out must be absolute paths");
-    process.exit(2);
-  }
+  // Relative paths resolve against the cwd — parity with the doc/recap/atlas CLIs.
+  const blocksPath = resolve(values.blocks);
+  const outDir = resolve(values.out);
 
   const doc = JSON.parse(await readFile(blocksPath, "utf8")) as SpecDoc;
   if (!Array.isArray(doc.blocks)) {

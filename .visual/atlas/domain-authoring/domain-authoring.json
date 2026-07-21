@@ -171,7 +171,7 @@
           "name": "spec CLI",
           "path": "bin/spec.ts",
           "detail": [
-            "`bin/spec.ts` is the visual-spec entrypoint. It `parseArgs` for `--blocks <spec.json>` and `--out <dir>` (both required, both must be absolute), reads the JSON as a `SpecDoc` (page options + a `blocks` array), maps the page-level fields onto `SpecOpts`, and calls [`assembleSpec`](#c-spec-render). It writes `<out>/spec.html` and re-writes `<out>/spec.json`, so the doc folder stays self-contained and re-renders in place — mirroring `recap --blocks`. Author warnings collected via `onWarn` are printed after the write."
+            "`bin/spec.ts` is the visual-spec entrypoint. It `parseArgs` for `--blocks <spec.json>` and `--out <dir>` (both required; relative paths resolve against the cwd), reads the JSON as a `SpecDoc` (page options + a `blocks` array), maps the page-level fields onto `SpecOpts`, and calls [`assembleSpec`](#c-spec-render). It writes `<out>/spec.html` and re-writes `<out>/spec.json`, so the doc folder stays self-contained and re-renders in place — mirroring `recap --blocks`. Author warnings collected via `onWarn` are printed after the write."
           ],
           "files": [
             {
@@ -479,8 +479,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:615bc156c26e5c960d6fc2dbf2adfe6aa22263899dccd797ff96a8551512351d",
+    "hash": "sha256:f520eb7719b263ae01ca8d80a9c69b760686cf0bc692ca1be123deed0f304164",
     "date": "2026-07-21",
-    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+    "commit": "1a0f65970e3ea8f3ed7a05b15c0091948cb983e1"
   }
 }
