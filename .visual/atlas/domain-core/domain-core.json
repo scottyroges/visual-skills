@@ -32,7 +32,7 @@
       "bigIdea": {
         "label": "The load-bearing idea",
         "line": "\"One Block vocabulary and one set of render primitives — every product's page is built from the same core pieces.\"",
-        "sub": "A product's job is to build blocks — diagrams, diffs, prose, file trees, annotated code. The plain-doc path is `assemble()`: it walks the `Block[]`, dispatches each block to its renderer by a `switch (b.type)`, inlines the CSS + viewer JS, and returns one portable HTML string. The recap, spec, and atlas shells live in their own domains but build on the same union, renderers, markdown, and escaping — add a primitive once here and every generator can use it."
+        "sub": "A product's job is to build blocks — diagrams, diffs, prose, file trees, annotated code. The plain-doc path is `assemble()`: it walks the `Block[]`, dispatches each block to its renderer by a `switch (b.type)`, inlines the CSS + viewer JS + dark-mode toggle assets, and returns one portable HTML string. The recap, spec, and atlas shells live in their own domains but build on the same union, renderers, markdown, and escaping — add a primitive once here and every generator can use it."
       }
     },
     {
@@ -61,7 +61,7 @@
         },
         {
           "name": "assemble + shell",
-          "purpose": "The pipeline: validate unique ids, render diagrams up front, dispatch each block to its renderer, then wrap the fragments in an HTML shell with inlined CSS + viewer JS. `html.ts` supplies the escaping and safe-href guards the whole engine shares.",
+          "purpose": "The pipeline: validate unique ids, render diagrams up front, dispatch each block to its renderer, then wrap the fragments in an HTML shell with inlined CSS + viewer JS + the dark-mode toggle (head-apply script, toggle button script, theme.css). `html.ts` supplies the escaping and safe-href guards the whole engine shares.",
           "exports": [
             {
               "name": "assemble"
@@ -144,7 +144,7 @@
       "id": "arch",
       "title": "How a document is assembled",
       "badge": "architecture",
-      "intro": "The `doc` product hands `assemble()` a `Block[]` (recap, spec, and atlas run their own shells on the same pieces). It validates ids, renders every diagram up front via the `diagrams` domain, then dispatches each block to its renderer and wraps the result in the HTML shell it builds — `escapeHtml` from `html.ts`, CSS + viewer JS inlined. `highlight` and `lint` are helpers along the way; `version` stamps the page.",
+      "intro": "The `doc` product hands `assemble()` a `Block[]` (recap, spec, and atlas run their own shells on the same pieces). It validates ids, renders every diagram up front via the `diagrams` domain, then dispatches each block to its renderer and wraps the result in the HTML shell it builds — `escapeHtml` from `html.ts`, CSS + viewer JS + dark-mode toggle assets inlined. `highlight` and `lint` are helpers along the way; `version` stamps the page.",
       "diagram": {
         "id": "core-arch",
         "kind": "architecture",
@@ -241,7 +241,7 @@
           "name": "assemble + shell",
           "path": "src/assemble.ts · src/html.ts",
           "detail": [
-            "`assemble(blocks, opts)` is the plain-document pipeline — the `doc` generator calls it directly, while the recap/spec/atlas shells reuse its pieces rather than the function itself. It first asserts every block id is unique recursively (anchors and in-page `#cross-links` depend on it), runs `lintBlocks` through `opts.onWarn`, then collects every diagram/schema block — including nested ones — and renders them up front through the diagrams domain, keyed by id. It then maps each top-level block to HTML via `renderBlock`, a `switch (b.type)` that calls the matching renderer; `group` and `tabs` recurse. Finally it inlines `assets/template.css` and `assets/viewer.js`, stamps an optional `<meta generator>` and footer, and returns a single self-contained HTML string — no external assets, by design.",
+            "`assemble(blocks, opts)` is the plain-document pipeline — the `doc` generator calls it directly, while the recap/spec/atlas shells reuse its pieces rather than the function itself. It first asserts every block id is unique recursively (anchors and in-page `#cross-links` depend on it), runs `lintBlocks` through `opts.onWarn`, then collects every diagram/schema block — including nested ones — and renders them up front through the diagrams domain, keyed by id. It then maps each top-level block to HTML via `renderBlock`, a `switch (b.type)` that calls the matching renderer; `group` and `tabs` recurse. Finally it inlines `assets/template.css` and `assets/viewer.js`, plus the dark-mode toggle assets — `assets/theme-head.js` (a synchronous `<head>` script that sets `data-theme` on `<html>` from `localStorage[\"vs-theme\"]`/OS preference before paint), `assets/theme-toggle.js` (injects the `.vs-theme-toggle` button and wires click + OS-change), and `assets/theme.css` (appended after `template.css` in the `<style>`) — stamps an optional `<meta generator>` and footer, and returns a single self-contained HTML string — no external assets, by design.",
             "`html.ts` is the tiny shared safety layer: `escapeHtml` (used by every renderer for any text that reaches HTML) and `SAFE_HREF`, the regex that allows only `#fragment` and `http(s)://` links so a `javascript:`/`data:` URL can't slip through the overview and review link renderers. `assemble` also injects each block's id as an anchor on its `<section>` so the cross-links resolve."
           ],
           "files": [
@@ -591,8 +591,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:537fee213dbd85654822cd6a2a13711d9a120f71422da2c588efff96050d5df6",
+    "hash": "sha256:3b41fb9201cede9812aa9e72527b4d390a62bc9779c5ef11e0275e9dc8c91ed8",
     "date": "2026-07-21",
-    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+    "commit": "7803a0e7a18940c215f255f1fb681c0a14ce3566"
   }
 }

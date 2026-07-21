@@ -154,6 +154,13 @@ describe("assemble", () => {
     expect(html).toContain("vs-zoom-overlay");          // viewer code is present
     expect(html).toContain('class="vs-zoomable"');      // the diagram svg is wrapped
   }, 30_000);
+
+  it("emits the theme toggle, head apply script, and theme.css", async () => {
+    const html = await assemble([{ type: "prose", id: "p", markdown: "hi" }], { title: "T", source: "s" });
+    expect(html).toContain('data-theme'); // head apply script
+    expect(html).toContain('class="vs-theme-toggle"');
+    expect(html).toContain('/* vs-theme */'); // theme.css appended
+  });
 });
 
 describe("assemble — tabs block", () => {
