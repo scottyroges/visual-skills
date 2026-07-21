@@ -27,7 +27,13 @@ describe("assembleReview", () => {
     expect(html).toContain("Recap — x");
     expect(html).toContain("<style>");                       // inlined review.css
     expect(html).toContain("zoom-overlay");                  // inlined review-viewer.js + markup
-    expect((html.match(/<script>/g) || []).length).toBe(1);  // one inlined script
     expect(html).not.toMatch(/<script[^>]*\ssrc=/i);         // never external
+  });
+
+  it("emits the dark-mode toggle and theme.css", async () => {
+    const html = await assembleReview(blocks, { title: "Recap — x", source: "ppgl · base a → head b" });
+    expect(html).toContain('data-theme');
+    expect(html).toContain('class="vs-theme-toggle"');
+    expect(html).toContain('/* vs-theme */');
   });
 });

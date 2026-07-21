@@ -410,7 +410,7 @@
           "path": "src/assemble-atlas.ts",
           "detail": [
             "Turns a block list into a self-contained HTML page. `assembleAtlas` renders the map page (lead, domain-map, tile index); `assembleDomain` renders a domain page (lead, components, internal-arch, depth, owns, seams). `renderAtlasBlock` dispatches per block type, `renderAtlasDiagram` emits each diagram's d2/mermaid render with its authored legend, and `atlasLegend` builds the legend rows.",
-            "Every diagram is rendered through the diagrams domain up front (collected via `collectAtlasDiagrams`), then looked up by id while rendering. The output reuses the review app-shell/CSS from the recap domain, so atlas pages share the toolkit's look. The CLI calls these two functions and writes the HTML next to the page JSON."
+            "Every diagram is rendered through the diagrams domain up front (collected via `collectAtlasDiagrams`), then looked up by id while rendering. The output reuses the review app-shell/CSS from the recap domain — including the same inlined dark-mode toggle (`theme-head.js` head-apply script, `theme-toggle.js` button, `theme.css` appended last in `<style>`) — so atlas pages share the toolkit's look and theme. The CLI calls these two functions and writes the HTML next to the page JSON."
           ],
           "files": [
             {
@@ -566,8 +566,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:416ad4fad56e0edcb48f00c3b96604d9fde39512ce33e012a47fddf5870cdfbe",
+    "hash": "sha256:8d5708532e34b43b3d331ce7b853cde97462c7a6d88c7ce6329f2e5c690188a1",
     "date": "2026-07-21",
-    "commit": "ae2475ac3a493dd7d27f815470efd38330e655af"
+    "commit": "913441f03aaf2b4ed8ad35f811bf8a02dd31e13d"
   }
 }

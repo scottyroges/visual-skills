@@ -28,6 +28,12 @@ describe("assemble shell", () => {
     expect(html).toContain('id="zoom-overlay"');
     expect(html).toContain("System Atlas · demo");
   });
+  it("emits the dark-mode toggle and theme.css", async () => {
+    const html = await assembleAtlas([], { title: "System Atlas · demo" });
+    expect(html).toContain('data-theme');
+    expect(html).toContain('class="vs-theme-toggle"');
+    expect(html).toContain('/* vs-theme */');
+  });
   it("domain: back-link + layer/path/count/depends chips", async () => {
     const html = await assembleDomain([], { title: "brain", layer: "intelligence", layerLabel: "Intelligence", path: "lib/brain", count: "~76 files", depends: "sim · world" });
     expect(html).toContain('class="topbar-back" href="../atlas.html"');

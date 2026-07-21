@@ -1,5 +1,17 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="visual-skills · visual-atlas"><title>Rendering core</title><style>/* ===== RESET & BASE ===== */
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script>(function () {
+  try {
+    var saved = localStorage.getItem("vs-theme");
+    var mql = window.matchMedia("(prefers-color-scheme: dark)");
+    var theme = saved === "light" || saved === "dark"
+      ? saved
+      : (mql.matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script><meta name="generator" content="visual-skills · visual-atlas"><title>Rendering core</title><style>/* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -1461,6 +1473,29 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 .nav-domain:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
 .nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
+
+/* vs-theme */
+.vs-theme-toggle {
+  position: fixed; top: 14px; right: 14px; z-index: 1000;
+  width: 38px; height: 38px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--line); background: var(--paper); color: var(--ink);
+  cursor: pointer; box-shadow: 1px 2px 0 rgba(0,0,0,0.08);
+}
+.vs-theme-toggle:hover { border-color: var(--ctx); }
+@media print { .vs-theme-toggle { display: none; } }
+
+:root[data-theme="dark"] {
+  --ink:#e6e3dc; --paper:#16181d; --ctx:#9aa2ad; --line:#2c3038;
+  --add:#3fb950; --del:#f85149;
+}
+
+/* Shiki dual-theme flip (Task 3 emits the --shiki-dark vars) */
+:root[data-theme="dark"] .shiki,
+:root[data-theme="dark"] .shiki span {
+  color: var(--shiki-dark, inherit) !important;
+  background-color: var(--shiki-dark-bg, transparent) !important;
+}
 </style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><a class="topbar-back" href="../atlas.html"><span aria-hidden="true">&larr;</span> Atlas</a><span class="topbar-title">Rendering core</span><div class="topbar-meta"><span class="chip layer-chip layer-engine">Engine</span><span class="chip chip-stat">src</span><span class="chip chip-count">15 files</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">depends on diagrams</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>What it owns</span></a></li><li><a href="#components" class="outline-item" data-target="components"><span class="outline-num" aria-hidden="true">1</span><span>The pieces</span></a></li><li><a href="#arch" class="outline-item" data-target="arch"><span class="outline-num" aria-hidden="true">2</span><span>How a document is assembled</span></a></li><li><a href="#depth" class="outline-item" data-target="depth"><span class="outline-num" aria-hidden="true">3</span><span>The pieces, in depth</span></a><ul class="outline-sub" role="list"><li><a href="#c-blocks" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>block-model</a></li><li><a href="#c-assemble" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>assemble + shell</a></li><li><a href="#c-renderers" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>renderers</a></li><li><a href="#c-highlight" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>highlight</a></li><li><a href="#c-lint" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>lint</a></li><li><a href="#c-version" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>version</a></li></ul></li><li><a href="#data" class="outline-item" data-target="data"><span class="outline-num" aria-hidden="true">4</span><span>The block model it owns</span></a></li><li><a href="#seams" class="outline-item" data-target="seams"><span class="outline-num" aria-hidden="true">5</span><span>Seams</span></a></li></ul></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Domain</span><h2 class="tldr-heading">The shared block→HTML rendering engine every generator builds on — a typed <code>Block</code> vocabulary, per-type renderers and helpers, and an <code>assemble()</code> that turns a <code>Block[]</code> into one self-contained HTML document.</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">Path</span><span class="tldr-val"><code>src</code> (the engine modules) + <code>src/renderers/*</code> (one renderer per block type).</span></div><div class="tldr-row"><span class="tldr-key">Files</span><span class="tldr-val">15 — <code>blocks.ts</code>, <code>assemble.ts</code>, <code>html.ts</code>, <code>highlight.ts</code>, <code>lint-blocks.ts</code>, <code>version.ts</code>, and nine renderers.</span></div><div class="tldr-row"><span class="tldr-key">Role</span><span class="tldr-val">Owns the <code>Block</code> union and the shared render primitives. <code>doc</code> feeds its <code>Block[]</code> straight to <code>assemble()</code>; recap, spec, and atlas ship their own shells that reuse core's renderers, markdown, and escaping.</span></div></div></div><div class="bigidea"><div class="bigidea-label">The load-bearing idea</div><div class="bigidea-line">"One Block vocabulary and one set of render primitives — every product's page is built from the same core pieces."</div><p class="bigidea-sub">A product's job is to build blocks — diagrams, diffs, prose, file trees, annotated code. The plain-doc path is <code>assemble()</code>: it walks the <code>Block[]</code>, dispatches each block to its renderer by a <code>switch (b.type)</code>, inlines the CSS + viewer JS + dark-mode toggle assets, and returns one portable HTML string. The recap, spec, and atlas shells live in their own domains but build on the same union, renderers, markdown, and escaping — add a primitive once here and every generator can use it.</p></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#components"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">The pieces</span></a><a class="progress-step" href="#arch"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">How a document is assembled</span></a><a class="progress-step" href="#depth"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">The pieces, in depth</span></a><a class="progress-step" href="#data"><div class="progress-step-num" aria-hidden="true">4</div><span class="progress-step-label">The block model it owns</span></a><a class="progress-step" href="#seams"><div class="progress-step-num" aria-hidden="true">5</div><span class="progress-step-label">Seams</span></a></nav><section id="components" class="section"><div class="section-header"><h2 class="section-title">The pieces</h2><span class="section-badge">engine + renderers</span></div><p class="section-intro">A typed block model at the center, one <code>assemble()</code> that walks it into an HTML shell, a fan-out of per-type renderers, and three helpers (highlight, lint, version). Tap a card to jump to its full section.</p><div class="board-grid"><a class="board-card" href="#c-blocks"><div class="board-name">block-model</div><div class="board-purpose">The <code>Block</code> discriminated union — the contract between products and the engine. Every renderable thing (diagram, schema, diff, prose, api, file-tree, annotated-code, questions, group, tabs, overview) is one variant, keyed by <code>type</code>.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">Block</span><span class="skill-chip">DiagramBlock</span><span class="skill-chip is-deputy">isDiagramBlock</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-assemble"><div class="board-name">assemble + shell</div><div class="board-purpose">The pipeline: validate unique ids, render diagrams up front, dispatch each block to its renderer, then wrap the fragments in an HTML shell with inlined CSS + viewer JS + the dark-mode toggle (head-apply script, toggle button script, theme.css). <code>html.ts</code> supplies the escaping and safe-href guards the whole engine shares.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">assemble</span><span class="skill-chip is-deputy">AssembleOpts</span><span class="skill-chip">escapeHtml</span><span class="skill-chip is-deputy">SAFE_HREF</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-renderers"><div class="board-name">renderers</div><div class="board-purpose">Nine renderer modules: seven pure <code>Block → HTML</code> functions (prose, diff, api, file-tree, annotated-code, questions, overview), plus the diagram color-key painter and the shared markdown substrate the prose/diff/overview renderers lean on. <code>assemble</code>'s <code>switch</code> calls the right one; groups and tabs recurse back through <code>assemble</code>.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">renderProse</span><span class="skill-chip">renderDiff</span><span class="skill-chip">renderMarkdown</span><span class="skill-chip is-deputy">renderAnnotatedCode</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-highlight"><div class="board-name">highlight</div><div class="board-purpose">Shiki-backed syntax highlighting behind a lazy singleton. <code>highlightCode</code> returns a full <code>&lt;pre&gt;</code>; <code>highlightLines</code> returns per-line inner HTML for the gutter-aligned diff and annotated-code grids. Both degrade to escaped plaintext on any failure.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">highlightCode</span><span class="skill-chip">highlightLines</span><span class="skill-chip is-deputy">langFromPath</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-lint"><div class="board-name">lint</div><div class="board-purpose">Non-blocking authoring guards. Walks the <code>Block[]</code> and warns — never throws — when a group lacks a description, a diff description is a wall of text, a diagram applies no color, an editable kind drops its mermaid, or there are too many / oversize diagrams.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">lintBlocks</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-version"><div class="board-name">version</div><div class="board-purpose">The provenance stamp: <code>visual-skills@&lt;git-sha&gt;[-dirty] · &lt;ISO timestamp&gt;</code>, stamped into the page <code>&lt;meta generator&gt;</code> and footer. Falls back to the package.json version, then <code>"unknown"</code>, when git is unavailable.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">generatorStamp</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a></div></section><section id="arch" class="section"><div class="section-header"><h2 class="section-title">How a document is assembled</h2><span class="section-badge">architecture</span></div><p class="section-intro">The <code>doc</code> product hands <code>assemble()</code> a <code>Block[]</code> (recap, spec, and atlas run their own shells on the same pieces). It validates ids, renders every diagram up front via the <code>diagrams</code> domain, then dispatches each block to its renderer and wraps the result in the HTML shell it builds — <code>escapeHtml</code> from <code>html.ts</code>, CSS + viewer JS + dark-mode toggle assets inlined. <code>highlight</code> and <code>lint</code> are helpers along the way; <code>version</code> stamps the page.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1615 623"><svg class="d2-2341953375 d2-svg" width="1615" height="623" viewBox="-25 -25 1615 623"><rect x="-25.000000" y="-25.000000" width="1615.000000" height="623.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-2341953375 .text-bold {
 	font-family: "d2-2341953375-font-bold";
@@ -1731,5 +1766,40 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
   }
   window.addEventListener('hashchange', function(){ openTo(location.hash); });
   if(location.hash) openTo(location.hash);
+})();
+</script><script>(function () {
+  var root = document.documentElement;
+  var STORAGE = "vs-theme";
+  var SUN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  var MOON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    '<button class="vs-theme-toggle" type="button" aria-label="Toggle dark mode"></button>'
+  );
+  var btn = document.body.lastElementChild;
+
+  function render() {
+    var dark = root.getAttribute("data-theme") === "dark";
+    btn.innerHTML = dark ? SUN : MOON;
+    btn.setAttribute("aria-pressed", dark ? "true" : "false");
+  }
+  render();
+
+  btn.addEventListener("click", function () {
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem(STORAGE, next); } catch (e) {}
+    render();
+  });
+
+  var mql = window.matchMedia("(prefers-color-scheme: dark)");
+  mql.addEventListener("change", function (e) {
+    var hasChoice = false;
+    try { var s = localStorage.getItem(STORAGE); hasChoice = s === "light" || s === "dark"; } catch (x) {}
+    if (hasChoice) return;
+    root.setAttribute("data-theme", e.matches ? "dark" : "light");
+    render();
+  });
 })();
 </script></body></html>

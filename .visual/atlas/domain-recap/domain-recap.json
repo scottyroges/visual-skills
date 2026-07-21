@@ -357,7 +357,7 @@
           "name": "review shell",
           "path": "src/assemble-review.ts · src/review/*.ts",
           "detail": [
-            "`assembleReview(blocks, opts)` is the app-shell: it asserts unique ids, normalizes loose top-level diffs into walkthrough chapters (`groupLooseDiffs`), inlines `review.css` + the viewer script, renders every diagram once, then walks the blocks emitting `<section>`s — TL;DR + overview, files-changed, the guided walkthrough (progress rail + chapters), standalone diagram/schema/api/prose sections — into one self-contained HTML document. Along the way it runs `lintBlocks` and [lintCompleteness](#c-lint), surfacing warnings (including any diagram that failed to compile) through `onWarn`.",
+            "`assembleReview(blocks, opts)` is the app-shell: it asserts unique ids, normalizes loose top-level diffs into walkthrough chapters (`groupLooseDiffs`), inlines `review.css` + the viewer script + the dark-mode toggle assets (`theme-head.js` in `<head>`, `theme-toggle.js` after the viewer, `theme.css` appended last in `<style>`), renders every diagram once, then walks the blocks emitting `<section>`s — TL;DR + overview, files-changed, the guided walkthrough (progress rail + chapters), standalone diagram/schema/api/prose sections — into one self-contained HTML document. Along the way it runs `lintBlocks` and [lintCompleteness](#c-lint), surfacing warnings (including any diagram that failed to compile) through `onWarn`.",
             "The `src/review/*` renderers are the shell's vocabulary, each a focused function: `topbar` (title + risk/stat chips), `sidebar` (files + walkthrough outline + meta + progress rail), `tldr` (the What/Why/Risk/Size card + overview points), `files-table`, `walkthrough` (chapters and per-file subsections with diff bodies), `diff` (the raw +/- body), `sections` (diagram cards, the rendered legend, api-surface cards, reused-block fallbacks), `diagrams` (collect + render all), and `normalize` (`stripChapterOrdinal`, `groupLooseDiffs`). **This shell is the domain's biggest shared seam** — `assemble-atlas` and `assemble-spec` build the atlas and spec pages on the same `review.css` + viewer script and the same topbar/sidebar/section class vocabulary (importing `sections.ts` helpers like `renderDiagramCard` / `withDiagramSvgClass` directly, while emitting their own topbar/sidebar HTML), so the chrome looks and behaves identically across all three products."
           ],
           "diagrams": [
@@ -619,8 +619,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:6a0da27b5f3ed1f30fbf6e752d84391f1ab1257f5d6ffd71b1d8d7abbe7d5da4",
+    "hash": "sha256:724f9ef735c223a254ebb1e37e398daba6538cbe0558bafdbaa9edd830888f9f",
     "date": "2026-07-21",
-    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+    "commit": "913441f03aaf2b4ed8ad35f811bf8a02dd31e13d"
   }
 }

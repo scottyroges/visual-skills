@@ -39,6 +39,9 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   assertUniqueIds(blocks);
   const view = groupLooseDiffs(blocks);
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
+  const themeCss = await readFile(join(ASSETS, "theme.css"), "utf8");
+  const themeHead = await readFile(join(ASSETS, "theme-head.js"), "utf8");
+  const themeToggle = await readFile(join(ASSETS, "theme-toggle.js"), "utf8");
   const viewer = await readFile(join(ASSETS, "review-viewer.js"), "utf8");
 
   const topbar = renderTopbar(view, opts);
@@ -119,10 +122,11 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   return (
     `<!doctype html>\n<html lang="en"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
+    `<script>${themeHead}</script>` +
     `${opts.generator ? `<meta name="generator" content="${escapeHtml(opts.generator)}">` : ""}` +
-    `<title>${escapeHtml(opts.title)}</title><style>${css}</style></head>` +
+    `<title>${escapeHtml(opts.title)}</title><style>${css}\n${themeCss}</style></head>` +
     `<body>${topbar}<div class="sidebar-overlay" id="sidebar-overlay"></div>` +
     `<div class="layout">${sidebar}${main}</div>${zoomOverlay}` +
-    `<script>${viewer}</script></body></html>\n`
+    `<script>${viewer}</script><script>${themeToggle}</script></body></html>\n`
   );
 }

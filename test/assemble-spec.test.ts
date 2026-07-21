@@ -121,6 +121,13 @@ describe("assembleSpec", () => {
     expect(warns.some((w) => /meta\[0\] should be \{ key, value \}/.test(w))).toBe(true);
   });
 
+  it("emits the dark-mode toggle and theme.css", async () => {
+    const html = await assembleSpec(blocks, opts);
+    expect(html).toContain('data-theme');
+    expect(html).toContain('class="vs-theme-toggle"');
+    expect(html).toContain('/* vs-theme */');
+  });
+
   it("rejects duplicate ids (block or reference item)", () => {
     expect(() => assertUniqueSpecIds([
       { type: "scope", id: "dup", inList: [], outList: [] },

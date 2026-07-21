@@ -293,7 +293,7 @@
           "name": "spec render",
           "path": "src/assemble-spec.ts",
           "detail": [
-            "`assembleSpec(blocks, opts)` is the spec page builder. It asserts unique ids, loads `review.css` + `spec.css` + the shared viewer JS, collects the spec diagrams and renders them via the diagrams domain's `renderAll`, then runs the page through `validateSpecOpts` and [`lintSpec`](#c-spec-lint) (warnings only). Each block becomes a `<section>` via a per-type renderer; the sidebar outline and the progress rail are derived from the chapters (the rail is injected right after the TL;DR). For diagram blocks it reuses the **recap's** `renderDiagramCard` — the one piece of review-shell rendering authoring borrows."
+            "`assembleSpec(blocks, opts)` is the spec page builder. It asserts unique ids, loads `review.css` + `spec.css` + the shared viewer JS + the dark-mode toggle assets (`theme-head.js`, `theme-toggle.js`, `theme.css`), collects the spec diagrams and renders them via the diagrams domain's `renderAll`, then runs the page through `validateSpecOpts` and [`lintSpec`](#c-spec-lint) (warnings only). Each block becomes a `<section>` via a per-type renderer; the sidebar outline and the progress rail are derived from the chapters (the rail is injected right after the TL;DR). For diagram blocks it reuses the **recap's** `renderDiagramCard` — the one piece of review-shell rendering authoring borrows."
           ],
           "diagrams": [
             {
@@ -479,8 +479,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:f520eb7719b263ae01ca8d80a9c69b760686cf0bc692ca1be123deed0f304164",
+    "hash": "sha256:1527f44474c0680ba6b443fca93fc548e986b6d5665864407a3a85f1f06b98be",
     "date": "2026-07-21",
-    "commit": "1a0f65970e3ea8f3ed7a05b15c0091948cb983e1"
+    "commit": "913441f03aaf2b4ed8ad35f811bf8a02dd31e13d"
   }
 }

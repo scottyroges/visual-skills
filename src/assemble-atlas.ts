@@ -59,13 +59,17 @@ async function doc(title: string, generator: string | undefined, topbar: string,
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
   const specCss = await readFile(join(ASSETS, "spec.css"), "utf8");
   const atlasCss = await readFile(join(ASSETS, "atlas.css"), "utf8");
+  const themeCss = await readFile(join(ASSETS, "theme.css"), "utf8");
+  const themeHead = await readFile(join(ASSETS, "theme-head.js"), "utf8");
+  const themeToggle = await readFile(join(ASSETS, "theme-toggle.js"), "utf8");
   const viewer = await readFile(join(ASSETS, "review-viewer.js"), "utf8");
   return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
+    `<script>${themeHead}</script>` +
     `${generator ? `<meta name="generator" content="${escapeHtml(generator)}">` : ""}` +
-    `<title>${escapeHtml(title)}</title><style>${css}\n${specCss}\n${atlasCss}</style></head>` +
+    `<title>${escapeHtml(title)}</title><style>${css}\n${specCss}\n${atlasCss}\n${themeCss}</style></head>` +
     `<body>${topbar}<div class="sidebar-overlay" id="sidebar-overlay"></div>` +
-    `<div class="layout">${sidebar}${main}</div>${ZOOM}<script>${viewer}</script></body></html>\n`;
+    `<div class="layout">${sidebar}${main}</div>${ZOOM}<script>${viewer}</script><script>${themeToggle}</script></body></html>\n`;
 }
 
 interface NavEntry { id: string; label: string; num: string; subs?: { id: string; label: string; dot: string }[]; }
