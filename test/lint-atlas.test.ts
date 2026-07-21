@@ -5,7 +5,7 @@ import { lintAtlas, lintDomain } from "../src/lint-atlas.js";
 import type { AtlasBlock } from "../src/atlas-blocks.js";
 
 const load = (f: string): AtlasBlock[] =>
-  JSON.parse(readFileSync(join(__dirname, "..", "example", "atlas-sports-rpg", f), "utf8")).blocks;
+  JSON.parse(readFileSync(join(__dirname, "..", "example", "atlas-ppgl", f), "utf8")).blocks;
 
 describe("lintAtlas", () => {
   it("is clean on the canonical atlas page", () => {
@@ -36,7 +36,7 @@ describe("lintAtlas", () => {
 
 describe("lintDomain", () => {
   it("is clean on the canonical domain page", () => {
-    expect(lintDomain(load("domain-brain/domain-brain.json"))).toEqual([]);
+    expect(lintDomain(load("domain-game/domain-game.json"))).toEqual([]);
   });
 
   it("warns on a bare domain: missing tldr, components, seams", () => {

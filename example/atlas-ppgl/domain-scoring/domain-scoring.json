@@ -1,0 +1,485 @@
+{
+  "kind": "domain",
+  "slug": "scoring",
+  "title": "Earnings & standings",
+  "layer": "engine",
+  "layerLabel": "Core game",
+  "path": "src",
+  "count": "12 files",
+  "depends": "golf-data · leagues · web-shell",
+  "date": "2026-07-21",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Engine"
+    },
+    {
+      "key": "Owns",
+      "value": "LeagueMemberSeason · EarningsAdjustment"
+    },
+    {
+      "key": "Routers",
+      "value": "leaderboard · earningsAdjustment"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "heading": "Earnings & standings",
+      "rows": [
+        {
+          "key": "What it is",
+          "value": "The money engine: turns **LOCKED picks × TournamentResult** into season totals, layers in commissioner adjustments, and serves every leaderboard and standings view."
+        },
+        {
+          "key": "Path",
+          "value": "`src/server` (earnings + leaderboard stack) · `src/components` (standings UI)"
+        },
+        {
+          "key": "Files",
+          "value": "12"
+        },
+        {
+          "key": "Entry points",
+          "value": "`leaderboard` and `earningsAdjustment` tRPC routers; `rollupForTournament` / `recalculateSeasonForMember` called directly by [golf-data sync](../domain-golf-data/domain-golf-data.html), [pick service](../domain-game/domain-game.html), and [admin](../domain-admin/domain-admin.html)."
+        },
+        {
+          "key": "Guarantee",
+          "value": "The rollup is **idempotent** — every trigger recomputes a member's season from scratch, so re-running it is always safe (`seed:rollup` exists for exactly this)."
+        }
+      ],
+      "bigIdea": {
+        "label": "Big idea",
+        "line": "`LeagueMemberSeason` is a materialized rollup, not a ledger.",
+        "sub": "Nothing ever increments the stored totals. Every trigger — tournament finalize, commissioner pick edit, adjustment add/delete — recomputes the member's whole season with one SQL aggregate over **LOCKED** picks joined to results, adds the adjustment sum, and overwrites the row. Reads (leaderboards, standings) then never touch the pick table for season totals — they do one indexed read of the cache."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "Components",
+      "intro": "Four units: the recompute core, the commissioner adjustment ledger that feeds it, the read-side leaderboard queries, and the standings UI surfaces.",
+      "cards": [
+        {
+          "name": "Rollup core",
+          "purpose": "`earnings-core.ts` + its repository — the from-scratch recompute of `LeagueMemberSeason`. Deliberately **not** `server-only` so seed scripts can run it; app code imports the `earnings.ts` guard shim instead.",
+          "exports": [
+            {
+              "name": "rollupForTournament",
+              "deputy": true
+            },
+            {
+              "name": "recalculateSeasonForMember"
+            },
+            {
+              "name": "recalculateSeasonForLeague"
+            }
+          ],
+          "href": "#c-rollup"
+        },
+        {
+          "name": "Commissioner adjustments",
+          "purpose": "Manual `EarningsAdjustment` credits/debits (side bets, penalties) — commissioner-gated writes, audit-logged, visible to the whole league, and folded into totals by triggering a member recompute.",
+          "exports": [
+            {
+              "name": "earningsAdjustmentRouter",
+              "deputy": true
+            },
+            {
+              "name": "addAdjustment"
+            },
+            {
+              "name": "EarningsAdjustments"
+            }
+          ],
+          "href": "#c-adjustments"
+        },
+        {
+          "name": "Leaderboard queries",
+          "purpose": "The read side: season standings (global + per-league) off the `LeagueMemberSeason` cache, live *projected* earnings from IN_PROGRESS tournaments, per-member standing lookups, and per-tournament weekly standings.",
+          "exports": [
+            {
+              "name": "leaderboardRouter",
+              "deputy": true
+            },
+            {
+              "name": "getGlobalStandings"
+            },
+            {
+              "name": "getWeeklyStandings"
+            }
+          ],
+          "href": "#c-leaderboard"
+        },
+        {
+          "name": "Standings surfaces",
+          "purpose": "The shared weekly standings table (rank, pick, score, earnings) rendered by league and tournament pages, plus the legacy `/member/…` route that redirects to `/season/[userId]`.",
+          "exports": [
+            {
+              "name": "WeeklyStandingsTable",
+              "deputy": true
+            },
+            {
+              "name": "default"
+            }
+          ],
+          "href": "#c-surfaces"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "The rollup flow",
+      "intro": "Every path into the domain converges on `recalculateSeasonForMember`: two SQL aggregates, one overwrite of the cache row, and the leaderboards read only the cache.",
+      "diagram": {
+        "id": "arch-diagram",
+        "kind": "architecture",
+        "d2": "direction: right\n\"sync tournament finalize\": { class: actor }\n\"commissioner pick add or edit\": { class: actor }\n\"adjustment add or delete\": { class: actor }\n\"seed:rollup script\": { class: actor }\n\"admin triggerEarningsRollup\": { class: actor }\n\"recalculateSeasonForMember\": { class: changed }\n\"LeagueMemberSeason\": { class: store }\n\"sync tournament finalize\" -> \"rollupForTournament\"\n\"rollupForTournament\" -> \"recalculateSeasonForMember\": per affected member\n\"commissioner pick add or edit\" -> \"recalculateSeasonForMember\"\n\"adjustment add or delete\" -> \"recalculateSeasonForMember\"\n\"seed:rollup script\" -> \"recalculateSeasonForLeague\"\n\"admin triggerEarningsRollup\" -> \"recalculateSeasonForLeague\"\n\"recalculateSeasonForLeague\" -> \"recalculateSeasonForMember\": per member\n\"recalculateSeasonForMember\" -> \"calculatePickBasedStats\": LOCKED picks x results\n\"recalculateSeasonForMember\" -> \"sumByLeagueMember\": adjustment sum\n\"recalculateSeasonForMember\" -> \"LeagueMemberSeason\": UPDATE totals\n\"LeagueMemberSeason\" -> \"leaderboard queries\": indexed read",
+        "mermaid": "flowchart LR\n  sync[\"sync tournament finalize\"] --> roll[rollupForTournament]\n  roll -->|per affected member| recalc[recalculateSeasonForMember]\n  pickmut[\"commissioner pick add or edit\"] --> recalc\n  adj[\"adjustment add or delete\"] --> recalc\n  seed[\"seed:rollup script\"] --> league[recalculateSeasonForLeague]\n  admin[\"admin triggerEarningsRollup\"] --> league\n  league -->|per member| recalc\n  recalc -->|LOCKED picks x results| stats[calculatePickBasedStats]\n  recalc -->|adjustment sum| adjsum[sumByLeagueMember]\n  recalc -->|UPDATE totals| lms[(LeagueMemberSeason)]\n  lms -->|indexed read| lb[leaderboard queries]\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  class recalc changed;\n  class lms store;\n  class sync,pickmut,adj,seed,admin actor;",
+        "caption": "Blue nodes are the five triggers (three live in other domains). The recompute counts only `pick.status = 'LOCKED'` rows on non-excluded COMPLETED/FINALIZING tournaments."
+      },
+      "callout": "**The UPDATE never inserts.** `updateMemberSeasonStats` assumes the `LeagueMemberSeason` row already exists — [leagues](../domain-leagues/domain-leagues.html) creates it when a member joins. If the row is missing, the rollup logs `[earnings-rollup] No LeagueMemberSeason row found …` and skips the member rather than failing the whole rollup."
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "In depth",
+      "components": [
+        {
+          "id": "c-rollup",
+          "name": "Rollup core",
+          "path": "src/server/services/earnings-core.ts",
+          "detail": [
+            "Three functions, one shape: `rollupForTournament(tournamentId)` finds every member with a **LOCKED** pick on that tournament (`findAffectedMembers`) and recomputes each; `recalculateSeasonForLeague` does the same for every member of a league; both funnel into `recalculateSeasonForMember`, the single write path. It runs `calculatePickBasedStats` (one SQL aggregate over LOCKED picks joined to `tournamentResult`, restricted to `season`, `status in (COMPLETED, FINALIZING)`, `excluded = false`), adds `sumByLeagueMember` from the adjustments repo, and overwrites the `LeagueMemberSeason` row's `totalEarnings` / `totalPicks` / `totalMissedCuts`.",
+            "Missed cuts are a SQL heuristic, not a stored flag: a result row that exists with `earnings = 0` and `finish_position` null-or-zero counts as a missed cut — no result row yet means the tournament simply hasn't produced one.",
+            "The `server-only` split is the subtle part: `earnings-core.ts` and its repositories import `@/lib/db-core` and carry **no** `server-only` guard, so `prisma/seed/rollup.ts` (the `seed:rollup` npm script) can execute the exact same code from the CLI. `earnings.ts` is a three-line `server-only` re-export shim — the version app code is supposed to import. Other server services (`sync`, `pick`, `admin`) import `earnings-core` directly."
+          ],
+          "files": [
+            {
+              "name": "server/services/earnings-core.ts",
+              "desc": "The rollup orchestrator — `rollupForTournament` → `recalculateSeasonForMember` → overwrite; warns and skips when the season row is missing."
+            },
+            {
+              "name": "server/services/earnings.ts",
+              "desc": "`server-only` re-export of the three core functions; the safe import for app code."
+            },
+            {
+              "name": "server/repositories/earnings.ts",
+              "desc": "Kysely queries on `db-core`: affected-member lookup, the pick-stats aggregate, the `leagueMemberSeason` UPDATE. All accept an optional `executor` for transactions."
+            }
+          ],
+          "exports": [
+            {
+              "name": "rollupForTournament",
+              "desc": "Recompute every member with a LOCKED pick on a tournament; idempotent; returns `{ membersUpdated }`."
+            },
+            {
+              "name": "recalculateSeasonForMember",
+              "desc": "The single write path: pick stats + adjustment sum → overwrite one `LeagueMemberSeason` row."
+            },
+            {
+              "name": "recalculateSeasonForLeague",
+              "desc": "Loop `recalculateSeasonForMember` over all members of a league (used by admin + `seed:rollup`)."
+            },
+            {
+              "name": "calculatePickBasedStats",
+              "desc": "One aggregate: `sum(earnings)`, `count(*)` picks, and the missed-cut `count(case …)` over LOCKED picks × results."
+            },
+            {
+              "name": "updateMemberSeasonStats",
+              "desc": "UPDATE-only writer of the cache row; returns `numUpdatedRows` so the core can detect a missing row."
+            },
+            {
+              "name": "findAffectedMembers",
+              "desc": "Distinct `leagueMemberId`s with a LOCKED pick on the tournament — the rollup's fan-out set."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[golf-data](../domain-golf-data/domain-golf-data.html)'s `sync.ts` runs `rollupForTournament` when a tournament finalizes (and again while FINALIZING so projections keep flowing)."
+            },
+            {
+              "dir": "called by",
+              "body": "[game](../domain-game/domain-game.html)'s `pick.ts` runs `recalculateSeasonForMember` after `commissionerUpdatePick` / `commissionerRemovePick` / `commissionerAddPick`."
+            },
+            {
+              "dir": "called by",
+              "body": "[admin](../domain-admin/domain-admin.html)'s `admin.ts` imports both recalculate functions — `triggerEarningsRollup` plus per-member recomputes after result edits."
+            },
+            {
+              "dir": "reads",
+              "body": "`pick`, `tournament`, and `tournamentResult` tables — models owned by [game](../domain-game/domain-game.html) and [golf-data](../domain-golf-data/domain-golf-data.html); this domain only ever writes `leagueMemberSeason`."
+            }
+          ]
+        },
+        {
+          "id": "c-adjustments",
+          "name": "Commissioner adjustments",
+          "path": "src/server/services/earnings-adjustment.ts",
+          "detail": [
+            "A tiny append/delete ledger for league-specific money that ESPN doesn't know about — side bets, penalties. `resolveCommissioner` gates every write: the target member and league must exist, the league must **not** be the GLOBAL league (adjustments are FORBIDDEN there), and the caller must be `league.commissionerId`. Reads are looser on purpose — `getAdjustments` lets **any** member of the league view them, for transparency.",
+            "Writes are transactional and audited: `addAdjustment` / `deleteAdjustment` wrap the `earningsAdjustment` insert/delete together with a `CommissionerAction` audit row (`ADD_ADJUSTMENT` / `DELETE_ADJUSTMENT`, details JSON-serialized) in one `withTransaction`, then trigger `recalculateSeasonForMember` outside the transaction so the stored totals absorb the change.",
+            "The router validates hard bounds — non-zero integer amount within ±999,999,999, memo 1–100 chars. `EarningsAdjustments` (client component) renders the list with signed green/red amounts and, for the commissioner, an inline add form and a confirm-to-delete flow; it calls `router.refresh()` on success so the server-rendered totals re-fetch."
+          ],
+          "files": [
+            {
+              "name": "server/routers/earnings-adjustment.ts",
+              "desc": "`earningsAdjustmentRouter` — `add` / `delete` mutations, `list` query; zod bounds on amount and memo."
+            },
+            {
+              "name": "server/services/earnings-adjustment.ts",
+              "desc": "Commissioner gate, GLOBAL-league block, transactional write + audit row, recompute trigger."
+            },
+            {
+              "name": "server/repositories/earnings-adjustment.ts",
+              "desc": "insert / delete / find / `sumByLeagueMember` (the coalesce-to-0 sum the rollup folds in); joins `user` for `createdByName`."
+            },
+            {
+              "name": "components/earnings/earnings-adjustments.tsx",
+              "desc": "Client UI: adjustment list, commissioner add form, confirm-to-delete. Hidden entirely when empty and viewer isn't commissioner."
+            }
+          ],
+          "exports": [
+            {
+              "name": "earningsAdjustmentRouter",
+              "desc": "tRPC surface: `earningsAdjustment.add` / `.delete` / `.list`."
+            },
+            {
+              "name": "addAdjustment",
+              "desc": "Gate → insert + `ADD_ADJUSTMENT` audit in one tx → recompute member season."
+            },
+            {
+              "name": "deleteAdjustment",
+              "desc": "Gate → delete + `DELETE_ADJUSTMENT` audit in one tx → recompute member season."
+            },
+            {
+              "name": "getAdjustments",
+              "desc": "Any-member read of a member's adjustments (transparency rule)."
+            },
+            {
+              "name": "sumByLeagueMember",
+              "desc": "The number the rollup adds on top of pick-based earnings."
+            },
+            {
+              "name": "EarningsAdjustments",
+              "desc": "Client component rendered on the season pages; commissioner-only mutations inline."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[leagues](../domain-leagues/domain-leagues.html)' `leagueRepo` for `findMemberById` / `findLeagueById` (the gate) and `createCommissionerAction` (the audit trail rendered on the league page)."
+            },
+            {
+              "dir": "calls",
+              "body": "`recalculateSeasonForMember` in [the rollup core](#c-rollup) after every write — an adjustment is invisible until the cache row is recomputed."
+            },
+            {
+              "dir": "consumed by",
+              "body": "[game](../domain-game/domain-game.html)'s `/season` pages fetch `earningsAdjustment.list` and render `EarningsAdjustments` under the member's season stats."
+            },
+            {
+              "dir": "deleted by",
+              "body": "[leagues](../domain-leagues/domain-leagues.html) — `leagueRepo.deleteEarningsAdjustments` purges a member's adjustments when they're removed from a league (a cross-domain write into `earnings_adjustment`)."
+            }
+          ]
+        },
+        {
+          "id": "c-leaderboard",
+          "name": "Leaderboard queries",
+          "path": "src/server/services/leaderboard.ts",
+          "detail": [
+            "The read side never aggregates picks for season totals — `findStandings` is a straight join of `leagueMemberSeason` × `leagueMember` (ACTIVE only) × `user`, ordered by `totalEarnings desc` with a stable secondary sort on member id (a `TODO` in the repo admits there's no real tiebreaker yet). `getGlobalStandings` (public, for the home page) and `getLeagueStandings` (membership-gated) share the same four-query `Promise.all`: standings page, total count, projected earnings, and the leader's max for `diffFromLeader`.",
+            "**Projected earnings are display-only.** `findProjectedEarnings` sums results from `IN_PROGRESS` tournaments per member — live money that is deliberately *not* in `totalEarnings` and never persisted; it decorates each standings row so the UI can show what's pending this week.",
+            "Weekly standings invert the join direction: `findWeeklyStandings` starts from `leagueMember` and LEFT JOINs the LOCKED pick for one tournament, so members **without** a pick still appear; the service splits rows into `picks` (ranked by earnings, then score-to-par) and `membersWithoutPicks`. `memberStanding` / `memberStandingByUser` are the single-row lookups behind the member season pages, both verifying the caller shares the league first."
+          ],
+          "files": [
+            {
+              "name": "server/routers/leaderboard.ts",
+              "desc": "`leaderboardRouter` — `global` (public), `byLeague`, `weeklyStandings`, `memberStanding`, `memberStandingByUser` (all paginated where it matters)."
+            },
+            {
+              "name": "server/services/leaderboard.ts",
+              "desc": "Membership gates, pagination math, rank/diffFromLeader/projected decoration, weekly pick vs no-pick split."
+            },
+            {
+              "name": "server/repositories/leaderboard.ts",
+              "desc": "The Kysely queries: season standings off the cache, projected-earnings map, leader max, weekly LEFT-JOIN standings, counts."
+            }
+          ],
+          "exports": [
+            {
+              "name": "leaderboardRouter",
+              "desc": "The domain's main tRPC surface (5 procedures)."
+            },
+            {
+              "name": "getGlobalStandings",
+              "desc": "Public standings for `GLOBAL_LEAGUE_ID` — powers the signed-out home page leaderboard."
+            },
+            {
+              "name": "getLeagueStandings",
+              "desc": "Same shape, membership-gated, for the league page season table."
+            },
+            {
+              "name": "getWeeklyStandings",
+              "desc": "Per-tournament rows split into `picks` + `membersWithoutPicks`."
+            },
+            {
+              "name": "getMemberStandingByUser",
+              "desc": "userId → member → standing; the season pages' entry lookup."
+            },
+            {
+              "name": "findProjectedEarnings",
+              "desc": "memberId → live IN_PROGRESS earnings map (display-only, never stored)."
+            },
+            {
+              "name": "findLeaderEarnings",
+              "desc": "`max(total_earnings)` for the league — the anchor for `diffFromLeader`."
+            },
+            {
+              "name": "findWeeklyStandings",
+              "desc": "LEFT JOIN from members so no-pick members surface; ordered by earnings then score-to-par."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "reads",
+              "body": "`leagueMemberSeason` (this domain's cache) for season totals; `pick` × `tournamentResult` only for the *projected* and *weekly* lenses."
+            },
+            {
+              "dir": "calls",
+              "body": "[leagues](../domain-leagues/domain-leagues.html)' `leagueRepo.findMemberByUserAndLeague` for every membership gate; `GLOBAL_LEAGUE_ID` comes from [web-shell](../domain-web-shell/domain-web-shell.html)'s `lib/constants`."
+            },
+            {
+              "dir": "consumed by",
+              "body": "[web-shell](../domain-web-shell/domain-web-shell.html)'s home page (`leaderboard.global`), [leagues](../domain-leagues/domain-leagues.html)' league page (`leaderboard.byLeague` + `weeklyStandings`), [game](../domain-game/domain-game.html)'s season pages (`memberStandingByUser`), and [golf-data](../domain-golf-data/domain-golf-data.html)'s tournament page (`weeklyStandings`)."
+            }
+          ]
+        },
+        {
+          "id": "c-surfaces",
+          "name": "Standings surfaces",
+          "path": "src/components/league/weekly-standings-table.tsx",
+          "detail": [
+            "`WeeklyStandingsTable` is the one shared standings renderer: ranked pick rows (member link, golfer avatar + link, live finish position, color-coded score-to-par, earnings with an `est.` tag when `isLive`) followed by dimmed no-pick rows — mirroring the `picks` / `membersWithoutPicks` split the service returns. The caller's own row is highlighted via `currentUserId`. It collapses responsively: on mobile the golfer moves under the member name.",
+            "`/member/[leagueId]/[memberId]` is a legacy server page kept only as a redirect: it resolves memberId → userId through `leaderboard.memberStanding` (setting the active-league cookie on the way) and forwards to `/season/[userId]`, falling back to `/season` if the lookup fails."
+          ],
+          "files": [
+            {
+              "name": "components/league/weekly-standings-table.tsx",
+              "desc": "Shared weekly standings table; pick rows + no-pick rows, live `est.` earnings, current-user highlight."
+            },
+            {
+              "name": "app/member/[leagueId]/[memberId]/page.tsx",
+              "desc": "Legacy route → resolves member to user via `leaderboard.memberStanding`, redirects to `/season/[userId]`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "WeeklyStandingsTable",
+              "desc": "Rendered by the league page's week view and the tournament page."
+            },
+            {
+              "name": "default",
+              "desc": "The redirect-only member page (async server component)."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "rendered by",
+              "body": "[leagues](../domain-leagues/domain-leagues.html)' `/league/[id]` week view and [golf-data](../domain-golf-data/domain-golf-data.html)'s `/tournament/[id]` page — both feed it `leaderboard.weeklyStandings` output."
+            },
+            {
+              "dir": "uses",
+              "body": "`GolferAvatar` from [golf-data](../domain-golf-data/domain-golf-data.html) and `formatCurrency` / `formatScore` / `formatPosition` from [web-shell](../domain-web-shell/domain-web-shell.html)'s `lib/format`."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "Two tables: the materialized season cache and the manual adjustment ledger.",
+      "rows": [
+        {
+          "name": "LeagueMemberSeason",
+          "desc": "One row per member per season (`@@unique([leagueMemberId, season])`): `totalEarnings`, `totalPicks`, `totalMissedCuts`. **Write-owned here, row-created elsewhere** — [leagues](../domain-leagues/domain-leagues.html) inserts the row when a member joins; this domain only UPDATEs it."
+        },
+        {
+          "name": "EarningsAdjustment",
+          "desc": "Commissioner ledger entries: signed integer `amount`, required `memo`, `createdById` (relation `earningsAdjustmentsCreated` on `User`). Summed into `totalEarnings` on every recompute."
+        }
+      ],
+      "note": "The raw money inputs — `Pick` and `TournamentResult` — belong to [game](../domain-game/domain-game.html) and [golf-data](../domain-golf-data/domain-golf-data.html); this domain reads them but never writes them. `CommissionerAction` audit rows written by adjustments belong to [leagues](../domain-leagues/domain-leagues.html)."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "Two tRPC routers outward, three service functions callable by neighbor services, three domains leaned on.",
+      "exposes": [
+        {
+          "api": "leaderboard.global",
+          "note": "**public** — season standings for the global league; the signed-out home page leaderboard."
+        },
+        {
+          "api": "leaderboard.byLeague",
+          "note": "Paginated league standings with rank, projected earnings, `diffFromLeader`."
+        },
+        {
+          "api": "leaderboard.weeklyStandings",
+          "note": "One tournament's picks + no-pick members for a league; league and tournament pages."
+        },
+        {
+          "api": "leaderboard.memberStanding",
+          "note": "Single member's season row by memberId (also the legacy `/member` redirect's lookup)."
+        },
+        {
+          "api": "leaderboard.memberStandingByUser",
+          "note": "Same, keyed by userId — what `/season/[userId]` uses."
+        },
+        {
+          "api": "earningsAdjustment.add",
+          "note": "Commissioner-only; blocked on the GLOBAL league; audited; triggers recompute."
+        },
+        {
+          "api": "earningsAdjustment.delete",
+          "note": "Commissioner-only; audited; triggers recompute."
+        },
+        {
+          "api": "earningsAdjustment.list",
+          "note": "Any league member may read (transparency)."
+        }
+      ],
+      "depends": [
+        {
+          "name": "golf-data",
+          "path": "src",
+          "href": "../domain-golf-data/domain-golf-data.html"
+        },
+        {
+          "name": "leagues",
+          "path": "src",
+          "href": "../domain-leagues/domain-leagues.html"
+        },
+        {
+          "name": "web-shell",
+          "path": "src",
+          "href": "../domain-web-shell/domain-web-shell.html"
+        }
+      ],
+      "note": "Beyond tRPC, the load-bearing seam is **service-to-service**: `rollupForTournament` / `recalculateSeasonForMember` / `recalculateSeasonForLeague` are imported directly by [golf-data](../domain-golf-data/domain-golf-data.html)'s sync, [game](../domain-game/domain-game.html)'s commissioner pick mutations, [admin](../domain-admin/domain-admin.html), and the `seed:rollup` script. Dependencies going out: `getCurrentSeason` from golf-data's `lib/season`, `leagueRepo` membership/commissioner/audit helpers from leagues, and `db` / `db-core` / `withTransaction` / `GLOBAL_LEAGUE_ID` / `lib/format` from web-shell."
+    }
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:d2409f4d6430092323f0c8dbf30937f5d62eb5a87ab10dea74ff4bf729b4ac45",
+    "date": "2026-07-21",
+    "commit": "662c5aea21d551822d864db988922e040298ecd4"
+  }
+}

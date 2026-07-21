@@ -1,0 +1,532 @@
+{
+  "kind": "domain",
+  "slug": "web-shell",
+  "title": "App shell & plumbing",
+  "layer": "foundation",
+  "layerLabel": "Foundation",
+  "path": "src",
+  "count": "14 files",
+  "depends": "accounts · admin · game · golf-data · leagues · scoring",
+  "date": "2026-07-20",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Engine"
+    },
+    {
+      "key": "Role",
+      "value": "cross-cutting plumbing"
+    },
+    {
+      "key": "Depended on by",
+      "value": "every other domain"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "heading": "App shell & plumbing",
+      "rows": [
+        {
+          "key": "Path",
+          "value": "`src` — scattered across `app/`, `components/`, `lib/`, `server/` (14 files)"
+        },
+        {
+          "key": "What it is",
+          "value": "The chrome (root layout, landing page, nav) plus everything cross-cutting: the tRPC client/server wiring, the procedure ladder, the Kysely db singleton, and shared constants/formatters."
+        },
+        {
+          "key": "Direction of gravity",
+          "value": "Everyone imports from here. Its own six \"depends\" edges exist only because `_app.ts` must aggregate every domain's router and the layout mounts accounts/leagues chrome."
+        },
+        {
+          "key": "Owns",
+          "value": "No database models — pure plumbing."
+        }
+      ],
+      "bigIdea": {
+        "label": "The procedure ladder + one transaction door",
+        "line": "`publicProcedure` → `protectedProcedure` (throws `UNAUTHORIZED` without a session) → `adminProcedure` (throws `FORBIDDEN` unless `role === \"admin\"`) — every API call climbs exactly as far as it must.",
+        "sub": "On the write side the discipline is `withTransaction`: services wrap multi-repository writes in it, repositories are the only layer touching `db`, and the `db.ts` / `db-core.ts` split exists so seed scripts can reuse the same pool outside Next.js."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "Components",
+      "intro": "Four meaningful units rather than four directories — the tRPC pipeline, the database core, the visible chrome, and the shared vocabulary every page borrows.",
+      "cards": [
+        {
+          "name": "tRPC plumbing",
+          "purpose": "Context creation, the three-step procedure ladder, the root `appRouter` merging 11 domain routers, the `/api/trpc` HTTP handler, and both consumption paths — browser hooks and an in-process server caller.",
+          "exports": [
+            {
+              "name": "protectedProcedure",
+              "deputy": true
+            },
+            {
+              "name": "adminProcedure"
+            },
+            {
+              "name": "appRouter"
+            },
+            {
+              "name": "serverTRPC"
+            },
+            {
+              "name": "useTRPC"
+            }
+          ],
+          "href": "#c-trpc"
+        },
+        {
+          "name": "db core",
+          "purpose": "The singleton Kysely instance over a `pg.Pool` (camelCase plugin, dev-mode `globalThis` cache) and `withTransaction`, split into a guarded and an unguarded module.",
+          "exports": [
+            {
+              "name": "db",
+              "deputy": true
+            },
+            {
+              "name": "withTransaction",
+              "deputy": true
+            }
+          ],
+          "href": "#c-db"
+        },
+        {
+          "name": "app chrome",
+          "purpose": "Root layout (fonts, metadata, `Providers` + `SessionRefresh` + `NavBar`), the signed-out landing page, and the nav bar with its mobile menu.",
+          "exports": [
+            {
+              "name": "RootLayout"
+            },
+            {
+              "name": "NavBar"
+            },
+            {
+              "name": "Providers"
+            },
+            {
+              "name": "MobileMenuToggle"
+            }
+          ],
+          "href": "#c-chrome"
+        },
+        {
+          "name": "shared utils",
+          "purpose": "The league-wide constant `GLOBAL_LEAGUE_ID` and the domain-aware formatters (`formatCurrency`, `isMissedCut`, …) used by ~25 files across every UI domain.",
+          "exports": [
+            {
+              "name": "GLOBAL_LEAGUE_ID"
+            },
+            {
+              "name": "formatCurrency"
+            },
+            {
+              "name": "isMissedCut"
+            }
+          ],
+          "href": "#c-utils"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "Internal architecture",
+      "intro": "The request path. Two entry doors — client components speak HTTP to `/api/trpc`, server components call the router in-process via `serverTRPC` — and both converge on `createTRPCContext`, the procedure ladder, and the same router → service → repository → Postgres stack.",
+      "diagram": {
+        "id": "arch-diagram",
+        "kind": "architecture",
+        "d2": "direction: right\nBrowser: { class: actor }\n\"Server page\": { class: actor }\n\"route.ts /api/trpc\"\nserverTRPC\ncreateTRPCContext\n\"procedure ladder\": { class: changed }\n\"domain router\"\nservice\nrepository\nPostgres: { class: store }\nBrowser -> \"route.ts /api/trpc\": httpBatchStreamLink\n\"Server page\" -> serverTRPC: direct caller\n\"route.ts /api/trpc\" -> createTRPCContext\nserverTRPC -> createTRPCContext\ncreateTRPCContext -> \"procedure ladder\": session\n\"procedure ladder\" -> \"domain router\"\n\"domain router\" -> service\nservice -> repository: withTransaction\nrepository -> Postgres: Kysely",
+        "mermaid": "flowchart LR\n  B[Browser client component] -->|httpBatchStreamLink| R[\"route.ts /api/trpc\"]\n  P[Server page] -->|direct caller| S[serverTRPC]\n  R --> C[createTRPCContext]\n  S --> C\n  C -->|session| L[procedure ladder]\n  L --> D[domain router]\n  D --> V[service]\n  V -->|withTransaction| Q[repository]\n  Q -->|Kysely| DB[(Postgres)]\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  class B,P actor;\n  class DB store;\n  class L changed;",
+        "caption": "Both doors share one context: `createTRPCContext` resolves the Better Auth session from request headers, then the ladder decides how far the call may climb. Server pages never pay an HTTP round-trip — `serverTRPC` uses `createCallerFactory(appRouter)`."
+      },
+      "callout": "Everything below the ladder belongs to the neighbor domains — web-shell owns the pipe, not the water."
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "In depth",
+      "components": [
+        {
+          "id": "c-trpc",
+          "name": "tRPC plumbing",
+          "path": "src/server · src/lib/trpc · src/app/api/trpc",
+          "detail": [
+            "`server/trpc.ts` is the smallest and most load-bearing file in the repo. `createTRPCContext` calls `auth.api.getSession` (Better Auth, from the [accounts](../domain-accounts/domain-accounts.html) domain) against the incoming headers and yields `{ session, userId }`. `initTRPC` is configured once with the `superjson` transformer — matching the transformer on the client link, so `Date`/`Decimal` values survive the wire.",
+            "The ladder is two middleware steps: `protectedProcedure` throws `UNAUTHORIZED` when `ctx.userId` is null (and narrows its type to `string` for everything downstream), and `adminProcedure` extends it, throwing `FORBIDDEN` unless the session user's `role` is `\"admin\"`. Every one of the 11 domain routers builds its procedures from one of these three rungs.",
+            "`routers/_app.ts` is pure aggregation: it merges `auth`, `health`, `tournament`, `golfer`, `pick`, `dashboard`, `league`, `leaderboard`, `admin`, `earningsAdjustment`, and `user` into `appRouter` and exports the `AppRouter` type — the single type that powers end-to-end inference in every client component. Notably there is **no payments router**: PayPal talks over plain API routes, so [payments](../domain-payments/domain-payments.html) is absent from this file.",
+            "Consumption is two-sided. `lib/trpc/client.tsx` (client) builds a TanStack Query `QueryClient` (30s `staleTime`, browser-singleton) and a tRPC client with a single `httpBatchStreamLink` to `/api/trpc`; `createTRPCContext<AppRouter>()` from `@trpc/tanstack-react-query` yields the `useTRPC` hook. `lib/trpc/server.ts` (server) skips HTTP entirely: `createCallerFactory(appRouter)` plus a fresh context gives `serverTRPC()`, the in-process caller used by 27 server pages and the `NavBar`."
+          ],
+          "diagrams": [
+            {
+              "id": "ladder",
+              "kind": "flowchart",
+              "d2": "direction: right\npublicProcedure -> protectedProcedure: \"userId present, else UNAUTHORIZED\"\nprotectedProcedure -> adminProcedure: \"role is admin, else FORBIDDEN\"",
+              "mermaid": "flowchart LR\n  publicProcedure -->|userId present else UNAUTHORIZED| protectedProcedure\n  protectedProcedure -->|role is admin else FORBIDDEN| adminProcedure",
+              "caption": "Each rung is a middleware `use()` on the previous one — auth checks live here once, never in routers."
+            }
+          ],
+          "files": [
+            {
+              "name": "server/trpc.ts",
+              "desc": "`createTRPCContext` (session + userId), `initTRPC` with superjson, and the three procedure builders."
+            },
+            {
+              "name": "server/routers/_app.ts",
+              "desc": "Root router — merges the 11 domain routers; exports `appRouter` + the `AppRouter` type."
+            },
+            {
+              "name": "app/api/trpc/[trpc]/route.ts",
+              "desc": "The one HTTP endpoint: `fetchRequestHandler` at `/api/trpc`, exported as both `GET` and `POST`."
+            },
+            {
+              "name": "lib/trpc/client.tsx",
+              "desc": "Client side — QueryClient, `httpBatchStreamLink` + superjson, `TRPCReactProvider`, `useTRPC`."
+            },
+            {
+              "name": "lib/trpc/server.ts",
+              "desc": "Server side — `serverTRPC()`, an in-process caller built from `createCallerFactory(appRouter)`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "publicProcedure",
+              "desc": "Bottom rung — no auth; used by landing/leaderboard/tournament reads."
+            },
+            {
+              "name": "protectedProcedure",
+              "desc": "Throws `UNAUTHORIZED` without a session; narrows `ctx.userId` to `string`."
+            },
+            {
+              "name": "adminProcedure",
+              "desc": "Extends protected; throws `FORBIDDEN` unless session role is `admin`."
+            },
+            {
+              "name": "createTRPCContext",
+              "desc": "Resolves the Better Auth session from `headers()` into `{ session, userId }`."
+            },
+            {
+              "name": "appRouter",
+              "desc": "The composed API. `AppRouter` (its type) is what every client imports for inference."
+            },
+            {
+              "name": "serverTRPC",
+              "desc": "Async factory returning a direct caller — server components' door, no HTTP."
+            },
+            {
+              "name": "useTRPC",
+              "desc": "The TanStack-Query-integrated hook client components consume."
+            },
+            {
+              "name": "TRPCReactProvider",
+              "desc": "Mounts QueryClientProvider + TRPCProvider; wired in by `Providers`."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "All 11 domain routers import their procedure rungs from `server/trpc.ts` — [game](../domain-game/domain-game.html) (pick, dashboard), [golf-data](../domain-golf-data/domain-golf-data.html) (tournament, golfer), [leagues](../domain-leagues/domain-leagues.html), [scoring](../domain-scoring/domain-scoring.html) (leaderboard, earningsAdjustment), [accounts](../domain-accounts/domain-accounts.html) (auth, user), [admin](../domain-admin/domain-admin.html) (admin, health)."
+            },
+            {
+              "dir": "consumed by",
+              "body": "27 server pages call `serverTRPC()`; 21 client components call `useTRPC()` — every data fetch in the app passes through this component."
+            },
+            {
+              "dir": "calls",
+              "body": "`createTRPCContext` calls `auth.api.getSession` from [accounts](../domain-accounts/domain-accounts.html)' `server/auth.ts` — web-shell's only genuine runtime dependency on a neighbor."
+            },
+            {
+              "dir": "aggregates",
+              "body": "`_app.ts` imports every domain's router — the one place the dependency arrow points *out* of web-shell toward everyone else."
+            }
+          ]
+        },
+        {
+          "id": "c-db",
+          "name": "db core",
+          "path": "src/lib",
+          "detail": [
+            "`lib/db-core.ts` builds the singleton `Kysely<DB>` over a `pg.Pool` on `DATABASE_URL`, with `CamelCasePlugin` (snake_case columns → camelCase properties) and the generated types from `@/generated/kysely/types`. In non-production it caches the instance on `globalThis` so Next.js hot reloads don't leak pools. The pool registers a swallow-all `error` handler — when Vercel freezes a serverless function, idle connections get killed, and without the handler that surfaces as an uncaught exception.",
+            "`withTransaction(fn)` is the entire transaction API: it runs `fn` inside `db.transaction().execute()` and hands the transaction executor to the callback. The convention (enforced by review, visible in every service) is that repository functions accept an optional `executor: Kysely<DB> = db` parameter, so a service can pass the transaction through multiple repository calls atomically.",
+            "`lib/db.ts` is a two-line gate: `import \"server-only\"` then re-export `{ db, withTransaction }` from `db-core`. App code imports `@/lib/db` and gets a build error if the import ever leaks into a client bundle; the 14 seed scripts under `prisma/seed/` import `@/lib/db-core` directly because they run outside Next.js where `server-only` would throw."
+          ],
+          "files": [
+            {
+              "name": "lib/db-core.ts",
+              "desc": "Pool + Kysely singleton + `withTransaction`. No `server-only` guard — importable by seed scripts."
+            },
+            {
+              "name": "lib/db.ts",
+              "desc": "The guarded door: `server-only` + re-export. What app code should import."
+            }
+          ],
+          "exports": [
+            {
+              "name": "db",
+              "desc": "The `Kysely<DB>` singleton. Only repositories (and two sanctioned exceptions) touch it."
+            },
+            {
+              "name": "withTransaction",
+              "desc": "`(fn: (tx: Kysely<DB>) => Promise<T>) => Promise<T>` — services' only transaction primitive."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "Every repository in every domain imports `db`; every multi-write service imports `withTransaction` (and only that — services never touch `db` directly, per the layering rule)."
+            },
+            {
+              "dir": "consumed by",
+              "body": "`prisma/seed/*` (14 scripts) import `db-core` directly — and so do the repositories those scripts reuse (`sync`, `upserts`, `bot-picks`, `earnings`, `pick-lock`, `cron-log`, …), which deliberately import `@/lib/db-core` instead of `@/lib/db` to stay usable outside Next.js."
+            },
+            {
+              "dir": "exception",
+              "body": "Two files outside the repository layer import `db`: [accounts](../domain-accounts/domain-accounts.html)' `server/auth.ts` (Better Auth needs the pool for its adapter) and [admin](../domain-admin/domain-admin.html)'s `routers/health.ts` (the health check pings the DB from the router)."
+            }
+          ]
+        },
+        {
+          "id": "c-chrome",
+          "name": "app chrome",
+          "path": "src/app · src/components",
+          "detail": [
+            "`app/layout.tsx` (`RootLayout`) loads two Google fonts as CSS variables (Literata + Hanken Grotesk), declares the site-wide `metadata` (title template, Open Graph, Twitter card), imports the `flag-icons` stylesheet, and wraps every page in `Providers` → `SessionRefresh` → `NavBar` → children. `Providers` is a one-liner that mounts `TRPCReactProvider`; `SessionRefresh` comes from [accounts](../domain-accounts/domain-accounts.html).",
+            "`NavBar` is an **async server component**: it calls `serverTRPC()` on every render, checks `auth.me()`, and returns `null` when signed out — which is why the landing page renders its own header with a Sign In link. Signed in, it fetches `league.myLeagues()`, resolves the active league via `getActiveLeagueId` (from [leagues](../domain-leagues/domain-leagues.html)), and renders the `LeagueSwitcher`, desktop links (Dashboard / Season / Standings / Leagues), and the same links again inside `MobileMenuToggle`.",
+            "`MobileMenuToggle` is the only client component here: a hamburger button + slide-out panel with two close behaviors (any link/button click inside the menu, any click outside it), tracked with refs and `aria-expanded`.",
+            "`app/page.tsx` (`Home`) is the signed-out landing page — it redirects authenticated users to `/dashboard`, then fetches `tournament.current()` and the top-10 of `leaderboard.global()` (both `.catch`-guarded so an empty DB still renders) and lays out hero, how-it-works, live leaderboard teaser, league pitch, and footer."
+          ],
+          "files": [
+            {
+              "name": "app/layout.tsx",
+              "desc": "`RootLayout` — fonts, site metadata, `Providers` + `SessionRefresh` + `NavBar` shell."
+            },
+            {
+              "name": "app/page.tsx",
+              "desc": "`Home` — signed-out landing page; redirects members to `/dashboard`; shows live tournament + global top 10."
+            },
+            {
+              "name": "components/layout/nav-bar.tsx",
+              "desc": "Async server component; `null` when signed out; league switcher + nav links + mobile menu."
+            },
+            {
+              "name": "components/layout/mobile-menu-toggle.tsx",
+              "desc": "Client hamburger/panel with outside-click and link-click close handling."
+            },
+            {
+              "name": "components/providers.tsx",
+              "desc": "Client boundary that mounts `TRPCReactProvider` for the whole tree."
+            }
+          ],
+          "exports": [
+            {
+              "name": "RootLayout",
+              "desc": "Default export of `layout.tsx` — the app-wide HTML shell."
+            },
+            {
+              "name": "metadata",
+              "desc": "Site-wide title template + OG/Twitter cards (landing page overrides its own)."
+            },
+            {
+              "name": "Home",
+              "desc": "Default export of `page.tsx` — the marketing/landing page."
+            },
+            {
+              "name": "NavBar",
+              "desc": "The signed-in navigation chrome."
+            },
+            {
+              "name": "MobileMenuToggle",
+              "desc": "Mobile menu state + a11y wiring."
+            },
+            {
+              "name": "Providers",
+              "desc": "Client-side provider stack (currently just tRPC/React Query)."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumes",
+              "body": "[accounts](../domain-accounts/domain-accounts.html): `SessionRefresh` in the layout, `SignOutButton` in the nav, `auth.me()` for the session check."
+            },
+            {
+              "dir": "consumes",
+              "body": "[leagues](../domain-leagues/domain-leagues.html): `LeagueSwitcher`, `getActiveLeagueId`, `league.myLeagues()` — the nav is league-context-aware."
+            },
+            {
+              "dir": "reads",
+              "body": "[golf-data](../domain-golf-data/domain-golf-data.html)'s `tournament.current()` and [scoring](../domain-scoring/domain-scoring.html)'s `leaderboard.global()` for the landing page's live panels."
+            }
+          ]
+        },
+        {
+          "id": "c-utils",
+          "name": "shared utils",
+          "path": "src/lib",
+          "detail": [
+            "`lib/constants.ts` is a single well-known ID: `GLOBAL_LEAGUE_ID = \"ppgl-global\"`, the league every user is auto-enrolled in. The [scoring](../domain-scoring/domain-scoring.html) leaderboard service and [leagues](../domain-leagues/domain-leagues.html) league service branch on it, and UI in leagues/admin special-cases it.",
+            "`lib/format.ts` is where display rules encode game rules. `formatCurrency` renders whole-dollar USD; `formatPosition` does ordinal suffixes (with the 11th/12th/13th trap handled); `formatScore` renders golf score-to-par (`E`, `+3`, `-5`, `–` for null). `formatPurse` prefers the actual purse and falls back to `~$X` for estimates. `formatDate` pins `America/New_York` so tournament dates don't shift per viewer timezone.",
+            "`isMissedCut` is the most game-aware helper: a pick is a missed cut only when it earned exactly $0 with no real finish position **and** is `LOCKED` — and never while the tournament is `IN_PROGRESS`, because in round 1 everyone has $0 and a null position; the cut simply hasn't happened yet."
+          ],
+          "files": [
+            {
+              "name": "lib/constants.ts",
+              "desc": "`GLOBAL_LEAGUE_ID` — the auto-enroll global league's well-known ID."
+            },
+            {
+              "name": "lib/format.ts",
+              "desc": "Currency / position / score / purse / date formatters + the `isMissedCut` rule."
+            }
+          ],
+          "exports": [
+            {
+              "name": "GLOBAL_LEAGUE_ID",
+              "desc": "`\"ppgl-global\"` — branch point for global-league behavior in services and UI."
+            },
+            {
+              "name": "formatCurrency",
+              "desc": "Whole-dollar `en-US` USD — earnings everywhere."
+            },
+            {
+              "name": "formatPosition",
+              "desc": "`1 → 1st`, `13 → 13th` — finish positions."
+            },
+            {
+              "name": "formatScore",
+              "desc": "Score-to-par: `E` / `+3` / `-5` / `–`."
+            },
+            {
+              "name": "isMissedCut",
+              "desc": "$0 + no finish + `LOCKED`, and only on non-live tournaments."
+            },
+            {
+              "name": "formatPurse",
+              "desc": "Actual purse, else `~` + estimated, else null."
+            },
+            {
+              "name": "formatDate",
+              "desc": "Short month/day, pinned to `America/New_York`."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "~25 files import `format.ts` — dashboard and planner in [game](../domain-game/domain-game.html), standings/earnings in [scoring](../domain-scoring/domain-scoring.html), tournament/golfer pages in [golf-data](../domain-golf-data/domain-golf-data.html), league pages in [leagues](../domain-leagues/domain-leagues.html), and most of [admin](../domain-admin/domain-admin.html)."
+            },
+            {
+              "dir": "consumed by",
+              "body": "`GLOBAL_LEAGUE_ID` is read by the leaderboard and league services plus the leagues and admin-tournament UIs."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "None — and that's the point. web-shell is pure plumbing: it owns the connection to the database, not any table in it.",
+      "rows": [
+        {
+          "name": "(none)",
+          "desc": "No Prisma models attribute here. The Kysely `db` singleton and `withTransaction` are owned here, but every table they touch belongs to a neighbor domain."
+        }
+      ],
+      "note": "If you're looking for a model, start from the feature domain that owns it — e.g. picks in [game](../domain-game/domain-game.html), tournaments in [golf-data](../domain-golf-data/domain-golf-data.html)."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "web-shell's surface is the contract every other domain builds on: the procedure rungs, the two tRPC doors, the transaction primitive, and the shared formatters.",
+      "exposes": [
+        {
+          "api": "publicProcedure",
+          "note": "Unauthenticated rung — landing page reads, health."
+        },
+        {
+          "api": "protectedProcedure",
+          "note": "Session-required rung; the workhorse for all member features."
+        },
+        {
+          "api": "adminProcedure",
+          "note": "Role-gated rung for the back-office."
+        },
+        {
+          "api": "appRouter",
+          "note": "The composed API; its `AppRouter` type drives end-to-end inference."
+        },
+        {
+          "api": "POST /api/trpc",
+          "note": "The single HTTP endpoint (also `GET`), batched + streamed + superjson."
+        },
+        {
+          "api": "serverTRPC",
+          "note": "In-process caller — server components skip HTTP entirely."
+        },
+        {
+          "api": "useTRPC",
+          "note": "Client hook (TanStack Query integration) from `lib/trpc/client.tsx`."
+        },
+        {
+          "api": "withTransaction",
+          "note": "Services' only way to make multi-repository writes atomic."
+        },
+        {
+          "api": "db",
+          "note": "Kysely singleton — repositories only (plus `auth.ts` and `health.ts` by design)."
+        },
+        {
+          "api": "formatCurrency",
+          "note": "Representative of the `format.ts` family used across every UI domain."
+        },
+        {
+          "api": "GLOBAL_LEAGUE_ID",
+          "note": "Well-known global-league ID consumed by scoring/leagues services."
+        }
+      ],
+      "depends": [
+        {
+          "name": "accounts",
+          "path": "src",
+          "href": "../domain-accounts/domain-accounts.html"
+        },
+        {
+          "name": "admin",
+          "path": "src",
+          "href": "../domain-admin/domain-admin.html"
+        },
+        {
+          "name": "game",
+          "path": "src",
+          "href": "../domain-game/domain-game.html"
+        },
+        {
+          "name": "golf-data",
+          "path": "src",
+          "href": "../domain-golf-data/domain-golf-data.html"
+        },
+        {
+          "name": "leagues",
+          "path": "src",
+          "href": "../domain-leagues/domain-leagues.html"
+        },
+        {
+          "name": "scoring",
+          "path": "src",
+          "href": "../domain-scoring/domain-scoring.html"
+        }
+      ],
+      "note": "The depends list is an inversion artifact, not real coupling: `_app.ts` must import every domain's router to compose `appRouter`, and the layout/nav mount accounts + leagues chrome. Conceptually the arrows all point the other way — every domain builds on web-shell. [payments](../domain-payments/domain-payments.html) is the one absent neighbor: it has no tRPC router (PayPal uses plain API routes), so web-shell never touches it."
+    }
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:b7f3b71463bc5e646d1fae35a8b9fd894f85acfb747075b9f6834217180b2077",
+    "date": "2026-07-21",
+    "commit": "662c5aea21d551822d864db988922e040298ecd4"
+  }
+}

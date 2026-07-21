@@ -1,0 +1,664 @@
+{
+  "kind": "domain",
+  "slug": "golf-data",
+  "title": "Golf data & sync",
+  "layer": "intelligence",
+  "layerLabel": "Data",
+  "path": "src",
+  "count": "24 files",
+  "depends": "accounts · game · leagues · scoring · web-shell",
+  "date": "2026-07-21",
+  "generator": "visual-skills · visual-atlas",
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "heading": "Golf data & sync",
+      "rows": [
+        {
+          "key": "Path",
+          "value": "src (ESPN provider under `server/services/golf-data/`, sync pipeline in `server/services/`, tournament + golfer verticals, display libs)"
+        },
+        {
+          "key": "Files",
+          "value": "24"
+        },
+        {
+          "key": "Entry points",
+          "value": "`GET /api/cron/sync` (Vercel cron, every 15 min) · 6 public tRPC procedures (`tournament.*`, `golfer.*`)"
+        },
+        {
+          "key": "External",
+          "value": "Two unauthenticated ESPN JSON APIs — the site scoreboard (names, scores, rounds) and the core API (purse, actual earnings)"
+        }
+      ],
+      "bigIdea": {
+        "label": "The one-way clock",
+        "line": "ESPN is the single source of truth and data flows one direction only: a 15-minute Vercel cron pulls schedule, field, and leaderboard data, upserts it keyed on `espnId`, and drives every game-state transition — locking picks when a tournament starts, projecting earnings from the payout table while it's live, and promoting real prize money into standings only when ESPN's core API finally reports it.",
+        "sub": "The `FINALIZING` status is the trick: ESPN flips an event to `STATUS_FINAL` hours before it posts real earnings, so the cron parks the tournament there (keeping projections in standings) and retries every run until the winner's earnings are non-zero."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "Components",
+      "intro": "Three ingestion layers (provider → sync service → upsert repos) orchestrated by one cron entry, plus the two read-side verticals (tournaments, golfers) and the shared display helpers they render with.",
+      "cards": [
+        {
+          "name": "ESPN provider",
+          "purpose": "The only code that talks to ESPN. Wraps two ESPN APIs behind the provider-agnostic `GolfDataProvider` interface and normalizes their quirks: tie detection, made-cut heuristics, timezone-safe dates.",
+          "exports": [
+            {
+              "name": "espnProvider"
+            },
+            {
+              "name": "GolfDataProvider"
+            },
+            {
+              "name": "mapCompetitorsToResults"
+            }
+          ],
+          "href": "#c-espn"
+        },
+        {
+          "name": "Payout table",
+          "purpose": "Standard PGA Tour payout percentages (positions 1–65, winner 18%) used to *project* live earnings from current positions. Final earnings always come from ESPN, never from this table.",
+          "exports": [
+            {
+              "name": "calculateEarnings"
+            }
+          ],
+          "href": "#c-payout"
+        },
+        {
+          "name": "Sync pipeline",
+          "purpose": "The five idempotent sync operations — fields, live standings, final results, completion checks, tournament starts — plus the espnId-keyed upsert repos they write through.",
+          "exports": [
+            {
+              "name": "syncFields"
+            },
+            {
+              "name": "syncLiveStandings"
+            },
+            {
+              "name": "syncResults"
+            },
+            {
+              "name": "startTournaments"
+            }
+          ],
+          "href": "#c-sync"
+        },
+        {
+          "name": "Cron entry",
+          "purpose": "`runFullSync` sequences the whole pipeline (6 steps, each individually error-trapped) behind a `CRON_SECRET`-guarded HTTP route, and logs every run to `cron_log`.",
+          "exports": [
+            {
+              "name": "runFullSync"
+            },
+            {
+              "name": "GET"
+            }
+          ],
+          "href": "#c-cron"
+        },
+        {
+          "name": "Tournaments",
+          "purpose": "Read-side vertical: `tournament.*` router → service → repo, and the `/tournament/[id]` page that renders the field, live leaderboard, or final results with a league pick overlay.",
+          "exports": [
+            {
+              "name": "tournamentRouter"
+            },
+            {
+              "name": "findFieldWithResults"
+            }
+          ],
+          "href": "#c-tournaments"
+        },
+        {
+          "name": "Golfers",
+          "purpose": "Read-side vertical: `golfer.*` router → service → repo, and the `/golfer/[id]` profile page with SQL-computed season stats (earnings, best finish, missed cuts).",
+          "exports": [
+            {
+              "name": "golferRouter"
+            },
+            {
+              "name": "getSeasonStats"
+            }
+          ],
+          "href": "#c-golfers"
+        },
+        {
+          "name": "Display helpers",
+          "purpose": "Shared presentational vocabulary used across the whole app: ESPN CDN headshots with initials fallback, country-name → flag-icons mapping, and the single source of truth for \"current season\".",
+          "exports": [
+            {
+              "name": "GolferAvatar"
+            },
+            {
+              "name": "CountryFlag"
+            },
+            {
+              "name": "getCurrentSeason"
+            }
+          ],
+          "href": "#c-display"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "Internal architecture",
+      "intro": "The hero flow: every 15 minutes Vercel hits the cron route, which runs the 6-step pipeline. The sync service is the hinge — it pulls from ESPN, writes through the upsert repos, and pushes side effects into the game and scoring domains.",
+      "diagram": {
+        "id": "arch-diagram",
+        "kind": "architecture",
+        "d2": "direction: right\n\"Vercel cron (every 15 min)\": { class: actor }\n\"GET /api/cron/sync\"\n\"runFullSync\"\n\"sync service\"\n\"ESPN APIs\": { class: external }\n\"payout calculator\"\n\"upsert + sync repos\"\n\"Postgres\": { class: store }\n\"cron_log\": { class: store }\n\"earnings rollup (scoring)\"\n\"pick locking (game)\"\n\"Vercel cron (every 15 min)\" -> \"GET /api/cron/sync\": \"Bearer CRON_SECRET\"\n\"GET /api/cron/sync\" -> \"runFullSync\"\n\"runFullSync\" -> \"sync service\": \"6 steps\"\n\"sync service\" -> \"ESPN APIs\": fetch\n\"sync service\" -> \"payout calculator\": \"project live earnings\"\n\"sync service\" -> \"upsert + sync repos\": upsert\n\"upsert + sync repos\" -> \"Postgres\"\n\"sync service\" -> \"earnings rollup (scoring)\": \"on results\"\n\"sync service\" -> \"pick locking (game)\": \"on tournament start\"\n\"runFullSync\" -> \"cron_log\": \"log every run\"",
+        "mermaid": "flowchart LR\n  V[\"Vercel cron every 15 min\"] -->|Bearer CRON_SECRET| R[\"GET /api/cron/sync\"]\n  R --> F[runFullSync]\n  F -->|6 steps| S[sync service]\n  S -->|fetch| E[ESPN APIs]\n  S -->|project live earnings| P[payout calculator]\n  S -->|upsert| U[upsert + sync repos]\n  U --> DB[(Postgres)]\n  S -->|on results| SC[earnings rollup scoring]\n  S -->|on tournament start| G[pick locking game]\n  F -->|log every run| CL[(cron_log)]\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class V actor;\n  class E external;\n  class DB,CL store;",
+        "caption": "Reads-side (`tournament.*` / `golfer.*` tRPC) is deliberately off this diagram — it only ever queries Postgres; nothing user-facing calls ESPN."
+      },
+      "callout": "Step order inside `runFullSync` is load-bearing: completion checks run **before** live standings so a finished tournament's final results are never overwritten with projections, and bot auto-picks run **before** `startTournaments` so they get locked with everyone else's."
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "In depth",
+      "components": [
+        {
+          "id": "c-espn",
+          "name": "ESPN provider",
+          "path": "src/server/services/golf-data",
+          "detail": [
+            "`types.ts` defines the provider-agnostic contract (`GolfDataProvider` with `getSchedule` / `getField` / `getResults` / `getEarnings` / `getEventStatus` / `getEventDetails`) plus the neutral data shapes (`TournamentData`, `GolferFieldEntry`, `TournamentResultData`, `EarningsData`). The rest of the app only ever sees these — a future Data Golf provider would slot in behind the same interface.",
+            "`espn/client.ts` implements it as a singleton `EspnProvider` class over two ESPN endpoints: the **site scoreboard** (`site.api.espn.com`, has athlete names/scores/linescores but no money) and the **core API** (`sports.core.api.espn.com`, has purse + actual `earnings` per competitor, but everything else is `$ref` links). `getEarnings` merges the two by competitor id. All fetches carry a 10-second `AbortSignal` timeout, and the season schedule is cached in-process per season year.",
+            "A quirk worth knowing: ESPN has no per-event competitor endpoint the client uses — `fetchCompetitors` looks up the event's *date* from the cached schedule, refetches the scoreboard for that date (`?dates=YYYYMMDD`), then finds the event in the response. TBD/placeholder entries without `athlete.displayName` are filtered out.",
+            "`espn/mappers.ts` is where ESPN's mess is normalized. Ties: ESPN's `order` field is sequential even for tied players (and can reflect tee times during live play), so results are re-grouped by score string and assigned true tied positions with `tiedCount`. Made cut: players with fewer than 3 linescores missed the cut — unless nobody has reached round 3 yet, in which case the cut hasn't happened and everyone is in play. Dates: ESPN ISO timestamps carry arbitrary UTC times that shift the calendar day in US timezones, so `parseEspnDate` pins every date to 17:00 UTC (~noon ET)."
+          ],
+          "diagrams": [
+            {
+              "id": "espn-merge",
+              "kind": "architecture",
+              "d2": "direction: right\n\"site scoreboard API\": { class: external }\n\"core API\": { class: external }\n\"mapCompetitorsToResults\"\n\"getEarnings merge\"\n\"EarningsData\"\n\"site scoreboard API\" -> \"mapCompetitorsToResults\": \"names, scores, rounds\"\n\"mapCompetitorsToResults\" -> \"getEarnings merge\"\n\"core API\" -> \"getEarnings merge\": \"actual earnings, amateur flag\"\n\"getEarnings merge\" -> \"EarningsData\"",
+              "mermaid": "flowchart LR\n  SB[\"site scoreboard API\"] -->|names, scores, rounds| M[mapCompetitorsToResults]\n  M --> G[getEarnings merge]\n  CO[\"core API\"] -->|actual earnings, amateur flag| G\n  G --> ED[EarningsData]\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  class SB,CO external;",
+              "caption": "Neither ESPN API is sufficient alone: the scoreboard has who/where, the core API has the money. `getEarnings` joins them by competitor id."
+            }
+          ],
+          "files": [
+            {
+              "name": "server/services/golf-data/types.ts",
+              "desc": "Provider-agnostic contract: `GolfDataProvider` interface + neutral tournament/field/result/earnings shapes."
+            },
+            {
+              "name": "server/services/golf-data/espn/client.ts",
+              "desc": "`EspnProvider` class + `espnProvider` singleton; two ESPN base URLs, 10s timeouts, per-season schedule cache, scoreboard/core merge."
+            },
+            {
+              "name": "server/services/golf-data/espn/mappers.ts",
+              "desc": "ESPN → neutral mapping: tie regrouping by score, made-cut heuristic (≥3 linescores), noon-ET date pinning."
+            },
+            {
+              "name": "server/services/golf-data/espn/types.ts",
+              "desc": "Raw ESPN response shapes (`EspnScoreboardResponse`, `EspnCoreCompetitorRef`, …) — never leak past the mappers."
+            }
+          ],
+          "exports": [
+            {
+              "name": "espnProvider",
+              "desc": "Singleton `GolfDataProvider` — the sync pipeline's only door to ESPN."
+            },
+            {
+              "name": "GolfDataProvider",
+              "desc": "The interface a replacement data source would implement."
+            },
+            {
+              "name": "mapCompetitorsToResults",
+              "desc": "The tie/cut normalizer; also used directly by seed scripts."
+            },
+            {
+              "name": "mapCalendarToTournament",
+              "desc": "Calendar entry → `TournamentData` with timezone-pinned dates."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "the [sync pipeline](#c-sync) (every ESPN call in the app funnels through `espnProvider`) and the `prisma/seed/*.ts` backfill scripts."
+            },
+            {
+              "dir": "calls",
+              "body": "`site.api.espn.com` and `sports.core.api.espn.com` — unauthenticated public JSON, identified only by a `User-Agent: PPGL/1.0` header."
+            }
+          ]
+        },
+        {
+          "id": "c-payout",
+          "name": "Payout table",
+          "path": "src/server/services/golf-data",
+          "detail": [
+            "A hardcoded table of standard PGA Tour payout percentages for 36-hole-cut events — positions 1 through 65, winner 18.000%, last paid spot 0.215% — with `calculateEarnings(purse, results)` on top. Tie handling matches real tour rules: N players tied at position P split the average of the payouts for positions P through P+N−1. Missed-cut players get $0.",
+            "This is **projections only**. It runs during `syncLiveStandings` to give in-progress tournaments believable dollar figures (the UI labels them \"est.\"); the moment a tournament completes, `syncResults` overwrites everything with ESPN's actual earnings. Known accepted gaps: majors and Signature Events pay 20% to the winner, no-cut events redistribute differently, and amateurs (who earn nothing) aren't flagged in scoreboard data."
+          ],
+          "files": [
+            {
+              "name": "server/services/golf-data/payout.ts",
+              "desc": "`PAYOUT_PERCENTAGES` (1-indexed, 65 paid positions) + `calculateEarnings` with tie averaging."
+            }
+          ],
+          "exports": [
+            {
+              "name": "calculateEarnings",
+              "desc": "`(purse, results) → Map<espnId, dollars>` — tie-averaged, missed cut ⇒ 0."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "`syncLiveStandings` in the [sync pipeline](#c-sync) — and nothing else; final earnings bypass this table entirely."
+            }
+          ]
+        },
+        {
+          "id": "c-sync",
+          "name": "Sync pipeline",
+          "path": "src/server/services",
+          "detail": [
+            "`services/sync.ts` holds the five operations the cron composes, each **idempotent by construction** because every write goes through espnId-keyed upserts: `syncFields` (upsert golfers + field entries, backfill the purse), `syncLiveStandings` (upsert `TournamentResult` rows with *projected* earnings from the payout table), `syncResults` (upsert real earnings, flip to `COMPLETED`, trigger rollup), `checkForCompletedTournaments` (poll ESPN status for every `IN_PROGRESS` event), and `startTournaments` (flip `UPCOMING → IN_PROGRESS`).",
+            "The status flip in `startTournaments` is the one place this domain uses `withTransaction`: the status update and `lockPlannedPicksForTournament` (game domain) commit atomically, so a failed lock can never leave picks editable on a tournament that's already live.",
+            "`syncResults` implements the `FINALIZING` dance: if ESPN reports the event final but the winner's earnings are still $0, the tournament parks in `FINALIZING` — projections stay in place, rollup still runs so standings show projected money, and every subsequent cron run retries until real earnings appear.",
+            "`repositories/sync.ts` and `repositories/upserts.ts` are the write-side repos. Notably they import `db-core` (not `lib/db`) and skip the `server-only` guard, because the cron route and tsx-run seed scripts execute outside React server component context. `upserts.ts` is also reused verbatim by the `prisma/seed/*` backfill scripts. `updateTournamentStatus` sets `completedAt` via `coalesce(completed_at, now)` so only the *first* completion transition stamps the time."
+          ],
+          "diagrams": [
+            {
+              "id": "sync-status-flow",
+              "kind": "flowchart",
+              "d2": "direction: right\nUPCOMING -> IN_PROGRESS: \"startDate passed - lock picks atomically\"\nIN_PROGRESS -> COMPLETED: \"STATUS_FINAL + real earnings\"\nIN_PROGRESS -> FINALIZING: \"STATUS_FINAL but winner earnings still 0\"\nFINALIZING -> COMPLETED: \"retry each cron run until ESPN posts earnings\"",
+              "mermaid": "flowchart LR\n  UPCOMING -->|startDate passed - lock picks atomically| IN_PROGRESS\n  IN_PROGRESS -->|STATUS_FINAL + real earnings| COMPLETED\n  IN_PROGRESS -->|STATUS_FINAL but winner earnings still 0| FINALIZING\n  FINALIZING -->|retry each cron run until ESPN posts earnings| COMPLETED",
+              "caption": "The `TournamentStatus` lifecycle as the cron drives it (`CANCELLED` and the admin `excluded` flag sit outside the automated path)."
+            }
+          ],
+          "files": [
+            {
+              "name": "server/services/sync.ts",
+              "desc": "The five sync operations; the only `withTransaction` in the domain (status flip + pick lock)."
+            },
+            {
+              "name": "server/repositories/sync.ts",
+              "desc": "Status-driven tournament queries (`findUpcomingTournamentsToStart`, `findFinalizingTournaments`, …) + purse/status updates."
+            },
+            {
+              "name": "server/repositories/upserts.ts",
+              "desc": "espnId-keyed upserts for tournament / golfer / field / result — shared with seed scripts, safe to re-run."
+            }
+          ],
+          "exports": [
+            {
+              "name": "syncFields",
+              "desc": "Field + purse for one tournament; runs for `UPCOMING` events starting within 7 days."
+            },
+            {
+              "name": "syncLiveStandings",
+              "desc": "Leaderboard → projected earnings via `calculateEarnings`; display-only, no rollup."
+            },
+            {
+              "name": "syncResults",
+              "desc": "Real earnings → `COMPLETED` (or park in `FINALIZING`); triggers scoring rollup either way."
+            },
+            {
+              "name": "checkForCompletedTournaments",
+              "desc": "Polls `getEventStatus` for each `IN_PROGRESS` event; returns those now `STATUS_FINAL`."
+            },
+            {
+              "name": "startTournaments",
+              "desc": "Atomic `UPCOMING → IN_PROGRESS` flip + planned-pick locking per tournament."
+            },
+            {
+              "name": "upsertGolfer",
+              "desc": "Insert-or-update by `espnId`; returns the internal golfer id."
+            },
+            {
+              "name": "upsertTournamentResult",
+              "desc": "Insert-or-update by `(tournamentId, golferId)` — same row holds projected then real earnings."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "`rollupForTournament` from [scoring](../domain-scoring/domain-scoring.html) after results land (both `FINALIZING` and `COMPLETED` paths), so member standings update in the same cron tick."
+            },
+            {
+              "dir": "calls",
+              "body": "`lockPlannedPicksForTournament` from [game](../domain-game/domain-game.html) inside the start-tournament transaction."
+            },
+            {
+              "dir": "reads",
+              "body": "`espnProvider` ([ESPN provider](#c-espn)) for every fetch; `calculateEarnings` ([payout table](#c-payout)) for live projections."
+            }
+          ]
+        },
+        {
+          "id": "c-cron",
+          "name": "Cron entry",
+          "path": "src/app/api/cron/sync",
+          "detail": [
+            "`runFullSync` in `services/cron-sync.ts` is the orchestrator: **(1)** complete finished tournaments (before live sync, so finals never get clobbered by projections), **(1b)** retry `FINALIZING` events, **(1.5)** auto-pick for bot members (before starts, so bot picks get locked), **(2)** start due tournaments, **(3)** live standings for everything in progress, **(4)** field sync for events starting within 7 days, **(5)** clean up abandoned `PENDING` leagues, **(6)** send pick-reminder emails for events starting within 16 hours.",
+            "Every step is individually try/caught into a `results` bag — one failing step never stops the rest. Any key ending in `Error` downgrades the run to `status: \"partial\"`, and the whole result JSON is written to `cron_log` fire-and-forget via `logCronRun`.",
+            "The HTTP wrapper at `app/api/cron/sync/route.ts` checks `Authorization: Bearer <CRON_SECRET>`, sets `maxDuration = 300` for Vercel, and returns 200 for a clean run or **207 Multi-Status** for a partial one. `vercel.json` schedules it every 15 minutes (`*/15 * * * *`)."
+          ],
+          "files": [
+            {
+              "name": "server/services/cron-sync.ts",
+              "desc": "`runFullSync` — the 6-step, per-step-error-trapped orchestration; no `server-only` guard so API routes can import it."
+            },
+            {
+              "name": "app/api/cron/sync/route.ts",
+              "desc": "`GET` handler: `CRON_SECRET` bearer check, `maxDuration = 300`, 200/207 status mapping."
+            },
+            {
+              "name": "server/repositories/cron-log.ts",
+              "desc": "`logCronRun` + `findLatestRuns` over the `cron_log` table."
+            }
+          ],
+          "exports": [
+            {
+              "name": "runFullSync",
+              "desc": "The full pipeline; returns `SyncRunResult` (`status`, `durationMs`, per-step breakdown)."
+            },
+            {
+              "name": "GET",
+              "desc": "The Vercel cron target."
+            },
+            {
+              "name": "logCronRun",
+              "desc": "Persist a run's JSON result; called fire-and-forget so logging never blocks the response."
+            },
+            {
+              "name": "findLatestRuns",
+              "desc": "Recent runs for the admin cron page and health checks."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "beyond the [sync pipeline](#c-sync): `autoPickForBots` from [game](../domain-game/domain-game.html), `cleanupAbandonedLeagues` from [leagues](../domain-leagues/domain-leagues.html), and `sendPickReminders` / `findUpcomingTournamentsWithinHours` from [accounts](../domain-accounts/domain-accounts.html)."
+            },
+            {
+              "dir": "consumed by",
+              "body": "[admin](../domain-admin/domain-admin.html) — the `admin.runFullSync` mutation re-exports this exact function for the \"run cron now\" button, and admin/health pages read `cron_log` via `findLatestRuns`."
+            }
+          ]
+        },
+        {
+          "id": "c-tournaments",
+          "name": "Tournaments",
+          "path": "src/app/tournament",
+          "detail": [
+            "The read-side tournament vertical follows the house layering exactly: `routers/tournament.ts` (thin, 4 procedures) → `services/tournament.ts` → `repositories/tournament.ts`. `getCurrent` picks what the dashboard shows with a deliberate priority: in-progress first (by status, since ESPN end dates can be midnight ET and date math misses Sunday afternoons), then anything completed within the last 24 hours (so users see final results before being rushed to next week), then the next upcoming event.",
+            "`getDetail` powers `/tournament/[id]`: field + results join, plus a **league pick overlay** — but only after validating the caller is actually a member of the requested league, and never for `GLOBAL` leagues (too many members to be useful). Once a tournament has started, the field re-sorts from world ranking to finish position → earnings → score.",
+            "The page itself branches on status: upcoming shows the field with the game domain's pick module embedded; live/completed shows the leaderboard with \"est.\" earnings labels and the scoring domain's weekly standings table. Missed cut is *derived* in the UI ($0 earnings + no finish position, only after someone has a real position) — it is not stored."
+          ],
+          "files": [
+            {
+              "name": "server/routers/tournament.ts",
+              "desc": "`current` / `byId` / `schedule` (public) + `detail` (protected — the pick overlay needs a user)."
+            },
+            {
+              "name": "server/services/tournament.ts",
+              "desc": "Current-tournament priority logic, league-membership validation, results sorting."
+            },
+            {
+              "name": "server/repositories/tournament.ts",
+              "desc": "Status-aware finders, `findFieldWithResults` join, `findLeagueTournamentPicks` for the overlay; all filter `excluded = false`."
+            },
+            {
+              "name": "app/tournament/[id]/page.tsx",
+              "desc": "Server component: header, pick module or weekly standings, and the field/leaderboard/results table."
+            }
+          ],
+          "exports": [
+            {
+              "name": "tournamentRouter",
+              "desc": "Mounted as `tournament.*` in the app router."
+            },
+            {
+              "name": "getCurrent",
+              "desc": "In-progress → recently-completed (24h) → next-upcoming priority chain."
+            },
+            {
+              "name": "getDetail",
+              "desc": "Tournament + enriched field + validated league pick overlay."
+            },
+            {
+              "name": "findFieldWithResults",
+              "desc": "Field ⋈ golfer ⋈ result — one query behind the detail table."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "reads",
+              "body": "`findLeagueById` / `findMemberByUserAndLeague` from [leagues](../domain-leagues/domain-leagues.html) to gate the pick overlay; the page also resolves the active league via `getActiveLeagueId`."
+            },
+            {
+              "dir": "composes",
+              "body": "the page embeds `DashboardPickModule` from [game](../domain-game/domain-game.html) (upcoming) and `WeeklyStandingsTable` from [scoring](../domain-scoring/domain-scoring.html) (live/completed), fetching `pick.*` and `leaderboard.weeklyStandings` data server-side."
+            },
+            {
+              "dir": "consumed by",
+              "body": "`tournament.current` anchors the [game](../domain-game/domain-game.html) dashboard; the tournament repo is also imported directly by game/scoring services."
+            }
+          ]
+        },
+        {
+          "id": "c-golfers",
+          "name": "Golfers",
+          "path": "src/app/golfer",
+          "detail": [
+            "Same vertical shape, smaller: `routers/golfer.ts` exposes `byId` (profile + stats) and `listAll` (id + name ordered by world ranking, feeding pickers). `services/golfer.ts` composes the profile from two parallel repo calls scoped to `getCurrentSeason()`.",
+            "`getSeasonStats` is one aggregate SQL query — events played, total earnings, best finish, and a **missed-cuts heuristic**: $0 earnings + no/zero finish position on a `COMPLETED` tournament counts as a missed cut (which also absorbs WD/DQ; the schema can't distinguish them). In-progress tournaments are excluded so everyone doesn't look cut mid-Thursday.",
+            "`/golfer/[id]` is a public page: avatar, flag, world rank, season stat rows, and a season results table with live rows badged and estimated earnings labeled."
+          ],
+          "files": [
+            {
+              "name": "server/routers/golfer.ts",
+              "desc": "`byId` + `listAll`, both public."
+            },
+            {
+              "name": "server/services/golfer.ts",
+              "desc": "Profile assembly: stats + results in parallel for the current season."
+            },
+            {
+              "name": "server/repositories/golfer.ts",
+              "desc": "Finders + the aggregate `getSeasonStats` query with the missed-cut filter."
+            },
+            {
+              "name": "app/golfer/[id]/page.tsx",
+              "desc": "Public profile page; links each result row back to its tournament page."
+            }
+          ],
+          "exports": [
+            {
+              "name": "golferRouter",
+              "desc": "Mounted as `golfer.*` in the app router."
+            },
+            {
+              "name": "getSeasonStats",
+              "desc": "Single-query season aggregates including the missed-cut heuristic."
+            },
+            {
+              "name": "getSeasonResults",
+              "desc": "Per-tournament result rows, newest first."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "[game](../domain-game/domain-game.html) — pick, bot-picks, and dashboard services import the golfer repo directly (e.g. `findNamesByIds`), and [scoring](../domain-scoring/domain-scoring.html)'s leaderboard service does the same."
+            }
+          ]
+        },
+        {
+          "id": "c-display",
+          "name": "Display helpers",
+          "path": "src/components",
+          "detail": [
+            "The small shared vocabulary every golf-facing surface uses. `GolferAvatar` renders an ESPN CDN headshot (`a.espncdn.com/i/headshots/golf/players/full/<espnId>.png` via `golferHeadshotUrl`) in five sizes, falling back on error or missing `espnId` to initials on a deterministic name-hashed `oklch` background.",
+            "`CountryFlag` maps ESPN's full English country names (\"United States\", \"South Korea\", and sub-national \"England\"/\"Scotland\" → `gb-eng`/`gb-sct`) to flag-icons CSS classes via the `CODE_MAP` lookup in `lib/country-flag.ts`; unknown countries render nothing rather than a broken flag.",
+            "`lib/season.ts` is deliberately trivial — `getCurrentSeason()` returns the calendar year — but it is the *single source of truth* for \"current season\" across golfer stats, schedules, and the scoring domain's rollups. When PPGL outlives the Jan–Aug PGA season assumption, this is the one place to fix."
+          ],
+          "files": [
+            {
+              "name": "components/golfer/golfer-avatar.tsx",
+              "desc": "Client component: ESPN headshot with initials fallback; sizes xs–lg."
+            },
+            {
+              "name": "components/country-flag/country-flag.tsx",
+              "desc": "Thin flag-icons span with `aria-label`; renders null for unmapped countries."
+            },
+            {
+              "name": "lib/golfer-headshot.ts",
+              "desc": "espnId → ESPN CDN headshot URL (null-safe)."
+            },
+            {
+              "name": "lib/country-flag.ts",
+              "desc": "Country name → ISO / regional flag-icons class map (36 countries incl. UK home nations)."
+            },
+            {
+              "name": "lib/season.ts",
+              "desc": "`getCurrentSeason()` — the one definition of \"this season\"."
+            }
+          ],
+          "exports": [
+            {
+              "name": "GolferAvatar",
+              "desc": "Used on tournament, golfer, dashboard, planner, and standings surfaces."
+            },
+            {
+              "name": "CountryFlag",
+              "desc": "Flag chip next to golfer names."
+            },
+            {
+              "name": "golferHeadshotUrl",
+              "desc": "Also used directly where an `<img>` is built by hand."
+            },
+            {
+              "name": "countryFlagClass",
+              "desc": "The raw class lookup when the component wrapper isn't wanted."
+            },
+            {
+              "name": "getCurrentSeason",
+              "desc": "Imported by golfer/tournament services here and by scoring + game code."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "[game](../domain-game/domain-game.html) (planner golfer-picker, remaining-pool, dashboard pick module), [scoring](../domain-scoring/domain-scoring.html) (weekly standings), and [leagues](../domain-leagues/domain-leagues.html) league pages — these components are this domain's widest-reaching exports."
+            },
+            {
+              "dir": "reads",
+              "body": "`a.espncdn.com` at render time in the browser — the only ESPN dependency outside the server-side provider, and it fails soft to initials."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "The golf-world half of the schema — everything keyed to ESPN identity. Game-side models (`Pick`, `LeagueMemberSeason`) reference these but belong to their own domains.",
+      "rows": [
+        {
+          "name": "Tournament",
+          "desc": "One schedule row per event, `espnId` unique. Carries the `TournamentStatus` lifecycle (`UPCOMING → IN_PROGRESS → FINALIZING → COMPLETED`, plus `CANCELLED`), `purse` (confirmed from ESPN) vs `estimatedPurse` (manual fallback), `completedAt` (stamped once), and an admin `excluded` flag every read query filters on."
+        },
+        {
+          "name": "Golfer",
+          "desc": "`espnId` unique, name, country (ESPN's full English name), nullable `worldRanking`. Continuously refreshed by field/result upserts."
+        },
+        {
+          "name": "TournamentField",
+          "desc": "Who's playing: unique `(tournamentId, golferId)`, `FieldStatus` `CONFIRMED`/`WITHDRAWN`. Synced daily-ish for events starting within 7 days."
+        },
+        {
+          "name": "TournamentResult",
+          "desc": "Unique `(tournamentId, golferId)`: `finishPosition` (tied players share it), `earnings`, `scoreToPar`, `rounds`. The same row holds *projected* earnings while live and *actual* earnings after completion — consumers can't tell from the row alone; tournament status says which."
+        },
+        {
+          "name": "CronLog",
+          "desc": "One row per `runFullSync` execution: full JSON response blob, `success` flag, `durationMs`. Read by admin/health surfaces."
+        }
+      ],
+      "note": "Missed cut is intentionally **not stored** — both the golfer stats query and the tournament page derive it ($0 earnings + no finish position on a completed event), which also silently absorbs WD/DQ."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "Six public tRPC procedures plus the secret-guarded cron route in; five neighbor domains leaned on out. This domain also has heavy *inbound* traffic that isn't a dependency: game, scoring, and admin import its repos and services directly.",
+      "exposes": [
+        {
+          "api": "tournament.current",
+          "note": "Public. In-progress → recently-completed (24h window) → next-upcoming; anchors the dashboard."
+        },
+        {
+          "api": "tournament.byId",
+          "note": "Public. Tournament + field count; used for page metadata."
+        },
+        {
+          "api": "tournament.detail",
+          "note": "Protected. Field with results + league pick overlay (membership-validated, skipped for GLOBAL leagues)."
+        },
+        {
+          "api": "tournament.schedule",
+          "note": "Public. Season schedule, defaults to `getCurrentSeason()`; feeds the season planner."
+        },
+        {
+          "api": "golfer.byId",
+          "note": "Public. Profile + season stats + season results."
+        },
+        {
+          "api": "golfer.listAll",
+          "note": "Public. id + name by world ranking; feeds golfer pickers."
+        },
+        {
+          "api": "/api/cron/sync",
+          "note": "GET, `Authorization: Bearer CRON_SECRET`. Vercel cron every 15 min (`vercel.json`); 200 ok / 207 partial; `maxDuration` 300s."
+        }
+      ],
+      "depends": [
+        {
+          "name": "game",
+          "path": "src",
+          "href": "../domain-game/domain-game.html"
+        },
+        {
+          "name": "leagues",
+          "path": "src",
+          "href": "../domain-leagues/domain-leagues.html"
+        },
+        {
+          "name": "scoring",
+          "path": "src",
+          "href": "../domain-scoring/domain-scoring.html"
+        },
+        {
+          "name": "accounts",
+          "path": "src",
+          "href": "../domain-accounts/domain-accounts.html"
+        },
+        {
+          "name": "web-shell",
+          "path": "src",
+          "href": "../domain-web-shell/domain-web-shell.html"
+        }
+      ],
+      "note": "The dependencies are concrete calls, not just imports: **game** — `lockPlannedPicksForTournament` (inside the start transaction) + `autoPickForBots`; **leagues** — `cleanupAbandonedLeagues` + membership checks for the pick overlay; **scoring** — `rollupForTournament` after every results sync; **accounts** — `sendPickReminders` for events starting within 16 hours; **web-shell** — `serverTRPC`, `db`/`db-core`, `withTransaction`, formatters. In the other direction, [admin](../domain-admin/domain-admin.html) re-exports `runFullSync` behind its `admin.runFullSync` mutation, and the `prisma/seed/*.ts` scripts reuse `upserts.ts` and the ESPN provider for backfills."
+    }
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:cc885c751cd92308f9fb1c604353579092ebac1d36c570daa549e89ff787c6f8",
+    "date": "2026-07-21",
+    "commit": "662c5aea21d551822d864db988922e040298ecd4"
+  }
+}

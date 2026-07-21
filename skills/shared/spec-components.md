@@ -5,7 +5,7 @@ reader up to speed on a design spec fast, then lets them drill in to *approve* i
 [Diagram Catalog](diagrams.md): that catalog covers d2/mermaid diagrams the renderer compiles;
 this one covers the HTML/CSS section components and the hand-authored SVG hero.
 
-**Worked reference:** [`example/spec-gm-planning-brain/spec.html`](../../example/spec-gm-planning-brain/spec.html)
+**Worked reference:** [`example/spec-season-planner/spec.html`](../../example/spec-season-planner/spec.html)
 — the canonical "what good looks like" build. Every recipe below is lifted from it.
 
 ## How it assembles

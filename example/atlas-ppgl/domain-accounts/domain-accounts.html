@@ -1,0 +1,1949 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="visual-skills · visual-atlas"><title>Auth &amp; accounts</title><style>/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --panel: #f7f8fa;
+  --panel-deep: #f0f2f5;
+  --border: #e3e6ea;
+  --border-strong: #c8cdd5;
+  --ink: #1c2024;
+  --ink-muted: #5a626c;
+  --ink-faint: #646b75;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: #eff4ff;
+  --accent-border: #bfdbfe;
+  --add: #16a34a;
+  --add-bg: #f0fdf4;
+  --add-border: #bbf7d0;
+  --remove: #dc2626;
+  --remove-bg: #fef2f2;
+  --remove-border: #fecaca;
+  --change: #d97706;
+  --change-bg: #fffbeb;
+  --change-border: #fde68a;
+  --risk-low: #16a34a;
+  --risk-low-bg: #f0fdf4;
+  --risk-low-border: #bbf7d0;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+
+  --sidebar-w: 264px;
+  --topbar-h: 52px;
+  --radius: 6px;
+  --radius-sm: 4px;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== TOP BAR ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--topbar-h);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+}
+
+.topbar-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  line-height: 1.5;
+}
+
+.chip-risk {
+  color: var(--risk-low);
+  background: var(--risk-low-bg);
+  border-color: var(--risk-low-border);
+}
+
+.chip-stat {
+  color: var(--ink-muted);
+  background: var(--panel-deep);
+  border-color: var(--border);
+  font-weight: 500;
+}
+
+.chip-pr {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+  font-weight: 600;
+}
+
+.diff-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.diff-add { color: var(--add); }
+.diff-rem { color: var(--remove); }
+
+.topbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-strong);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  color: var(--ink-muted);
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+.sidebar-toggle:hover { background: var(--panel-deep); border-color: var(--border-strong); }
+.sidebar-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ===== LAYOUT ===== */
+.layout {
+  display: flex;
+  min-height: calc(100vh - var(--topbar-h));
+  position: relative;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+.sidebar-section {
+  padding: 16px 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-section:last-child { border-bottom: none; }
+
+.sidebar-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 14px 8px;
+  display: block;
+}
+
+/* File tree */
+.file-list { list-style: none; }
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 100ms ease-out;
+  line-height: 1.4;
+}
+.file-item:hover { background: var(--panel-deep); color: var(--ink); }
+.file-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.file-status {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.file-status-M { color: var(--change); }
+.file-status-A { color: var(--add); }
+.file-status-D { color: var(--remove); }
+.file-status-R { color: var(--change); }
+
+.file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-stat {
+  font-size: var(--text-xs);
+  font-family: var(--font-sans);
+  color: var(--ink-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.file-stat .plus { color: var(--add); font-weight: 600; }
+.file-stat .minus { color: var(--remove); font-weight: 600; }
+
+/* Outline nav */
+.outline-list { list-style: none; }
+
+.outline-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.outline-item:hover { background: var(--panel-deep); color: var(--ink); border-left-color: var(--border-strong); }
+.outline-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-item.is-active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-subtle); font-weight: 500; }
+
+.outline-num {
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  font-weight: 600;
+  width: 16px;
+  flex-shrink: 0;
+}
+.outline-item.is-active .outline-num { color: var(--accent); }
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 56px 80px;
+  max-width: 1480px;
+}
+
+/* ===== TLDR ===== */
+.tldr-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.tldr-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tldr-heading {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.tldr-eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tldr-rows { display: flex; flex-direction: column; gap: 8px; }
+
+.tldr-row {
+  display: flex;
+  gap: 10px;
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.tldr-key {
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 56px;
+}
+
+.tldr-val { color: var(--ink); flex: 1; }
+
+/* ===== SECTION HEADINGS ===== */
+.section {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 40px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.section-badge {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  background: var(--panel);
+}
+
+.subsection {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 32px;
+}
+
+.subsection-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.subsection-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 0;
+}
+
+.subsection-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ===== OVERVIEW LIST ===== */
+.overview-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.overview-item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: border-color 100ms ease-out;
+}
+.overview-item:hover { border-color: var(--border-strong); }
+
+.overview-num {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  width: 18px;
+}
+
+.overview-text { color: var(--ink); flex: 1; }
+.overview-text a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.overview-text a:hover { text-decoration: underline; }
+.overview-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* ===== WALKTHROUGH PROGRESS ===== */
+.progress-rail {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;            /* scroll horizontally when there are many/long chapters */
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.progress-step {
+  flex: 1 0 auto;              /* grow to fill when few; never shrink below content -> overflow scrolls */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  transition: background 100ms ease-out;
+}
+.progress-step-label { white-space: nowrap; }
+.progress-step:last-child { border-right: none; }
+.progress-step.is-active { background: var(--accent-subtle); color: var(--accent); }
+.progress-step { text-decoration: none; cursor: pointer; }
+.progress-step:hover { background: var(--panel-deep); color: var(--ink); }
+.progress-step.is-active:hover { color: var(--accent); }
+.progress-step:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.progress-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  background: var(--panel-deep);
+  color: var(--ink-faint);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+}
+.progress-step.is-active .progress-step-num {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.progress-step-label { font-weight: 500; white-space: nowrap; }
+
+/* ===== DESCRIPTION BULLETS ===== */
+.desc-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.desc-item {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--ink);
+}
+.desc-bullet {
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  margin-top: 2px;
+}
+.desc-item code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+.desc-item strong { font-weight: 600; }
+.desc-item em { font-style: italic; color: var(--ink-muted); }
+
+/* ===== CODE BLOCKS / DIFF ===== */
+.file-diff {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.file-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 100ms ease-out;
+}
+.file-diff-header:hover { background: var(--panel-deep); }
+
+.file-diff-header summary { display: flex; align-items: center; gap: 8px; width: 100%; list-style: none; }
+.file-diff-header summary::-webkit-details-marker { display: none; }
+.file-diff-header summary::marker { display: none; }
+
+details.file-diff-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+details.file-diff-details > summary:hover { background: var(--panel-deep); }
+details.file-diff-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.file-diff-details > summary::-webkit-details-marker { display: none; }
+
+/* the actual collapsed file-diff summary: one tidy row, single chevron */
+.file-diff > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: var(--panel);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+.file-diff > summary::-webkit-details-marker { display: none; }
+.file-diff > summary::marker { content: ""; }
+.file-diff > summary:hover { background: var(--panel-deep); }
+.file-diff > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.file-diff[open] > summary { border-bottom: 1px solid var(--border); }
+.diff-counts { margin-left: auto; }
+
+.diff-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  font-weight: 500;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diff-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.diff-badge-M { color: var(--change); background: var(--change-bg); border-color: var(--change-border); }
+.diff-badge-A { color: var(--add); background: var(--add-bg); border-color: var(--add-border); }
+
+.diff-counts {
+  display: flex;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.diff-counts .plus { color: var(--add); }
+.diff-counts .minus { color: var(--remove); }
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-faint);
+  transition: transform 150ms ease-out;
+  flex-shrink: 0;
+}
+details[open] .chevron { transform: rotate(90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
+  details[open] .chevron { transform: rotate(90deg); }
+}
+
+.code-block {
+  overflow-x: auto;
+  background: var(--bg);
+  margin: 0;
+}
+.code-block pre {
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 2;
+  min-width: 0;
+}
+
+/* Token coloring — span-based, semantic only */
+.kw { color: #7c3aed; font-weight: 600; }  /* keyword */
+.fn { color: #0369a1; }                      /* function/method */
+.str { color: #16a34a; }                     /* string */
+.cm { color: var(--ink-faint); font-style: italic; } /* comment */
+.ty { color: #b45309; }                      /* type */
+.pn { color: var(--ink); }                   /* punctuation */
+.nm { color: var(--ink); }                   /* number */
+
+/* ===== DIAGRAMS ===== */
+.diagram-wrap {
+  margin-bottom: 28px;
+}
+
+.diagram-title {
+  font-size: var(--text-base);
+  font-weight: 650;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.diagram-caption {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  margin: 8px 2px 0;
+}
+
+.diagram-box {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: zoom-in;
+}
+
+/* Inline SVG for diagrams */
+.diagram-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.diagram-enlarge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 0.8rem/1 system-ui, sans-serif;
+  color: var(--ink-muted);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.diagram-enlarge:hover { border-color: var(--accent); color: var(--accent); }
+.diagram-enlarge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* zoom overlay */
+.zoom-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(15,20,28,0.85); display: none; }
+.zoom-overlay.is-open { display: block; }
+.zoom-stage { position: absolute; inset: 0; overflow: hidden; cursor: grab;
+  display: flex; align-items: center; justify-content: center; touch-action: none; }
+.zoom-stage:active { cursor: grabbing; }
+.zoom-stage svg { max-width: 94vw; max-height: 84vh; transform-origin: center center;
+  background: #fff; border-radius: 12px; box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5); }
+.zoom-controls { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 1; }
+.zoom-controls button { min-width: 40px; height: 40px; padding: 0 12px;
+  border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.96); color: #1c2024;
+  border-radius: 10px; font: 600 15px/1 system-ui, sans-serif; cursor: pointer; }
+.zoom-controls button:hover { background: #fff; }
+
+/* ===== FILES CHANGED TABLE ===== */
+.files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.files-table th {
+  background: var(--panel);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.files-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--ink);
+}
+.files-table tr:last-child td { border-bottom: none; }
+.files-table tr:hover td { background: var(--panel); }
+
+.files-table .col-status { width: 32px; font-weight: 700; font-family: var(--font-mono); font-size: var(--text-sm); }
+.files-table .col-path { font-family: var(--font-mono); }
+.files-table .col-path a { color: var(--accent); text-decoration: none; }
+.files-table .col-path a:hover { text-decoration: underline; }
+.files-table .col-stat { width: 80px; white-space: nowrap; }
+.files-table .col-role { color: var(--ink-muted); font-size: var(--text-xs); }
+
+.files-group-row td {
+  background: var(--panel-deep);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 5px 12px;
+}
+
+/* ===== API SURFACE ===== */
+.api-surface {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.api-surface-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-deep);
+}
+
+.api-name {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.api-type {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--add);
+  background: var(--add-bg);
+  border: 1px solid var(--add-border);
+  border-radius: 20px;
+  padding: 1px 7px;
+}
+
+.api-surface .code-block pre {
+  padding: 14px 18px;
+}
+
+/* ===== CALLOUT ===== */
+.callout {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  margin-bottom: 14px;
+}
+.callout-icon { font-size: var(--text-md); flex-shrink: 0; line-height: 1.5; }
+.callout-text { color: var(--ink); line-height: 1.6; }
+.callout-text strong { font-weight: 600; }
+.callout-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ===== TYPOGRAPHY UTILITIES ===== */
+.headline {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.subheadline {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 28px;
+}
+
+.section-intro {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* ===== CHAPTER MARKER ===== */
+.chapter-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+/* Bold rule separating walkthrough chapters (rendered between, never before the first). */
+.chapter-divider {
+  border: none;
+  border-top: 2px solid var(--border-strong);
+  margin: 48px 0;
+}
+.chapter-no {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.chapter-marker-num {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--panel-deep);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    height: calc(100vh - var(--topbar-h));
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 200ms ease-out;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.08);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+  }
+  .sidebar-toggle { display: flex; }
+  .main { padding: 24px 20px 60px; }
+}
+
+@media (max-width: 375px) {
+  .main { padding: 16px 14px 40px; }
+  .topbar-title { font-size: var(--text-base); }
+  .headline { font-size: var(--text-xl); }
+  .progress-step-label { display: none; }
+  .progress-step { padding: 8px 10px; }
+  .dataflow { min-width: 420px; }
+}
+
+/* Sidebar overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: var(--topbar-h);
+  background: rgba(28,32,36,0.3);
+  z-index: 40;
+}
+.sidebar-overlay.is-open { display: block; }
+
+/* Focus styles */
+a:focus-visible, button:focus-visible, details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* real code diffs inside file-diff details */
+.diff-code { background:#fff; border-top:1px solid var(--border); }
+.diff-pre { margin:0; overflow-x:auto; padding:4px 0;
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#3a4047;
+  font-variant-ligatures:none; }
+.diff-pre .dl { display:flex; align-items:baseline; min-width:max-content; }
+.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:#8b939e;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:#9aa1ab;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dc { flex:0 0 auto; white-space:pre; padding-right:20px; }
+.diff-pre .dl-add { background:#e9f7ee; } .diff-pre .dl-add .dg { color:#1a7f37; } .diff-pre .dl-add .dc { color:#0f3a1d; }
+.diff-pre .dl-del { background:#fdecec; } .diff-pre .dl-del .dg { color:#c4332e; } .diff-pre .dl-del .dc { color:#5c1a18; }
+.diff-pre .dl-ctx .dc { color:#3a4047; }
+.diff-pre .dl-hunk { background:var(--panel); color:var(--ink-muted); }
+.diff-pre .dl-hunk .dc { color:var(--ink-muted); font-weight:600; }
+.diff-more { padding:8px 16px; font:12px/1.4 system-ui,sans-serif; color:var(--ink-muted);
+  background:var(--panel); border-top:1px solid var(--border); }
+
+/* ===== separation hierarchy: chapter breaks vs within-chapter breaks ===== */
+#ch1, #ch2, #ch3 { margin-bottom: 0; }
+/* CHAPTER break: stronger + darker line */
+#ch2, #ch3 { margin-top: 0; padding-top: 48px; border-top: 2px solid #8b939e; }
+/* WITHIN a chapter: lighter line between subsections (1a/1b/1c) ... */
+.subsection { margin-bottom: 0; }
+.subsection + .subsection { border-top: 1px solid var(--border); padding-top: 40px; }
+/* ... and between file groups (a new description directly after a diff) */
+.file-diff + .desc-list,
+.file-diff + .section-intro,
+.file-diff + ul,
+.file-diff + p {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== craft pass: typography + motion polish ===== */
+html { scroll-behavior: smooth; }
+.section-title, .subsection-title, .tldr-heading { text-wrap: balance; }
+.tldr-val, .overview-text, .section-intro, .desc-item span { text-wrap: pretty; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* color pass: subtle hover lift on file rows + risk level system */
+.file-diff { transition: box-shadow 150ms ease-out, border-color 150ms ease-out; }
+.file-diff:hover { border-color: var(--accent); box-shadow: 0 6px 18px -12px rgba(37,99,235,0.35); }
+.chip-risk.risk-med { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+.chip-risk.risk-high { color: var(--remove); background: #fef2f2; border-color: #fecaca; }
+@media (prefers-reduced-motion: reduce) { .file-diff { transition: none; } }
+
+/* spec.css — reusable visual-spec components.
+   Layers ON TOP of review.css (same design tokens). Load review.css first, then this.
+   Source of truth for the spec-component catalog (skills/shared/spec-components.md).
+   The canonical example inlines a snapshot of these rules. */
+
+/* ============================================================= */
+/* ===== VISUAL-SPEC EXTENSIONS (on top of review.css) ========= */
+/* ============================================================= */
+
+/* A "spec" carries a couple of extra semantic roles the recap doesn't:
+   a 'perceived' role (GM-skill-noised judgment, gold) vs a 'factual' role
+   (computed from world state, neutral). They reuse the diagram palette so
+   the page reads as one system. */
+:root {
+  --perceived: #92600a;          /* readable gold ink for text on light */
+  --perceived-bg: #fff8e6;
+  --perceived-border: #f0c54a;
+  --reused: #6b7280;             /* preserved / untouched machinery */
+  --reused-bg: #f1f3f5;
+  --reused-border: #ced4da;
+  --store: #6d4ed8;              /* datastore ink */
+  --proc: #1971c2;              /* perception / process ink */
+}
+
+/* ---- topbar: phase + status + complexity chips ---- */
+.chip-phase { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent-border); font-weight: 700; }
+.chip-status { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.chip-complexity { color: var(--change); background: var(--change-bg); border-color: var(--change-border); font-weight: 600; }
+
+/* ---- the big idea panel ---- */
+.bigidea {
+  margin: 0 0 36px;
+  padding: 22px 26px;
+  border: 1px solid var(--perceived-border);
+  background: var(--perceived-bg);
+  border-radius: var(--radius);
+}
+.bigidea-label {
+  font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--perceived); margin-bottom: 8px;
+}
+.bigidea-line {
+  font-size: var(--text-2xl); font-weight: 800; letter-spacing: -0.025em;
+  color: var(--ink); line-height: 1.2; text-wrap: balance;
+}
+.bigidea-sub {
+  margin-top: 10px; max-width: 70ch; color: var(--ink-muted);
+  font-size: var(--text-base); line-height: 1.6; text-wrap: pretty;
+}
+.bigidea-sub strong { color: var(--ink); font-weight: 650; }
+
+/* ---- diagram legend (color is a secondary signal; labels carry meaning) ---- */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 2px 0; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-sm); color: var(--ink-muted); }
+.legend-swatch { width: 13px; height: 13px; border-radius: 3px; border: 1px solid; flex-shrink: 0; }
+
+/* svg text inherits the page sans */
+.flow-svg text { font-family: var(--font-sans); }
+
+/* ---- anatomy of a board (factual core vs perceived layer) ---- */
+.anatomy {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.anatomy-panel { padding: 16px 18px; }
+.anatomy-factual { background: var(--reused-bg); }
+.anatomy-perceived { background: var(--perceived-bg); }
+.anatomy-mid {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 0 16px; background: var(--bg);
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+}
+.anatomy-arrow { font-size: 22px; color: var(--ink-faint); line-height: 1; }
+.anatomy-fn { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); text-align: center; max-width: 130px; }
+.anatomy-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--text-base); margin-bottom: 4px; }
+.anatomy-factual .anatomy-h { color: var(--reused); }
+.anatomy-perceived .anatomy-h { color: var(--perceived); }
+.anatomy-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-bottom: 10px; }
+.anatomy-eg { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.7; color: var(--ink); }
+.anatomy-caption { font-size: var(--text-sm); color: var(--ink-muted); margin: 0 2px 28px; line-height: 1.6; }
+@media (max-width: 720px) {
+  .anatomy { grid-template-columns: 1fr; }
+  .anatomy-mid { flex-direction: row; border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 16px; }
+  .anatomy-arrow { transform: rotate(90deg); }
+}
+
+/* ---- 6 component (board) cards ---- */
+.board-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 8px; }
+.board-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px; background: var(--bg);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  display: flex; flex-direction: column;
+}
+.board-card:hover { border-color: var(--border-strong); box-shadow: 0 6px 18px -14px rgba(28,32,36,0.4); }
+.board-name { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-base); color: var(--ink); letter-spacing: -0.01em; }
+.board-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 7px 0 12px; }
+.board-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.board-row-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 2px; }
+.skill-chip { font-size: var(--text-xs); font-weight: 600; background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 20px; padding: 1px 8px; white-space: nowrap; }
+.skill-chip.is-deputy { background: var(--panel-deep); color: var(--ink-muted); border-color: var(--border); }
+.split-badge { display: inline-flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; font-size: var(--text-xs); font-weight: 600; align-self: flex-start; margin-bottom: 12px; }
+.split-badge .sb-fact { background: var(--reused-bg); color: var(--reused); padding: 2px 9px; }
+.split-badge .sb-perc { background: var(--perceived-bg); color: var(--perceived); padding: 2px 9px; border-left: 1px solid var(--border); }
+.board-fields { margin-top: auto; display: flex; flex-direction: column; gap: 5px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.field-line { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5; display: flex; gap: 7px; }
+.field-tag { flex-shrink: 0; width: 10px; font-weight: 700; }
+.field-fact .field-tag { color: var(--reused); }
+.field-perc .field-tag { color: var(--perceived); }
+.field-fact .field-names { color: var(--ink-muted); }
+.field-perc .field-names { color: var(--perceived); }
+
+/* ---- where it fits ---- */
+.fits-chain { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; margin-bottom: 26px; }
+.fits-node { flex: 1 1 220px; min-width: 200px; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--panel); }
+.fits-node.is-this { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.fits-arrow { display: flex; align-items: center; justify-content: center; padding: 0 12px; color: var(--ink-faint); font-size: 22px; flex-shrink: 0; }
+.fits-role { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 600; }
+.fits-node.is-this .fits-role { color: var(--perceived); }
+.fits-title { font-weight: 700; color: var(--ink); margin: 3px 0 5px; }
+.fits-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; }
+.fits-desc em { color: var(--ink); font-style: normal; font-weight: 600; }
+@media (max-width: 720px) {
+  .fits-chain { flex-direction: column; }
+  .fits-arrow { padding: 8px 0; }
+  .fits-arrow span { transform: rotate(90deg); display: inline-block; }
+}
+
+/* ---- layer stack ---- */
+.layer-stack { display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.layer { display: flex; align-items: baseline; gap: 12px; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; background: var(--panel); }
+.layer.is-new { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.layer.is-reused { background: var(--reused-bg); }
+.layer-label { font-weight: 700; color: var(--ink); flex-shrink: 0; }
+.layer.is-new .layer-label { color: var(--perceived); }
+.layer-note { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.45; }
+.layer-tag { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 7px; border-radius: 20px; flex-shrink: 0; }
+.layer.is-new .layer-tag { color: #fff; background: var(--change); }
+.layer.is-reused .layer-tag { color: var(--reused); background: var(--bg); border: 1px solid var(--reused-border); }
+
+/* ---- key decisions ---- */
+.decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.decision-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--bg); display: flex; gap: 12px; }
+.decision-num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--panel-deep); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: var(--text-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.decision-q { font-size: var(--text-sm); color: var(--ink-faint); font-weight: 600; line-height: 1.4; }
+.decision-a { font-weight: 650; color: var(--ink); margin-top: 4px; line-height: 1.45; }
+.decision-a code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- scope (in / out) ---- */
+.scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.scope-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.scope-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.scope-in .scope-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.scope-out .scope-head { background: var(--reused-bg); color: var(--ink-muted); }
+.scope-count { font-size: var(--text-xs); font-weight: 600; opacity: 0.8; }
+.scope-list { list-style: none; padding: 8px 0; }
+.scope-list li { display: flex; gap: 9px; padding: 6px 16px; font-size: var(--text-base); line-height: 1.5; }
+.scope-marker { flex-shrink: 0; font-weight: 700; }
+.scope-in .scope-marker { color: var(--add); }
+.scope-out .scope-marker { color: var(--ink-faint); }
+.scope-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.scope-list .defer { color: var(--ink-faint); font-size: var(--text-sm); }
+@media (max-width: 720px) { .scope-cols { grid-template-columns: 1fr; } }
+
+/* ---- rollout phases ---- */
+.phases { display: flex; flex-direction: column; gap: 14px; }
+.phase { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.phase-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.phase-tag { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-sm); color: var(--accent); background: var(--accent-subtle); border: 1px solid var(--accent-border); border-radius: var(--radius-sm); padding: 2px 9px; }
+.phase-title { font-weight: 700; color: var(--ink); }
+.phase-body { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; padding: 16px; }
+.phase-sub { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin-bottom: 8px; }
+.phase-scope p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; }
+.phase-scope code, .gate-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.phase-gate { background: var(--panel); border-radius: var(--radius-sm); padding: 12px 14px; }
+.gate-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.gate-list li { display: flex; gap: 8px; font-size: var(--text-sm); line-height: 1.5; color: var(--ink); }
+.gate-check { color: var(--add); flex-shrink: 0; font-weight: 700; }
+@media (max-width: 720px) { .phase-body { grid-template-columns: 1fr; } }
+
+/* ---- definition of done: movers + table ---- */
+.movers { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.mover { border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; background: var(--bg); }
+.mover-name { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); line-height: 1.4; }
+.mover-vals { display: flex; align-items: baseline; gap: 9px; margin: 9px 0 4px; }
+.mover-now { color: var(--ink-faint); font-weight: 600; font-size: var(--text-base); }
+.mover-now s { color: var(--remove); text-decoration-thickness: 1px; }
+.mover-arrow { color: var(--ink-faint); font-size: var(--text-base); }
+.mover-target { color: var(--add); font-weight: 800; font-size: var(--text-xl); letter-spacing: -0.02em; }
+.mover-label { font-size: var(--text-xs); color: var(--ink-faint); }
+
+.spec-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 6px 0 8px; }
+.spec-table th { text-align: left; background: var(--panel); padding: 8px 12px; font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); border-bottom: 1px solid var(--border); }
+.spec-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--ink); line-height: 1.5; }
+.spec-table tr:last-child td { border-bottom: none; }
+.spec-table tr:hover td { background: var(--panel); }
+.spec-table code { font-family: var(--font-mono); font-size: 0.86em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.spec-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.spec-table .good { color: #15803d; font-weight: 700; }
+.tbl-note { font-size: var(--text-sm); color: var(--ink-muted); margin: 2px 2px 0; }
+
+/* ---- risks ---- */
+.risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; }
+.risk-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.risk-r { display: flex; gap: 9px; padding: 12px 15px; background: var(--remove-bg); border-bottom: 1px solid var(--remove-border); font-weight: 650; color: #991b1b; font-size: var(--text-sm); line-height: 1.45; }
+.risk-icon { flex-shrink: 0; }
+.risk-m { padding: 12px 15px; font-size: var(--text-sm); color: var(--ink); line-height: 1.55; }
+.risk-m b { color: #15803d; font-weight: 700; }
+.risk-m code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- reference drill-downs ---- */
+.ref-intro { font-size: var(--text-base); color: var(--ink-muted); margin-bottom: 16px; line-height: 1.6; }
+details.ref { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; background: var(--bg); }
+details.ref > summary { display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: var(--panel); cursor: pointer; user-select: none; list-style: none; font-weight: 650; color: var(--ink); transition: background 100ms ease-out; }
+details.ref > summary::-webkit-details-marker { display: none; }
+details.ref > summary::marker { content: ""; }
+details.ref > summary:hover { background: var(--panel-deep); }
+details.ref > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.ref[open] > summary { border-bottom: 1px solid var(--border); }
+.ref-chev { width: 15px; height: 15px; color: var(--ink-faint); transition: transform 150ms ease-out; flex-shrink: 0; }
+details.ref[open] .ref-chev { transform: rotate(90deg); }
+.ref-tally { margin-left: auto; font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.ref-body { padding: 16px; }
+.ref-body > p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; margin-bottom: 12px; }
+.ref-body > p:last-child { margin-bottom: 0; }
+.ref-body .code-block { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; }
+.ref-body h4 { font-size: var(--text-base); font-weight: 700; color: var(--ink); margin: 16px 0 8px; }
+.ref-body h4:first-child { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .ref-chev { transition: none; } }
+
+/* meta list in sidebar */
+.meta-list { padding: 0 14px 8px; display: flex; flex-direction: column; gap: 9px; }
+.meta-row { font-size: var(--text-xs); line-height: 1.4; }
+.meta-row .mk { display: block; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 1px; }
+.meta-row .mv { color: var(--ink); }
+.related-list { list-style: none; padding: 0 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.related-list li { font-size: var(--text-xs); line-height: 1.4; }
+.related-list .rk { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.related-list .rv { color: var(--ink); font-family: var(--font-mono); overflow-wrap: anywhere; }
+
+/* ---- decision rationale (approval layer) ---- */
+.decision-why { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); line-height: 1.5; }
+.decision-why::before { content: "Why "; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; font-size: 0.72em; letter-spacing: 0.06em; }
+.decision-why em { color: var(--ink); font-style: normal; font-weight: 650; }
+.decision-why code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.decision-alt { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 7px; line-height: 1.5; }
+.decision-alt-tag { display: inline-block; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--remove); background: var(--remove-bg); border: 1px solid var(--remove-border); border-radius: 4px; padding: 0 5px; margin-right: 6px; vertical-align: 1px; }
+.decision-alt em { color: var(--ink); font-style: italic; }
+.decision-alt code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- before you approve ---- */
+.approve-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; align-items: start; }
+.approve-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.approve-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.approve-card.commit .approve-head { background: var(--accent-subtle); color: var(--accent); border-bottom-color: var(--accent-border); }
+.approve-card.scrutinize .approve-head { background: var(--change-bg); color: #92600a; border-bottom-color: var(--change-border); }
+.approve-card.open .approve-head { background: var(--panel-deep); color: var(--ink-muted); }
+.approve-body { padding: 13px 16px; font-size: var(--text-sm); color: var(--ink); line-height: 1.6; }
+.approve-body strong { font-weight: 700; }
+.approve-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.approve-body a:hover { text-decoration: underline; }
+.approve-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.approve-q { list-style: none; counter-reset: aq; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+.approve-q li { counter-increment: aq; display: flex; gap: 8px; font-size: var(--text-sm); color: var(--ink); line-height: 1.45; }
+.approve-q li::before { content: counter(aq); flex-shrink: 0; width: 17px; height: 17px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.approve-q code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
+
+/* atlas.css — reusable visual-atlas components.
+   Layers ON TOP of review.css + spec.css (same design tokens). Load review.css, then
+   spec.css, then this. Source of truth for the atlas-component catalog
+   (skills/shared/atlas-components.md). The canonical example inlines a snapshot of these rules.
+
+   A visual-atlas is a STANDING MAP of a codebase: one narrative `atlas.html` (system
+   onboarding map) that links down to per-domain `domain-<slug>.html` deep-dive pages. It owns
+   its own surface so its styles can evolve independently of the recap/spec. */
+
+/* ============================================================= */
+/* ===== VISUAL-ATLAS EXTENSIONS (on top of review.css + spec.css) */
+/* ============================================================= */
+
+/* Tier accents — each architectural layer gets one role tint so the map, the tiles, and the
+   sidebar all read as one system. Reuses the shared diagram palette (foundation=store violet,
+   engine=actor blue, intelligence=changed gold, narrative=added green, surface=accent,
+   harness=external gray). Color is always secondary — every tier also carries its text label. */
+:root {
+  --tier-foundation: #6d4ed8; --tier-foundation-bg: #f1ecfd;
+  --tier-engine:     #1971c2; --tier-engine-bg:     #e7f1fb;
+  --tier-intelligence: #b3791a; --tier-intelligence-bg: #fff6e2;
+  --tier-narrative:  #2f9e44; --tier-narrative-bg:  #eafaef;
+  --tier-surface:    var(--accent); --tier-surface-bg: var(--accent-subtle);
+  --tier-harness:    #6b7280; --tier-harness-bg:    #f1f3f5;
+}
+
+/* ---- topbar: domain-count + stack chips, and the back-link on domain pages ---- */
+.chip-stack { color: var(--tier-engine); background: var(--tier-engine-bg); border-color: #bcdcf5; font-weight: 600; }
+.chip-count { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.topbar-back {
+  display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; flex-shrink: 0;
+  font-size: var(--text-sm); font-weight: 600; color: var(--accent); text-decoration: none;
+  border: 1px solid var(--accent-border); background: var(--accent-subtle);
+  border-radius: 20px; padding: 3px 11px 3px 9px; transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.topbar-back:hover { background: #e0ecff; border-color: var(--accent); }
+.topbar-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- primer: "the N things to hold in your head" (atlas lead, after the TL;DR) ---- */
+.primer { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow: hidden; margin-bottom: 32px; }
+.primer-row { display: flex; gap: 14px; padding: 14px 18px; align-items: baseline; }
+.primer-row + .primer-row { border-top: 1px solid var(--border); }
+.primer-n {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; align-self: flex-start;
+  background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border);
+  font-size: var(--text-sm); font-weight: 800; display: flex; align-items: center; justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.primer-body { min-width: 0; }
+.primer-h { font-weight: 700; color: var(--ink); line-height: 1.4; letter-spacing: -0.01em; }
+.primer-p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-top: 3px; text-wrap: pretty; }
+.primer-h code, .primer-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* svg text inherits the page sans (the hand-authored domain map reuses .flow-svg from spec.css) */
+.map-svg text { font-family: var(--font-sans); }
+
+/* ---- component cards that jump to their deep-dive section ---- */
+a.board-card { text-decoration: none; color: inherit; }
+a.board-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-jump { margin-top: 10px; display: flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.card-jump .cj-arrow { transition: transform 150ms ease-out; }
+a.board-card:hover .cj-arrow { transform: translateY(2px); }
+@media (prefers-reduced-motion: reduce) { .card-jump .cj-arrow { transition: none; } }
+
+/* ---- per-component deep-dive: detail + diagram + connections ---- */
+/* reuses review.css .subsection / .subsection-header / .subsection-title / .subsection-path */
+.subsection-back { font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); text-decoration: none; white-space: nowrap; }
+.subsection-back:hover { color: var(--accent); }
+.detail-p { font-size: var(--text-base); color: var(--ink); line-height: 1.65; margin-bottom: 14px; text-wrap: pretty; }
+.detail-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.detail-p strong { font-weight: 650; }
+.detail-p em { font-style: normal; font-weight: 600; color: var(--ink); }
+
+/* connections: how this component talks to its neighbors (calls / read by / produces) */
+.conns { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 4px; }
+.conn { display: flex; align-items: baseline; gap: 10px; font-size: var(--text-sm); line-height: 1.5; }
+.conn-dir { flex-shrink: 0; min-width: 78px; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); text-align: right; }
+.conn-body { color: var(--ink); }
+.conn-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.conn-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.conn-body a:hover { text-decoration: underline; }
+.conns-label { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin: 14px 0 9px; }
+
+/* the load-bearing idea reads full-width on atlas pages (override spec.css's 70ch cap) */
+.bigidea-sub { max-width: none; }
+
+/* ---- domain index: a tile grid (the onboarding map AND the reference index) ---- */
+.domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
+.domain-tile {
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);
+  padding: 16px 18px; display: flex; flex-direction: column; text-decoration: none; color: inherit;
+  position: relative; transition: border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+a.domain-tile.is-linked:hover { border-color: var(--accent); box-shadow: 0 8px 22px -16px rgba(37,99,235,0.5); transform: translateY(-1px); }
+a.domain-tile.is-linked:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.domain-tile.is-pending { background: var(--panel); border-style: dashed; }
+.domain-tile-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.domain-tile-name { font-size: var(--text-md); font-weight: 700; color: var(--ink); letter-spacing: -0.015em; }
+.domain-tile-path { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); }
+.layer-chip {
+  margin-left: auto; font-size: var(--text-xs); font-weight: 700; padding: 1px 8px; border-radius: 20px;
+  border: 1px solid; white-space: nowrap; letter-spacing: 0.01em;
+}
+.layer-foundation   { color: var(--tier-foundation);   background: var(--tier-foundation-bg);   border-color: #d6c8f7; }
+.layer-engine       { color: var(--tier-engine);       background: var(--tier-engine-bg);       border-color: #bcdcf5; }
+.layer-intelligence { color: var(--tier-intelligence); background: var(--tier-intelligence-bg); border-color: var(--change-border); }
+.layer-narrative    { color: var(--tier-narrative);    background: var(--tier-narrative-bg);    border-color: #b6e6c4; }
+.layer-surface      { color: var(--tier-surface);      background: var(--tier-surface-bg);      border-color: var(--accent-border); }
+.layer-harness      { color: var(--tier-harness);      background: var(--tier-harness-bg);      border-color: var(--border-strong); }
+.domain-tile-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 9px 0 12px; text-wrap: pretty; }
+.domain-tile-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--text-xs); color: var(--ink-faint); margin-bottom: 11px; }
+.domain-tile-meta .dm-k { font-weight: 700; color: var(--ink-muted); }
+.domain-tile-meta code { font-family: var(--font-mono); font-size: 0.95em; color: var(--ink-muted); }
+.domain-tile-deps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--border); }
+.domain-tile-deps .dep-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; margin-right: 2px; }
+.dep-chip { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.domain-tile-foot { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: var(--text-sm); font-weight: 600; }
+.domain-tile.is-linked .domain-tile-foot { color: var(--accent); }
+.domain-tile.is-pending .domain-tile-foot { color: var(--ink-faint); font-weight: 600; }
+.domain-tile-foot .dtf-arrow { transition: transform 150ms ease-out; }
+a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
+
+/* ---- domain page: data it owns ---- */
+.owns-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.owns-row { display: grid; grid-template-columns: minmax(180px, 0.9fr) 1.6fr; gap: 14px; padding: 11px 16px; align-items: baseline; }
+.owns-row + .owns-row { border-top: 1px solid var(--border); }
+.owns-row:nth-child(even) { background: var(--panel); }
+.owns-name { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.owns-name .owns-store { color: var(--tier-foundation); }
+.owns-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; text-wrap: pretty; }
+.owns-desc code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- domain page: seams (exposes / depends on) ---- */
+.seam-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.seam-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.seam-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.seam-exposes .seam-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.seam-depends .seam-head { background: var(--panel-deep); color: var(--ink-muted); }
+.seam-body { padding: 12px 16px; }
+.seam-api { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.seam-api li { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--ink); line-height: 1.4; display: flex; gap: 8px; }
+.seam-api li::before { content: "›"; color: var(--add); font-weight: 700; flex-shrink: 0; }
+.seam-api .api-note { font-family: var(--font-sans); color: var(--ink-faint); font-size: var(--text-xs); }
+.seam-neighbors { display: flex; flex-wrap: wrap; gap: 8px; }
+.neighbor-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); font-weight: 600;
+  color: var(--ink); background: var(--panel); border: 1px solid var(--border-strong);
+  border-radius: 20px; padding: 3px 11px; text-decoration: none; transition: border-color 120ms ease-out, background 120ms ease-out;
+}
+.neighbor-chip:hover { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent); }
+.neighbor-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.neighbor-chip .nc-path { font-family: var(--font-mono); font-size: 0.85em; color: var(--ink-faint); }
+.neighbor-chip:hover .nc-path { color: var(--accent); }
+.neighbor-chip.is-flat { background: var(--panel-deep); border-style: dashed; cursor: default; color: var(--ink-muted); }
+.neighbor-chip.is-flat:hover { border-color: var(--border-strong); background: var(--panel-deep); color: var(--ink-muted); }
+@media (max-width: 720px) { .seam-cols { grid-template-columns: 1fr; } }
+
+/* sidebar: nested sub-section links under a chapter in the CONTENTS outline.
+   Used on domain pages to list a chapter's deep-dive components without a bespoke
+   second sidebar block — one uniform outline per page. */
+.outline-sub { list-style: none; margin: 1px 0 5px; }
+.outline-subitem { display: flex; align-items: center; gap: 8px; padding: 3px 14px 3px 34px; font-size: var(--text-xs); color: var(--ink-muted); text-decoration: none; border-left: 2px solid transparent; transition: background 100ms ease-out, color 100ms ease-out; }
+.outline-subitem:hover { background: var(--panel-deep); color: var(--ink); }
+.outline-subitem:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-subitem .os-dot { width: 8px; height: 8px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.14); flex-shrink: 0; }
+
+/* sidebar: a small "domains" jump-list block on the atlas */
+.nav-domains { list-style: none; }
+.nav-domain {
+  display: flex; align-items: center; gap: 8px; padding: 4px 14px; font-size: var(--text-sm);
+  color: var(--ink); text-decoration: none; transition: background 100ms ease-out;
+}
+.nav-domain:hover { background: var(--panel-deep); }
+.nav-domain:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
+.nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
+</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><a class="topbar-back" href="../atlas.html"><span aria-hidden="true">&larr;</span> Atlas</a><span class="topbar-title">Auth &amp; accounts</span><div class="topbar-meta"><span class="chip layer-chip layer-engine">Platform</span><span class="chip chip-stat">src</span><span class="chip chip-count">26 files</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">depends on web-shell · leagues</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>What it owns</span></a></li><li><a href="#components" class="outline-item" data-target="components"><span class="outline-num" aria-hidden="true">1</span><span>Components</span></a></li><li><a href="#arch" class="outline-item" data-target="arch"><span class="outline-num" aria-hidden="true">2</span><span>Internal architecture</span></a></li><li><a href="#depth" class="outline-item" data-target="depth"><span class="outline-num" aria-hidden="true">3</span><span>In depth</span></a><ul class="outline-sub" role="list"><li><a href="#c-core" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>Better Auth core</a></li><li><a href="#c-pages" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>Auth pages</a></li><li><a href="#c-settings" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>Settings &amp; profile</a></li><li><a href="#c-notify" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>Pick-reminder notifications</a></li><li><a href="#c-email" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>Transactional email</a></li></ul></li><li><a href="#data" class="outline-item" data-target="data"><span class="outline-num" aria-hidden="true">4</span><span>Data it owns</span></a></li><li><a href="#seams" class="outline-item" data-target="seams"><span class="outline-num" aria-hidden="true">5</span><span>Seams</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Layer</span><span class="mv">Engine</span></div><div class="meta-row"><span class="mk">Identity</span><span class="mv">Better Auth (email + password)</span></div><div class="meta-row"><span class="mk">Email</span><span class="mv">Resend</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Domain</span><h2 class="tldr-heading">Auth &amp; accounts</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">Path</span><span class="tldr-val"><code>src</code> (server auth config, <code>(auth)</code> pages, settings, notification services)</span></div><div class="tldr-row"><span class="tldr-key">Files</span><span class="tldr-val">26</span></div><div class="tldr-row"><span class="tldr-key">Owns</span><span class="tldr-val"><code>user</code> · <code>account</code> · <code>session</code> · <code>verification</code> · <code>notification_log</code></span></div><div class="tldr-row"><span class="tldr-key">Identity engine</span><span class="tldr-val"><strong>Better Auth</strong> with the <code>username</code> plugin and <code>nextCookies</code>, persisting straight into the app's Postgres via Kysely</span></div><div class="tldr-row"><span class="tldr-key">Comms</span><span class="tldr-val">Transactional email via <strong>Resend</strong> — password resets + batched pick reminders</span></div></div></div><div class="bigidea"><div class="bigidea-label">Big idea</div><div class="bigidea-line">Identity is rented, not built — Better Auth owns every credential path against the app's own Postgres.</div><p class="bigidea-sub">Sign-up, sign-in, password change/reset, and username updates all flow through <code>authClient</code> → the <code>/api/auth/[...all]</code> catch-all → the <code>betterAuth</code> instance in <code>server/auth.ts</code>. The rest of PPGL only ever asks <em>who is this?</em> — <code>createTRPCContext</code> calls <code>auth.api.getSession</code> per request. The only custom identity logic the app carries is a profanity-gated username validator and its own email templates.</p></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#components"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">Components</span></a><a class="progress-step" href="#arch"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Internal architecture</span></a><a class="progress-step" href="#depth"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">In depth</span></a><a class="progress-step" href="#data"><div class="progress-step-num" aria-hidden="true">4</div><span class="progress-step-label">Data it owns</span></a><a class="progress-step" href="#seams"><div class="progress-step-num" aria-hidden="true">5</div><span class="progress-step-label">Seams</span></a></nav><section id="components" class="section"><div class="section-header"><h2 class="section-title">Components</h2></div><p class="section-intro">Five units: the Better Auth core (config, client, HTTP route, session helpers), the public auth pages, the settings/profile surface, the pick-reminder notification pipeline, and the email sender + templates underneath both.</p><div class="board-grid"><a class="board-card" href="#c-core"><div class="board-name">Better Auth core</div><div class="board-purpose">The identity engine: <code>betterAuth</code> server config wired to Postgres, the React <code>authClient</code>, the <code>/api/auth/[...all]</code> catch-all route, the <code>auth.me</code> tRPC read, and the session-refresh / sign-out client shims.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip is-deputy">auth</span><span class="skill-chip">authClient</span><span class="skill-chip">authRouter</span><span class="skill-chip">SessionRefresh</span><span class="skill-chip">SignOutButton</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-pages"><div class="board-name">Auth pages</div><div class="board-purpose">The <code>(auth)</code> route group — sign-in, sign-up (with league-invite handoff), forgot/reset password — all thin client forms over <code>authClient</code>, sharing a minimal PPGL-branded layout and a show/hide <code>PasswordInput</code>.</div><div class="board-row"><span class="board-row-label">covers</span><span class="skill-chip">PasswordInput</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-settings"><div class="board-name">Settings &amp; profile</div><div class="board-purpose"><code>/settings</code> — username change (profanity-validated, via <code>authClient.updateUser</code>), password change, and the pick-reminder email toggle backed by the only classic router → service → repo stack in this domain.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">userRouter</span><span class="skill-chip">validateUsername</span><span class="skill-chip">AccountSection</span><span class="skill-chip">NotificationSection</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-notify"><div class="board-name">Pick-reminder notifications</div><div class="board-purpose">Finds league members who still need a pick (or whose pick fell out of the field) before a tournament, batches one email per user, and dedups via <code>notification_log</code>. Driven by golf-data's cron, not by tRPC.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip is-deputy">sendPickReminders</span><span class="skill-chip">sendTestPickReminder</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-email"><div class="board-name">Transactional email</div><div class="board-purpose">The lone email gateway (Resend, lazy singleton, 100-per-call batch chunking) plus the two inline-styled HTML templates: password reset and pick reminder.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">sendEmail</span><span class="skill-chip">sendBatchEmail</span><span class="skill-chip">resetPasswordEmail</span><span class="skill-chip">pickReminderEmail</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a></div></section><section id="arch" class="section"><div class="section-header"><h2 class="section-title">Internal architecture</h2></div><p class="section-intro">Two independent halves share one email gateway. The interactive half: browser forms talk to <code>authClient</code>, which hits the Better Auth catch-all route; the <code>betterAuth</code> instance persists users/sessions in Postgres and every tRPC request re-derives the session from it. The background half: golf-data's cron fans into the notification service, which queries eligibility and batch-sends through Resend.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2484 535"><svg class="d2-2776445994 d2-svg" width="2484" height="535" viewBox="-25 -25 2484 535"><rect x="-25.000000" y="-25.000000" width="2484.000000" height="535.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-2776445994 .text-bold {
+	font-family: "d2-2776445994-font-bold";
+}
+@font-face {
+	font-family: d2-2776445994-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-2776445994 .text-italic {
+	font-family: "d2-2776445994-font-italic";
+}
+@font-face {
+	font-family: d2-2776445994-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-2776445994 .fill-N1{fill:#0A0F25;}
+		.d2-2776445994 .fill-N2{fill:#676C7E;}
+		.d2-2776445994 .fill-N3{fill:#9499AB;}
+		.d2-2776445994 .fill-N4{fill:#CFD2DD;}
+		.d2-2776445994 .fill-N5{fill:#DEE1EB;}
+		.d2-2776445994 .fill-N6{fill:#EEF1F8;}
+		.d2-2776445994 .fill-N7{fill:#FFFFFF;}
+		.d2-2776445994 .fill-B1{fill:#0D32B2;}
+		.d2-2776445994 .fill-B2{fill:#0D32B2;}
+		.d2-2776445994 .fill-B3{fill:#E3E9FD;}
+		.d2-2776445994 .fill-B4{fill:#E3E9FD;}
+		.d2-2776445994 .fill-B5{fill:#EDF0FD;}
+		.d2-2776445994 .fill-B6{fill:#F7F8FE;}
+		.d2-2776445994 .fill-AA2{fill:#4A6FF3;}
+		.d2-2776445994 .fill-AA4{fill:#EDF0FD;}
+		.d2-2776445994 .fill-AA5{fill:#F7F8FE;}
+		.d2-2776445994 .fill-AB4{fill:#EDF0FD;}
+		.d2-2776445994 .fill-AB5{fill:#F7F8FE;}
+		.d2-2776445994 .stroke-N1{stroke:#0A0F25;}
+		.d2-2776445994 .stroke-N2{stroke:#676C7E;}
+		.d2-2776445994 .stroke-N3{stroke:#9499AB;}
+		.d2-2776445994 .stroke-N4{stroke:#CFD2DD;}
+		.d2-2776445994 .stroke-N5{stroke:#DEE1EB;}
+		.d2-2776445994 .stroke-N6{stroke:#EEF1F8;}
+		.d2-2776445994 .stroke-N7{stroke:#FFFFFF;}
+		.d2-2776445994 .stroke-B1{stroke:#0D32B2;}
+		.d2-2776445994 .stroke-B2{stroke:#0D32B2;}
+		.d2-2776445994 .stroke-B3{stroke:#E3E9FD;}
+		.d2-2776445994 .stroke-B4{stroke:#E3E9FD;}
+		.d2-2776445994 .stroke-B5{stroke:#EDF0FD;}
+		.d2-2776445994 .stroke-B6{stroke:#F7F8FE;}
+		.d2-2776445994 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-2776445994 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-2776445994 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-2776445994 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-2776445994 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-2776445994 .background-color-N1{background-color:#0A0F25;}
+		.d2-2776445994 .background-color-N2{background-color:#676C7E;}
+		.d2-2776445994 .background-color-N3{background-color:#9499AB;}
+		.d2-2776445994 .background-color-N4{background-color:#CFD2DD;}
+		.d2-2776445994 .background-color-N5{background-color:#DEE1EB;}
+		.d2-2776445994 .background-color-N6{background-color:#EEF1F8;}
+		.d2-2776445994 .background-color-N7{background-color:#FFFFFF;}
+		.d2-2776445994 .background-color-B1{background-color:#0D32B2;}
+		.d2-2776445994 .background-color-B2{background-color:#0D32B2;}
+		.d2-2776445994 .background-color-B3{background-color:#E3E9FD;}
+		.d2-2776445994 .background-color-B4{background-color:#E3E9FD;}
+		.d2-2776445994 .background-color-B5{background-color:#EDF0FD;}
+		.d2-2776445994 .background-color-B6{background-color:#F7F8FE;}
+		.d2-2776445994 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-2776445994 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-2776445994 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-2776445994 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-2776445994 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-2776445994 .color-N1{color:#0A0F25;}
+		.d2-2776445994 .color-N2{color:#676C7E;}
+		.d2-2776445994 .color-N3{color:#9499AB;}
+		.d2-2776445994 .color-N4{color:#CFD2DD;}
+		.d2-2776445994 .color-N5{color:#DEE1EB;}
+		.d2-2776445994 .color-N6{color:#EEF1F8;}
+		.d2-2776445994 .color-N7{color:#FFFFFF;}
+		.d2-2776445994 .color-B1{color:#0D32B2;}
+		.d2-2776445994 .color-B2{color:#0D32B2;}
+		.d2-2776445994 .color-B3{color:#E3E9FD;}
+		.d2-2776445994 .color-B4{color:#E3E9FD;}
+		.d2-2776445994 .color-B5{color:#EDF0FD;}
+		.d2-2776445994 .color-B6{color:#F7F8FE;}
+		.d2-2776445994 .color-AA2{color:#4A6FF3;}
+		.d2-2776445994 .color-AA4{color:#EDF0FD;}
+		.d2-2776445994 .color-AA5{color:#F7F8FE;}
+		.d2-2776445994 .color-AB4{color:#EDF0FD;}
+		.d2-2776445994 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="YXV0aCBwYWdlcw== actor"><g class="shape" ><rect x="12.000000" y="0.000000" width="123.000000" height="66.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="73.500000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">auth pages</text></g><g class="c2V0dGluZ3MgcGFnZXM= actor"><g class="shape" ><rect x="0.000000" y="273.000000" width="147.000000" height="66.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="73.500000" y="311.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">settings pages</text></g><g class="YXV0aENsaWVudA=="><g class="shape" ><rect x="504.000000" y="21.000000" width="120.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="564.000000" y="59.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">authClient</text></g><g class="JiMzNDsvYXBpL2F1dGgvWy4uLmFsbF0mIzM0Ow=="><g class="shape" ><rect x="1008.000000" y="21.000000" width="159.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1087.500000" y="59.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">/api/auth/[...all]</text></g><g class="JiMzNDtiZXR0ZXJBdXRoIChzZXJ2ZXIvYXV0aC50cykmIzM0Ow== changed"><g class="shape" ><rect x="1452.000000" y="62.000000" width="237.000000" height="66.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="1570.500000" y="100.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">betterAuth (server/auth.ts)</text></g><g class="JiMzNDt0UlBDIGNvbnRleHQgKHdlYi1zaGVsbCkmIzM0Ow=="><g class="shape" ><rect x="977.000000" y="147.000000" width="220.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1087.000000" y="185.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">tRPC context (web-shell)</text></g><g class="dXNlciByb3V0ZXI="><g class="shape" ><rect x="501.000000" y="293.000000" width="125.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="563.500000" y="331.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">user router</text></g><g class="dXNlciBzZXJ2aWNl"><g class="shape" ><rect x="1022.000000" y="293.000000" width="130.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1087.000000" y="331.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">user service</text></g><g class="dXNlciByZXBv"><g class="shape" ><rect x="1515.000000" y="293.000000" width="112.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1571.000000" y="331.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">user repo</text></g><g class="bm90aWZpY2F0aW9uIHNlcnZpY2U="><g class="shape" ><rect x="997.000000" y="419.000000" width="181.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1087.500000" y="457.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">notification service</text></g><g class="bm90aWZpY2F0aW9uIHJlcG8="><g class="shape" ><rect x="1489.000000" y="419.000000" width="163.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1570.500000" y="457.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">notification repo</text></g><g class="ZW1haWwgc2VuZGVy"><g class="shape" ><rect x="2017.000000" y="104.000000" width="137.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="2085.500000" y="142.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">email sender</text></g><g class="JiMzNDtjcm9uIHN5bmMgKGdvbGYtZGF0YSkmIzM0Ow=="><g class="shape" ><rect x="468.000000" y="419.000000" width="191.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="563.500000" y="457.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">cron sync (golf-data)</text></g><g class="UG9zdGdyZXM= store"><g class="shape" ><rect x="2033.000000" y="356.000000" width="106.000000" height="66.000000" stroke="#9775fa" fill="#e5dbff" style="stroke-width:2;" /></g><text x="2086.000000" y="394.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Postgres</text></g><g class="UmVzZW5k external"><g class="shape" ><rect x="2338.000000" y="104.000000" width="96.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="2386.000000" y="142.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Resend</text></g><g class="KGF1dGggcGFnZXMgLSZndDsgYXV0aENsaWVudClbMF0="><marker id="mk-d2-2776445994-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 136.500000 33.000000 C 272.899994 33.000000 346.700012 36.139000 499.512763 48.375716" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /><text x="319.500000" y="40.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">sign in / up, reset</text></g><g class="KHNldHRpbmdzIHBhZ2VzIC0mZ3Q7IGF1dGhDbGllbnQpWzBd"><path d="M 127.904181 271.438700 C 271.240997 181.699997 346.700012 142.845001 499.801739 79.750092" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /><text x="308.500000" y="168.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">username, password</text></g><g class="KHNldHRpbmdzIHBhZ2VzIC0mZ3Q7IHVzZXIgcm91dGVyKVswXQ=="><path d="M 148.492481 312.173259 C 275.299988 323.200012 346.299988 326.000000 497.500000 326.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /><text x="324.000000" y="331.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">reminder toggle</text></g><g class="KGF1dGhDbGllbnQgLSZndDsgJiMzNDsvYXBpL2F1dGgvWy4uLmFsbF0mIzM0OylbMF0="><path d="M 626.000000 53.500000 C 779.200012 53.500000 855.900024 53.500000 1003.500000 53.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /></g><g class="KCYjMzQ7L2FwaS9hdXRoL1suLi5hbGxdJiMzNDsgLSZndDsgJiMzNDtiZXR0ZXJBdXRoIChzZXJ2ZXIvYXV0aC50cykmIzM0OylbMF0="><path d="M 1169.500000 53.500000 C 1293.099976 53.500000 1350.099976 57.900002 1448.557804 74.822435" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /></g><g class="KCYjMzQ7YmV0dGVyQXV0aCAoc2VydmVyL2F1dGgudHMpJiMzNDsgLSZndDsgUG9zdGdyZXMpWzBd"><path d="M 1621.487240 129.362113 C 1806.364990 253.050003 1888.900024 300.424011 2028.853046 363.477917" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /><text x="1819.000000" y="266.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">user, session, account</text></g><g class="KCYjMzQ7YmV0dGVyQXV0aCAoc2VydmVyL2F1dGgudHMpJiMzNDsgLSZndDsgZW1haWwgc2VuZGVyKVswXQ=="><path d="M 1691.000000 95.250000 C 1820.199951 95.250000 1885.800049 101.050003 2013.061108 123.553488" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /><text x="1854.500000" y="104.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">reset email</text></g><g class="KCYjMzQ7dFJQQyBjb250ZXh0ICh3ZWItc2hlbGwpJiMzNDsgLSZndDsgJiMzNDtiZXR0ZXJBdXRoIChzZXJ2ZXIvYXV0aC50cykmIzM0OylbMF0="><path d="M 1198.500000 179.500000 C 1298.900024 179.500000 1354.427979 169.250000 1470.358723 129.546021" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /><text x="1338.500000" y="178.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">getSession</text></g><g class="KHVzZXIgcm91dGVyIC0mZ3Q7IHVzZXIgc2VydmljZSlbMF0="><path d="M 628.000000 326.000000 C 779.599976 326.000000 858.799988 326.000000 1018.000000 326.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /></g><g class="KHVzZXIgc2VydmljZSAtJmd0OyB1c2VyIHJlcG8pWzBd"><path d="M 1153.500000 326.000000 C 1289.900024 326.000000 1362.500000 326.000000 1510.500000 326.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /></g><g class="KHVzZXIgcmVwbyAtJmd0OyBQb3N0Z3JlcylbMF0="><path d="M 1629.500000 326.000000 C 1807.900024 326.000000 1888.900024 335.726990 2028.639226 373.591854" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /></g><g class="KCYjMzQ7Y3JvbiBzeW5jIChnb2xmLWRhdGEpJiMzNDsgLSZndDsgbm90aWZpY2F0aW9uIHNlcnZpY2UpWzBd"><path d="M 661.000000 452.000000 C 786.200012 452.000000 853.700012 452.000000 992.500000 452.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /><text x="828.000000" y="458.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">pre-tournament tick</text></g><g class="KG5vdGlmaWNhdGlvbiBzZXJ2aWNlIC0mZ3Q7IG5vdGlmaWNhdGlvbiByZXBvKVswXQ=="><path d="M 1180.500000 452.000000 C 1295.300049 452.000000 1357.500000 452.000000 1485.500000 452.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /></g><g class="KG5vdGlmaWNhdGlvbiByZXBvIC0mZ3Q7IFBvc3RncmVzKVswXQ=="><path d="M 1654.000000 452.000000 C 1812.800049 452.000000 1888.900024 442.272003 2028.639226 404.407139" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /></g><g class="KG5vdGlmaWNhdGlvbiBzZXJ2aWNlIC0mZ3Q7IGVtYWlsIHNlbmRlcilbMF0="><path d="M 1125.997707 418.174529 C 1284.500000 277.899994 1373.699951 242.500000 1447.500000 242.500000 C 1521.300049 242.500000 1885.800049 227.699997 2013.353980 170.145156" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /><text x="1547.000000" y="247.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">batch reminders</text></g><g class="KGVtYWlsIHNlbmRlciAtJmd0OyBSZXNlbmQpWzBd"><path d="M 2156.000000 137.000000 C 2227.600098 137.000000 2264.399902 137.000000 2334.000000 137.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2776445994-3488378134)" mask="url(#d2-2776445994)" /></g><mask id="d2-2776445994" maskUnits="userSpaceOnUse" x="-25" y="-25" width="2484" height="535">
+<rect x="-25" y="-25" width="2484" height="535" fill="white"></rect>
+<rect x="261.000000" y="24.000000" width="117" height="21" fill="black"></rect>
+<rect x="238.000000" y="152.000000" width="141" height="21" fill="black"></rect>
+<rect x="269.000000" y="315.000000" width="110" height="21" fill="black"></rect>
+<rect x="1745.000000" y="250.000000" width="148" height="21" fill="black"></rect>
+<rect x="1816.000000" y="88.000000" width="77" height="21" fill="black"></rect>
+<rect x="1301.000000" y="162.000000" width="75" height="21" fill="black"></rect>
+<rect x="759.000000" y="442.000000" width="138" height="21" fill="black"></rect>
+<rect x="1491.000000" y="231.000000" width="112" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption">The <code>betterAuth</code> instance is the hub: browser mutations reach it over HTTP, while every tRPC call reads it server-side through <code>auth.api.getSession</code>.</p><div class="callout"><span class="callout-icon" aria-hidden="true">&#9737;</span><span class="callout-text">Note what is <em>missing</em>: there is no accounts service layer for credentials. Better Auth is the service — the app's own router/service/repo stack in this domain exists only for the notification preference, and the notification pipeline deliberately skips <code>server-only</code> guards so cron routes can call it.</span></div></section><section id="depth" class="section"><div class="section-header"><h2 class="section-title">In depth</h2></div><div class="subsection" id="c-core"><div class="subsection-header"><h3 class="subsection-title">Better Auth core <span class="subsection-path">src/server · src/lib · src/app/api/auth</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>server/auth.ts</code> builds the single <code>betterAuth</code> instance: email + password auth against the app's own Postgres (<code>database: { db, type: "postgres" }</code> — the same Kysely instance the repos use, so users and sessions live next to picks and leagues, no separate identity store). Cookie sessions are long-lived and periodically re-stamped (<code>session.expiresIn</code> / <code>updateAge</code>), rate limiting is on by default (an env flag disables it for tests), and <code>trustedOrigins</code> is derived from the base URL with the <code>www.</code>/apex twin added so both hosts pass CSRF origin checks.</p><p class="detail-p">Two plugins do the customization: <code>username()</code> enforces 3–20 chars and delegates to <code>validateUsername</code> (the profanity gate — see <a href="#c-settings">Settings &amp; profile</a>), and <code>nextCookies()</code> bridges Better Auth's cookie handling into Next.js server actions. A <code>role</code> additional field (default <code>user</code>, <code>input: false</code> so clients can't set it) is what web-shell's <code>adminProcedure</code> later checks. <code>sendResetPassword</code> is the one outbound hook — it renders <code>resetPasswordEmail</code> and ships it through the email gateway.</p><p class="detail-p">The HTTP surface is a two-line catch-all: <code>app/api/auth/[...all]/route.ts</code> re-exports <code>GET</code>/<code>POST</code> from <code>toNextJsHandler(auth)</code> — every credential operation (sign-up, sign-in, sign-out, reset, updateUser) is a Better Auth endpoint under <code>/api/auth/*</code>, none of it goes through tRPC. The tRPC side only <em>reads</em>: <code>authRouter.me</code> is a public procedure that projects <code>ctx.session.user</code> down to <code>{ id, email, name, username, displayUsername, role }</code> and returns <code>null</code> when signed out — it is the session probe used by nearly every server page in the app.</p><p class="detail-p">Client side, <code>lib/auth-client.ts</code> is a 6-line <code>createAuthClient</code> with <code>usernameClient()</code>. Two tiny components round out the loop: <code>SessionRefresh</code> (mounted once in web-shell's root layout) just calls <code>authClient.useSession()</code> so an active tab keeps its session cookie fresh, and <code>SignOutButton</code> calls <code>authClient.signOut()</code> then pushes to <code>/sign-in</code> with a router refresh.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1317 1076"><svg class="d2-1651225480 d2-svg" width="1317" height="1076" viewBox="-13 27 1317 1076"><rect x="-13.000000" y="27.000000" width="1317.000000" height="1076.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-1651225480 .text {
+	font-family: "d2-1651225480-font-regular";
+}
+@font-face {
+	font-family: d2-1651225480-font-regular;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-1651225480 .text-italic {
+	font-family: "d2-1651225480-font-italic";
+}
+@font-face {
+	font-family: d2-1651225480-font-italic;
+	src: url("data:application/font-woff;base64,d09GRgABAAAAAA5cAAoAAAAAFpwAARhRAAAAAAAAAAAAAAAAAAAAAAAAAABPUy8yAAAA9AAAAGAAAABgW1SVeGNtYXAAAAFUAAAAmwAAAM4DMgR4Z2x5ZgAAAfAAAAfSAAALHEsNLxhoZWFkAAAJxAAAADYAAAA2G7Ur2mhoZWEAAAn8AAAAJAAAACQLeAjHaG10eAAACiAAAACMAAAAjD6dBJJsb2NhAAAKrAAAAEgAAABIMdo02G1heHAAAAr0AAAAIAAAACAAOwD2bmFtZQAACxQAAAMmAAAIMgntVzNwb3N0AAAOPAAAACAAAAAg/8YAMgADAeEBkAAFAAACigJY//EASwKKAlgARAFeADIBIwAAAgsFAwMEAwkCBCAAAHcAAAADAAAAAAAAAABBREJPAAEAIP//Au7/BgAAA9gBESAAAZMAAAAAAeYClAAAACAAA3icdM05TgIBGEDhb5xxH3Xct1GnNjGewRhrjfECGhtCTbgRywGgZbkJN4CG9idQkvDar3hIpBLkMmOUCqlc5dmLV2/effjy409NQzOCNf307de/+lJjEvOYxTRGMYxB9KMX3ehEO1qrz+YSlUdPtqQy23bs2rPvwKHckWMnCqfOnLtw6cq1G7fu3Cs9sAAAAP//AQAA//9uwCWVAHicfFZbbNv29T6/H2kxsWVZEiUxki3REiVS1tUSJdGyLMm2fJF1SWI7dvVPfM09af6Bl9RtijRIL0AxFFjgAgGGFRlSbFjRIS9Dsof1JQW2YfOWGdhDOmzo1odldYtkRTvDCNqipgZSii37YS8EIQHnO993zvcdQhO4AfBFfBMI2A9tYAQzgEg7CUKUJI4hREHgKEoSaJpyv45WX3+HzB391PvuNwGWHH3t58V/L9zBN7cuoFdnr1+Xj33/1KnnnjyRfegvTwAAcPUBAPoIr8B+MADQlCjwvMBpNAiJNCdw1KPe3zSTzSRpE+U/oZNHS+PGz8+hl5eWYud7kmfkcbyytbS2BoAgWd3EQXwLWIAmF8/HYxksRi0MxfOcS4fNJotFjCYkRqNBruLZRPfRa6We8QMJOsH3zg+6XYWUN9fJuWe1uSsHyzdfGpV8XZ1C+uSVvtRsvLM9ygZBweAAsB6vQIvKn3JSIsVRTop7A51vlR/5/qP7UkS8Dq8MfDT4dBAw9FU38Ry+BXroVLuqN2Uxm3RYiGZwPPasOcReXA5NL48UTsVC0y/k4s9lXIWDynNM+8NXiivLw0NXJ4tvLw/n+o4vJxeXU8eXexdeVPRTewqqPZmUrsSoxWzSaDiOoMVoQgHguDc+mLlUeO3IudjA/KnzpfwpvFKYPnwmIn+NRg8fSoqwXUfAK9AKlp06FM0Ruyr9cuZ7FycvT164JA2dmDtZzC/glZHJYxcN8iNkkR+jqYmRRBhUrbTVTSTjW+ADYFy8IKn6x2O8ICjDSSS2h6PRmE0WhrGofX+WW/Im7VNS33jQU/Kl4jOp1AIrWkdCnrg94i6FY6nT2t5evz861OOOWkK2MSk6EY15Q44utrudD1uCHaNS77EYIJgFwHG8ApTChpOcFEe8t3y/FT1o/XAZl3O5rXs13kJ1E32NNsCkKMBsz4gRJZHgJE6jEaIJSdreonv9pUBhThTSBpLOLGb3kVzFyB9yB8zRDncuzka0x6ZGXp4Rvc60bMt7wv2h8N94l29sNppN1/DY6ib6Cq+CWXGVogxHcbRIUaIqya7N0FCUxfJYSBsIU/ZGWbBg95GgCh935+KO7i7XOBcyiVqvM41X7y/Y/UenFeh+39ismEn7PJ/xrho/LDTg7fD73wR7jYSeL6/UGR707GUodM7f3+rZSxGDp7qJPkQbYANPI566TU7NtgsJMaFsg8LyX9PngsWZbmnAoW2Sf7u/M+ezJxmHffxHVUwYu7j4nPb84vDSRCB0ONoh6rKHPVaDaGaRp+VAa0eEnQIEfgD0A/wQGHXWWdy4XZRiUsI/lW0Z0LcdTNt8xvbmdoOza5/huPbEFHo/2TRemGxtkajmqH8yI1eUGaGqG22gDWAh1Li9kqTRcLs3RKMhdql3JzLNuTuGvZmCzsofCacP+8dmInzGQNDZ0/TlJDfu8lsiHdyA6Aj/nbfHGVep/ywfmJ7KvfB/UWVniPnTyOn3/Zl3dY1UulOpmpdYAPRXvApW1Zk7u0IRHK3IqNAk2Bvlbj3ZNRHIxPdlSn0kme/Ih4bx6pM0Fx7oYd3yH1HAdKC16AvJ71erSk34Ft/FPDgBQAOu/A7WF3gVtCoWoeDRnEBR7I3yAv6m8uvlg7NLNrwq2xF6IH/6xaWrgCBQ3YRv8SoYFbXiMYlWhDGb6qP+/wHN1fI1hAyEhkLNFm3WYMXPb71N7SeMCKdIchsXP0YbSl4omDWKTJ2oZhfTRtKLWYrkJ/neSFO44kknSDJTTpPkqDkfGFY0GLHk/cNofcwdkbwBcaDH4DA16rDztqMz2oADjT3slVlB7JoI7VJZRdgr8k6+fIw2oA3sjX6oGV31QD0CHx6aCxTmoofmA8U5X3BcTESVh/bsseHLU6Has39waWhwNLc0NDii3s6nVRF9hTZq3qYaOtZhTk0Wit6VJc1vZTWEZyqkWjzK99HYyP6sMUvW8L1+Nlg3OHv2NkL1MOE/9zif8RHVvFQxmyQlQPZ4YrcjkNPpwJ5KqDE337rdGChrt1/iw9uxuVVGaHdo1ubyCtoAfcNcGIp/No8W0l4KWs3tepu7xKbR+mwgvX9oXzYlrwGqflfdRNfQBgh779DeM6RcodoR+mlk1trN9PO+dFdPKBkYC4QKHSFadPKRRGcm1j2hjXl51hvibAJry3T5Bzxuh9dkC7IO3ujqCwSHPErPfdVNVMEXoKM+9YSkJJOoppGCVTfHB/0xEiVHW0rugfar2mtJosOls7UY9GFtNthma0XGZNObb2bkx0ajw9HcJFFtSu2e6ib6Eq0refCs9o7j6Hqs39l2Q94+GhguKcfKe0Q7KBlYGiXkh7RVWVNUkW0FTqx5cAQA/x6tK4mgON9iYcSEUnDnjeCI2vcZRZzjSnqEENnWrn+1aMAYkTqb/nr+H/M69Vd724toXf6na8jlGnIhR8ObDTVzebc7z8lP1W+qT1AzsgIBIEkixWk/bv2knnvVX1UX0E/w75T/KCSiPLrbI5ffJU5/906t32voPfRj/AfQAdCCJEiMxFASQzGU8IvO4YrxhDWw7wx1hvfG0F17JeJ1nief1/nZRaZS2ylYQ+tKbSXn2MXycbQu29S6o7gId/Fd5TuPVvWthdAV2sExJjuHi4zF6jxgsXb+FwAA//8BAAD//yFqRwQAAAABAAAAARhRD0sMiV8PPPUAAQPoAAAAANhdoMwAAAAA3WYvN/69/t0IHQPJAAIAAwACAAAAAAAAAAEAAAPY/u8AAAhA/r39vAgdA+gAwv/RAAAAAAAAAAAAAAAjAnQAJADIAAAB/v/LAiYAOQH3ACMCeQA8AiYAIwIrACMB+gAMAf4AXQIZACcCGAAfAhcAJwHhACUBGgArAhMAAQILAB8A7QAfAdwAHwD4ACwDHwAfAg0AHwIDACcCF//2AhkAJwFWAB8Bkv/8AUUAPAIQADgCwwBGASsAIwFU/7gBkwB9AO0AHwAAAEcAAAAuAC4AUgCEAJwAzgDyARoBWgFuAaYB3gIWAlACeALAAuoC9gMQAzIDdAOeA8wEBgRABF4EmgTIBPQFLgU8BUwFagV4BY4AAQAAACMAjAAMAGYABwABAAAAAAAAAAAAAAAAAAQAA3icnJTbThtXFIY/B9tterqoUERu0L5MpWRMoxAl4cqUoIyKcOpxepCqSoM9PojxzMgzmJIn6HXfom+Rqz5Gn6LqdbV/L4MdRUEgBPx79jr8a61/bWCT/9igVr8L/N2cG66x3fzZ8B2+aB4Z3mC/+ZnhOg8b/xhuMGi8NdzkQaNr+BPe1f80/ClP6r8ZvstW/dDw5zyubxr+csPxr+GveMK7Ba7BM/4wXGOLwvAdNvnV8Ab3sJi1OvfYMdzga7YNN9kGekyoSJmQMcIxZMKIM2YklEQkzJgwJGGAI6RNSqWvGbGQY/TBrzERFTNiRRxT4UiJSIkpGVvEt/LKea2MQ51mdtemYkzMiTxOiclw5IzIyUg4VZyKioIXtGhR0hffgoqSgJIJKQE5M0a06HDIET3GTChxHCqSZxaRM6TinFj5nVn4zvRJyCiN1RkZA/F04pfIO+QIR4dCtquRj9YiPMTxo7w9t1y23xLo160wW8+7ZBMzVz9TdSXVzbkmONatz9vmB+GKF7hb9WedyfU9Guh/pcgnnGn+A00qE5MM57ZoE0lBkbuPY1/nkEgd+YmQHq/o8Iaezm26dGlzTI+Ql/Lt0MXxHR2OOZBHKLy4O5RijvkFx/eEsvGxE+vPYmIJv1OYuktxnKmOKYV67pkHqjVRhTefsN+hfE0dpXz62iNv6TS/THsWMzJVFGI4VS+X2iitfwNTxFS1+Nle3fttmNvuLbf4glw77NW64OQnt2B03VSD9zRzrp+AmAE5J7LokzOlRcWFeL8m5owUx4G690pbUtG+9PF5LqSShKkYhGSKM6PQ39h0Exn3/prunb0lA/l7pqeXVd0mi1Ovrmb0Rt1b3kXW5WRlAi2bar6ipr64Zqb9RDu1yj+Sb6nXLecRoeIudvtDr8AOz9llj7Gy9HUzv7zzr4S32FMHTklkNZSmfQ2PCdgl4Cm77PKcp+/1csnGGR+3xmc1f5sD9umwd201C9sO+7xci/bxzH+J7Y7qcTy6PD279TQf3EC132jfrt7NribnpzG3aFfbcUzM1HNxW6s1ufsE/wMAAP//AQAA//9yoVFAAAAAAwAA//UAAP/OADIAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-1651225480 .fill-N1{fill:#0A0F25;}
+		.d2-1651225480 .fill-N2{fill:#676C7E;}
+		.d2-1651225480 .fill-N3{fill:#9499AB;}
+		.d2-1651225480 .fill-N4{fill:#CFD2DD;}
+		.d2-1651225480 .fill-N5{fill:#DEE1EB;}
+		.d2-1651225480 .fill-N6{fill:#EEF1F8;}
+		.d2-1651225480 .fill-N7{fill:#FFFFFF;}
+		.d2-1651225480 .fill-B1{fill:#0D32B2;}
+		.d2-1651225480 .fill-B2{fill:#0D32B2;}
+		.d2-1651225480 .fill-B3{fill:#E3E9FD;}
+		.d2-1651225480 .fill-B4{fill:#E3E9FD;}
+		.d2-1651225480 .fill-B5{fill:#EDF0FD;}
+		.d2-1651225480 .fill-B6{fill:#F7F8FE;}
+		.d2-1651225480 .fill-AA2{fill:#4A6FF3;}
+		.d2-1651225480 .fill-AA4{fill:#EDF0FD;}
+		.d2-1651225480 .fill-AA5{fill:#F7F8FE;}
+		.d2-1651225480 .fill-AB4{fill:#EDF0FD;}
+		.d2-1651225480 .fill-AB5{fill:#F7F8FE;}
+		.d2-1651225480 .stroke-N1{stroke:#0A0F25;}
+		.d2-1651225480 .stroke-N2{stroke:#676C7E;}
+		.d2-1651225480 .stroke-N3{stroke:#9499AB;}
+		.d2-1651225480 .stroke-N4{stroke:#CFD2DD;}
+		.d2-1651225480 .stroke-N5{stroke:#DEE1EB;}
+		.d2-1651225480 .stroke-N6{stroke:#EEF1F8;}
+		.d2-1651225480 .stroke-N7{stroke:#FFFFFF;}
+		.d2-1651225480 .stroke-B1{stroke:#0D32B2;}
+		.d2-1651225480 .stroke-B2{stroke:#0D32B2;}
+		.d2-1651225480 .stroke-B3{stroke:#E3E9FD;}
+		.d2-1651225480 .stroke-B4{stroke:#E3E9FD;}
+		.d2-1651225480 .stroke-B5{stroke:#EDF0FD;}
+		.d2-1651225480 .stroke-B6{stroke:#F7F8FE;}
+		.d2-1651225480 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-1651225480 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-1651225480 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-1651225480 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-1651225480 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-1651225480 .background-color-N1{background-color:#0A0F25;}
+		.d2-1651225480 .background-color-N2{background-color:#676C7E;}
+		.d2-1651225480 .background-color-N3{background-color:#9499AB;}
+		.d2-1651225480 .background-color-N4{background-color:#CFD2DD;}
+		.d2-1651225480 .background-color-N5{background-color:#DEE1EB;}
+		.d2-1651225480 .background-color-N6{background-color:#EEF1F8;}
+		.d2-1651225480 .background-color-N7{background-color:#FFFFFF;}
+		.d2-1651225480 .background-color-B1{background-color:#0D32B2;}
+		.d2-1651225480 .background-color-B2{background-color:#0D32B2;}
+		.d2-1651225480 .background-color-B3{background-color:#E3E9FD;}
+		.d2-1651225480 .background-color-B4{background-color:#E3E9FD;}
+		.d2-1651225480 .background-color-B5{background-color:#EDF0FD;}
+		.d2-1651225480 .background-color-B6{background-color:#F7F8FE;}
+		.d2-1651225480 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-1651225480 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-1651225480 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-1651225480 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-1651225480 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-1651225480 .color-N1{color:#0A0F25;}
+		.d2-1651225480 .color-N2{color:#676C7E;}
+		.d2-1651225480 .color-N3{color:#9499AB;}
+		.d2-1651225480 .color-N4{color:#CFD2DD;}
+		.d2-1651225480 .color-N5{color:#DEE1EB;}
+		.d2-1651225480 .color-N6{color:#EEF1F8;}
+		.d2-1651225480 .color-N7{color:#FFFFFF;}
+		.d2-1651225480 .color-B1{color:#0D32B2;}
+		.d2-1651225480 .color-B2{color:#0D32B2;}
+		.d2-1651225480 .color-B3{color:#E3E9FD;}
+		.d2-1651225480 .color-B4{color:#E3E9FD;}
+		.d2-1651225480 .color-B5{color:#EDF0FD;}
+		.d2-1651225480 .color-B6{color:#F7F8FE;}
+		.d2-1651225480 .color-AA2{color:#4A6FF3;}
+		.d2-1651225480 .color-AA4{color:#EDF0FD;}
+		.d2-1651225480 .color-AA5{color:#F7F8FE;}
+		.d2-1651225480 .color-AB4{color:#EDF0FD;}
+		.d2-1651225480 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="dXNlcg== actor"><g class="shape" ><rect x="12.000000" y="52.000000" width="100.000000" height="66.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="62.000000" y="90.500000" fill="#1b1b1b" class="text" style="text-anchor:middle;font-size:16px">user</text></g><g class="UmVzZW5k external"><g class="shape" ><rect x="162.000000" y="52.000000" width="100.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="212.000000" y="90.500000" fill="#1b1b1b" class="text" style="text-anchor:middle;font-size:16px">Resend</text></g><g class="Zm9yZ290LXBhc3N3b3JkIHBhZ2U="><g class="shape" ><rect x="302.000000" y="52.000000" width="193.000000" height="66.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="398.500000" y="90.500000" fill="#0A0F25" class="text fill-N1" style="text-anchor:middle;font-size:16px">forgot-password page</text></g><g class="YXV0aENsaWVudA=="><g class="shape" ><rect x="552.000000" y="52.000000" width="116.000000" height="66.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="610.000000" y="90.500000" fill="#0A0F25" class="text fill-N1" style="text-anchor:middle;font-size:16px">authClient</text></g><g class="YmV0dGVyQXV0aA=="><g class="shape" ><rect x="726.000000" y="52.000000" width="116.000000" height="66.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="784.000000" y="90.500000" fill="#0A0F25" class="text fill-N1" style="text-anchor:middle;font-size:16px">betterAuth</text></g><g class="ZW1haWwgdGVtcGxhdGVz"><g class="shape" ><rect x="901.000000" y="52.000000" width="154.000000" height="66.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="978.000000" y="90.500000" fill="#0A0F25" class="text fill-N1" style="text-anchor:middle;font-size:16px">email templates</text></g><g class="cmVzZXQtcGFzc3dvcmQgcGFnZQ=="><g class="shape" ><rect x="1095.000000" y="52.000000" width="184.000000" height="66.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="1187.000000" y="90.500000" fill="#0A0F25" class="text fill-N1" style="text-anchor:middle;font-size:16px">reset-password page</text></g><g class="KHVzZXIgLS0gKVswXQ=="><path d="M 62.000000 120.000000 L 62.000000 1077.000000" stroke="#4dabf7" fill="none" class="connection" style="stroke-width:2;stroke-dasharray:12.000000,11.838767;" mask="url(#d2-1651225480)" /></g><g class="KFJlc2VuZCAtLSApWzBd"><path d="M 212.000000 120.000000 L 212.000000 1077.000000" stroke="#adb5bd" fill="none" class="connection" style="stroke-width:2;stroke-dasharray:12.000000,11.838767;" mask="url(#d2-1651225480)" /></g><g class="KGZvcmdvdC1wYXNzd29yZCBwYWdlIC0tIClbMF0="><path d="M 398.500000 120.000000 L 398.500000 1077.000000" stroke="#0D32B2" fill="none" class="connection stroke-B2" style="stroke-width:2;stroke-dasharray:12.000000,11.838767;" mask="url(#d2-1651225480)" /></g><g class="KGF1dGhDbGllbnQgLS0gKVswXQ=="><path d="M 610.000000 120.000000 L 610.000000 1077.000000" stroke="#0D32B2" fill="none" class="connection stroke-B2" style="stroke-width:2;stroke-dasharray:12.000000,11.838767;" mask="url(#d2-1651225480)" /></g><g class="KGJldHRlckF1dGggLS0gKVswXQ=="><path d="M 784.000000 120.000000 L 784.000000 1077.000000" stroke="#0D32B2" fill="none" class="connection stroke-B2" style="stroke-width:2;stroke-dasharray:12.000000,11.838767;" mask="url(#d2-1651225480)" /></g><g class="KGVtYWlsIHRlbXBsYXRlcyAtLSApWzBd"><path d="M 978.000000 120.000000 L 978.000000 1077.000000" stroke="#0D32B2" fill="none" class="connection stroke-B2" style="stroke-width:2;stroke-dasharray:12.000000,11.838767;" mask="url(#d2-1651225480)" /></g><g class="KHJlc2V0LXBhc3N3b3JkIHBhZ2UgLS0gKVswXQ=="><path d="M 1187.000000 120.000000 L 1187.000000 1077.000000" stroke="#0D32B2" fill="none" class="connection stroke-B2" style="stroke-width:2;stroke-dasharray:12.000000,11.838767;" mask="url(#d2-1651225480)" /></g><g class="KHVzZXIgLSZndDsgZm9yZ290LXBhc3N3b3JkIHBhZ2UpWzBd"><marker id="mk-d2-1651225480-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 64.000000 198.000000 L 394.500000 198.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1651225480-3488378134)" mask="url(#d2-1651225480)" /><text x="230.500000" y="204.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">submit email</text></g><g class="KGZvcmdvdC1wYXNzd29yZCBwYWdlIC0mZ3Q7IGF1dGhDbGllbnQpWzBd"><path d="M 400.500000 288.000000 L 606.000000 288.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1651225480-3488378134)" mask="url(#d2-1651225480)" /><text x="504.500000" y="294.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">requestPasswordReset</text></g><g class="KGF1dGhDbGllbnQgLSZndDsgYmV0dGVyQXV0aClbMF0="><path d="M 612.000000 378.000000 L 780.000000 378.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1651225480-3488378134)" mask="url(#d2-1651225480)" /><text x="697.000000" y="384.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">POST /api/auth/*</text></g><g class="KGJldHRlckF1dGggLSZndDsgZW1haWwgdGVtcGxhdGVzKVswXQ=="><path d="M 786.000000 468.000000 L 974.000000 468.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1651225480-3488378134)" mask="url(#d2-1651225480)" /><text x="881.000000" y="474.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">resetPasswordEmail</text></g><g class="KGJldHRlckF1dGggLSZndDsgUmVzZW5kKVswXQ=="><path d="M 782.000000 558.000000 L 216.000000 558.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1651225480-3488378134)" mask="url(#d2-1651225480)" /><text x="498.000000" y="564.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">sendEmail</text></g><g class="KFJlc2VuZCAtJmd0OyB1c2VyKVswXQ=="><path d="M 210.000000 648.000000 L 66.000000 648.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1651225480-3488378134)" mask="url(#d2-1651225480)" /><text x="137.000000" y="654.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">reset link</text></g><g class="KHVzZXIgLSZndDsgcmVzZXQtcGFzc3dvcmQgcGFnZSlbMF0="><path d="M 64.000000 738.000000 L 1183.000000 738.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1651225480-3488378134)" mask="url(#d2-1651225480)" /><text x="625.000000" y="744.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">open link with token</text></g><g class="KHJlc2V0LXBhc3N3b3JkIHBhZ2UgLSZndDsgYXV0aENsaWVudClbMF0="><path d="M 1185.000000 828.000000 L 614.000000 828.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1651225480-3488378134)" mask="url(#d2-1651225480)" /><text x="898.500000" y="834.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">resetPassword</text></g><g class="KGF1dGhDbGllbnQgLSZndDsgYmV0dGVyQXV0aClbMV0="><path d="M 612.000000 918.000000 L 780.000000 918.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1651225480-3488378134)" mask="url(#d2-1651225480)" /><text x="697.000000" y="924.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">POST /api/auth/*</text></g><g class="KGJldHRlckF1dGggLSZndDsgcmVzZXQtcGFzc3dvcmQgcGFnZSlbMF0="><path d="M 786.000000 1008.000000 L 1183.000000 1008.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1651225480-3488378134)" mask="url(#d2-1651225480)" /><text x="985.500000" y="1014.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">ok</text></g><mask id="d2-1651225480" maskUnits="userSpaceOnUse" x="-13" y="27" width="1317" height="1076">
+<rect x="-13" y="27" width="1317" height="1076" fill="white"></rect>
+<rect x="185.000000" y="188.000000" width="91" height="21" fill="black"></rect>
+<rect x="427.000000" y="278.000000" width="155" height="21" fill="black"></rect>
+<rect x="638.000000" y="368.000000" width="118" height="21" fill="black"></rect>
+<rect x="812.000000" y="458.000000" width="138" height="21" fill="black"></rect>
+<rect x="461.000000" y="548.000000" width="74" height="21" fill="black"></rect>
+<rect x="105.000000" y="638.000000" width="64" height="21" fill="black"></rect>
+<rect x="557.000000" y="728.000000" width="136" height="21" fill="black"></rect>
+<rect x="848.000000" y="818.000000" width="101" height="21" fill="black"></rect>
+<rect x="638.000000" y="908.000000" width="118" height="21" fill="black"></rect>
+<rect x="975.000000" y="998.000000" width="21" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption">Password reset end to end: the only app code involved is the <code>sendResetPassword</code> hook and the HTML template — token issuance, verification, and credential update are all Better Auth.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/auth.ts</span><span class="owns-desc">The <code>betterAuth</code> instance — Postgres adapter, username plugin, reset-email hook, trusted-origin derivation</span></div><div class="owns-row"><span class="owns-name">lib/auth-client.ts</span><span class="owns-desc"><code>createAuthClient</code> + <code>usernameClient()</code> — the browser's handle on Better Auth</span></div><div class="owns-row"><span class="owns-name">app/api/auth/[...all]/route.ts</span><span class="owns-desc">Catch-all <code>GET</code>/<code>POST</code> via <code>toNextJsHandler(auth)</code> — the entire auth HTTP surface</span></div><div class="owns-row"><span class="owns-name">server/routers/auth.ts</span><span class="owns-desc"><code>authRouter.me</code> — public session probe, <code>null</code> when signed out</span></div><div class="owns-row"><span class="owns-name">components/session-refresh.tsx</span><span class="owns-desc">Renders nothing; <code>useSession()</code> keeps the cookie fresh in active tabs</span></div><div class="owns-row"><span class="owns-name">components/sign-out-button.tsx</span><span class="owns-desc"><code>authClient.signOut()</code> → <code>/sign-in</code> + router refresh</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">auth</span><span class="owns-desc">The server instance — <code>auth.api.getSession</code> (web-shell tRPC context) and <code>auth.api.requestPasswordReset</code> (admin) call into it</span></div><div class="owns-row"><span class="owns-name">authClient</span><span class="owns-desc">Browser client used by every auth page, the settings forms, and the sign-out button</span></div><div class="owns-row"><span class="owns-name">authRouter</span><span class="owns-desc">tRPC <code>auth.me</code> — the read-side of identity</span></div><div class="owns-row"><span class="owns-name">SessionRefresh</span><span class="owns-desc">Mounted once in the root layout</span></div><div class="owns-row"><span class="owns-name">SignOutButton</span><span class="owns-desc">Used by web-shell's nav bar</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><a href="../domain-web-shell/domain-web-shell.html">web-shell</a>'s <code>createTRPCContext</code> calls <code>auth.api.getSession(headers)</code> on <strong>every</strong> tRPC request — <code>protectedProcedure</code> and <code>adminProcedure</code> are built on that context, so all seven other domains authenticate through this instance.</span></div><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><a href="../domain-admin/domain-admin.html">admin</a>'s service calls <code>auth.api.requestPasswordReset</code> to trigger resets on a user's behalf; the admin layout gates on <code>auth.me</code>'s <code>role</code>.</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><code>auth.me</code> is called via <code>serverTRPC</code> from server pages across <a href="../domain-game/domain-game.html">game</a>, <a href="../domain-leagues/domain-leagues.html">leagues</a>, <a href="../domain-scoring/domain-scoring.html">scoring</a>, and web-shell's nav bar to render signed-in state.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body">The reset hook renders <a href="#c-email">transactional email</a>'s <code>resetPasswordEmail</code> and sends via <code>sendEmail</code>.</span></div></div></div><div class="subsection" id="c-pages"><div class="subsection-header"><h3 class="subsection-title">Auth pages <span class="subsection-path">src/app/(auth)</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">The <code>(auth)</code> route group holds four client-form pages under a shared minimal layout (<code>(auth)/layout.tsx</code> — just a PPGL wordmark header, no app nav). Each page is the same shape: local <code>useState</code> form, one <code>authClient</code> call, inline error, no tRPC mutation. Sign-in and sign-up wrap their forms in <code>Suspense</code> because they read <code>useSearchParams</code>.</p><p class="detail-p">The interesting wrinkle is the <strong>invite handoff</strong>: both sign-in and sign-up read <code>?invite=&lt;code&gt;</code>. Sign-in redirects to <code>/league/join?code=…</code> after success; sign-up goes further — after <code>authClient.signUp.email</code> succeeds it directly fires the <code>league.join</code> tRPC mutation (<a href="../domain-leagues/domain-leagues.html">leagues</a>) and lands the new user inside their league, falling back to <code>/?joinError=1</code> if the join fails after the account was created. This is the one place the auth surface reaches into another domain's write API.</p><p class="detail-p">Sign-up submits <code>username</code> (lowercased) plus <code>displayUsername</code> (as typed) — the case-insensitive/display split that Better Auth's username plugin stores as two columns. All post-auth navigations use <code>window.location.href</code> rather than the router on purpose: a full navigation forces server components (the nav bar) to re-render with the new session cookie.</p><p class="detail-p"><code>password-input.tsx</code> is the shared show/hide password field (eye toggle, <code>tabIndex={-1}</code> so it doesn't trap keyboard flow); the settings page reuses it too. <code>sign-in/layout.tsx</code> and <code>sign-up/layout.tsx</code> exist only to attach <code>metadata</code> titles to client pages.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/(auth)/layout.tsx</span><span class="owns-desc">Chrome-free shell: wordmark header + page</span></div><div class="owns-row"><span class="owns-name">app/(auth)/sign-in/page.tsx</span><span class="owns-desc"><code>authClient.signIn.email</code>; honors <code>?invite=</code> by redirecting to the join page</span></div><div class="owns-row"><span class="owns-name">app/(auth)/sign-up/page.tsx</span><span class="owns-desc"><code>authClient.signUp.email</code> + optional <code>league.join</code> chain; username/displayUsername split</span></div><div class="owns-row"><span class="owns-name">app/(auth)/forgot-password/page.tsx</span><span class="owns-desc"><code>authClient.requestPasswordReset</code> with a neutral "if an account exists" confirmation</span></div><div class="owns-row"><span class="owns-name">app/(auth)/reset-password/page.tsx</span><span class="owns-desc">Reads <code>?token=</code>, confirms match, <code>authClient.resetPassword</code></span></div><div class="owns-row"><span class="owns-name">app/(auth)/password-input.tsx</span><span class="owns-desc">Shared visibility-toggle password field (also used by settings)</span></div><div class="owns-row"><span class="owns-name">app/(auth)/sign-in/layout.tsx</span><span class="owns-desc">Metadata-only layout (title)</span></div><div class="owns-row"><span class="owns-name">app/(auth)/sign-up/layout.tsx</span><span class="owns-desc">Metadata-only layout (title)</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">PasswordInput</span><span class="owns-desc">The one reusable piece — imported by <code>settings/password-section.tsx</code> across the route-group boundary</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body">Sign-up invokes <code>trpc.league.join</code> from <a href="../domain-leagues/domain-leagues.html">leagues</a> when an invite code is present — account creation and league membership in one flow.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body">Everything else goes through <a href="#c-core">Better Auth core</a>'s <code>authClient</code>; no page here touches a repository or service directly.</span></div></div></div><div class="subsection" id="c-settings"><div class="subsection-header"><h3 class="subsection-title">Settings &amp; profile <span class="subsection-path">src/app/settings · src/server</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>/settings</code> is a server page that gates on <code>auth.me</code> (redirect to <code>/sign-in</code> when null) and stacks three client sections. Two of them are Better Auth mutations: <code>AccountSection</code> re-validates the username client-side (length, charset, then <code>validateUsername</code>) before <code>authClient.updateUser({ username, displayUsername })</code>, and <code>PasswordSection</code> calls <code>authClient.changePassword</code> with current + new. Neither touches app-owned tables.</p><p class="detail-p"><code>NotificationSection</code> is the exception and the domain's only conventional stack: a toggle bound to <code>user.getNotificationPreferences</code> / <code>user.updateNotificationPreferences</code>, flowing <code>userRouter</code> → <code>userService</code> → <code>userRepo</code>, which reads and writes the single <code>pickReminderEmail</code> boolean on the <code>user</code> table. The service layer is a pass-through today — it exists to keep the router thin per the repo convention, and it's where profile logic would grow.</p><p class="detail-p"><code>lib/profanity.ts</code> is the shared username policy: a charset/length regex plus a substring check against the <code>bad-words</code> list. It runs in <strong>both</strong> places — client-side in <code>AccountSection</code> for fast feedback, and server-side inside the Better Auth <code>username</code> plugin's <code>usernameValidator</code> (see <a href="#c-core">Better Auth core</a>), so bypassing the form doesn't bypass the rule.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/settings/page.tsx</span><span class="owns-desc">Server gate on <code>auth.me</code>; composes the three sections</span></div><div class="owns-row"><span class="owns-name">app/settings/account-section.tsx</span><span class="owns-desc">Username edit — client validation then <code>authClient.updateUser</code></span></div><div class="owns-row"><span class="owns-name">app/settings/password-section.tsx</span><span class="owns-desc"><code>authClient.changePassword</code> (current + new + confirm)</span></div><div class="owns-row"><span class="owns-name">app/settings/notification-section.tsx</span><span class="owns-desc">Pick-reminder toggle over the <code>user</code> tRPC procedures</span></div><div class="owns-row"><span class="owns-name">server/routers/user.ts</span><span class="owns-desc">Two protected procedures: get/update notification prefs</span></div><div class="owns-row"><span class="owns-name">server/services/user.ts</span><span class="owns-desc">Thin pass-through to the repo (the growth point for profile logic)</span></div><div class="owns-row"><span class="owns-name">server/repositories/user.ts</span><span class="owns-desc">Kysely read/write of <code>user.pickReminderEmail</code>; accepts an optional executor</span></div><div class="owns-row"><span class="owns-name">lib/profanity.ts</span><span class="owns-desc">Username policy: regex + <code>bad-words</code> substring check, shared client/server</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">userRouter</span><span class="owns-desc">Mounted as <code>user.*</code> in web-shell's <code>_app.ts</code></span></div><div class="owns-row"><span class="owns-name">validateUsername</span><span class="owns-desc">Dual-use policy — imported by <code>server/auth.ts</code> (plugin validator) and <code>account-section.tsx</code> (form feedback)</span></div><div class="owns-row"><span class="owns-name">AccountSection</span><span class="owns-desc">Username editor</span></div><div class="owns-row"><span class="owns-name">PasswordSection</span><span class="owns-desc">Password change form</span></div><div class="owns-row"><span class="owns-name">NotificationSection</span><span class="owns-desc">Reminder-email toggle</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">reads</span><span class="conn-body">The page gates via <code>auth.me</code> from <a href="#c-core">Better Auth core</a>; username/password writes go through <code>authClient</code>, not tRPC.</span></div><div class="conn"><span class="conn-dir">produces</span><span class="conn-body">The <code>pickReminderEmail</code> flag it writes is exactly what the <a href="#c-notify">notification queries</a> filter on — the toggle is the opt-out for the reminder pipeline.</span></div></div></div><div class="subsection" id="c-notify"><div class="subsection-header"><h3 class="subsection-title">Pick-reminder notifications <span class="subsection-path">src/server/services · src/server/repositories</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">The pipeline that nags league members before a tournament locks. Both files deliberately drop the <code>server-only</code> guard and import <code>db-core</code> directly (the same pattern as the sync repos) because their caller is golf-data's cron route, not a tRPC procedure.</p><p class="detail-p"><code>sendPickReminders(tournamentId, name)</code> runs two eligibility queries: members with <strong>no pick</strong> for the tournament, and — only if the field is populated — members whose picked golfer has no <code>CONFIRMED</code> entry in <code>tournamentField</code>. Both queries exclude bots, exclude users who toggled <code>pickReminderEmail</code> off, restrict to <code>ACTIVE</code> members of <code>PRIVATE</code> leagues, and anti-join against <code>notification_log</code> so nobody is emailed twice. Results are aggregated <strong>per user across leagues</strong> (a pick-not-in-field finding upgrades a no-pick row for the same league), rendered with <code>pickReminderEmail</code> and shipped as one <code>sendBatchEmail</code> call.</p><p class="detail-p">Delivery logging is best-effort by design: after a successful batch, one <code>notification_log</code> row per user is inserted with <code>ON CONFLICT DO NOTHING</code> on <code>(userId, tournamentId, type)</code>; a failed insert is logged but not fatal since the unique constraint dedups the next run. A known trade-off is annotated in the code: if a 100+ recipient batch fails on a later chunk, earlier chunks were sent but never logged, so those users could be re-emailed next tick.</p><p class="detail-p"><code>sendTestPickReminder(tournamentId, email)</code> is the admin-facing sibling: it rebuilds a real user's actual league/pick state so the preview email is truthful, but skips <code>notification_log</code> entirely so it can be re-sent freely. <code>findUpcomingTournamentsWithinHours</code> is the scheduling query the cron uses to decide <em>which</em> tournaments are within the reminder window.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2531 242"><svg class="d2-4168460034 d2-svg" width="2531" height="242" viewBox="-25 -25 2531 242"><rect x="-25.000000" y="-25.000000" width="2531.000000" height="242.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-4168460034 .text-bold {
+	font-family: "d2-4168460034-font-bold";
+}
+@font-face {
+	font-family: d2-4168460034-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-4168460034 .text-italic {
+	font-family: "d2-4168460034-font-italic";
+}
+@font-face {
+	font-family: d2-4168460034-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-4168460034 .fill-N1{fill:#0A0F25;}
+		.d2-4168460034 .fill-N2{fill:#676C7E;}
+		.d2-4168460034 .fill-N3{fill:#9499AB;}
+		.d2-4168460034 .fill-N4{fill:#CFD2DD;}
+		.d2-4168460034 .fill-N5{fill:#DEE1EB;}
+		.d2-4168460034 .fill-N6{fill:#EEF1F8;}
+		.d2-4168460034 .fill-N7{fill:#FFFFFF;}
+		.d2-4168460034 .fill-B1{fill:#0D32B2;}
+		.d2-4168460034 .fill-B2{fill:#0D32B2;}
+		.d2-4168460034 .fill-B3{fill:#E3E9FD;}
+		.d2-4168460034 .fill-B4{fill:#E3E9FD;}
+		.d2-4168460034 .fill-B5{fill:#EDF0FD;}
+		.d2-4168460034 .fill-B6{fill:#F7F8FE;}
+		.d2-4168460034 .fill-AA2{fill:#4A6FF3;}
+		.d2-4168460034 .fill-AA4{fill:#EDF0FD;}
+		.d2-4168460034 .fill-AA5{fill:#F7F8FE;}
+		.d2-4168460034 .fill-AB4{fill:#EDF0FD;}
+		.d2-4168460034 .fill-AB5{fill:#F7F8FE;}
+		.d2-4168460034 .stroke-N1{stroke:#0A0F25;}
+		.d2-4168460034 .stroke-N2{stroke:#676C7E;}
+		.d2-4168460034 .stroke-N3{stroke:#9499AB;}
+		.d2-4168460034 .stroke-N4{stroke:#CFD2DD;}
+		.d2-4168460034 .stroke-N5{stroke:#DEE1EB;}
+		.d2-4168460034 .stroke-N6{stroke:#EEF1F8;}
+		.d2-4168460034 .stroke-N7{stroke:#FFFFFF;}
+		.d2-4168460034 .stroke-B1{stroke:#0D32B2;}
+		.d2-4168460034 .stroke-B2{stroke:#0D32B2;}
+		.d2-4168460034 .stroke-B3{stroke:#E3E9FD;}
+		.d2-4168460034 .stroke-B4{stroke:#E3E9FD;}
+		.d2-4168460034 .stroke-B5{stroke:#EDF0FD;}
+		.d2-4168460034 .stroke-B6{stroke:#F7F8FE;}
+		.d2-4168460034 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-4168460034 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-4168460034 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-4168460034 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-4168460034 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-4168460034 .background-color-N1{background-color:#0A0F25;}
+		.d2-4168460034 .background-color-N2{background-color:#676C7E;}
+		.d2-4168460034 .background-color-N3{background-color:#9499AB;}
+		.d2-4168460034 .background-color-N4{background-color:#CFD2DD;}
+		.d2-4168460034 .background-color-N5{background-color:#DEE1EB;}
+		.d2-4168460034 .background-color-N6{background-color:#EEF1F8;}
+		.d2-4168460034 .background-color-N7{background-color:#FFFFFF;}
+		.d2-4168460034 .background-color-B1{background-color:#0D32B2;}
+		.d2-4168460034 .background-color-B2{background-color:#0D32B2;}
+		.d2-4168460034 .background-color-B3{background-color:#E3E9FD;}
+		.d2-4168460034 .background-color-B4{background-color:#E3E9FD;}
+		.d2-4168460034 .background-color-B5{background-color:#EDF0FD;}
+		.d2-4168460034 .background-color-B6{background-color:#F7F8FE;}
+		.d2-4168460034 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-4168460034 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-4168460034 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-4168460034 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-4168460034 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-4168460034 .color-N1{color:#0A0F25;}
+		.d2-4168460034 .color-N2{color:#676C7E;}
+		.d2-4168460034 .color-N3{color:#9499AB;}
+		.d2-4168460034 .color-N4{color:#CFD2DD;}
+		.d2-4168460034 .color-N5{color:#DEE1EB;}
+		.d2-4168460034 .color-N6{color:#EEF1F8;}
+		.d2-4168460034 .color-N7{color:#FFFFFF;}
+		.d2-4168460034 .color-B1{color:#0D32B2;}
+		.d2-4168460034 .color-B2{color:#0D32B2;}
+		.d2-4168460034 .color-B3{color:#E3E9FD;}
+		.d2-4168460034 .color-B4{color:#E3E9FD;}
+		.d2-4168460034 .color-B5{color:#EDF0FD;}
+		.d2-4168460034 .color-B6{color:#F7F8FE;}
+		.d2-4168460034 .color-AA2{color:#4A6FF3;}
+		.d2-4168460034 .color-AA4{color:#EDF0FD;}
+		.d2-4168460034 .color-AA5{color:#F7F8FE;}
+		.d2-4168460034 .color-AB4{color:#EDF0FD;}
+		.d2-4168460034 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="JiMzNDtjcm9uIHRpY2sgKGdvbGYtZGF0YSkmIzM0Ow=="><g class="shape" ><rect x="0.000000" y="63.000000" width="186.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="93.000000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">cron tick (golf-data)</text></g><g class="dG91cm5hbWVudHMgd2l0aGluIDE2aA=="><g class="shape" ><rect x="338.000000" y="63.000000" width="216.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="446.000000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">tournaments within 16h</text></g><g class="bm8tcGljayBxdWVyeQ=="><g class="shape" ><rect x="849.000000" y="0.000000" width="143.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="920.500000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">no-pick query</text></g><g class="cGljay1ub3QtaW4tZmllbGQgcXVlcnk="><g class="shape" ><rect x="818.000000" y="126.000000" width="205.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="920.500000" y="164.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">pick-not-in-field query</text></g><g class="YWdncmVnYXRlIHBlciB1c2Vy"><g class="shape" ><rect x="1175.000000" y="63.000000" width="179.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1264.500000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">aggregate per user</text></g><g class="JiMzNDtzZW5kQmF0Y2hFbWFpbCAoUmVzZW5kKSYjMzQ7"><g class="shape" ><rect x="1506.000000" y="63.000000" width="225.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1618.500000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">sendBatchEmail (Resend)</text></g><g class="bm90aWZpY2F0aW9uX2xvZyBpbnNlcnQ= store"><g class="shape" ><rect x="1953.000000" y="63.000000" width="202.000000" height="66.000000" stroke="#9775fa" fill="#e5dbff" style="stroke-width:2;" /></g><text x="2054.000000" y="101.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">notification_log insert</text></g><g class="ZGVkdXAgb24gbmV4dCBydW4="><g class="shape" ><rect x="2307.000000" y="63.000000" width="174.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="2394.000000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">dedup on next run</text></g><g class="KCYjMzQ7Y3JvbiB0aWNrIChnb2xmLWRhdGEpJiMzNDsgLSZndDsgdG91cm5hbWVudHMgd2l0aGluIDE2aClbMF0="><marker id="mk-d2-4168460034-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 188.000000 96.000000 C 246.800003 96.000000 277.200012 96.000000 334.000000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-4168460034-3488378134)" mask="url(#d2-4168460034)" /></g><g class="KHRvdXJuYW1lbnRzIHdpdGhpbiAxNmggLSZndDsgbm8tcGljayBxdWVyeSlbMF0="><path d="M 555.933197 67.487410 C 659.599976 40.000000 718.599976 33.000000 845.000000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-4168460034-3488378134)" mask="url(#d2-4168460034)" /></g><g class="KHRvdXJuYW1lbnRzIHdpdGhpbiAxNmggLSZndDsgcGljay1ub3QtaW4tZmllbGQgcXVlcnkpWzBd"><path d="M 555.933197 124.512590 C 659.599976 152.000000 712.400024 159.000000 814.000000 159.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-4168460034-3488378134)" mask="url(#d2-4168460034)" /><text x="684.000000" y="161.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">if field populated</text></g><g class="KG5vLXBpY2sgcXVlcnkgLSZndDsgYWdncmVnYXRlIHBlciB1c2VyKVswXQ=="><path d="M 994.000000 33.000000 C 1077.599976 33.000000 1114.800049 39.000000 1174.260552 61.579955" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-4168460034-3488378134)" mask="url(#d2-4168460034)" /></g><g class="KHBpY2stbm90LWluLWZpZWxkIHF1ZXJ5IC0mZ3Q7IGFnZ3JlZ2F0ZSBwZXIgdXNlcilbMF0="><path d="M 1025.000000 159.000000 C 1083.800049 159.000000 1114.800049 153.000000 1174.260552 130.420045" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-4168460034-3488378134)" mask="url(#d2-4168460034)" /></g><g class="KGFnZ3JlZ2F0ZSBwZXIgdXNlciAtJmd0OyAmIzM0O3NlbmRCYXRjaEVtYWlsIChSZXNlbmQpJiMzNDspWzBd"><path d="M 1356.000000 96.000000 C 1414.800049 96.000000 1445.199951 96.000000 1502.000000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-4168460034-3488378134)" mask="url(#d2-4168460034)" /></g><g class="KCYjMzQ7c2VuZEJhdGNoRW1haWwgKFJlc2VuZCkmIzM0OyAtJmd0OyBub3RpZmljYXRpb25fbG9nIGluc2VydClbMF0="><path d="M 1733.000000 96.000000 C 1819.800049 96.000000 1864.199951 96.000000 1949.000000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-4168460034-3488378134)" mask="url(#d2-4168460034)" /><text x="1842.000000" y="102.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">on success</text></g><g class="KG5vdGlmaWNhdGlvbl9sb2cgaW5zZXJ0IC0mZ3Q7IGRlZHVwIG9uIG5leHQgcnVuKVswXQ=="><path d="M 2157.000000 96.000000 C 2215.800049 96.000000 2246.199951 96.000000 2303.000000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-4168460034-3488378134)" mask="url(#d2-4168460034)" /></g><mask id="d2-4168460034" maskUnits="userSpaceOnUse" x="-25" y="-25" width="2531" height="242">
+<rect x="-25" y="-25" width="2531" height="242" fill="white"></rect>
+<rect x="626.000000" y="145.000000" width="116" height="21" fill="black"></rect>
+<rect x="1805.000000" y="86.000000" width="74" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption">One email per user per tournament, ever — the <code>(userId, tournamentId, type)</code> unique constraint is the idempotency key, not the cron schedule.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/services/notification.ts</span><span class="owns-desc">Aggregation + batch send + best-effort logging; the admin test-send variant</span></div><div class="owns-row"><span class="owns-name">server/repositories/notification.ts</span><span class="owns-desc">Eligibility queries (anti-joins on <code>pick</code>, <code>tournamentField</code>, <code>notificationLog</code>), dedup insert, upcoming-tournament window</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">sendPickReminders</span><span class="owns-desc">Called per upcoming tournament by golf-data's <code>cron-sync</code></span></div><div class="owns-row"><span class="owns-name">sendTestPickReminder</span><span class="owns-desc">Called by the admin router — realistic preview, never logged</span></div><div class="owns-row"><span class="owns-name">findUpcomingTournamentsWithinHours</span><span class="owns-desc">The cron's scheduling window query (called with 16h)</span></div><div class="owns-row"><span class="owns-name">findMembersWithNoPick</span><span class="owns-desc">Per-league rows of members missing a pick, minus bots/opt-outs/already-notified</span></div><div class="owns-row"><span class="owns-name">findMembersWithPickNotInField</span><span class="owns-desc">Members whose golfer lacks a <code>CONFIRMED</code> field entry</span></div><div class="owns-row"><span class="owns-name">hasPopulatedField</span><span class="owns-desc">Gate so pick-not-in-field only runs once a field exists</span></div><div class="owns-row"><span class="owns-name">insertNotificationLog</span><span class="owns-desc"><code>ON CONFLICT DO NOTHING</code> dedup write</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">called by</span><span class="conn-body"><a href="../domain-golf-data/domain-golf-data.html">golf-data</a>'s <code>cron-sync</code> imports <code>findUpcomingTournamentsWithinHours</code> + <code>sendPickReminders</code> and runs them on the sync tick — reminders piggyback on the ESPN sync cron, there is no separate scheduler.</span></div><div class="conn"><span class="conn-dir">called by</span><span class="conn-body"><a href="../domain-admin/domain-admin.html">admin</a>'s router exposes <code>sendTestPickReminder</code> as an admin procedure.</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body">Queries join tables owned by neighbors: <code>pick</code> (<a href="../domain-game/domain-game.html">game</a>), <code>league</code>/<code>leagueMember</code> (<a href="../domain-leagues/domain-leagues.html">leagues</a>), <code>tournament</code>/<code>tournamentField</code> (<a href="../domain-golf-data/domain-golf-data.html">golf-data</a>) — a read-only data seam, no code imports from those domains.</span></div><div class="conn"><span class="conn-dir">consumes</span><span class="conn-body"><a href="#c-email">Transactional email</a> for rendering and delivery.</span></div></div></div><div class="subsection" id="c-email"><div class="subsection-header"><h3 class="subsection-title">Transactional email <span class="subsection-path">src/server/services</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>email.ts</code> is the only file that talks to Resend: a lazily-constructed singleton client (so builds without the API key don't explode at import time), a configurable <code>EMAIL_FROM</code> sender with a dev fallback, and two functions — <code>sendEmail</code> for one message and <code>sendBatchEmail</code>, which chunks into groups of 100 to respect Resend's batch-API ceiling and throws on the first failed chunk.</p><p class="detail-p"><code>email-templates.ts</code> keeps rendering separate from delivery: pure functions returning <code>{ subject, html }</code> built from a shared table-layout <code>layout()</code> (inline styles only — email-client-safe, PPGL green header, a footer link to <code>/settings</code> as the manage-notifications escape hatch) and a <code>button()</code> helper. <code>resetPasswordEmail</code> takes the Better Auth reset link; <code>pickReminderEmail</code> renders the per-league issue list ("No pick yet" vs "<em>golfer</em> is not in the field") with a dashboard CTA. Links are absolute via <code>NEXT_PUBLIC_APP_URL</code>.</p><p class="detail-p">Two producers, one gateway: the Better Auth <code>sendResetPassword</code> hook and the notification service. Nothing else in the repo sends mail.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/services/email.ts</span><span class="owns-desc">Resend gateway — lazy client, <code>EMAIL_FROM</code>, single + 100-chunk batch send</span></div><div class="owns-row"><span class="owns-name">server/services/email-templates.ts</span><span class="owns-desc">Pure <code>{ subject, html }</code> builders on a shared inline-styled table layout</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">sendEmail</span><span class="owns-desc">Single send — used by the reset hook and the admin test reminder</span></div><div class="owns-row"><span class="owns-name">sendBatchEmail</span><span class="owns-desc">Chunked batch send — used by <code>sendPickReminders</code></span></div><div class="owns-row"><span class="owns-name">resetPasswordEmail</span><span class="owns-desc">Rendered inside <code>server/auth.ts</code>'s <code>sendResetPassword</code> hook</span></div><div class="owns-row"><span class="owns-name">pickReminderEmail</span><span class="owns-desc">Rendered by the notification service per user</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><a href="#c-core">Better Auth core</a> (reset flow) and <a href="#c-notify">pick-reminder notifications</a> (batch reminders) — the only two mail producers in the app.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body">Resend's send + batch APIs (external); template links point users back at <code>/dashboard</code> and <code>/settings</code>.</span></div></div></div></section><section id="data" class="section"><div class="section-header"><h2 class="section-title">Data it owns</h2></div><p class="section-intro">Five Prisma models in <code>prisma/schema.prisma</code>. The first four are Better Auth's tables — the library reads and writes them directly through the shared Kysely instance; app code only ever touches the extra columns it added to <code>User</code>.</p><div class="owns-list"><div class="owns-row"><span class="owns-name">User</span><span class="owns-desc">Identity plus PPGL extensions: <code>username</code>/<code>displayUsername</code> (case-insensitive vs as-typed), <code>role</code> (checked by web-shell's <code>adminProcedure</code>), <code>isBot</code> (excluded from reminders; used by game's bot picks), <code>pickReminderEmail</code> (the settings toggle). Referenced by nearly every domain via <code>LeagueMember</code>, commissioner relations, and adjustment audit fields.</span></div><div class="owns-row"><span class="owns-name">Account</span><span class="owns-desc">Per-provider credential row — for email/password this is where the hashed <code>password</code> lives, cascade-deleted with the user.</span></div><div class="owns-row"><span class="owns-name">Session</span><span class="owns-desc">Server-side session rows keyed by unique <code>token</code>, with IP/user-agent metadata; the cookie references these.</span></div><div class="owns-row"><span class="owns-name">Verification</span><span class="owns-desc">Short-lived verification values (password-reset tokens) keyed by <code>identifier</code>, with expiry.</span></div><div class="owns-row"><span class="owns-name">NotificationLog</span><span class="owns-desc">Send-dedup ledger: unique <code>(userId, tournamentId, type)</code> — one <code>PICK_REMINDER</code> per user per tournament, ever.</span></div></div><p class="diagram-caption"><code>User</code> is this domain's biggest export in disguise: every other domain's rows ultimately hang off <code>user.id</code>, but only accounts (and Better Auth) may write the identity columns.</p></section><section id="seams" class="section"><div class="section-header"><h2 class="section-title">Seams</h2></div><p class="section-intro">A small tRPC surface (identity is read-mostly over tRPC), one HTTP catch-all that <em>is</em> the credential API, and two function-level seams consumed by cron and admin.</p><div class="seam-cols"><div class="seam-col seam-exposes"><div class="seam-head"><span aria-hidden="true">&#8593;</span> Exposes</div><div class="seam-body"><ul class="seam-api"><li>auth.me <span class="api-note">— Public session probe — `null` or the projected user; called by server pages across every UI domain</span></li><li>user.getNotificationPreferences <span class="api-note">— Protected — reads the `pickReminderEmail` flag</span></li><li>user.updateNotificationPreferences <span class="api-note">— Protected — the settings toggle write</span></li><li>/api/auth/[...all] <span class="api-note">— Better Auth catch-all (`GET`/`POST`) — sign-up, sign-in, sign-out, password reset/change, `updateUser` all live here, outside tRPC</span></li></ul></div></div><div class="seam-col seam-depends"><div class="seam-head"><span aria-hidden="true">&#8595;</span> Depends on</div><div class="seam-body"><div class="seam-neighbors"><a class="neighbor-chip" href="../domain-web-shell/domain-web-shell.html">web-shell <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-leagues/domain-leagues.html">leagues <span class="nc-path">src/server/routers/league.ts</span></a></div><p class="diagram-caption" style="margin-top:14px;">Module-level seams beyond tRPC: <code>auth</code> itself is imported by web-shell's <code>trpc.ts</code> (<code>getSession</code> per request) and admin's service (<code>requestPasswordReset</code>); <a href="../domain-golf-data/domain-golf-data.html">golf-data</a>'s <code>cron-sync</code> imports <code>sendPickReminders</code> + <code>findUpcomingTournamentsWithinHours</code>; <a href="../domain-admin/domain-admin.html">admin</a>'s router imports <code>sendTestPickReminder</code>. Dependencies going out: web-shell supplies <code>router</code>/<code>protectedProcedure</code>, <code>db</code>/<code>db-core</code>, and the tRPC clients; the sign-up page calls leagues' <code>league.join</code>. The notification queries also read <code>pick</code>, <code>league</code>, and <code>tournament</code> tables owned by <a href="../domain-game/domain-game.html">game</a>, <a href="../domain-leagues/domain-leagues.html">leagues</a>, and golf-data — data-level reads with no code import.</p></div></div></div></section></main></div><div id="zoom-overlay" class="zoom-overlay" aria-hidden="true"><div class="zoom-controls"><button id="zoom-out" type="button" aria-label="Zoom out">&#8722;</button><button id="zoom-reset" type="button">Reset</button><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-close" type="button" aria-label="Close">&#10006;</button></div><div id="zoom-stage" class="zoom-stage"></div></div><script>(function() {
+  'use strict';
+
+  // Sidebar toggle
+  var toggle = document.getElementById('sidebar-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+
+  function openSidebar() {
+    sidebar.classList.add('is-open');
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('is-open');
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function() {
+      if (sidebar.classList.contains('is-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  // Close sidebar on nav click (mobile)
+  var outlineLinks = document.querySelectorAll('.outline-item, .file-item');
+  outlineLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 900) {
+        closeSidebar();
+      }
+    });
+  });
+
+  // Scroll-spy for outline
+  var outlineItems = document.querySelectorAll('.outline-item[data-target]');
+  var sections = Array.prototype.map.call(outlineItems, function(it) {
+    var t = it.getAttribute('data-target');
+    return { id: t, target: t };
+  });
+
+  function updateActive(activeId) {
+    outlineItems.forEach(function(item) {
+      var t = item.getAttribute('data-target');
+      if (t === activeId) {
+        item.classList.add('is-active');
+      } else {
+        item.classList.remove('is-active');
+      }
+    });
+  }
+
+  var topbarH = 52;
+
+  function onScroll() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var winH = window.innerHeight;
+    var active = null;
+
+    for (var i = sections.length - 1; i >= 0; i--) {
+      var el = document.getElementById(sections[i].id);
+      if (el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.top <= topbarH + 32) {
+          active = sections[i].target;
+          break;
+        }
+      }
+    }
+
+    if (active) {
+      updateActive(active);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Progress rail: highlight chapter based on scroll
+  var progressSteps = document.querySelectorAll('.progress-step');
+  var chapters = Array.prototype.map.call(progressSteps, function(s) {
+    var h = s.getAttribute('href') || '';
+    return h.charAt(0) === '#' ? document.getElementById(h.slice(1)) : null;
+  });
+
+  function updateProgress() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = 0;
+    for (var i = chapters.length - 1; i >= 0; i--) {
+      if (chapters[i]) {
+        var rect = chapters[i].getBoundingClientRect();
+        if (rect.top <= topbarH + 48) {
+          active = i;
+          break;
+        }
+      }
+    }
+    progressSteps.forEach(function(step, idx) {
+      if (idx === active) {
+        step.classList.add('is-active');
+      } else {
+        step.classList.remove('is-active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+})();
+
+(function(){
+  'use strict';
+  var ov=document.getElementById('zoom-overlay'), stage=document.getElementById('zoom-stage');
+  var cur,scale=1,tx=0,ty=0,drag=false,moved=false,lx=0,ly=0;
+  function apply(){ if(cur) cur.style.transform='translate('+tx+'px,'+ty+'px) scale('+scale+')'; }
+  function openSvg(svg){ stage.innerHTML=''; cur=svg.cloneNode(true); cur.removeAttribute('width'); cur.removeAttribute('height'); stage.appendChild(cur); scale=1;tx=0;ty=0;apply(); ov.classList.add('is-open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+  function closeOv(){ ov.classList.remove('is-open'); ov.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  document.querySelectorAll('.diagram-box').forEach(function(box){
+    var svg=box.querySelector('svg.diagram-svg'); if(!svg) return;
+    box.addEventListener('click', function(){ openSvg(svg); });
+  });
+  document.getElementById('zoom-close').addEventListener('click', closeOv);
+  document.getElementById('zoom-reset').addEventListener('click', function(){ scale=1;tx=0;ty=0;apply(); });
+  document.getElementById('zoom-in').addEventListener('click', function(){ scale=Math.min(8,scale*1.25); apply(); });
+  document.getElementById('zoom-out').addEventListener('click', function(){ scale=Math.max(0.3,scale/1.25); apply(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeOv(); });
+  stage.addEventListener('wheel', function(e){ e.preventDefault(); scale=Math.min(8,Math.max(0.3, scale*(e.deltaY<0?1.12:0.89))); apply(); }, {passive:false});
+  stage.addEventListener('pointerdown', function(e){ drag=true; moved=false; lx=e.clientX; ly=e.clientY; try{stage.setPointerCapture(e.pointerId);}catch(_){} });
+  stage.addEventListener('pointermove', function(e){ if(!drag)return; moved=true; tx+=e.clientX-lx; ty+=e.clientY-ly; lx=e.clientX; ly=e.clientY; apply(); });
+  stage.addEventListener('pointerup', function(){ drag=false; });
+  stage.addEventListener('pointercancel', function(){ drag=false; });
+  stage.addEventListener('click', function(e){ if(!moved && e.target===stage) closeOv(); });
+})();
+
+(function(){
+  'use strict';
+  function openTo(hash){
+    if(!hash || hash.charAt(0) !== '#') return;
+    var el = document.getElementById(hash.slice(1));
+    if(!el) return;
+    var p = el;
+    while(p){ if(p.tagName && p.tagName.toLowerCase() === 'details') p.open = true; p = p.parentElement; }
+    if(el.tagName && el.tagName.toLowerCase() === 'details') el.open = true;
+    var d = el.querySelector && el.querySelector('details.file-diff');
+    if(d) d.open = true;
+  }
+  window.addEventListener('hashchange', function(){ openTo(location.hash); });
+  if(location.hash) openTo(location.hash);
+})();
+</script></body></html>

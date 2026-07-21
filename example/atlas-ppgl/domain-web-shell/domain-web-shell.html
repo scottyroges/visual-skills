@@ -1,0 +1,1835 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="visual-skills · visual-atlas"><title>App shell &amp; plumbing</title><style>/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --panel: #f7f8fa;
+  --panel-deep: #f0f2f5;
+  --border: #e3e6ea;
+  --border-strong: #c8cdd5;
+  --ink: #1c2024;
+  --ink-muted: #5a626c;
+  --ink-faint: #646b75;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: #eff4ff;
+  --accent-border: #bfdbfe;
+  --add: #16a34a;
+  --add-bg: #f0fdf4;
+  --add-border: #bbf7d0;
+  --remove: #dc2626;
+  --remove-bg: #fef2f2;
+  --remove-border: #fecaca;
+  --change: #d97706;
+  --change-bg: #fffbeb;
+  --change-border: #fde68a;
+  --risk-low: #16a34a;
+  --risk-low-bg: #f0fdf4;
+  --risk-low-border: #bbf7d0;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+
+  --sidebar-w: 264px;
+  --topbar-h: 52px;
+  --radius: 6px;
+  --radius-sm: 4px;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== TOP BAR ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--topbar-h);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+}
+
+.topbar-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  line-height: 1.5;
+}
+
+.chip-risk {
+  color: var(--risk-low);
+  background: var(--risk-low-bg);
+  border-color: var(--risk-low-border);
+}
+
+.chip-stat {
+  color: var(--ink-muted);
+  background: var(--panel-deep);
+  border-color: var(--border);
+  font-weight: 500;
+}
+
+.chip-pr {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+  font-weight: 600;
+}
+
+.diff-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.diff-add { color: var(--add); }
+.diff-rem { color: var(--remove); }
+
+.topbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-strong);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  color: var(--ink-muted);
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+.sidebar-toggle:hover { background: var(--panel-deep); border-color: var(--border-strong); }
+.sidebar-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ===== LAYOUT ===== */
+.layout {
+  display: flex;
+  min-height: calc(100vh - var(--topbar-h));
+  position: relative;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+.sidebar-section {
+  padding: 16px 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-section:last-child { border-bottom: none; }
+
+.sidebar-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 14px 8px;
+  display: block;
+}
+
+/* File tree */
+.file-list { list-style: none; }
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 100ms ease-out;
+  line-height: 1.4;
+}
+.file-item:hover { background: var(--panel-deep); color: var(--ink); }
+.file-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.file-status {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.file-status-M { color: var(--change); }
+.file-status-A { color: var(--add); }
+.file-status-D { color: var(--remove); }
+.file-status-R { color: var(--change); }
+
+.file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-stat {
+  font-size: var(--text-xs);
+  font-family: var(--font-sans);
+  color: var(--ink-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.file-stat .plus { color: var(--add); font-weight: 600; }
+.file-stat .minus { color: var(--remove); font-weight: 600; }
+
+/* Outline nav */
+.outline-list { list-style: none; }
+
+.outline-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.outline-item:hover { background: var(--panel-deep); color: var(--ink); border-left-color: var(--border-strong); }
+.outline-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-item.is-active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-subtle); font-weight: 500; }
+
+.outline-num {
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  font-weight: 600;
+  width: 16px;
+  flex-shrink: 0;
+}
+.outline-item.is-active .outline-num { color: var(--accent); }
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 56px 80px;
+  max-width: 1480px;
+}
+
+/* ===== TLDR ===== */
+.tldr-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.tldr-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tldr-heading {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.tldr-eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tldr-rows { display: flex; flex-direction: column; gap: 8px; }
+
+.tldr-row {
+  display: flex;
+  gap: 10px;
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.tldr-key {
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 56px;
+}
+
+.tldr-val { color: var(--ink); flex: 1; }
+
+/* ===== SECTION HEADINGS ===== */
+.section {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 40px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.section-badge {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  background: var(--panel);
+}
+
+.subsection {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 32px;
+}
+
+.subsection-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.subsection-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 0;
+}
+
+.subsection-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ===== OVERVIEW LIST ===== */
+.overview-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.overview-item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: border-color 100ms ease-out;
+}
+.overview-item:hover { border-color: var(--border-strong); }
+
+.overview-num {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  width: 18px;
+}
+
+.overview-text { color: var(--ink); flex: 1; }
+.overview-text a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.overview-text a:hover { text-decoration: underline; }
+.overview-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* ===== WALKTHROUGH PROGRESS ===== */
+.progress-rail {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;            /* scroll horizontally when there are many/long chapters */
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.progress-step {
+  flex: 1 0 auto;              /* grow to fill when few; never shrink below content -> overflow scrolls */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  transition: background 100ms ease-out;
+}
+.progress-step-label { white-space: nowrap; }
+.progress-step:last-child { border-right: none; }
+.progress-step.is-active { background: var(--accent-subtle); color: var(--accent); }
+.progress-step { text-decoration: none; cursor: pointer; }
+.progress-step:hover { background: var(--panel-deep); color: var(--ink); }
+.progress-step.is-active:hover { color: var(--accent); }
+.progress-step:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.progress-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  background: var(--panel-deep);
+  color: var(--ink-faint);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+}
+.progress-step.is-active .progress-step-num {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.progress-step-label { font-weight: 500; white-space: nowrap; }
+
+/* ===== DESCRIPTION BULLETS ===== */
+.desc-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.desc-item {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--ink);
+}
+.desc-bullet {
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  margin-top: 2px;
+}
+.desc-item code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+.desc-item strong { font-weight: 600; }
+.desc-item em { font-style: italic; color: var(--ink-muted); }
+
+/* ===== CODE BLOCKS / DIFF ===== */
+.file-diff {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.file-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 100ms ease-out;
+}
+.file-diff-header:hover { background: var(--panel-deep); }
+
+.file-diff-header summary { display: flex; align-items: center; gap: 8px; width: 100%; list-style: none; }
+.file-diff-header summary::-webkit-details-marker { display: none; }
+.file-diff-header summary::marker { display: none; }
+
+details.file-diff-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+details.file-diff-details > summary:hover { background: var(--panel-deep); }
+details.file-diff-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.file-diff-details > summary::-webkit-details-marker { display: none; }
+
+/* the actual collapsed file-diff summary: one tidy row, single chevron */
+.file-diff > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: var(--panel);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+.file-diff > summary::-webkit-details-marker { display: none; }
+.file-diff > summary::marker { content: ""; }
+.file-diff > summary:hover { background: var(--panel-deep); }
+.file-diff > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.file-diff[open] > summary { border-bottom: 1px solid var(--border); }
+.diff-counts { margin-left: auto; }
+
+.diff-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  font-weight: 500;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diff-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.diff-badge-M { color: var(--change); background: var(--change-bg); border-color: var(--change-border); }
+.diff-badge-A { color: var(--add); background: var(--add-bg); border-color: var(--add-border); }
+
+.diff-counts {
+  display: flex;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.diff-counts .plus { color: var(--add); }
+.diff-counts .minus { color: var(--remove); }
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-faint);
+  transition: transform 150ms ease-out;
+  flex-shrink: 0;
+}
+details[open] .chevron { transform: rotate(90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
+  details[open] .chevron { transform: rotate(90deg); }
+}
+
+.code-block {
+  overflow-x: auto;
+  background: var(--bg);
+  margin: 0;
+}
+.code-block pre {
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 2;
+  min-width: 0;
+}
+
+/* Token coloring — span-based, semantic only */
+.kw { color: #7c3aed; font-weight: 600; }  /* keyword */
+.fn { color: #0369a1; }                      /* function/method */
+.str { color: #16a34a; }                     /* string */
+.cm { color: var(--ink-faint); font-style: italic; } /* comment */
+.ty { color: #b45309; }                      /* type */
+.pn { color: var(--ink); }                   /* punctuation */
+.nm { color: var(--ink); }                   /* number */
+
+/* ===== DIAGRAMS ===== */
+.diagram-wrap {
+  margin-bottom: 28px;
+}
+
+.diagram-title {
+  font-size: var(--text-base);
+  font-weight: 650;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.diagram-caption {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  margin: 8px 2px 0;
+}
+
+.diagram-box {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: zoom-in;
+}
+
+/* Inline SVG for diagrams */
+.diagram-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.diagram-enlarge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 0.8rem/1 system-ui, sans-serif;
+  color: var(--ink-muted);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.diagram-enlarge:hover { border-color: var(--accent); color: var(--accent); }
+.diagram-enlarge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* zoom overlay */
+.zoom-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(15,20,28,0.85); display: none; }
+.zoom-overlay.is-open { display: block; }
+.zoom-stage { position: absolute; inset: 0; overflow: hidden; cursor: grab;
+  display: flex; align-items: center; justify-content: center; touch-action: none; }
+.zoom-stage:active { cursor: grabbing; }
+.zoom-stage svg { max-width: 94vw; max-height: 84vh; transform-origin: center center;
+  background: #fff; border-radius: 12px; box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5); }
+.zoom-controls { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 1; }
+.zoom-controls button { min-width: 40px; height: 40px; padding: 0 12px;
+  border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.96); color: #1c2024;
+  border-radius: 10px; font: 600 15px/1 system-ui, sans-serif; cursor: pointer; }
+.zoom-controls button:hover { background: #fff; }
+
+/* ===== FILES CHANGED TABLE ===== */
+.files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.files-table th {
+  background: var(--panel);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.files-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--ink);
+}
+.files-table tr:last-child td { border-bottom: none; }
+.files-table tr:hover td { background: var(--panel); }
+
+.files-table .col-status { width: 32px; font-weight: 700; font-family: var(--font-mono); font-size: var(--text-sm); }
+.files-table .col-path { font-family: var(--font-mono); }
+.files-table .col-path a { color: var(--accent); text-decoration: none; }
+.files-table .col-path a:hover { text-decoration: underline; }
+.files-table .col-stat { width: 80px; white-space: nowrap; }
+.files-table .col-role { color: var(--ink-muted); font-size: var(--text-xs); }
+
+.files-group-row td {
+  background: var(--panel-deep);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 5px 12px;
+}
+
+/* ===== API SURFACE ===== */
+.api-surface {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.api-surface-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-deep);
+}
+
+.api-name {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.api-type {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--add);
+  background: var(--add-bg);
+  border: 1px solid var(--add-border);
+  border-radius: 20px;
+  padding: 1px 7px;
+}
+
+.api-surface .code-block pre {
+  padding: 14px 18px;
+}
+
+/* ===== CALLOUT ===== */
+.callout {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  margin-bottom: 14px;
+}
+.callout-icon { font-size: var(--text-md); flex-shrink: 0; line-height: 1.5; }
+.callout-text { color: var(--ink); line-height: 1.6; }
+.callout-text strong { font-weight: 600; }
+.callout-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ===== TYPOGRAPHY UTILITIES ===== */
+.headline {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.subheadline {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 28px;
+}
+
+.section-intro {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* ===== CHAPTER MARKER ===== */
+.chapter-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+/* Bold rule separating walkthrough chapters (rendered between, never before the first). */
+.chapter-divider {
+  border: none;
+  border-top: 2px solid var(--border-strong);
+  margin: 48px 0;
+}
+.chapter-no {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.chapter-marker-num {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--panel-deep);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    height: calc(100vh - var(--topbar-h));
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 200ms ease-out;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.08);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+  }
+  .sidebar-toggle { display: flex; }
+  .main { padding: 24px 20px 60px; }
+}
+
+@media (max-width: 375px) {
+  .main { padding: 16px 14px 40px; }
+  .topbar-title { font-size: var(--text-base); }
+  .headline { font-size: var(--text-xl); }
+  .progress-step-label { display: none; }
+  .progress-step { padding: 8px 10px; }
+  .dataflow { min-width: 420px; }
+}
+
+/* Sidebar overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: var(--topbar-h);
+  background: rgba(28,32,36,0.3);
+  z-index: 40;
+}
+.sidebar-overlay.is-open { display: block; }
+
+/* Focus styles */
+a:focus-visible, button:focus-visible, details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* real code diffs inside file-diff details */
+.diff-code { background:#fff; border-top:1px solid var(--border); }
+.diff-pre { margin:0; overflow-x:auto; padding:4px 0;
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#3a4047;
+  font-variant-ligatures:none; }
+.diff-pre .dl { display:flex; align-items:baseline; min-width:max-content; }
+.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:#8b939e;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:#9aa1ab;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dc { flex:0 0 auto; white-space:pre; padding-right:20px; }
+.diff-pre .dl-add { background:#e9f7ee; } .diff-pre .dl-add .dg { color:#1a7f37; } .diff-pre .dl-add .dc { color:#0f3a1d; }
+.diff-pre .dl-del { background:#fdecec; } .diff-pre .dl-del .dg { color:#c4332e; } .diff-pre .dl-del .dc { color:#5c1a18; }
+.diff-pre .dl-ctx .dc { color:#3a4047; }
+.diff-pre .dl-hunk { background:var(--panel); color:var(--ink-muted); }
+.diff-pre .dl-hunk .dc { color:var(--ink-muted); font-weight:600; }
+.diff-more { padding:8px 16px; font:12px/1.4 system-ui,sans-serif; color:var(--ink-muted);
+  background:var(--panel); border-top:1px solid var(--border); }
+
+/* ===== separation hierarchy: chapter breaks vs within-chapter breaks ===== */
+#ch1, #ch2, #ch3 { margin-bottom: 0; }
+/* CHAPTER break: stronger + darker line */
+#ch2, #ch3 { margin-top: 0; padding-top: 48px; border-top: 2px solid #8b939e; }
+/* WITHIN a chapter: lighter line between subsections (1a/1b/1c) ... */
+.subsection { margin-bottom: 0; }
+.subsection + .subsection { border-top: 1px solid var(--border); padding-top: 40px; }
+/* ... and between file groups (a new description directly after a diff) */
+.file-diff + .desc-list,
+.file-diff + .section-intro,
+.file-diff + ul,
+.file-diff + p {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== craft pass: typography + motion polish ===== */
+html { scroll-behavior: smooth; }
+.section-title, .subsection-title, .tldr-heading { text-wrap: balance; }
+.tldr-val, .overview-text, .section-intro, .desc-item span { text-wrap: pretty; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* color pass: subtle hover lift on file rows + risk level system */
+.file-diff { transition: box-shadow 150ms ease-out, border-color 150ms ease-out; }
+.file-diff:hover { border-color: var(--accent); box-shadow: 0 6px 18px -12px rgba(37,99,235,0.35); }
+.chip-risk.risk-med { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+.chip-risk.risk-high { color: var(--remove); background: #fef2f2; border-color: #fecaca; }
+@media (prefers-reduced-motion: reduce) { .file-diff { transition: none; } }
+
+/* spec.css — reusable visual-spec components.
+   Layers ON TOP of review.css (same design tokens). Load review.css first, then this.
+   Source of truth for the spec-component catalog (skills/shared/spec-components.md).
+   The canonical example inlines a snapshot of these rules. */
+
+/* ============================================================= */
+/* ===== VISUAL-SPEC EXTENSIONS (on top of review.css) ========= */
+/* ============================================================= */
+
+/* A "spec" carries a couple of extra semantic roles the recap doesn't:
+   a 'perceived' role (GM-skill-noised judgment, gold) vs a 'factual' role
+   (computed from world state, neutral). They reuse the diagram palette so
+   the page reads as one system. */
+:root {
+  --perceived: #92600a;          /* readable gold ink for text on light */
+  --perceived-bg: #fff8e6;
+  --perceived-border: #f0c54a;
+  --reused: #6b7280;             /* preserved / untouched machinery */
+  --reused-bg: #f1f3f5;
+  --reused-border: #ced4da;
+  --store: #6d4ed8;              /* datastore ink */
+  --proc: #1971c2;              /* perception / process ink */
+}
+
+/* ---- topbar: phase + status + complexity chips ---- */
+.chip-phase { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent-border); font-weight: 700; }
+.chip-status { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.chip-complexity { color: var(--change); background: var(--change-bg); border-color: var(--change-border); font-weight: 600; }
+
+/* ---- the big idea panel ---- */
+.bigidea {
+  margin: 0 0 36px;
+  padding: 22px 26px;
+  border: 1px solid var(--perceived-border);
+  background: var(--perceived-bg);
+  border-radius: var(--radius);
+}
+.bigidea-label {
+  font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--perceived); margin-bottom: 8px;
+}
+.bigidea-line {
+  font-size: var(--text-2xl); font-weight: 800; letter-spacing: -0.025em;
+  color: var(--ink); line-height: 1.2; text-wrap: balance;
+}
+.bigidea-sub {
+  margin-top: 10px; max-width: 70ch; color: var(--ink-muted);
+  font-size: var(--text-base); line-height: 1.6; text-wrap: pretty;
+}
+.bigidea-sub strong { color: var(--ink); font-weight: 650; }
+
+/* ---- diagram legend (color is a secondary signal; labels carry meaning) ---- */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 2px 0; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-sm); color: var(--ink-muted); }
+.legend-swatch { width: 13px; height: 13px; border-radius: 3px; border: 1px solid; flex-shrink: 0; }
+
+/* svg text inherits the page sans */
+.flow-svg text { font-family: var(--font-sans); }
+
+/* ---- anatomy of a board (factual core vs perceived layer) ---- */
+.anatomy {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.anatomy-panel { padding: 16px 18px; }
+.anatomy-factual { background: var(--reused-bg); }
+.anatomy-perceived { background: var(--perceived-bg); }
+.anatomy-mid {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 0 16px; background: var(--bg);
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+}
+.anatomy-arrow { font-size: 22px; color: var(--ink-faint); line-height: 1; }
+.anatomy-fn { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); text-align: center; max-width: 130px; }
+.anatomy-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--text-base); margin-bottom: 4px; }
+.anatomy-factual .anatomy-h { color: var(--reused); }
+.anatomy-perceived .anatomy-h { color: var(--perceived); }
+.anatomy-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-bottom: 10px; }
+.anatomy-eg { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.7; color: var(--ink); }
+.anatomy-caption { font-size: var(--text-sm); color: var(--ink-muted); margin: 0 2px 28px; line-height: 1.6; }
+@media (max-width: 720px) {
+  .anatomy { grid-template-columns: 1fr; }
+  .anatomy-mid { flex-direction: row; border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 16px; }
+  .anatomy-arrow { transform: rotate(90deg); }
+}
+
+/* ---- 6 component (board) cards ---- */
+.board-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 8px; }
+.board-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px; background: var(--bg);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  display: flex; flex-direction: column;
+}
+.board-card:hover { border-color: var(--border-strong); box-shadow: 0 6px 18px -14px rgba(28,32,36,0.4); }
+.board-name { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-base); color: var(--ink); letter-spacing: -0.01em; }
+.board-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 7px 0 12px; }
+.board-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.board-row-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 2px; }
+.skill-chip { font-size: var(--text-xs); font-weight: 600; background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 20px; padding: 1px 8px; white-space: nowrap; }
+.skill-chip.is-deputy { background: var(--panel-deep); color: var(--ink-muted); border-color: var(--border); }
+.split-badge { display: inline-flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; font-size: var(--text-xs); font-weight: 600; align-self: flex-start; margin-bottom: 12px; }
+.split-badge .sb-fact { background: var(--reused-bg); color: var(--reused); padding: 2px 9px; }
+.split-badge .sb-perc { background: var(--perceived-bg); color: var(--perceived); padding: 2px 9px; border-left: 1px solid var(--border); }
+.board-fields { margin-top: auto; display: flex; flex-direction: column; gap: 5px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.field-line { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5; display: flex; gap: 7px; }
+.field-tag { flex-shrink: 0; width: 10px; font-weight: 700; }
+.field-fact .field-tag { color: var(--reused); }
+.field-perc .field-tag { color: var(--perceived); }
+.field-fact .field-names { color: var(--ink-muted); }
+.field-perc .field-names { color: var(--perceived); }
+
+/* ---- where it fits ---- */
+.fits-chain { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; margin-bottom: 26px; }
+.fits-node { flex: 1 1 220px; min-width: 200px; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--panel); }
+.fits-node.is-this { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.fits-arrow { display: flex; align-items: center; justify-content: center; padding: 0 12px; color: var(--ink-faint); font-size: 22px; flex-shrink: 0; }
+.fits-role { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 600; }
+.fits-node.is-this .fits-role { color: var(--perceived); }
+.fits-title { font-weight: 700; color: var(--ink); margin: 3px 0 5px; }
+.fits-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; }
+.fits-desc em { color: var(--ink); font-style: normal; font-weight: 600; }
+@media (max-width: 720px) {
+  .fits-chain { flex-direction: column; }
+  .fits-arrow { padding: 8px 0; }
+  .fits-arrow span { transform: rotate(90deg); display: inline-block; }
+}
+
+/* ---- layer stack ---- */
+.layer-stack { display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.layer { display: flex; align-items: baseline; gap: 12px; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; background: var(--panel); }
+.layer.is-new { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.layer.is-reused { background: var(--reused-bg); }
+.layer-label { font-weight: 700; color: var(--ink); flex-shrink: 0; }
+.layer.is-new .layer-label { color: var(--perceived); }
+.layer-note { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.45; }
+.layer-tag { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 7px; border-radius: 20px; flex-shrink: 0; }
+.layer.is-new .layer-tag { color: #fff; background: var(--change); }
+.layer.is-reused .layer-tag { color: var(--reused); background: var(--bg); border: 1px solid var(--reused-border); }
+
+/* ---- key decisions ---- */
+.decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.decision-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--bg); display: flex; gap: 12px; }
+.decision-num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--panel-deep); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: var(--text-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.decision-q { font-size: var(--text-sm); color: var(--ink-faint); font-weight: 600; line-height: 1.4; }
+.decision-a { font-weight: 650; color: var(--ink); margin-top: 4px; line-height: 1.45; }
+.decision-a code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- scope (in / out) ---- */
+.scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.scope-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.scope-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.scope-in .scope-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.scope-out .scope-head { background: var(--reused-bg); color: var(--ink-muted); }
+.scope-count { font-size: var(--text-xs); font-weight: 600; opacity: 0.8; }
+.scope-list { list-style: none; padding: 8px 0; }
+.scope-list li { display: flex; gap: 9px; padding: 6px 16px; font-size: var(--text-base); line-height: 1.5; }
+.scope-marker { flex-shrink: 0; font-weight: 700; }
+.scope-in .scope-marker { color: var(--add); }
+.scope-out .scope-marker { color: var(--ink-faint); }
+.scope-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.scope-list .defer { color: var(--ink-faint); font-size: var(--text-sm); }
+@media (max-width: 720px) { .scope-cols { grid-template-columns: 1fr; } }
+
+/* ---- rollout phases ---- */
+.phases { display: flex; flex-direction: column; gap: 14px; }
+.phase { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.phase-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.phase-tag { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-sm); color: var(--accent); background: var(--accent-subtle); border: 1px solid var(--accent-border); border-radius: var(--radius-sm); padding: 2px 9px; }
+.phase-title { font-weight: 700; color: var(--ink); }
+.phase-body { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; padding: 16px; }
+.phase-sub { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin-bottom: 8px; }
+.phase-scope p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; }
+.phase-scope code, .gate-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.phase-gate { background: var(--panel); border-radius: var(--radius-sm); padding: 12px 14px; }
+.gate-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.gate-list li { display: flex; gap: 8px; font-size: var(--text-sm); line-height: 1.5; color: var(--ink); }
+.gate-check { color: var(--add); flex-shrink: 0; font-weight: 700; }
+@media (max-width: 720px) { .phase-body { grid-template-columns: 1fr; } }
+
+/* ---- definition of done: movers + table ---- */
+.movers { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.mover { border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; background: var(--bg); }
+.mover-name { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); line-height: 1.4; }
+.mover-vals { display: flex; align-items: baseline; gap: 9px; margin: 9px 0 4px; }
+.mover-now { color: var(--ink-faint); font-weight: 600; font-size: var(--text-base); }
+.mover-now s { color: var(--remove); text-decoration-thickness: 1px; }
+.mover-arrow { color: var(--ink-faint); font-size: var(--text-base); }
+.mover-target { color: var(--add); font-weight: 800; font-size: var(--text-xl); letter-spacing: -0.02em; }
+.mover-label { font-size: var(--text-xs); color: var(--ink-faint); }
+
+.spec-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 6px 0 8px; }
+.spec-table th { text-align: left; background: var(--panel); padding: 8px 12px; font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); border-bottom: 1px solid var(--border); }
+.spec-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--ink); line-height: 1.5; }
+.spec-table tr:last-child td { border-bottom: none; }
+.spec-table tr:hover td { background: var(--panel); }
+.spec-table code { font-family: var(--font-mono); font-size: 0.86em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.spec-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.spec-table .good { color: #15803d; font-weight: 700; }
+.tbl-note { font-size: var(--text-sm); color: var(--ink-muted); margin: 2px 2px 0; }
+
+/* ---- risks ---- */
+.risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; }
+.risk-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.risk-r { display: flex; gap: 9px; padding: 12px 15px; background: var(--remove-bg); border-bottom: 1px solid var(--remove-border); font-weight: 650; color: #991b1b; font-size: var(--text-sm); line-height: 1.45; }
+.risk-icon { flex-shrink: 0; }
+.risk-m { padding: 12px 15px; font-size: var(--text-sm); color: var(--ink); line-height: 1.55; }
+.risk-m b { color: #15803d; font-weight: 700; }
+.risk-m code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- reference drill-downs ---- */
+.ref-intro { font-size: var(--text-base); color: var(--ink-muted); margin-bottom: 16px; line-height: 1.6; }
+details.ref { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; background: var(--bg); }
+details.ref > summary { display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: var(--panel); cursor: pointer; user-select: none; list-style: none; font-weight: 650; color: var(--ink); transition: background 100ms ease-out; }
+details.ref > summary::-webkit-details-marker { display: none; }
+details.ref > summary::marker { content: ""; }
+details.ref > summary:hover { background: var(--panel-deep); }
+details.ref > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.ref[open] > summary { border-bottom: 1px solid var(--border); }
+.ref-chev { width: 15px; height: 15px; color: var(--ink-faint); transition: transform 150ms ease-out; flex-shrink: 0; }
+details.ref[open] .ref-chev { transform: rotate(90deg); }
+.ref-tally { margin-left: auto; font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.ref-body { padding: 16px; }
+.ref-body > p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; margin-bottom: 12px; }
+.ref-body > p:last-child { margin-bottom: 0; }
+.ref-body .code-block { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; }
+.ref-body h4 { font-size: var(--text-base); font-weight: 700; color: var(--ink); margin: 16px 0 8px; }
+.ref-body h4:first-child { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .ref-chev { transition: none; } }
+
+/* meta list in sidebar */
+.meta-list { padding: 0 14px 8px; display: flex; flex-direction: column; gap: 9px; }
+.meta-row { font-size: var(--text-xs); line-height: 1.4; }
+.meta-row .mk { display: block; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 1px; }
+.meta-row .mv { color: var(--ink); }
+.related-list { list-style: none; padding: 0 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.related-list li { font-size: var(--text-xs); line-height: 1.4; }
+.related-list .rk { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.related-list .rv { color: var(--ink); font-family: var(--font-mono); overflow-wrap: anywhere; }
+
+/* ---- decision rationale (approval layer) ---- */
+.decision-why { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); line-height: 1.5; }
+.decision-why::before { content: "Why "; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; font-size: 0.72em; letter-spacing: 0.06em; }
+.decision-why em { color: var(--ink); font-style: normal; font-weight: 650; }
+.decision-why code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.decision-alt { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 7px; line-height: 1.5; }
+.decision-alt-tag { display: inline-block; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--remove); background: var(--remove-bg); border: 1px solid var(--remove-border); border-radius: 4px; padding: 0 5px; margin-right: 6px; vertical-align: 1px; }
+.decision-alt em { color: var(--ink); font-style: italic; }
+.decision-alt code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- before you approve ---- */
+.approve-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; align-items: start; }
+.approve-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.approve-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.approve-card.commit .approve-head { background: var(--accent-subtle); color: var(--accent); border-bottom-color: var(--accent-border); }
+.approve-card.scrutinize .approve-head { background: var(--change-bg); color: #92600a; border-bottom-color: var(--change-border); }
+.approve-card.open .approve-head { background: var(--panel-deep); color: var(--ink-muted); }
+.approve-body { padding: 13px 16px; font-size: var(--text-sm); color: var(--ink); line-height: 1.6; }
+.approve-body strong { font-weight: 700; }
+.approve-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.approve-body a:hover { text-decoration: underline; }
+.approve-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.approve-q { list-style: none; counter-reset: aq; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+.approve-q li { counter-increment: aq; display: flex; gap: 8px; font-size: var(--text-sm); color: var(--ink); line-height: 1.45; }
+.approve-q li::before { content: counter(aq); flex-shrink: 0; width: 17px; height: 17px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.approve-q code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
+
+/* atlas.css — reusable visual-atlas components.
+   Layers ON TOP of review.css + spec.css (same design tokens). Load review.css, then
+   spec.css, then this. Source of truth for the atlas-component catalog
+   (skills/shared/atlas-components.md). The canonical example inlines a snapshot of these rules.
+
+   A visual-atlas is a STANDING MAP of a codebase: one narrative `atlas.html` (system
+   onboarding map) that links down to per-domain `domain-<slug>.html` deep-dive pages. It owns
+   its own surface so its styles can evolve independently of the recap/spec. */
+
+/* ============================================================= */
+/* ===== VISUAL-ATLAS EXTENSIONS (on top of review.css + spec.css) */
+/* ============================================================= */
+
+/* Tier accents — each architectural layer gets one role tint so the map, the tiles, and the
+   sidebar all read as one system. Reuses the shared diagram palette (foundation=store violet,
+   engine=actor blue, intelligence=changed gold, narrative=added green, surface=accent,
+   harness=external gray). Color is always secondary — every tier also carries its text label. */
+:root {
+  --tier-foundation: #6d4ed8; --tier-foundation-bg: #f1ecfd;
+  --tier-engine:     #1971c2; --tier-engine-bg:     #e7f1fb;
+  --tier-intelligence: #b3791a; --tier-intelligence-bg: #fff6e2;
+  --tier-narrative:  #2f9e44; --tier-narrative-bg:  #eafaef;
+  --tier-surface:    var(--accent); --tier-surface-bg: var(--accent-subtle);
+  --tier-harness:    #6b7280; --tier-harness-bg:    #f1f3f5;
+}
+
+/* ---- topbar: domain-count + stack chips, and the back-link on domain pages ---- */
+.chip-stack { color: var(--tier-engine); background: var(--tier-engine-bg); border-color: #bcdcf5; font-weight: 600; }
+.chip-count { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.topbar-back {
+  display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; flex-shrink: 0;
+  font-size: var(--text-sm); font-weight: 600; color: var(--accent); text-decoration: none;
+  border: 1px solid var(--accent-border); background: var(--accent-subtle);
+  border-radius: 20px; padding: 3px 11px 3px 9px; transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.topbar-back:hover { background: #e0ecff; border-color: var(--accent); }
+.topbar-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- primer: "the N things to hold in your head" (atlas lead, after the TL;DR) ---- */
+.primer { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow: hidden; margin-bottom: 32px; }
+.primer-row { display: flex; gap: 14px; padding: 14px 18px; align-items: baseline; }
+.primer-row + .primer-row { border-top: 1px solid var(--border); }
+.primer-n {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; align-self: flex-start;
+  background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border);
+  font-size: var(--text-sm); font-weight: 800; display: flex; align-items: center; justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.primer-body { min-width: 0; }
+.primer-h { font-weight: 700; color: var(--ink); line-height: 1.4; letter-spacing: -0.01em; }
+.primer-p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-top: 3px; text-wrap: pretty; }
+.primer-h code, .primer-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* svg text inherits the page sans (the hand-authored domain map reuses .flow-svg from spec.css) */
+.map-svg text { font-family: var(--font-sans); }
+
+/* ---- component cards that jump to their deep-dive section ---- */
+a.board-card { text-decoration: none; color: inherit; }
+a.board-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-jump { margin-top: 10px; display: flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.card-jump .cj-arrow { transition: transform 150ms ease-out; }
+a.board-card:hover .cj-arrow { transform: translateY(2px); }
+@media (prefers-reduced-motion: reduce) { .card-jump .cj-arrow { transition: none; } }
+
+/* ---- per-component deep-dive: detail + diagram + connections ---- */
+/* reuses review.css .subsection / .subsection-header / .subsection-title / .subsection-path */
+.subsection-back { font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); text-decoration: none; white-space: nowrap; }
+.subsection-back:hover { color: var(--accent); }
+.detail-p { font-size: var(--text-base); color: var(--ink); line-height: 1.65; margin-bottom: 14px; text-wrap: pretty; }
+.detail-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.detail-p strong { font-weight: 650; }
+.detail-p em { font-style: normal; font-weight: 600; color: var(--ink); }
+
+/* connections: how this component talks to its neighbors (calls / read by / produces) */
+.conns { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 4px; }
+.conn { display: flex; align-items: baseline; gap: 10px; font-size: var(--text-sm); line-height: 1.5; }
+.conn-dir { flex-shrink: 0; min-width: 78px; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); text-align: right; }
+.conn-body { color: var(--ink); }
+.conn-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.conn-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.conn-body a:hover { text-decoration: underline; }
+.conns-label { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin: 14px 0 9px; }
+
+/* the load-bearing idea reads full-width on atlas pages (override spec.css's 70ch cap) */
+.bigidea-sub { max-width: none; }
+
+/* ---- domain index: a tile grid (the onboarding map AND the reference index) ---- */
+.domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
+.domain-tile {
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);
+  padding: 16px 18px; display: flex; flex-direction: column; text-decoration: none; color: inherit;
+  position: relative; transition: border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+a.domain-tile.is-linked:hover { border-color: var(--accent); box-shadow: 0 8px 22px -16px rgba(37,99,235,0.5); transform: translateY(-1px); }
+a.domain-tile.is-linked:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.domain-tile.is-pending { background: var(--panel); border-style: dashed; }
+.domain-tile-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.domain-tile-name { font-size: var(--text-md); font-weight: 700; color: var(--ink); letter-spacing: -0.015em; }
+.domain-tile-path { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); }
+.layer-chip {
+  margin-left: auto; font-size: var(--text-xs); font-weight: 700; padding: 1px 8px; border-radius: 20px;
+  border: 1px solid; white-space: nowrap; letter-spacing: 0.01em;
+}
+.layer-foundation   { color: var(--tier-foundation);   background: var(--tier-foundation-bg);   border-color: #d6c8f7; }
+.layer-engine       { color: var(--tier-engine);       background: var(--tier-engine-bg);       border-color: #bcdcf5; }
+.layer-intelligence { color: var(--tier-intelligence); background: var(--tier-intelligence-bg); border-color: var(--change-border); }
+.layer-narrative    { color: var(--tier-narrative);    background: var(--tier-narrative-bg);    border-color: #b6e6c4; }
+.layer-surface      { color: var(--tier-surface);      background: var(--tier-surface-bg);      border-color: var(--accent-border); }
+.layer-harness      { color: var(--tier-harness);      background: var(--tier-harness-bg);      border-color: var(--border-strong); }
+.domain-tile-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 9px 0 12px; text-wrap: pretty; }
+.domain-tile-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--text-xs); color: var(--ink-faint); margin-bottom: 11px; }
+.domain-tile-meta .dm-k { font-weight: 700; color: var(--ink-muted); }
+.domain-tile-meta code { font-family: var(--font-mono); font-size: 0.95em; color: var(--ink-muted); }
+.domain-tile-deps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--border); }
+.domain-tile-deps .dep-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; margin-right: 2px; }
+.dep-chip { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.domain-tile-foot { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: var(--text-sm); font-weight: 600; }
+.domain-tile.is-linked .domain-tile-foot { color: var(--accent); }
+.domain-tile.is-pending .domain-tile-foot { color: var(--ink-faint); font-weight: 600; }
+.domain-tile-foot .dtf-arrow { transition: transform 150ms ease-out; }
+a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
+
+/* ---- domain page: data it owns ---- */
+.owns-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.owns-row { display: grid; grid-template-columns: minmax(180px, 0.9fr) 1.6fr; gap: 14px; padding: 11px 16px; align-items: baseline; }
+.owns-row + .owns-row { border-top: 1px solid var(--border); }
+.owns-row:nth-child(even) { background: var(--panel); }
+.owns-name { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.owns-name .owns-store { color: var(--tier-foundation); }
+.owns-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; text-wrap: pretty; }
+.owns-desc code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- domain page: seams (exposes / depends on) ---- */
+.seam-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.seam-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.seam-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.seam-exposes .seam-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.seam-depends .seam-head { background: var(--panel-deep); color: var(--ink-muted); }
+.seam-body { padding: 12px 16px; }
+.seam-api { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.seam-api li { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--ink); line-height: 1.4; display: flex; gap: 8px; }
+.seam-api li::before { content: "›"; color: var(--add); font-weight: 700; flex-shrink: 0; }
+.seam-api .api-note { font-family: var(--font-sans); color: var(--ink-faint); font-size: var(--text-xs); }
+.seam-neighbors { display: flex; flex-wrap: wrap; gap: 8px; }
+.neighbor-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); font-weight: 600;
+  color: var(--ink); background: var(--panel); border: 1px solid var(--border-strong);
+  border-radius: 20px; padding: 3px 11px; text-decoration: none; transition: border-color 120ms ease-out, background 120ms ease-out;
+}
+.neighbor-chip:hover { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent); }
+.neighbor-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.neighbor-chip .nc-path { font-family: var(--font-mono); font-size: 0.85em; color: var(--ink-faint); }
+.neighbor-chip:hover .nc-path { color: var(--accent); }
+.neighbor-chip.is-flat { background: var(--panel-deep); border-style: dashed; cursor: default; color: var(--ink-muted); }
+.neighbor-chip.is-flat:hover { border-color: var(--border-strong); background: var(--panel-deep); color: var(--ink-muted); }
+@media (max-width: 720px) { .seam-cols { grid-template-columns: 1fr; } }
+
+/* sidebar: nested sub-section links under a chapter in the CONTENTS outline.
+   Used on domain pages to list a chapter's deep-dive components without a bespoke
+   second sidebar block — one uniform outline per page. */
+.outline-sub { list-style: none; margin: 1px 0 5px; }
+.outline-subitem { display: flex; align-items: center; gap: 8px; padding: 3px 14px 3px 34px; font-size: var(--text-xs); color: var(--ink-muted); text-decoration: none; border-left: 2px solid transparent; transition: background 100ms ease-out, color 100ms ease-out; }
+.outline-subitem:hover { background: var(--panel-deep); color: var(--ink); }
+.outline-subitem:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-subitem .os-dot { width: 8px; height: 8px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.14); flex-shrink: 0; }
+
+/* sidebar: a small "domains" jump-list block on the atlas */
+.nav-domains { list-style: none; }
+.nav-domain {
+  display: flex; align-items: center; gap: 8px; padding: 4px 14px; font-size: var(--text-sm);
+  color: var(--ink); text-decoration: none; transition: background 100ms ease-out;
+}
+.nav-domain:hover { background: var(--panel-deep); }
+.nav-domain:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
+.nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
+</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><a class="topbar-back" href="../atlas.html"><span aria-hidden="true">&larr;</span> Atlas</a><span class="topbar-title">App shell &amp; plumbing</span><div class="topbar-meta"><span class="chip layer-chip layer-foundation">Foundation</span><span class="chip chip-stat">src</span><span class="chip chip-count">14 files</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">depends on accounts · admin · game · golf-data · leagues · scoring</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>What it owns</span></a></li><li><a href="#components" class="outline-item" data-target="components"><span class="outline-num" aria-hidden="true">1</span><span>Components</span></a></li><li><a href="#arch" class="outline-item" data-target="arch"><span class="outline-num" aria-hidden="true">2</span><span>Internal architecture</span></a></li><li><a href="#depth" class="outline-item" data-target="depth"><span class="outline-num" aria-hidden="true">3</span><span>In depth</span></a><ul class="outline-sub" role="list"><li><a href="#c-trpc" class="outline-subitem"><span class="os-dot" style="background:#e5dbff;border-color:#9775fa;"></span>tRPC plumbing</a></li><li><a href="#c-db" class="outline-subitem"><span class="os-dot" style="background:#e5dbff;border-color:#9775fa;"></span>db core</a></li><li><a href="#c-chrome" class="outline-subitem"><span class="os-dot" style="background:#e5dbff;border-color:#9775fa;"></span>app chrome</a></li><li><a href="#c-utils" class="outline-subitem"><span class="os-dot" style="background:#e5dbff;border-color:#9775fa;"></span>shared utils</a></li></ul></li><li><a href="#data" class="outline-item" data-target="data"><span class="outline-num" aria-hidden="true">4</span><span>Data it owns</span></a></li><li><a href="#seams" class="outline-item" data-target="seams"><span class="outline-num" aria-hidden="true">5</span><span>Seams</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Layer</span><span class="mv">Engine</span></div><div class="meta-row"><span class="mk">Role</span><span class="mv">cross-cutting plumbing</span></div><div class="meta-row"><span class="mk">Depended on by</span><span class="mv">every other domain</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Domain</span><h2 class="tldr-heading">App shell &amp; plumbing</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">Path</span><span class="tldr-val"><code>src</code> — scattered across <code>app/</code>, <code>components/</code>, <code>lib/</code>, <code>server/</code> (14 files)</span></div><div class="tldr-row"><span class="tldr-key">What it is</span><span class="tldr-val">The chrome (root layout, landing page, nav) plus everything cross-cutting: the tRPC client/server wiring, the procedure ladder, the Kysely db singleton, and shared constants/formatters.</span></div><div class="tldr-row"><span class="tldr-key">Direction of gravity</span><span class="tldr-val">Everyone imports from here. Its own six "depends" edges exist only because <code>_app.ts</code> must aggregate every domain's router and the layout mounts accounts/leagues chrome.</span></div><div class="tldr-row"><span class="tldr-key">Owns</span><span class="tldr-val">No database models — pure plumbing.</span></div></div></div><div class="bigidea"><div class="bigidea-label">The procedure ladder + one transaction door</div><div class="bigidea-line"><code>publicProcedure</code> → <code>protectedProcedure</code> (throws <code>UNAUTHORIZED</code> without a session) → <code>adminProcedure</code> (throws <code>FORBIDDEN</code> unless <code>role === "admin"</code>) — every API call climbs exactly as far as it must.</div><p class="bigidea-sub">On the write side the discipline is <code>withTransaction</code>: services wrap multi-repository writes in it, repositories are the only layer touching <code>db</code>, and the <code>db.ts</code> / <code>db-core.ts</code> split exists so seed scripts can reuse the same pool outside Next.js.</p></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#components"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">Components</span></a><a class="progress-step" href="#arch"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Internal architecture</span></a><a class="progress-step" href="#depth"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">In depth</span></a><a class="progress-step" href="#data"><div class="progress-step-num" aria-hidden="true">4</div><span class="progress-step-label">Data it owns</span></a><a class="progress-step" href="#seams"><div class="progress-step-num" aria-hidden="true">5</div><span class="progress-step-label">Seams</span></a></nav><section id="components" class="section"><div class="section-header"><h2 class="section-title">Components</h2></div><p class="section-intro">Four meaningful units rather than four directories — the tRPC pipeline, the database core, the visible chrome, and the shared vocabulary every page borrows.</p><div class="board-grid"><a class="board-card" href="#c-trpc"><div class="board-name">tRPC plumbing</div><div class="board-purpose">Context creation, the three-step procedure ladder, the root <code>appRouter</code> merging 11 domain routers, the <code>/api/trpc</code> HTTP handler, and both consumption paths — browser hooks and an in-process server caller.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip is-deputy">protectedProcedure</span><span class="skill-chip">adminProcedure</span><span class="skill-chip">appRouter</span><span class="skill-chip">serverTRPC</span><span class="skill-chip">useTRPC</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-db"><div class="board-name">db core</div><div class="board-purpose">The singleton Kysely instance over a <code>pg.Pool</code> (camelCase plugin, dev-mode <code>globalThis</code> cache) and <code>withTransaction</code>, split into a guarded and an unguarded module.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip is-deputy">db</span><span class="skill-chip is-deputy">withTransaction</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-chrome"><div class="board-name">app chrome</div><div class="board-purpose">Root layout (fonts, metadata, <code>Providers</code> + <code>SessionRefresh</code> + <code>NavBar</code>), the signed-out landing page, and the nav bar with its mobile menu.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">RootLayout</span><span class="skill-chip">NavBar</span><span class="skill-chip">Providers</span><span class="skill-chip">MobileMenuToggle</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-utils"><div class="board-name">shared utils</div><div class="board-purpose">The league-wide constant <code>GLOBAL_LEAGUE_ID</code> and the domain-aware formatters (<code>formatCurrency</code>, <code>isMissedCut</code>, …) used by ~25 files across every UI domain.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">GLOBAL_LEAGUE_ID</span><span class="skill-chip">formatCurrency</span><span class="skill-chip">isMissedCut</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a></div></section><section id="arch" class="section"><div class="section-header"><h2 class="section-title">Internal architecture</h2></div><p class="section-intro">The request path. Two entry doors — client components speak HTTP to <code>/api/trpc</code>, server components call the router in-process via <code>serverTRPC</code> — and both converge on <code>createTRPCContext</code>, the procedure ladder, and the same router → service → repository → Postgres stack.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2780 242"><svg class="d2-3124128834 d2-svg" width="2780" height="242" viewBox="-25 -25 2780 242"><rect x="-25.000000" y="-25.000000" width="2780.000000" height="242.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-3124128834 .text-bold {
+	font-family: "d2-3124128834-font-bold";
+}
+@font-face {
+	font-family: d2-3124128834-font-bold;
+	src: url("data:application/font-woff;base64,d09GRgABAAAAAA44AAoAAAAAFcQAAguFAAAAAAAAAAAAAAAAAAAAAAAAAABPUy8yAAAA9AAAAGAAAABgXxHXrmNtYXAAAAFUAAAAmQAAAL4DAQQmZ2x5ZgAAAfAAAAewAAAKXK6qwbtoZWFkAAAJoAAAADYAAAA2G38e1GhoZWEAAAnYAAAAJAAAACQKfwXiaG10eAAACfwAAACLAAAAjEQVBfBsb2NhAAAKiAAAAEgAAABILlwxbm1heHAAAArQAAAAIAAAACAAOwD3bmFtZQAACvAAAAMoAAAIKgjwVkFwb3N0AAAOGAAAAB0AAAAg/9EAMgADAioCvAAFAAACigJYAAAASwKKAlgAAAFeADIBKQAAAgsHAwMEAwICBGAAAvcAAAADAAAAAAAAAABBREJPACAAIP//Au7/BgAAA9gBESAAAZ8AAAAAAfAClAAAACAAA3icbMzLScMAGADgLyZq1KjxHd+ZQHfQox6CuEAQEfEivXWgvq6FFnrrKh2hE/yFnvsN8CGRSlDIjFEppXK1Z6/eNT61vv36141A7cmLN40PrS8//nQiYhHLmMcspjGJUQxjEP3ore/NEo9qW1KZbTt25fbsO1A4dORY6cSpM+cuXLpSuXbj1p17D6wAAAD//wEAAP//at8hFQAAAHicXFVZbBvXFb3vccQxKWoZDodDUuI64gwXkRI5Go4W0hQtipJl0tpsWWm0OIabOpUtG7ZcK4YL/xhdUhluS7VwAtROgwZtAadFYBRoU6hFA8StEf85aX4aJF1goDHQsgFbFC01DGZGaz6k98F55557zrn3QQNMAOBTeB0MYIIWsAIDIFJ+KigKAkfKoixzrEEWEEVOYKvy+o+EMBEOExHfbe/VxUVUWsDrm2efLZ069Z/FgQHlzq/eUm6iS28BGKAEgNN4DShwQUDFFJN2O2Mzkox2GDmDmExJPTzHUWJSO0sf5c8OxkLJofzFkcXhVCLZU5h+MZ2ZxmvuQjY63UI0HckNHQujr0c43qfMzkaDAAji9SruxrehDaAhwPNSTyolJu0syfNcwGhkbHYxmZJZI5qfemn6+M2p7Gn/UafMdR6OzoyGso6jU5bi986dfXlSDCyw7uTCodMXOpxzJwFp/M/iNbBo3CmRFg00ZyCZUpl4+7V3/v7Du0W8pvwbNSo1ZRXRp38O+h30F7wGDfodP1MqI4zXNivXAACwhtmtYdr2KGLkOGZHg49HLxcKK8OTo6uD6TxeE+bGi6e6PkRTZ8TILsY0XoNmYPeqSnOChqJLWno6fDGfldZf/+pksT+T6S/iteDs0dF5Vvn/06foZKK7m1f5cvUqNuPbENG0E2S7XQcQhDjeLyRjs7OszhbZBq8nj3EzoXhMjB73p/mBF/K9FyJHfIMCH+uLHBso9C9buuNf9PABt9dt7WjuKnSlZns6I/PONm+7x0MFHMeGU3O9gMAJgGm8BqTaCSf5GY56dB/97z5uvXZts6L3G6lX0XuoBk7gANiAarCsUSIFjSBDcQJnNMrJlCxpfv8mP3GjjLmwd7BD6lrqX3x+1Ux4Rw44g/TRtNdyInt0tsUvOJjn3B3LF5W/ie3cRZY+YY66HSyomnTUq2gD1cD1+TzpKuhpMiLn8Pnc6Ffy8ZH2Yc4nZbPdjjjdH5yxZC5PTa9kPOyiu5gbLDEtJ31teh9CvYpqeANo8G33oQELkring22xP507P7DYE+51GsurZsJVwA7BSkdtXKrL8q0XJy8fbHcUf7o5lHBxqzbnu9bmoZHDw4A17n9GNXCAdx97LSF+1V2Vu0HsUasg78jFQ0NnB0bmuwisfGAuJKRUgl945b7QGUhZDq5MTa5ks0t5OmhKif5nXB7UH5a61F4MEKjHMIlq0AUDMKZ1w0s9KnnVHGm7LCsy3FbAA4KmnWqXzWg06CnVGqW3EhvgtU8+7V/oHaHbfA5XuH9B6vT/Ypw09czKbq81EJ6Yey5/bcwtCG63IISTg0JQdPotbZnHrt7OdIhoCnnbkq2ENR9Nj4csS40BW99Yh7nFTlsHhsTJOHoYCQvhUCgcUcodTrbVYHA4292geZ5TDcIbW1PJkNvBojSWJJUrk+1HkpOHy25fe8iBN+4944wuzSuPkD8VcrLKm1CvgwwAH+LHmAc/AJAQgJd2sD14Y2ePyKI6qySTu0X84NWf/fruhSzeUJbfeaT86XcjV9Xv61VkxRvQoqeEEqmd0P2hOFCmTA2k0WoJWp49grnND1grQucaSL2OwY1qanWREllRT9e+TsidM6fORCEh5Wj/WGLiSNntC3ar/7pQZdAbi4YCie32upU3t45tnVBtS6etGnt1WjUTvtKOUKiS9cT26aRnVMtOy+c2tpYMYU8ykD17Pp8/n80u5/PL2Vg8HovHYlvzlVmZnrqcuVIazBXVMVNxc/VRbEc1oMEDwO6y0+LHCyyjJY0LqO+PytN9WPjCmfRiypd2NYzzqZloxBb6Jf5JwsV989Lx1Wybc/w7qKNQ/FrsXWvzlo/oFqqBdZ+++nbUO28r8ky72dHkbG3P2FDlRDLR0HCdIMJJ5WNAwNSr6C6qgaD5urtreX3X7oCpm9aDGZvxceJL/KFA1uv3uOMuz0DoheN9J7yHXD2uvj7elwmfsfDeOWcbS1N22mzp6AsPzwiOWZtdcDibG7m++NC8nm2qXkXLeEV9LRoCvCRxkiyLjMhwe5YZzI3ni9TVK1c4t8VpZmnZ8uWZh+eMN25c+n0kaCSWjBYdK12vov+iiur/vmxSWyvsj5OHyx5fO28vrzYavGOWpXnUo3wkhV1uNKq0Dgc7AalzgOqoAk0AokFk7XZVSlkWDfd/vD5ops2EiTbnbr6GKp8ES4JQCn6itGq1HQC4gipavvfe24PACTyv0iDJ9Wvf7TaajQTZZJKv95paSII0kV3fuHIvRjaRBNlIdqLKk+Aoz49xT7RzNPhEaX3AFUKhAvdAq6eaXkUV9Y0SaWFPGZLdrdN8+9adTrPdTBywHgjc/vbLd7otrIUw2UwCwv+YYKIME2Um6v+aYjoZJmqfUnEt9YNoE1XU9O/mQJb3SdGMV+3+FhdpPRAMmcnfro80Ws3EAcqUvnmP7R1/20hcQA0dbhf66/uBQpAb4d5XGg8ej+geZepV+Ce8AY3br4w+BN/nRZHnRdEiCSFJCgmS+m1T/SRK4QdgAGBp0dD08OTDVw3P117Zyju8hyrqb+reypVRRWkFVH8D98E0fqziU3vwg/F4MBiP474Ix0XUP/gMAAD//wEAAP//DUYfWAABAAAAAguFQUWP618PPPUAAQPoAAAAANhdoIQAAAAA3WYvNv43/sQIbQPxAAEAAwACAAAAAAAAAAEAAAPY/u8AAAiY/jf+NwhtAAEAAAAAAAAAAAAAAAAAAAAjeJwcyrEKQVEcx/Hv/3frRi5Sl1gMnFKcrJR7h/9iO6VYDEZewxt4E4vVC9g9EHX3j14c+IAuJO1Z60ZSTtKJpCtJkbkiE/VZ2pegmoVygkbMtMOtZKOA2xTPzrgqXKvGuT1wezO0OwNtqdShyFqMJXpqU1iktiNdK3H4Pf8AAAD//wEAAP//9VIRPwAAAAAsACwAYACMAKYAtgDYAP4BPgFQAYgBtAHmAhoCggKkArACyALkAxYDOANkA5QDtAPwBBYEOARUBIwEuAToBP4FDAUYBS4AAQAAACMAkAAMAGMABwABAAAAAAAAAAAAAAAAAAQAA3icnJTPbhtVFMZ/TmzTCsECRVW6ie6CRZHo2FRJ1TYrh9SKRRQHjwtCQkgTz/iPMp4ZeSYO4QlY8xa8RVc8BM+BWKP5fOzYBdEmipJ8d+75851zvnOBHf5mm0r1IfBHPTFcYa9+bniLB/UTw9u061uGqzyp/Wm4RlibG67zea1n+CPeVn8z/ID96k+GH7JbbRv+mGfVHcOfbDv+Mvwp+7xd4Aq84FfDFXbJDG+xw4+Gt3mExaxUeUTTcI3P2DNcZw/oM6EgZkLCCMeQCSOumBGR4xMxY8KQiBBHhxYxhb4mBEKO0X9+DfApmBEo4pgCR4xPTEDO2CL+Iq+Uc2Uc6jSzuxYFYwIu5HFJQIIjZURKQsSl4hQUZLyiQYOcgfhmFOR45EyI8UiZMaJBlzan9BkzIcfRVqSSmU/KkIJrAuV3ZlF2ZkBEQm6srkgIxdOJXyTvDqc4umSyXY98uhHhSxzfybvklsr2Kzz9ujVmm3mXbALm6mesrsS6udYEx7ot87b4VrjgFe5e/dlk8v4ehfpfKPIFV5p/qEklYpLg3C4tfCnId49xHOncwVdHvqdDnxO6vKGvc4sePVqc0afDa/l26eH4mi5nHMujI7y4a0sxZ/yA4xs6siljR9afxcQifiYzdefiOFMdUzL1vGTuqdZIFd59wuUOpRvqyOUz0B6Vlk7zS7RnASNTRSaGU/VyqY3c+heaIqaqpZzt7X25DXPbveUW35Bqh0u1LjiVk1swet9UvXc0c60fj4CQlAtZDEiZ0qDgRrzPCbgixnGs7p1oSwpaK58yz41UEjEVgw6J4szI9Dcw3fjGfbChe2dvSSj/kunlqqr7ZHHq1e2M3qh7yzvfuhytTaBhU03X1DQQ18S0H2mn1vn78s31uqU85YiUmPBfL8AzPJrsc8AhY2UY6GZur0NTL0STlxyq+ksiWQ2l58giHODxnAMOeMnzd/q4ZOKMi1txWc/d4pgjuhx+UBUL+y5HvF59+/+sv4tpU7U4nq5OL+49xSd3UOsX2rPb97KniZWTmFu02604I2BacnG76zW5x3j/AAAA//8BAAD///S3T1F4nGJgZgCD/+cYjBiwAAAAAAD//wEAAP//LwECAwAAAA==");
+}
+.d2-3124128834 .text-italic {
+	font-family: "d2-3124128834-font-italic";
+}
+@font-face {
+	font-family: d2-3124128834-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-3124128834 .fill-N1{fill:#0A0F25;}
+		.d2-3124128834 .fill-N2{fill:#676C7E;}
+		.d2-3124128834 .fill-N3{fill:#9499AB;}
+		.d2-3124128834 .fill-N4{fill:#CFD2DD;}
+		.d2-3124128834 .fill-N5{fill:#DEE1EB;}
+		.d2-3124128834 .fill-N6{fill:#EEF1F8;}
+		.d2-3124128834 .fill-N7{fill:#FFFFFF;}
+		.d2-3124128834 .fill-B1{fill:#0D32B2;}
+		.d2-3124128834 .fill-B2{fill:#0D32B2;}
+		.d2-3124128834 .fill-B3{fill:#E3E9FD;}
+		.d2-3124128834 .fill-B4{fill:#E3E9FD;}
+		.d2-3124128834 .fill-B5{fill:#EDF0FD;}
+		.d2-3124128834 .fill-B6{fill:#F7F8FE;}
+		.d2-3124128834 .fill-AA2{fill:#4A6FF3;}
+		.d2-3124128834 .fill-AA4{fill:#EDF0FD;}
+		.d2-3124128834 .fill-AA5{fill:#F7F8FE;}
+		.d2-3124128834 .fill-AB4{fill:#EDF0FD;}
+		.d2-3124128834 .fill-AB5{fill:#F7F8FE;}
+		.d2-3124128834 .stroke-N1{stroke:#0A0F25;}
+		.d2-3124128834 .stroke-N2{stroke:#676C7E;}
+		.d2-3124128834 .stroke-N3{stroke:#9499AB;}
+		.d2-3124128834 .stroke-N4{stroke:#CFD2DD;}
+		.d2-3124128834 .stroke-N5{stroke:#DEE1EB;}
+		.d2-3124128834 .stroke-N6{stroke:#EEF1F8;}
+		.d2-3124128834 .stroke-N7{stroke:#FFFFFF;}
+		.d2-3124128834 .stroke-B1{stroke:#0D32B2;}
+		.d2-3124128834 .stroke-B2{stroke:#0D32B2;}
+		.d2-3124128834 .stroke-B3{stroke:#E3E9FD;}
+		.d2-3124128834 .stroke-B4{stroke:#E3E9FD;}
+		.d2-3124128834 .stroke-B5{stroke:#EDF0FD;}
+		.d2-3124128834 .stroke-B6{stroke:#F7F8FE;}
+		.d2-3124128834 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-3124128834 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-3124128834 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-3124128834 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-3124128834 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-3124128834 .background-color-N1{background-color:#0A0F25;}
+		.d2-3124128834 .background-color-N2{background-color:#676C7E;}
+		.d2-3124128834 .background-color-N3{background-color:#9499AB;}
+		.d2-3124128834 .background-color-N4{background-color:#CFD2DD;}
+		.d2-3124128834 .background-color-N5{background-color:#DEE1EB;}
+		.d2-3124128834 .background-color-N6{background-color:#EEF1F8;}
+		.d2-3124128834 .background-color-N7{background-color:#FFFFFF;}
+		.d2-3124128834 .background-color-B1{background-color:#0D32B2;}
+		.d2-3124128834 .background-color-B2{background-color:#0D32B2;}
+		.d2-3124128834 .background-color-B3{background-color:#E3E9FD;}
+		.d2-3124128834 .background-color-B4{background-color:#E3E9FD;}
+		.d2-3124128834 .background-color-B5{background-color:#EDF0FD;}
+		.d2-3124128834 .background-color-B6{background-color:#F7F8FE;}
+		.d2-3124128834 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-3124128834 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-3124128834 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-3124128834 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-3124128834 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-3124128834 .color-N1{color:#0A0F25;}
+		.d2-3124128834 .color-N2{color:#676C7E;}
+		.d2-3124128834 .color-N3{color:#9499AB;}
+		.d2-3124128834 .color-N4{color:#CFD2DD;}
+		.d2-3124128834 .color-N5{color:#DEE1EB;}
+		.d2-3124128834 .color-N6{color:#EEF1F8;}
+		.d2-3124128834 .color-N7{color:#FFFFFF;}
+		.d2-3124128834 .color-B1{color:#0D32B2;}
+		.d2-3124128834 .color-B2{color:#0D32B2;}
+		.d2-3124128834 .color-B3{color:#E3E9FD;}
+		.d2-3124128834 .color-B4{color:#E3E9FD;}
+		.d2-3124128834 .color-B5{color:#EDF0FD;}
+		.d2-3124128834 .color-B6{color:#F7F8FE;}
+		.d2-3124128834 .color-AA2{color:#4A6FF3;}
+		.d2-3124128834 .color-AA4{color:#EDF0FD;}
+		.d2-3124128834 .color-AA5{color:#F7F8FE;}
+		.d2-3124128834 .color-AB4{color:#EDF0FD;}
+		.d2-3124128834 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="QnJvd3Nlcg== actor"><g class="shape" ><rect x="13.000000" y="0.000000" width="104.000000" height="66.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="65.000000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Browser</text></g><g class="U2VydmVyIHBhZ2U= actor"><g class="shape" ><rect x="0.000000" y="126.000000" width="129.000000" height="66.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="64.500000" y="164.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Server page</text></g><g class="JiMzNDtyb3V0ZS50cyAvYXBpL3RycGMmIzM0Ow=="><g class="shape" ><rect x="453.000000" y="0.000000" width="167.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="536.500000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">route.ts /api/trpc</text></g><g class="c2VydmVyVFJQQw=="><g class="shape" ><rect x="473.000000" y="126.000000" width="128.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="537.000000" y="164.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">serverTRPC</text></g><g class="Y3JlYXRlVFJQQ0NvbnRleHQ="><g class="shape" ><rect x="802.000000" y="63.000000" width="184.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="894.000000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">createTRPCContext</text></g><g class="cHJvY2VkdXJlIGxhZGRlcg== changed"><g class="shape" ><rect x="1217.000000" y="63.000000" width="167.000000" height="66.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="1300.500000" y="101.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">procedure ladder</text></g><g class="ZG9tYWluIHJvdXRlcg=="><g class="shape" ><rect x="1566.000000" y="63.000000" width="148.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1640.000000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">domain router</text></g><g class="c2VydmljZQ=="><g class="shape" ><rect x="1896.000000" y="63.000000" width="96.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1944.000000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">service</text></g><g class="cmVwb3NpdG9yeQ=="><g class="shape" ><rect x="2280.000000" y="63.000000" width="119.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="2339.500000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">repository</text></g><g class="UG9zdGdyZXM= store"><g class="shape" ><rect x="2624.000000" y="63.000000" width="106.000000" height="66.000000" stroke="#9775fa" fill="#e5dbff" style="stroke-width:2;" /></g><text x="2677.000000" y="101.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Postgres</text></g><g class="KEJyb3dzZXIgLSZndDsgJiMzNDtyb3V0ZS50cyAvYXBpL3RycGMmIzM0OylbMF0="><marker id="mk-d2-3124128834-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 119.500000 33.000000 C 256.299988 33.000000 323.399994 33.000000 449.000000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3124128834-3488378134)" mask="url(#d2-3124128834)" /><text x="285.000000" y="39.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">httpBatchStreamLink</text></g><g class="KFNlcnZlciBwYWdlIC0mZ3Q7IHNlcnZlclRSUEMpWzBd"><path d="M 131.000000 159.000000 C 258.600006 159.000000 327.299988 159.000000 468.500000 159.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3124128834-3488378134)" mask="url(#d2-3124128834)" /><text x="301.000000" y="165.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">direct caller</text></g><g class="KCYjMzQ7cm91dGUudHMgL2FwaS90cnBjJiMzNDsgLSZndDsgY3JlYXRlVFJQQ0NvbnRleHQpWzBd"><path d="M 622.000000 33.000000 C 692.799988 33.000000 729.200012 39.200001 798.213671 62.710151" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3124128834-3488378134)" mask="url(#d2-3124128834)" /></g><g class="KHNlcnZlclRSUEMgLSZndDsgY3JlYXRlVFJQQ0NvbnRleHQpWzBd"><path d="M 603.500000 159.000000 C 689.099976 159.000000 729.200012 152.800003 798.213671 129.289849" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3124128834-3488378134)" mask="url(#d2-3124128834)" /></g><g class="KGNyZWF0ZVRSUENDb250ZXh0IC0mZ3Q7IHByb2NlZHVyZSBsYWRkZXIpWzBd"><path d="M 987.500000 96.000000 C 1078.300049 96.000000 1124.699951 96.000000 1213.500000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3124128834-3488378134)" mask="url(#d2-3124128834)" /><text x="1101.500000" y="102.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">session</text></g><g class="KHByb2NlZHVyZSBsYWRkZXIgLSZndDsgZG9tYWluIHJvdXRlcilbMF0="><path d="M 1386.000000 96.000000 C 1456.800049 96.000000 1493.199951 96.000000 1562.000000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3124128834-3488378134)" mask="url(#d2-3124128834)" /></g><g class="KGRvbWFpbiByb3V0ZXIgLSZndDsgc2VydmljZSlbMF0="><path d="M 1716.000000 96.000000 C 1786.800049 96.000000 1823.199951 96.000000 1892.000000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3124128834-3488378134)" mask="url(#d2-3124128834)" /></g><g class="KHNlcnZpY2UgLSZndDsgcmVwb3NpdG9yeSlbMF0="><path d="M 1994.000000 96.000000 C 2107.199951 96.000000 2164.800049 96.000000 2276.000000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3124128834-3488378134)" mask="url(#d2-3124128834)" /><text x="2136.000000" y="102.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">withTransaction</text></g><g class="KHJlcG9zaXRvcnkgLSZndDsgUG9zdGdyZXMpWzBd"><path d="M 2400.500000 96.000000 C 2488.899902 96.000000 2534.100098 96.000000 2620.500000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3124128834-3488378134)" mask="url(#d2-3124128834)" /><text x="2511.500000" y="102.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">Kysely</text></g><mask id="d2-3124128834" maskUnits="userSpaceOnUse" x="-25" y="-25" width="2780" height="242">
+<rect x="-25" y="-25" width="2780" height="242" fill="white"></rect>
+<rect x="212.000000" y="23.000000" width="146" height="21" fill="black"></rect>
+<rect x="259.000000" y="149.000000" width="84" height="21" fill="black"></rect>
+<rect x="1075.000000" y="86.000000" width="53" height="21" fill="black"></rect>
+<rect x="2081.000000" y="86.000000" width="110" height="21" fill="black"></rect>
+<rect x="2488.000000" y="86.000000" width="47" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption">Both doors share one context: <code>createTRPCContext</code> resolves the Better Auth session from request headers, then the ladder decides how far the call may climb. Server pages never pay an HTTP round-trip — <code>serverTRPC</code> uses <code>createCallerFactory(appRouter)</code>.</p><div class="callout"><span class="callout-icon" aria-hidden="true">&#9737;</span><span class="callout-text">Everything below the ladder belongs to the neighbor domains — web-shell owns the pipe, not the water.</span></div></section><section id="depth" class="section"><div class="section-header"><h2 class="section-title">In depth</h2></div><div class="subsection" id="c-trpc"><div class="subsection-header"><h3 class="subsection-title">tRPC plumbing <span class="subsection-path">src/server · src/lib/trpc · src/app/api/trpc</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>server/trpc.ts</code> is the smallest and most load-bearing file in the repo. <code>createTRPCContext</code> calls <code>auth.api.getSession</code> (Better Auth, from the <a href="../domain-accounts/domain-accounts.html">accounts</a> domain) against the incoming headers and yields <code>{ session, userId }</code>. <code>initTRPC</code> is configured once with the <code>superjson</code> transformer — matching the transformer on the client link, so <code>Date</code>/<code>Decimal</code> values survive the wire.</p><p class="detail-p">The ladder is two middleware steps: <code>protectedProcedure</code> throws <code>UNAUTHORIZED</code> when <code>ctx.userId</code> is null (and narrows its type to <code>string</code> for everything downstream), and <code>adminProcedure</code> extends it, throwing <code>FORBIDDEN</code> unless the session user's <code>role</code> is <code>"admin"</code>. Every one of the 11 domain routers builds its procedures from one of these three rungs.</p><p class="detail-p"><code>routers/_app.ts</code> is pure aggregation: it merges <code>auth</code>, <code>health</code>, <code>tournament</code>, <code>golfer</code>, <code>pick</code>, <code>dashboard</code>, <code>league</code>, <code>leaderboard</code>, <code>admin</code>, <code>earningsAdjustment</code>, and <code>user</code> into <code>appRouter</code> and exports the <code>AppRouter</code> type — the single type that powers end-to-end inference in every client component. Notably there is <strong>no payments router</strong>: PayPal talks over plain API routes, so <a href="../domain-payments/domain-payments.html">payments</a> is absent from this file.</p><p class="detail-p">Consumption is two-sided. <code>lib/trpc/client.tsx</code> (client) builds a TanStack Query <code>QueryClient</code> (30s <code>staleTime</code>, browser-singleton) and a tRPC client with a single <code>httpBatchStreamLink</code> to <code>/api/trpc</code>; <code>createTRPCContext&lt;AppRouter&gt;()</code> from <code>@trpc/tanstack-react-query</code> yields the <code>useTRPC</code> hook. <code>lib/trpc/server.ts</code> (server) skips HTTP entirely: <code>createCallerFactory(appRouter)</code> plus a fresh context gives <code>serverTRPC()</code>, the in-process caller used by 27 server pages and the <code>NavBar</code>.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1547 116"><svg class="d2-3672733460 d2-svg" width="1547" height="116" viewBox="-25 -25 1547 116"><rect x="-25.000000" y="-25.000000" width="1547.000000" height="116.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-3672733460 .text-bold {
+	font-family: "d2-3672733460-font-bold";
+}
+@font-face {
+	font-family: d2-3672733460-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-3672733460 .text-italic {
+	font-family: "d2-3672733460-font-italic";
+}
+@font-face {
+	font-family: d2-3672733460-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-3672733460 .fill-N1{fill:#0A0F25;}
+		.d2-3672733460 .fill-N2{fill:#676C7E;}
+		.d2-3672733460 .fill-N3{fill:#9499AB;}
+		.d2-3672733460 .fill-N4{fill:#CFD2DD;}
+		.d2-3672733460 .fill-N5{fill:#DEE1EB;}
+		.d2-3672733460 .fill-N6{fill:#EEF1F8;}
+		.d2-3672733460 .fill-N7{fill:#FFFFFF;}
+		.d2-3672733460 .fill-B1{fill:#0D32B2;}
+		.d2-3672733460 .fill-B2{fill:#0D32B2;}
+		.d2-3672733460 .fill-B3{fill:#E3E9FD;}
+		.d2-3672733460 .fill-B4{fill:#E3E9FD;}
+		.d2-3672733460 .fill-B5{fill:#EDF0FD;}
+		.d2-3672733460 .fill-B6{fill:#F7F8FE;}
+		.d2-3672733460 .fill-AA2{fill:#4A6FF3;}
+		.d2-3672733460 .fill-AA4{fill:#EDF0FD;}
+		.d2-3672733460 .fill-AA5{fill:#F7F8FE;}
+		.d2-3672733460 .fill-AB4{fill:#EDF0FD;}
+		.d2-3672733460 .fill-AB5{fill:#F7F8FE;}
+		.d2-3672733460 .stroke-N1{stroke:#0A0F25;}
+		.d2-3672733460 .stroke-N2{stroke:#676C7E;}
+		.d2-3672733460 .stroke-N3{stroke:#9499AB;}
+		.d2-3672733460 .stroke-N4{stroke:#CFD2DD;}
+		.d2-3672733460 .stroke-N5{stroke:#DEE1EB;}
+		.d2-3672733460 .stroke-N6{stroke:#EEF1F8;}
+		.d2-3672733460 .stroke-N7{stroke:#FFFFFF;}
+		.d2-3672733460 .stroke-B1{stroke:#0D32B2;}
+		.d2-3672733460 .stroke-B2{stroke:#0D32B2;}
+		.d2-3672733460 .stroke-B3{stroke:#E3E9FD;}
+		.d2-3672733460 .stroke-B4{stroke:#E3E9FD;}
+		.d2-3672733460 .stroke-B5{stroke:#EDF0FD;}
+		.d2-3672733460 .stroke-B6{stroke:#F7F8FE;}
+		.d2-3672733460 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-3672733460 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-3672733460 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-3672733460 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-3672733460 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-3672733460 .background-color-N1{background-color:#0A0F25;}
+		.d2-3672733460 .background-color-N2{background-color:#676C7E;}
+		.d2-3672733460 .background-color-N3{background-color:#9499AB;}
+		.d2-3672733460 .background-color-N4{background-color:#CFD2DD;}
+		.d2-3672733460 .background-color-N5{background-color:#DEE1EB;}
+		.d2-3672733460 .background-color-N6{background-color:#EEF1F8;}
+		.d2-3672733460 .background-color-N7{background-color:#FFFFFF;}
+		.d2-3672733460 .background-color-B1{background-color:#0D32B2;}
+		.d2-3672733460 .background-color-B2{background-color:#0D32B2;}
+		.d2-3672733460 .background-color-B3{background-color:#E3E9FD;}
+		.d2-3672733460 .background-color-B4{background-color:#E3E9FD;}
+		.d2-3672733460 .background-color-B5{background-color:#EDF0FD;}
+		.d2-3672733460 .background-color-B6{background-color:#F7F8FE;}
+		.d2-3672733460 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-3672733460 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-3672733460 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-3672733460 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-3672733460 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-3672733460 .color-N1{color:#0A0F25;}
+		.d2-3672733460 .color-N2{color:#676C7E;}
+		.d2-3672733460 .color-N3{color:#9499AB;}
+		.d2-3672733460 .color-N4{color:#CFD2DD;}
+		.d2-3672733460 .color-N5{color:#DEE1EB;}
+		.d2-3672733460 .color-N6{color:#EEF1F8;}
+		.d2-3672733460 .color-N7{color:#FFFFFF;}
+		.d2-3672733460 .color-B1{color:#0D32B2;}
+		.d2-3672733460 .color-B2{color:#0D32B2;}
+		.d2-3672733460 .color-B3{color:#E3E9FD;}
+		.d2-3672733460 .color-B4{color:#E3E9FD;}
+		.d2-3672733460 .color-B5{color:#EDF0FD;}
+		.d2-3672733460 .color-B6{color:#F7F8FE;}
+		.d2-3672733460 .color-AA2{color:#4A6FF3;}
+		.d2-3672733460 .color-AA4{color:#EDF0FD;}
+		.d2-3672733460 .color-AA5{color:#F7F8FE;}
+		.d2-3672733460 .color-AB4{color:#EDF0FD;}
+		.d2-3672733460 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="cHVibGljUHJvY2VkdXJl"><g class="shape" ><rect x="0.000000" y="0.000000" width="162.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="81.000000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">publicProcedure</text></g><g class="cHJvdGVjdGVkUHJvY2VkdXJl"><g class="shape" ><rect x="672.000000" y="0.000000" width="188.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="766.000000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">protectedProcedure</text></g><g class="YWRtaW5Qcm9jZWR1cmU="><g class="shape" ><rect x="1333.000000" y="0.000000" width="164.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1415.000000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">adminProcedure</text></g><g class="KHB1YmxpY1Byb2NlZHVyZSAtJmd0OyBwcm90ZWN0ZWRQcm9jZWR1cmUpWzBd"><marker id="mk-d2-3672733460-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 164.000000 33.000000 C 366.000000 33.000000 468.000000 33.000000 668.000000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3672733460-3488378134)" mask="url(#d2-3672733460)" /><text x="417.500000" y="39.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">userId present, else UNAUTHORIZED</text></g><g class="KHByb3RlY3RlZFByb2NlZHVyZSAtJmd0OyBhZG1pblByb2NlZHVyZSlbMF0="><path d="M 861.500000 33.000000 C 1049.099976 33.000000 1143.900024 33.000000 1329.500000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3672733460-3488378134)" mask="url(#d2-3672733460)" /><text x="1097.000000" y="39.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">role is admin, else FORBIDDEN</text></g><mask id="d2-3672733460" maskUnits="userSpaceOnUse" x="-25" y="-25" width="1547" height="116">
+<rect x="-25" y="-25" width="1547" height="116" fill="white"></rect>
+<rect x="298.000000" y="23.000000" width="239" height="21" fill="black"></rect>
+<rect x="996.000000" y="23.000000" width="202" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption">Each rung is a middleware <code>use()</code> on the previous one — auth checks live here once, never in routers.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/trpc.ts</span><span class="owns-desc"><code>createTRPCContext</code> (session + userId), <code>initTRPC</code> with superjson, and the three procedure builders.</span></div><div class="owns-row"><span class="owns-name">server/routers/_app.ts</span><span class="owns-desc">Root router — merges the 11 domain routers; exports <code>appRouter</code> + the <code>AppRouter</code> type.</span></div><div class="owns-row"><span class="owns-name">app/api/trpc/[trpc]/route.ts</span><span class="owns-desc">The one HTTP endpoint: <code>fetchRequestHandler</code> at <code>/api/trpc</code>, exported as both <code>GET</code> and <code>POST</code>.</span></div><div class="owns-row"><span class="owns-name">lib/trpc/client.tsx</span><span class="owns-desc">Client side — QueryClient, <code>httpBatchStreamLink</code> + superjson, <code>TRPCReactProvider</code>, <code>useTRPC</code>.</span></div><div class="owns-row"><span class="owns-name">lib/trpc/server.ts</span><span class="owns-desc">Server side — <code>serverTRPC()</code>, an in-process caller built from <code>createCallerFactory(appRouter)</code>.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">publicProcedure</span><span class="owns-desc">Bottom rung — no auth; used by landing/leaderboard/tournament reads.</span></div><div class="owns-row"><span class="owns-name">protectedProcedure</span><span class="owns-desc">Throws <code>UNAUTHORIZED</code> without a session; narrows <code>ctx.userId</code> to <code>string</code>.</span></div><div class="owns-row"><span class="owns-name">adminProcedure</span><span class="owns-desc">Extends protected; throws <code>FORBIDDEN</code> unless session role is <code>admin</code>.</span></div><div class="owns-row"><span class="owns-name">createTRPCContext</span><span class="owns-desc">Resolves the Better Auth session from <code>headers()</code> into <code>{ session, userId }</code>.</span></div><div class="owns-row"><span class="owns-name">appRouter</span><span class="owns-desc">The composed API. <code>AppRouter</code> (its type) is what every client imports for inference.</span></div><div class="owns-row"><span class="owns-name">serverTRPC</span><span class="owns-desc">Async factory returning a direct caller — server components' door, no HTTP.</span></div><div class="owns-row"><span class="owns-name">useTRPC</span><span class="owns-desc">The TanStack-Query-integrated hook client components consume.</span></div><div class="owns-row"><span class="owns-name">TRPCReactProvider</span><span class="owns-desc">Mounts QueryClientProvider + TRPCProvider; wired in by <code>Providers</code>.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body">All 11 domain routers import their procedure rungs from <code>server/trpc.ts</code> — <a href="../domain-game/domain-game.html">game</a> (pick, dashboard), <a href="../domain-golf-data/domain-golf-data.html">golf-data</a> (tournament, golfer), <a href="../domain-leagues/domain-leagues.html">leagues</a>, <a href="../domain-scoring/domain-scoring.html">scoring</a> (leaderboard, earningsAdjustment), <a href="../domain-accounts/domain-accounts.html">accounts</a> (auth, user), <a href="../domain-admin/domain-admin.html">admin</a> (admin, health).</span></div><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body">27 server pages call <code>serverTRPC()</code>; 21 client components call <code>useTRPC()</code> — every data fetch in the app passes through this component.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>createTRPCContext</code> calls <code>auth.api.getSession</code> from <a href="../domain-accounts/domain-accounts.html">accounts</a>' <code>server/auth.ts</code> — web-shell's only genuine runtime dependency on a neighbor.</span></div><div class="conn"><span class="conn-dir">aggregates</span><span class="conn-body"><code>_app.ts</code> imports every domain's router — the one place the dependency arrow points <em>out</em> of web-shell toward everyone else.</span></div></div></div><div class="subsection" id="c-db"><div class="subsection-header"><h3 class="subsection-title">db core <span class="subsection-path">src/lib</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>lib/db-core.ts</code> builds the singleton <code>Kysely&lt;DB&gt;</code> over a <code>pg.Pool</code> on <code>DATABASE_URL</code>, with <code>CamelCasePlugin</code> (snake_case columns → camelCase properties) and the generated types from <code>@/generated/kysely/types</code>. In non-production it caches the instance on <code>globalThis</code> so Next.js hot reloads don't leak pools. The pool registers a swallow-all <code>error</code> handler — when Vercel freezes a serverless function, idle connections get killed, and without the handler that surfaces as an uncaught exception.</p><p class="detail-p"><code>withTransaction(fn)</code> is the entire transaction API: it runs <code>fn</code> inside <code>db.transaction().execute()</code> and hands the transaction executor to the callback. The convention (enforced by review, visible in every service) is that repository functions accept an optional <code>executor: Kysely&lt;DB&gt; = db</code> parameter, so a service can pass the transaction through multiple repository calls atomically.</p><p class="detail-p"><code>lib/db.ts</code> is a two-line gate: <code>import "server-only"</code> then re-export <code>{ db, withTransaction }</code> from <code>db-core</code>. App code imports <code>@/lib/db</code> and gets a build error if the import ever leaks into a client bundle; the 14 seed scripts under <code>prisma/seed/</code> import <code>@/lib/db-core</code> directly because they run outside Next.js where <code>server-only</code> would throw.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">lib/db-core.ts</span><span class="owns-desc">Pool + Kysely singleton + <code>withTransaction</code>. No <code>server-only</code> guard — importable by seed scripts.</span></div><div class="owns-row"><span class="owns-name">lib/db.ts</span><span class="owns-desc">The guarded door: <code>server-only</code> + re-export. What app code should import.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">db</span><span class="owns-desc">The <code>Kysely&lt;DB&gt;</code> singleton. Only repositories (and two sanctioned exceptions) touch it.</span></div><div class="owns-row"><span class="owns-name">withTransaction</span><span class="owns-desc"><code>(fn: (tx: Kysely&lt;DB&gt;) =&gt; Promise&lt;T&gt;) =&gt; Promise&lt;T&gt;</code> — services' only transaction primitive.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body">Every repository in every domain imports <code>db</code>; every multi-write service imports <code>withTransaction</code> (and only that — services never touch <code>db</code> directly, per the layering rule).</span></div><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><code>prisma/seed/*</code> (14 scripts) import <code>db-core</code> directly — and so do the repositories those scripts reuse (<code>sync</code>, <code>upserts</code>, <code>bot-picks</code>, <code>earnings</code>, <code>pick-lock</code>, <code>cron-log</code>, …), which deliberately import <code>@/lib/db-core</code> instead of <code>@/lib/db</code> to stay usable outside Next.js.</span></div><div class="conn"><span class="conn-dir">exception</span><span class="conn-body">Two files outside the repository layer import <code>db</code>: <a href="../domain-accounts/domain-accounts.html">accounts</a>' <code>server/auth.ts</code> (Better Auth needs the pool for its adapter) and <a href="../domain-admin/domain-admin.html">admin</a>'s <code>routers/health.ts</code> (the health check pings the DB from the router).</span></div></div></div><div class="subsection" id="c-chrome"><div class="subsection-header"><h3 class="subsection-title">app chrome <span class="subsection-path">src/app · src/components</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>app/layout.tsx</code> (<code>RootLayout</code>) loads two Google fonts as CSS variables (Literata + Hanken Grotesk), declares the site-wide <code>metadata</code> (title template, Open Graph, Twitter card), imports the <code>flag-icons</code> stylesheet, and wraps every page in <code>Providers</code> → <code>SessionRefresh</code> → <code>NavBar</code> → children. <code>Providers</code> is a one-liner that mounts <code>TRPCReactProvider</code>; <code>SessionRefresh</code> comes from <a href="../domain-accounts/domain-accounts.html">accounts</a>.</p><p class="detail-p"><code>NavBar</code> is an <strong>async server component</strong>: it calls <code>serverTRPC()</code> on every render, checks <code>auth.me()</code>, and returns <code>null</code> when signed out — which is why the landing page renders its own header with a Sign In link. Signed in, it fetches <code>league.myLeagues()</code>, resolves the active league via <code>getActiveLeagueId</code> (from <a href="../domain-leagues/domain-leagues.html">leagues</a>), and renders the <code>LeagueSwitcher</code>, desktop links (Dashboard / Season / Standings / Leagues), and the same links again inside <code>MobileMenuToggle</code>.</p><p class="detail-p"><code>MobileMenuToggle</code> is the only client component here: a hamburger button + slide-out panel with two close behaviors (any link/button click inside the menu, any click outside it), tracked with refs and <code>aria-expanded</code>.</p><p class="detail-p"><code>app/page.tsx</code> (<code>Home</code>) is the signed-out landing page — it redirects authenticated users to <code>/dashboard</code>, then fetches <code>tournament.current()</code> and the top-10 of <code>leaderboard.global()</code> (both <code>.catch</code>-guarded so an empty DB still renders) and lays out hero, how-it-works, live leaderboard teaser, league pitch, and footer.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/layout.tsx</span><span class="owns-desc"><code>RootLayout</code> — fonts, site metadata, <code>Providers</code> + <code>SessionRefresh</code> + <code>NavBar</code> shell.</span></div><div class="owns-row"><span class="owns-name">app/page.tsx</span><span class="owns-desc"><code>Home</code> — signed-out landing page; redirects members to <code>/dashboard</code>; shows live tournament + global top 10.</span></div><div class="owns-row"><span class="owns-name">components/layout/nav-bar.tsx</span><span class="owns-desc">Async server component; <code>null</code> when signed out; league switcher + nav links + mobile menu.</span></div><div class="owns-row"><span class="owns-name">components/layout/mobile-menu-toggle.tsx</span><span class="owns-desc">Client hamburger/panel with outside-click and link-click close handling.</span></div><div class="owns-row"><span class="owns-name">components/providers.tsx</span><span class="owns-desc">Client boundary that mounts <code>TRPCReactProvider</code> for the whole tree.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">RootLayout</span><span class="owns-desc">Default export of <code>layout.tsx</code> — the app-wide HTML shell.</span></div><div class="owns-row"><span class="owns-name">metadata</span><span class="owns-desc">Site-wide title template + OG/Twitter cards (landing page overrides its own).</span></div><div class="owns-row"><span class="owns-name">Home</span><span class="owns-desc">Default export of <code>page.tsx</code> — the marketing/landing page.</span></div><div class="owns-row"><span class="owns-name">NavBar</span><span class="owns-desc">The signed-in navigation chrome.</span></div><div class="owns-row"><span class="owns-name">MobileMenuToggle</span><span class="owns-desc">Mobile menu state + a11y wiring.</span></div><div class="owns-row"><span class="owns-name">Providers</span><span class="owns-desc">Client-side provider stack (currently just tRPC/React Query).</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumes</span><span class="conn-body"><a href="../domain-accounts/domain-accounts.html">accounts</a>: <code>SessionRefresh</code> in the layout, <code>SignOutButton</code> in the nav, <code>auth.me()</code> for the session check.</span></div><div class="conn"><span class="conn-dir">consumes</span><span class="conn-body"><a href="../domain-leagues/domain-leagues.html">leagues</a>: <code>LeagueSwitcher</code>, <code>getActiveLeagueId</code>, <code>league.myLeagues()</code> — the nav is league-context-aware.</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><a href="../domain-golf-data/domain-golf-data.html">golf-data</a>'s <code>tournament.current()</code> and <a href="../domain-scoring/domain-scoring.html">scoring</a>'s <code>leaderboard.global()</code> for the landing page's live panels.</span></div></div></div><div class="subsection" id="c-utils"><div class="subsection-header"><h3 class="subsection-title">shared utils <span class="subsection-path">src/lib</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>lib/constants.ts</code> is a single well-known ID: <code>GLOBAL_LEAGUE_ID = "ppgl-global"</code>, the league every user is auto-enrolled in. The <a href="../domain-scoring/domain-scoring.html">scoring</a> leaderboard service and <a href="../domain-leagues/domain-leagues.html">leagues</a> league service branch on it, and UI in leagues/admin special-cases it.</p><p class="detail-p"><code>lib/format.ts</code> is where display rules encode game rules. <code>formatCurrency</code> renders whole-dollar USD; <code>formatPosition</code> does ordinal suffixes (with the 11th/12th/13th trap handled); <code>formatScore</code> renders golf score-to-par (<code>E</code>, <code>+3</code>, <code>-5</code>, <code>–</code> for null). <code>formatPurse</code> prefers the actual purse and falls back to <code>~$X</code> for estimates. <code>formatDate</code> pins <code>America/New_York</code> so tournament dates don't shift per viewer timezone.</p><p class="detail-p"><code>isMissedCut</code> is the most game-aware helper: a pick is a missed cut only when it earned exactly $0 with no real finish position <strong>and</strong> is <code>LOCKED</code> — and never while the tournament is <code>IN_PROGRESS</code>, because in round 1 everyone has $0 and a null position; the cut simply hasn't happened yet.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">lib/constants.ts</span><span class="owns-desc"><code>GLOBAL_LEAGUE_ID</code> — the auto-enroll global league's well-known ID.</span></div><div class="owns-row"><span class="owns-name">lib/format.ts</span><span class="owns-desc">Currency / position / score / purse / date formatters + the <code>isMissedCut</code> rule.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">GLOBAL_LEAGUE_ID</span><span class="owns-desc"><code>"ppgl-global"</code> — branch point for global-league behavior in services and UI.</span></div><div class="owns-row"><span class="owns-name">formatCurrency</span><span class="owns-desc">Whole-dollar <code>en-US</code> USD — earnings everywhere.</span></div><div class="owns-row"><span class="owns-name">formatPosition</span><span class="owns-desc"><code>1 → 1st</code>, <code>13 → 13th</code> — finish positions.</span></div><div class="owns-row"><span class="owns-name">formatScore</span><span class="owns-desc">Score-to-par: <code>E</code> / <code>+3</code> / <code>-5</code> / <code>–</code>.</span></div><div class="owns-row"><span class="owns-name">isMissedCut</span><span class="owns-desc">$0 + no finish + <code>LOCKED</code>, and only on non-live tournaments.</span></div><div class="owns-row"><span class="owns-name">formatPurse</span><span class="owns-desc">Actual purse, else <code>~</code> + estimated, else null.</span></div><div class="owns-row"><span class="owns-name">formatDate</span><span class="owns-desc">Short month/day, pinned to <code>America/New_York</code>.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body">~25 files import <code>format.ts</code> — dashboard and planner in <a href="../domain-game/domain-game.html">game</a>, standings/earnings in <a href="../domain-scoring/domain-scoring.html">scoring</a>, tournament/golfer pages in <a href="../domain-golf-data/domain-golf-data.html">golf-data</a>, league pages in <a href="../domain-leagues/domain-leagues.html">leagues</a>, and most of <a href="../domain-admin/domain-admin.html">admin</a>.</span></div><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><code>GLOBAL_LEAGUE_ID</code> is read by the leaderboard and league services plus the leagues and admin-tournament UIs.</span></div></div></div></section><section id="data" class="section"><div class="section-header"><h2 class="section-title">Data it owns</h2></div><p class="section-intro">None — and that's the point. web-shell is pure plumbing: it owns the connection to the database, not any table in it.</p><div class="owns-list"><div class="owns-row"><span class="owns-name">(none)</span><span class="owns-desc">No Prisma models attribute here. The Kysely <code>db</code> singleton and <code>withTransaction</code> are owned here, but every table they touch belongs to a neighbor domain.</span></div></div><p class="diagram-caption">If you're looking for a model, start from the feature domain that owns it — e.g. picks in <a href="../domain-game/domain-game.html">game</a>, tournaments in <a href="../domain-golf-data/domain-golf-data.html">golf-data</a>.</p></section><section id="seams" class="section"><div class="section-header"><h2 class="section-title">Seams</h2></div><p class="section-intro">web-shell's surface is the contract every other domain builds on: the procedure rungs, the two tRPC doors, the transaction primitive, and the shared formatters.</p><div class="seam-cols"><div class="seam-col seam-exposes"><div class="seam-head"><span aria-hidden="true">&#8593;</span> Exposes</div><div class="seam-body"><ul class="seam-api"><li>publicProcedure <span class="api-note">— Unauthenticated rung — landing page reads, health.</span></li><li>protectedProcedure <span class="api-note">— Session-required rung; the workhorse for all member features.</span></li><li>adminProcedure <span class="api-note">— Role-gated rung for the back-office.</span></li><li>appRouter <span class="api-note">— The composed API; its `AppRouter` type drives end-to-end inference.</span></li><li>POST /api/trpc <span class="api-note">— The single HTTP endpoint (also `GET`), batched + streamed + superjson.</span></li><li>serverTRPC <span class="api-note">— In-process caller — server components skip HTTP entirely.</span></li><li>useTRPC <span class="api-note">— Client hook (TanStack Query integration) from `lib/trpc/client.tsx`.</span></li><li>withTransaction <span class="api-note">— Services&#39; only way to make multi-repository writes atomic.</span></li><li>db <span class="api-note">— Kysely singleton — repositories only (plus `auth.ts` and `health.ts` by design).</span></li><li>formatCurrency <span class="api-note">— Representative of the `format.ts` family used across every UI domain.</span></li><li>GLOBAL_LEAGUE_ID <span class="api-note">— Well-known global-league ID consumed by scoring/leagues services.</span></li></ul></div></div><div class="seam-col seam-depends"><div class="seam-head"><span aria-hidden="true">&#8595;</span> Depends on</div><div class="seam-body"><div class="seam-neighbors"><a class="neighbor-chip" href="../domain-accounts/domain-accounts.html">accounts <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-admin/domain-admin.html">admin <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-game/domain-game.html">game <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-golf-data/domain-golf-data.html">golf-data <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-leagues/domain-leagues.html">leagues <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-scoring/domain-scoring.html">scoring <span class="nc-path">src</span></a></div><p class="diagram-caption" style="margin-top:14px;">The depends list is an inversion artifact, not real coupling: <code>_app.ts</code> must import every domain's router to compose <code>appRouter</code>, and the layout/nav mount accounts + leagues chrome. Conceptually the arrows all point the other way — every domain builds on web-shell. <a href="../domain-payments/domain-payments.html">payments</a> is the one absent neighbor: it has no tRPC router (PayPal uses plain API routes), so web-shell never touches it.</p></div></div></div></section></main></div><div id="zoom-overlay" class="zoom-overlay" aria-hidden="true"><div class="zoom-controls"><button id="zoom-out" type="button" aria-label="Zoom out">&#8722;</button><button id="zoom-reset" type="button">Reset</button><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-close" type="button" aria-label="Close">&#10006;</button></div><div id="zoom-stage" class="zoom-stage"></div></div><script>(function() {
+  'use strict';
+
+  // Sidebar toggle
+  var toggle = document.getElementById('sidebar-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+
+  function openSidebar() {
+    sidebar.classList.add('is-open');
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('is-open');
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function() {
+      if (sidebar.classList.contains('is-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  // Close sidebar on nav click (mobile)
+  var outlineLinks = document.querySelectorAll('.outline-item, .file-item');
+  outlineLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 900) {
+        closeSidebar();
+      }
+    });
+  });
+
+  // Scroll-spy for outline
+  var outlineItems = document.querySelectorAll('.outline-item[data-target]');
+  var sections = Array.prototype.map.call(outlineItems, function(it) {
+    var t = it.getAttribute('data-target');
+    return { id: t, target: t };
+  });
+
+  function updateActive(activeId) {
+    outlineItems.forEach(function(item) {
+      var t = item.getAttribute('data-target');
+      if (t === activeId) {
+        item.classList.add('is-active');
+      } else {
+        item.classList.remove('is-active');
+      }
+    });
+  }
+
+  var topbarH = 52;
+
+  function onScroll() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var winH = window.innerHeight;
+    var active = null;
+
+    for (var i = sections.length - 1; i >= 0; i--) {
+      var el = document.getElementById(sections[i].id);
+      if (el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.top <= topbarH + 32) {
+          active = sections[i].target;
+          break;
+        }
+      }
+    }
+
+    if (active) {
+      updateActive(active);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Progress rail: highlight chapter based on scroll
+  var progressSteps = document.querySelectorAll('.progress-step');
+  var chapters = Array.prototype.map.call(progressSteps, function(s) {
+    var h = s.getAttribute('href') || '';
+    return h.charAt(0) === '#' ? document.getElementById(h.slice(1)) : null;
+  });
+
+  function updateProgress() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = 0;
+    for (var i = chapters.length - 1; i >= 0; i--) {
+      if (chapters[i]) {
+        var rect = chapters[i].getBoundingClientRect();
+        if (rect.top <= topbarH + 48) {
+          active = i;
+          break;
+        }
+      }
+    }
+    progressSteps.forEach(function(step, idx) {
+      if (idx === active) {
+        step.classList.add('is-active');
+      } else {
+        step.classList.remove('is-active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+})();
+
+(function(){
+  'use strict';
+  var ov=document.getElementById('zoom-overlay'), stage=document.getElementById('zoom-stage');
+  var cur,scale=1,tx=0,ty=0,drag=false,moved=false,lx=0,ly=0;
+  function apply(){ if(cur) cur.style.transform='translate('+tx+'px,'+ty+'px) scale('+scale+')'; }
+  function openSvg(svg){ stage.innerHTML=''; cur=svg.cloneNode(true); cur.removeAttribute('width'); cur.removeAttribute('height'); stage.appendChild(cur); scale=1;tx=0;ty=0;apply(); ov.classList.add('is-open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+  function closeOv(){ ov.classList.remove('is-open'); ov.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  document.querySelectorAll('.diagram-box').forEach(function(box){
+    var svg=box.querySelector('svg.diagram-svg'); if(!svg) return;
+    box.addEventListener('click', function(){ openSvg(svg); });
+  });
+  document.getElementById('zoom-close').addEventListener('click', closeOv);
+  document.getElementById('zoom-reset').addEventListener('click', function(){ scale=1;tx=0;ty=0;apply(); });
+  document.getElementById('zoom-in').addEventListener('click', function(){ scale=Math.min(8,scale*1.25); apply(); });
+  document.getElementById('zoom-out').addEventListener('click', function(){ scale=Math.max(0.3,scale/1.25); apply(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeOv(); });
+  stage.addEventListener('wheel', function(e){ e.preventDefault(); scale=Math.min(8,Math.max(0.3, scale*(e.deltaY<0?1.12:0.89))); apply(); }, {passive:false});
+  stage.addEventListener('pointerdown', function(e){ drag=true; moved=false; lx=e.clientX; ly=e.clientY; try{stage.setPointerCapture(e.pointerId);}catch(_){} });
+  stage.addEventListener('pointermove', function(e){ if(!drag)return; moved=true; tx+=e.clientX-lx; ty+=e.clientY-ly; lx=e.clientX; ly=e.clientY; apply(); });
+  stage.addEventListener('pointerup', function(){ drag=false; });
+  stage.addEventListener('pointercancel', function(){ drag=false; });
+  stage.addEventListener('click', function(e){ if(!moved && e.target===stage) closeOv(); });
+})();
+
+(function(){
+  'use strict';
+  function openTo(hash){
+    if(!hash || hash.charAt(0) !== '#') return;
+    var el = document.getElementById(hash.slice(1));
+    if(!el) return;
+    var p = el;
+    while(p){ if(p.tagName && p.tagName.toLowerCase() === 'details') p.open = true; p = p.parentElement; }
+    if(el.tagName && el.tagName.toLowerCase() === 'details') el.open = true;
+    var d = el.querySelector && el.querySelector('details.file-diff');
+    if(d) d.open = true;
+  }
+  window.addEventListener('hashchange', function(){ openTo(location.hash); });
+  if(location.hash) openTo(location.hash);
+})();
+</script></body></html>

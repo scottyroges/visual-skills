@@ -1,0 +1,348 @@
+[
+  {
+    "type": "overview",
+    "id": "overview",
+    "headline": "Golfer season stats no longer count in-progress tournaments",
+    "points": [
+      {
+        "text": "root cause: `syncLiveStandings` writes *projected* earnings/positions into `tournamentResult` during play, and [`getSeasonStats`](#diff-4) aggregated those rows as if they were final"
+      },
+      {
+        "text": "the fix is one `WHERE` clause — `tournament.status in (COMPLETED, FINALIZING)` — matching the filter the earnings rollup already used"
+      },
+      {
+        "text": "the season-results table still lists the live tournament; [the page](#diff-3) now marks that row with a green **Live** badge and an `est.` earnings label"
+      },
+      {
+        "text": "no new tests: existing golfer-service tests mock the repo, so coverage is typecheck + the PR test plan's live-tournament verification"
+      },
+      {
+        "text": "bundled along for the ride: a [live-scorecard idea doc](#diff-1) with zero runtime impact"
+      }
+    ],
+    "facets": {
+      "what": "Filter golfer season stats to settled tournaments; visually flag the live row instead",
+      "why": "Projected mid-round data inflated stats — e.g. best finish \"1st\" after round 1, with millions in unearned money",
+      "size": "5 files, +102/−2 (~40 runtime lines; 62 lines are a docs idea)"
+    },
+    "risk": {
+      "level": "low",
+      "note": "one additive WHERE clause with an existing rollup precedent; the rest is UI labeling; no schema changes"
+    },
+    "diagram": {
+      "type": "diagram",
+      "id": "ov-dataflow",
+      "title": "How projected data leaked into season stats — and where the filter now sits",
+      "kind": "architecture",
+      "d2": "direction: right\n\"ESPN scoreboard\": { class: external }\n\"tournamentResult rows\": { class: store }\n\"getSeasonStats\": { class: changed }\n\"ESPN scoreboard\" -> \"syncLiveStandings\": live leaderboard\n\"syncLiveStandings\" -> \"tournamentResult rows\": projected earnings + position\n\"tournamentResult rows\" -> \"getSeasonStats\": \"NEW: status in COMPLETED, FINALIZING\"\n\"getSeasonStats\" -> \"Golfer page season stats\"",
+      "mermaid": "flowchart LR\n  ESPN[ESPN scoreboard] -->|live leaderboard| SYNC[syncLiveStandings]\n  SYNC -->|projected earnings + position| TR[(tournamentResult rows)]\n  TR -->|NEW: status in COMPLETED, FINALIZING| STATS[getSeasonStats]\n  STATS --> PAGE[Golfer page season stats]\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class STATS changed;\n  class ESPN external;\n  class TR store;"
+    }
+  },
+  {
+    "type": "diagram",
+    "id": "where-it-fits",
+    "title": "Feature home — the golfer page read path and the live-sync write path",
+    "kind": "architecture",
+    "d2": "direction: right\n\"golfer page (page.tsx)\": { class: changed }\n\"getSeasonStats (repo)\": { class: changed }\n\"Postgres\": { class: store }\n\"ESPN scoreboard\": { class: external }\n\"golfer page (page.tsx)\" -> \"golfer.byId (tRPC)\"\n\"golfer.byId (tRPC)\" -> \"golfer service getById\"\n\"golfer service getById\" -> \"getSeasonStats (repo)\": stats — now filtered\n\"golfer service getById\" -> \"getSeasonResults (repo)\": rows — still includes live\n\"getSeasonStats (repo)\" -> \"Postgres\"\n\"getSeasonResults (repo)\" -> \"Postgres\"\n\"ESPN scoreboard\" -> \"syncLiveStandings (cron)\"\n\"syncLiveStandings (cron)\" -> \"Postgres\": writes projected results during play",
+    "mermaid": "flowchart LR\n  PAGE[\"golfer page (page.tsx)\"] --> RT[\"golfer.byId tRPC\"]\n  RT --> SVC[golfer service getById]\n  SVC -->|stats, now filtered| STATS[\"getSeasonStats repo\"]\n  SVC -->|rows, still includes live| RES[\"getSeasonResults repo\"]\n  STATS --> DB[(Postgres)]\n  RES --> DB\n  ESPN[ESPN scoreboard] --> SYNC[\"syncLiveStandings cron\"]\n  SYNC -->|writes projected results during play| DB\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class PAGE,STATS changed;\n  class ESPN external;\n  class DB store;"
+  },
+  {
+    "type": "file-tree",
+    "id": "files",
+    "title": "Files changed",
+    "files": [
+      {
+        "path": "docs/INDEX.md",
+        "status": "M",
+        "added": 1,
+        "deleted": 0
+      },
+      {
+        "path": "docs/ideas/live-scorecard.md",
+        "status": "A",
+        "added": 61,
+        "deleted": 0
+      },
+      {
+        "path": "src/app/golfer/[id]/golfer.module.css",
+        "status": "M",
+        "added": 30,
+        "deleted": 0
+      },
+      {
+        "path": "src/app/golfer/[id]/page.tsx",
+        "status": "M",
+        "added": 9,
+        "deleted": 2
+      },
+      {
+        "path": "src/server/repositories/golfer.ts",
+        "status": "M",
+        "added": 1,
+        "deleted": 0
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "id": "grp-fix",
+    "title": "The root cause and the fix — one WHERE clause",
+    "description": "The bug lived in a single query. `syncLiveStandings` keeps `tournamentResult` rows updated with *projected* numbers while a tournament is `IN_PROGRESS` — that's a feature for standings, but `getSeasonStats` aggregated those same rows with no status filter, so the golfer profile treated projections as history.",
+    "blocks": [
+      {
+        "type": "diff",
+        "id": "diff-4",
+        "title": "golfer.ts",
+        "path": "src/server/repositories/golfer.ts",
+        "description": "**The one-line root-cause fix — `getSeasonStats` now aggregates only settled tournaments.**\n\n- adds `.where(\"tournament.status\", \"in\", [\"COMPLETED\", \"FINALIZING\"])` to the stats query — the exact filter the earnings rollup already applies in `repositories/earnings.ts`, so stats and standings now agree on what counts\n- effect on each stat: `totalEarnings` drops projected money, `bestFinish` no longer reports a live leader's \"1st\", `eventsPlayed` no longer counts an unfinished event\n- `FINALIZING` stays included on purpose: play is over and projected earnings are held until official results land, so those numbers are near-final rather than mid-round noise\n- the sibling `getSeasonResults` query is deliberately untouched — the results table should still show the live tournament, just [clearly labeled](#diff-3)\n- coverage note: the existing service tests mock this repo, so the new filter rides on typecheck plus the PR test plan's next-live-tournament verification",
+        "diagram": {
+          "type": "diagram",
+          "id": "diff-4-diag",
+          "title": "Tournament lifecycle — which statuses feed season stats",
+          "kind": "flowchart",
+          "d2": "direction: right\n\"getSeasonStats\": { class: changed }\nUPCOMING -> IN_PROGRESS: first tee shot\nIN_PROGRESS -> FINALIZING: play ends\nFINALIZING -> COMPLETED: official results\nIN_PROGRESS -> \"getSeasonStats\": was counted — now excluded\nFINALIZING -> \"getSeasonStats\": counted\nCOMPLETED -> \"getSeasonStats\": counted",
+          "mermaid": "flowchart LR\n  UPCOMING -->|first tee shot| IN_PROGRESS\n  IN_PROGRESS -->|play ends| FINALIZING\n  FINALIZING -->|official results| COMPLETED\n  IN_PROGRESS -->|was counted — now excluded| STATS[getSeasonStats]\n  FINALIZING -->|counted| STATS\n  COMPLETED -->|counted| STATS\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  class STATS changed;"
+        },
+        "hunks": [
+          {
+            "header": "@@ -49,6 +49,7 @@ export async function getSeasonStats(golferId: string, season: number) {",
+            "lines": [
+              "     ])",
+              "     .where(\"tournamentResult.golferId\", \"=\", golferId)",
+              "     .where(\"tournament.season\", \"=\", season)",
+              "+    .where(\"tournament.status\", \"in\", [\"COMPLETED\", \"FINALIZING\"])",
+              "     .where(\"tournament.excluded\", \"=\", false)",
+              "     .executeTakeFirst();",
+              " }"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "id": "grp-ui",
+    "title": "The UI half — make the live row honest",
+    "description": "Filtering the stats leaves the live tournament visible only in the season-results table — where its projected numbers could still be mistaken for finals. These two diffs mark that row so a reader can't confuse projection with history.",
+    "blocks": [
+      {
+        "type": "diff",
+        "id": "diff-3",
+        "title": "page.tsx",
+        "path": "src/app/golfer/[id]/page.tsx",
+        "description": "**The season-results table now tells the truth about a live row.**\n\n- new `isLive` flag on `tournamentStatus === \"IN_PROGRESS\"` drives all three tweaks\n- the row gets `styles.rowLive` (faint green tint) plus a green **Live** badge beside the tournament name\n- projected money is labeled with a small `est.` under the earnings figure\n- `isFirst` now requires `!isLive` — a golfer leading mid-round no longer gets the gold 1st-place styling, the visible face of the same bug\n- `missedCut` also gains `!isLive` as an explicit guard (its status check already excluded live rows; this makes the intent readable)",
+        "hunks": [
+          {
+            "header": "@@ -105,18 +105,20 @@ export default async function GolferPage({",
+            "lines": [
+              "               </thead>",
+              "               <tbody>",
+              "                 {seasonResults.map((result) => {",
+              "+                  const isLive = result.tournamentStatus === \"IN_PROGRESS\";",
+              "                   const missedCut =",
+              "+                    !isLive &&",
+              "                     (result.tournamentStatus === \"COMPLETED\" || result.tournamentStatus === \"FINALIZING\") &&",
+              "                     result.earnings === 0 &&",
+              "                     (result.finishPosition === null ||",
+              "                       result.finishPosition === 0);",
+              "                   const isFirst =",
+              "-                    !missedCut && result.finishPosition === 1;",
+              "+                    !isLive && !missedCut && result.finishPosition === 1;",
+              " ",
+              "                   return (",
+              "                     <tr",
+              "                       key={result.tournamentId}",
+              "-                      className={missedCut ? styles.rowMissed : \"\"}",
+              "+                      className={isLive ? styles.rowLive : missedCut ? styles.rowMissed : \"\"}",
+              "                     >",
+              "                       <td className={styles.tournamentCell}>",
+              "                         <Link"
+            ]
+          },
+          {
+            "header": "@@ -125,7 +127,9 @@ export default async function GolferPage({",
+            "lines": [
+              "                         >",
+              "                           {result.tournamentName}",
+              "                         </Link>",
+              "+                        {isLive && <span className={styles.liveBadge}>Live</span>}",
+              "                       </td>",
+              "+",
+              "                       <td",
+              "                         className={`${styles.posCell} ${isFirst ? styles.posFirst : \"\"}`}",
+              "                       >"
+            ]
+          },
+          {
+            "header": "@@ -146,6 +150,9 @@ export default async function GolferPage({",
+            "lines": [
+              "                         {result.earnings",
+              "                           ? formatCurrency(result.earnings)",
+              "                           : \"–\"}",
+              "+                        {isLive && result.earnings ? (",
+              "+                          <span className={styles.estLabel}>est.</span>",
+              "+                        ) : null}",
+              "                       </td>",
+              "                     </tr>",
+              "                   );"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-2",
+        "title": "golfer.module.css",
+        "path": "src/app/golfer/[id]/golfer.module.css",
+        "description": "**Three new classes in the existing \"Row states\" section back the live treatment.**\n\n- `.rowLive` — 4% green `color-mix` row tint, with the earnings cell muted to read as provisional\n- `.liveBadge` — uppercase green pill using the design tokens (`--color-green`, `--text-xs`, `--radius-sm`)\n- `.estLabel` — small muted `est.` line rendered under the earnings amount",
+        "hunks": [
+          {
+            "header": "@@ -217,6 +217,36 @@",
+            "lines": [
+              " ",
+              " /* ── Row states ── */",
+              " ",
+              "+.rowLive {",
+              "+  background: color-mix(in srgb, var(--color-green) 4%, transparent);",
+              "+}",
+              "+",
+              "+.rowLive .earningsCell {",
+              "+  color: var(--color-text-muted);",
+              "+}",
+              "+",
+              "+.liveBadge {",
+              "+  display: inline-block;",
+              "+  font-size: var(--text-xs);",
+              "+  font-weight: var(--weight-semibold);",
+              "+  text-transform: uppercase;",
+              "+  letter-spacing: var(--tracking-wide);",
+              "+  padding: var(--space-1) var(--space-3);",
+              "+  background: var(--color-green);",
+              "+  color: white;",
+              "+  border-radius: var(--radius-sm);",
+              "+  vertical-align: middle;",
+              "+  margin-top: var(--space-1);",
+              "+  line-height: 1;",
+              "+}",
+              "+",
+              "+.estLabel {",
+              "+  display: block;",
+              "+  font-size: var(--text-xs);",
+              "+  font-weight: var(--weight-medium);",
+              "+  color: var(--color-text-muted);",
+              "+}",
+              "+",
+              " .rowMissed {",
+              "   color: var(--color-text-muted);",
+              " }"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "id": "grp-docs",
+    "title": "Along for the ride — a live-scorecard idea doc",
+    "description": "Written while working in the live-tournament area of the golfer page; pure documentation with zero runtime impact on this fix.",
+    "blocks": [
+      {
+        "type": "diff",
+        "id": "diff-1",
+        "title": "live-scorecard.md",
+        "path": "docs/ideas/live-scorecard.md",
+        "description": "**Idea doc: hole-by-hole scorecard on the golfer page during live tournaments.**\n\n- documents ESPN's undocumented per-player scorecard endpoint (one call per golfer, per-round hole data)\n- weighs three approaches: fetch-on-demand (A), persist per-round totals (B), full per-hole storage (C, ~10K rows per tournament)\n- recommends Option A — no schema changes, fetch only during `IN_PROGRESS` tournaments\n- open questions on rate limits, a 5-minute cache TTL, and whether to scope to the user's picked golfer",
+        "hunks": [
+          {
+            "header": "@@ -0,0 +1,61 @@",
+            "lines": [
+              "+# Live Scorecard on Golfer Page",
+              "+",
+              "+## Problem",
+              "+",
+              "+During a live tournament, the golfer page only shows overall score-to-par and projected position/earnings. Users can't see how their golfer is performing hole-by-hole without leaving the app.",
+              "+",
+              "+## Idea",
+              "+",
+              "+Show a golf scorecard (hole-by-hole scores per round) on the golfer detail page when a tournament is in progress. The classic 18-hole grid with par, player score, and birdie/bogey indicators.",
+              "+",
+              "+## ESPN Scorecard API",
+              "+",
+              "+ESPN has an undocumented scorecard endpoint:",
+              "+",
+              "+```",
+              "+https://site.web.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard/{eventId}/competitors/{competitorId}/scorecard",
+              "+```",
+              "+",
+              "+- Returns hole-by-hole data for each round (par, score, over/under per hole)",
+              "+- **Per-player** — one API call per golfer, not per field",
+              "+- Same undocumented status as the other ESPN endpoints we use",
+              "+",
+              "+## Approach Options",
+              "+",
+              "+### Option A: Fetch on demand, don't persist",
+              "+",
+              "+Fetch the scorecard API when viewing a golfer page during a live tournament. Display inline, no new DB tables.",
+              "+",
+              "+- Pros: Simple, no schema changes, always fresh",
+              "+- Cons: Extra API call per page load, no historical scorecards after tournament ends",
+              "+",
+              "+### Option B: Store per-round scores (not per-hole)",
+              "+",
+              "+We already receive `linescores` (per-round totals like 68, 71, 70) from the scoreboard API during `syncLiveStandings`. Store these in a new column or table.",
+              "+",
+              "+- Pros: Minimal schema change, round scores persist after tournament",
+              "+- Cons: Not hole-by-hole detail",
+              "+",
+              "+### Option C: Store full scorecard data",
+              "+",
+              "+New `scorecard` table with hole-by-hole scores. Sync during live standings updates.",
+              "+",
+              "+- Pros: Full historical data, rich display options",
+              "+- Cons: 18 holes × 4 rounds × ~150 players = ~10K rows per tournament, more complex sync",
+              "+",
+              "+## Recommendation",
+              "+",
+              "+Start with **Option A** — fetch on demand during live tournaments only. It requires no schema changes and gives users the most useful view (how their golfer is doing right now). If there's demand for historical scorecards, move to Option C later.",
+              "+",
+              "+## Display",
+              "+",
+              "+- Show below the season results table (or expand the live row) during IN_PROGRESS tournaments",
+              "+- Standard scorecard layout: Out (1-9), In (10-18), Total",
+              "+- Color-code: birdies (green/circle), bogeys (red/square), eagles (gold/double-circle)",
+              "+- Show current round prominently, previous rounds collapsible",
+              "+",
+              "+## Open Questions",
+              "+",
+              "+- Does ESPN rate-limit the scorecard endpoint? Need to test.",
+              "+- Should we cache scorecard responses (e.g., 5-minute TTL) to reduce API calls?",
+              "+- Do we show scorecards for all golfers or only the user's picked golfer?"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-0",
+        "title": "INDEX.md",
+        "path": "docs/INDEX.md",
+        "hunks": [
+          {
+            "header": "@@ -17,6 +17,7 @@",
+            "lines": [
+              " - [Magic Link Notifications](./ideas/magic-link-notifications.md) — Pre-authenticated links in notification emails",
+              " - [Data Freshness Indicator](./ideas/data-freshness-indicator.md) — Show \"Last updated\" timestamp so users know data is current",
+              " - [Standings Current Tournament](./ideas/standings-current-tournament.md) — Show which tournament standings are current through",
+              "+- [Live Scorecard](./ideas/live-scorecard.md) — Hole-by-hole scorecard on golfer page during live tournaments",
+              " - *Done:* [Visual Assets](./ideas/done/visual-assets.md), [E2E Tests](./ideas/done/e2e-tests.md), [League Rules Page](./ideas/done/league-rules-page.md), [Visible Picks Setting](./ideas/done/visible-picks-setting.md), [Exclude Tournaments](./ideas/done/exclude-tournaments.md), [Commissioner Approval](./ideas/done/commissioner-approval.md), [Commissioner Manual Earnings](./ideas/done/commissioner-manual-earnings.md), [Apply Pick to All Leagues](./ideas/done/apply-pick-all-leagues.md), [Commissioner Remove Members](./ideas/done/commissioner-remove-members.md), [Tournament Inline Picker](./ideas/done/tournament-inline-picker.md), [Weekly Standings History](./ideas/done/weekly-standings-history.md)",
+              " ",
+              " ## Guides"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

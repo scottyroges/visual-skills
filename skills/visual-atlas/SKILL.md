@@ -252,4 +252,4 @@ Don't pad — but a repo with several real domains warrants a page per domain. A
 
 The canonical reference build (what good looks like):
 
-    $VISUAL_SKILLS_DIR/example/atlas-sports-rpg/   (atlas.{json,html} + domain-<slug>/domain-<slug>.{json,html})
+    $VISUAL_SKILLS_DIR/example/atlas-ppgl/   (atlas.{json,html} + domain-<slug>/domain-<slug>.{json,html})

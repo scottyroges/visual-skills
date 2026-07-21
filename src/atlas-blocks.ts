@@ -145,7 +145,7 @@ export function assertUniqueAtlasIds(blocks: AtlasBlock[]): void {
 
 // atlas page options
 export interface AtlasOpts {
-  title: string;                               // topbar title, e.g. "System Atlas · sports-rpg"
+  title: string;                               // topbar title, e.g. "System Atlas · ppgl"
   stack?: string;                              // chip, e.g. "Next.js · TypeScript"
   count?: string;                              // chip, e.g. "7 domains"
   date?: string;                               // chip, e.g. "generated 2026-06-20"

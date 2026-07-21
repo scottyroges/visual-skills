@@ -1,0 +1,595 @@
+{
+  "kind": "domain",
+  "slug": "accounts",
+  "title": "Auth & accounts",
+  "layer": "engine",
+  "layerLabel": "Platform",
+  "path": "src",
+  "count": "26 files",
+  "depends": "web-shell · leagues",
+  "date": "2026-07-21",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Engine"
+    },
+    {
+      "key": "Identity",
+      "value": "Better Auth (email + password)"
+    },
+    {
+      "key": "Email",
+      "value": "Resend"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "heading": "Auth & accounts",
+      "rows": [
+        {
+          "key": "Path",
+          "value": "`src` (server auth config, `(auth)` pages, settings, notification services)"
+        },
+        {
+          "key": "Files",
+          "value": "26"
+        },
+        {
+          "key": "Owns",
+          "value": "`user` · `account` · `session` · `verification` · `notification_log`"
+        },
+        {
+          "key": "Identity engine",
+          "value": "**Better Auth** with the `username` plugin and `nextCookies`, persisting straight into the app's Postgres via Kysely"
+        },
+        {
+          "key": "Comms",
+          "value": "Transactional email via **Resend** — password resets + batched pick reminders"
+        }
+      ],
+      "bigIdea": {
+        "label": "Big idea",
+        "line": "Identity is rented, not built — Better Auth owns every credential path against the app's own Postgres.",
+        "sub": "Sign-up, sign-in, password change/reset, and username updates all flow through `authClient` → the `/api/auth/[...all]` catch-all → the `betterAuth` instance in `server/auth.ts`. The rest of PPGL only ever asks *who is this?* — `createTRPCContext` calls `auth.api.getSession` per request. The only custom identity logic the app carries is a profanity-gated username validator and its own email templates."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "Components",
+      "intro": "Five units: the Better Auth core (config, client, HTTP route, session helpers), the public auth pages, the settings/profile surface, the pick-reminder notification pipeline, and the email sender + templates underneath both.",
+      "cards": [
+        {
+          "name": "Better Auth core",
+          "purpose": "The identity engine: `betterAuth` server config wired to Postgres, the React `authClient`, the `/api/auth/[...all]` catch-all route, the `auth.me` tRPC read, and the session-refresh / sign-out client shims.",
+          "exports": [
+            {
+              "name": "auth",
+              "deputy": true
+            },
+            {
+              "name": "authClient"
+            },
+            {
+              "name": "authRouter"
+            },
+            {
+              "name": "SessionRefresh"
+            },
+            {
+              "name": "SignOutButton"
+            }
+          ],
+          "href": "#c-core"
+        },
+        {
+          "name": "Auth pages",
+          "purpose": "The `(auth)` route group — sign-in, sign-up (with league-invite handoff), forgot/reset password — all thin client forms over `authClient`, sharing a minimal PPGL-branded layout and a show/hide `PasswordInput`.",
+          "exports": [
+            {
+              "name": "PasswordInput"
+            }
+          ],
+          "exportsLabel": "covers",
+          "href": "#c-pages"
+        },
+        {
+          "name": "Settings & profile",
+          "purpose": "`/settings` — username change (profanity-validated, via `authClient.updateUser`), password change, and the pick-reminder email toggle backed by the only classic router → service → repo stack in this domain.",
+          "exports": [
+            {
+              "name": "userRouter"
+            },
+            {
+              "name": "validateUsername"
+            },
+            {
+              "name": "AccountSection"
+            },
+            {
+              "name": "NotificationSection"
+            }
+          ],
+          "href": "#c-settings"
+        },
+        {
+          "name": "Pick-reminder notifications",
+          "purpose": "Finds league members who still need a pick (or whose pick fell out of the field) before a tournament, batches one email per user, and dedups via `notification_log`. Driven by golf-data's cron, not by tRPC.",
+          "exports": [
+            {
+              "name": "sendPickReminders",
+              "deputy": true
+            },
+            {
+              "name": "sendTestPickReminder"
+            }
+          ],
+          "href": "#c-notify"
+        },
+        {
+          "name": "Transactional email",
+          "purpose": "The lone email gateway (Resend, lazy singleton, 100-per-call batch chunking) plus the two inline-styled HTML templates: password reset and pick reminder.",
+          "exports": [
+            {
+              "name": "sendEmail"
+            },
+            {
+              "name": "sendBatchEmail"
+            },
+            {
+              "name": "resetPasswordEmail"
+            },
+            {
+              "name": "pickReminderEmail"
+            }
+          ],
+          "href": "#c-email"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "Internal architecture",
+      "intro": "Two independent halves share one email gateway. The interactive half: browser forms talk to `authClient`, which hits the Better Auth catch-all route; the `betterAuth` instance persists users/sessions in Postgres and every tRPC request re-derives the session from it. The background half: golf-data's cron fans into the notification service, which queries eligibility and batch-sends through Resend.",
+      "diagram": {
+        "id": "arch-diagram",
+        "kind": "architecture",
+        "d2": "direction: right\n\"auth pages\": { class: actor }\n\"settings pages\": { class: actor }\nauthClient\n\"/api/auth/[...all]\"\n\"betterAuth (server/auth.ts)\": { class: changed }\n\"tRPC context (web-shell)\"\n\"user router\"\n\"user service\"\n\"user repo\"\n\"notification service\"\n\"notification repo\"\n\"email sender\"\n\"cron sync (golf-data)\"\nPostgres: { class: store }\nResend: { class: external }\n\"auth pages\" -> authClient: \"sign in / up, reset\"\n\"settings pages\" -> authClient: \"username, password\"\n\"settings pages\" -> \"user router\": \"reminder toggle\"\nauthClient -> \"/api/auth/[...all]\"\n\"/api/auth/[...all]\" -> \"betterAuth (server/auth.ts)\"\n\"betterAuth (server/auth.ts)\" -> Postgres: \"user, session, account\"\n\"betterAuth (server/auth.ts)\" -> \"email sender\": \"reset email\"\n\"tRPC context (web-shell)\" -> \"betterAuth (server/auth.ts)\": getSession\n\"user router\" -> \"user service\" -> \"user repo\" -> Postgres\n\"cron sync (golf-data)\" -> \"notification service\": \"pre-tournament tick\"\n\"notification service\" -> \"notification repo\" -> Postgres\n\"notification service\" -> \"email sender\": \"batch reminders\"\n\"email sender\" -> Resend",
+        "mermaid": "flowchart LR\n  pages[\"auth pages\"] -->|sign in - up - reset| ac[authClient]\n  settings[\"settings pages\"] -->|username - password| ac\n  settings -->|reminder toggle| ur[\"user router\"]\n  ac --> route[\"auth catch-all route\"]\n  route --> ba[\"betterAuth server/auth.ts\"]\n  ba -->|user - session - account| db[(Postgres)]\n  ba -->|reset email| es[\"email sender\"]\n  ctx[\"tRPC context web-shell\"] -->|getSession| ba\n  ur --> us[\"user service\"] --> urepo[\"user repo\"] --> db\n  cron[\"cron sync golf-data\"] -->|pre-tournament tick| ns[\"notification service\"]\n  ns --> nrepo[\"notification repo\"] --> db\n  ns -->|batch reminders| es\n  es --> resend[Resend]\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class ba changed;\n  class pages,settings actor;\n  class resend external;\n  class db store;",
+        "caption": "The `betterAuth` instance is the hub: browser mutations reach it over HTTP, while every tRPC call reads it server-side through `auth.api.getSession`."
+      },
+      "callout": "Note what is *missing*: there is no accounts service layer for credentials. Better Auth is the service — the app's own router/service/repo stack in this domain exists only for the notification preference, and the notification pipeline deliberately skips `server-only` guards so cron routes can call it."
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "In depth",
+      "components": [
+        {
+          "id": "c-core",
+          "name": "Better Auth core",
+          "path": "src/server · src/lib · src/app/api/auth",
+          "detail": [
+            "`server/auth.ts` builds the single `betterAuth` instance: email + password auth against the app's own Postgres (`database: { db, type: \"postgres\" }` — the same Kysely instance the repos use, so users and sessions live next to picks and leagues, no separate identity store). Cookie sessions are long-lived and periodically re-stamped (`session.expiresIn` / `updateAge`), rate limiting is on by default (an env flag disables it for tests), and `trustedOrigins` is derived from the base URL with the `www.`/apex twin added so both hosts pass CSRF origin checks.",
+            "Two plugins do the customization: `username()` enforces 3–20 chars and delegates to `validateUsername` (the profanity gate — see [Settings & profile](#c-settings)), and `nextCookies()` bridges Better Auth's cookie handling into Next.js server actions. A `role` additional field (default `user`, `input: false` so clients can't set it) is what web-shell's `adminProcedure` later checks. `sendResetPassword` is the one outbound hook — it renders `resetPasswordEmail` and ships it through the email gateway.",
+            "The HTTP surface is a two-line catch-all: `app/api/auth/[...all]/route.ts` re-exports `GET`/`POST` from `toNextJsHandler(auth)` — every credential operation (sign-up, sign-in, sign-out, reset, updateUser) is a Better Auth endpoint under `/api/auth/*`, none of it goes through tRPC. The tRPC side only *reads*: `authRouter.me` is a public procedure that projects `ctx.session.user` down to `{ id, email, name, username, displayUsername, role }` and returns `null` when signed out — it is the session probe used by nearly every server page in the app.",
+            "Client side, `lib/auth-client.ts` is a 6-line `createAuthClient` with `usernameClient()`. Two tiny components round out the loop: `SessionRefresh` (mounted once in web-shell's root layout) just calls `authClient.useSession()` so an active tab keeps its session cookie fresh, and `SignOutButton` calls `authClient.signOut()` then pushes to `/sign-in` with a router refresh."
+          ],
+          "diagrams": [
+            {
+              "id": "d-reset",
+              "kind": "sequence",
+              "d2": "shape: sequence_diagram\nuser: { class: actor }\nResend: { class: external }\nuser -> \"forgot-password page\": submit email\n\"forgot-password page\" -> authClient: requestPasswordReset\nauthClient -> betterAuth: \"POST /api/auth/*\"\nbetterAuth -> \"email templates\": resetPasswordEmail\nbetterAuth -> Resend: sendEmail\nResend -> user: reset link\nuser -> \"reset-password page\": open link with token\n\"reset-password page\" -> authClient: resetPassword\nauthClient -> betterAuth: \"POST /api/auth/*\"\nbetterAuth -> \"reset-password page\": ok",
+              "mermaid": "sequenceDiagram\n  user->>forgot: submit email\n  forgot->>authClient: requestPasswordReset\n  authClient->>betterAuth: POST /api/auth\n  betterAuth->>templates: resetPasswordEmail\n  betterAuth->>Resend: sendEmail\n  Resend-->>user: reset link\n  user->>reset: open link with token\n  reset->>authClient: resetPassword\n  authClient->>betterAuth: POST /api/auth\n  betterAuth-->>reset: ok",
+              "caption": "Password reset end to end: the only app code involved is the `sendResetPassword` hook and the HTML template — token issuance, verification, and credential update are all Better Auth."
+            }
+          ],
+          "files": [
+            {
+              "name": "server/auth.ts",
+              "desc": "The `betterAuth` instance — Postgres adapter, username plugin, reset-email hook, trusted-origin derivation"
+            },
+            {
+              "name": "lib/auth-client.ts",
+              "desc": "`createAuthClient` + `usernameClient()` — the browser's handle on Better Auth"
+            },
+            {
+              "name": "app/api/auth/[...all]/route.ts",
+              "desc": "Catch-all `GET`/`POST` via `toNextJsHandler(auth)` — the entire auth HTTP surface"
+            },
+            {
+              "name": "server/routers/auth.ts",
+              "desc": "`authRouter.me` — public session probe, `null` when signed out"
+            },
+            {
+              "name": "components/session-refresh.tsx",
+              "desc": "Renders nothing; `useSession()` keeps the cookie fresh in active tabs"
+            },
+            {
+              "name": "components/sign-out-button.tsx",
+              "desc": "`authClient.signOut()` → `/sign-in` + router refresh"
+            }
+          ],
+          "exports": [
+            {
+              "name": "auth",
+              "desc": "The server instance — `auth.api.getSession` (web-shell tRPC context) and `auth.api.requestPasswordReset` (admin) call into it"
+            },
+            {
+              "name": "authClient",
+              "desc": "Browser client used by every auth page, the settings forms, and the sign-out button"
+            },
+            {
+              "name": "authRouter",
+              "desc": "tRPC `auth.me` — the read-side of identity"
+            },
+            {
+              "name": "SessionRefresh",
+              "desc": "Mounted once in the root layout"
+            },
+            {
+              "name": "SignOutButton",
+              "desc": "Used by web-shell's nav bar"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "[web-shell](../domain-web-shell/domain-web-shell.html)'s `createTRPCContext` calls `auth.api.getSession(headers)` on **every** tRPC request — `protectedProcedure` and `adminProcedure` are built on that context, so all seven other domains authenticate through this instance."
+            },
+            {
+              "dir": "consumed by",
+              "body": "[admin](../domain-admin/domain-admin.html)'s service calls `auth.api.requestPasswordReset` to trigger resets on a user's behalf; the admin layout gates on `auth.me`'s `role`."
+            },
+            {
+              "dir": "reads",
+              "body": "`auth.me` is called via `serverTRPC` from server pages across [game](../domain-game/domain-game.html), [leagues](../domain-leagues/domain-leagues.html), [scoring](../domain-scoring/domain-scoring.html), and web-shell's nav bar to render signed-in state."
+            },
+            {
+              "dir": "calls",
+              "body": "The reset hook renders [transactional email](#c-email)'s `resetPasswordEmail` and sends via `sendEmail`."
+            }
+          ]
+        },
+        {
+          "id": "c-pages",
+          "name": "Auth pages",
+          "path": "src/app/(auth)",
+          "detail": [
+            "The `(auth)` route group holds four client-form pages under a shared minimal layout (`(auth)/layout.tsx` — just a PPGL wordmark header, no app nav). Each page is the same shape: local `useState` form, one `authClient` call, inline error, no tRPC mutation. Sign-in and sign-up wrap their forms in `Suspense` because they read `useSearchParams`.",
+            "The interesting wrinkle is the **invite handoff**: both sign-in and sign-up read `?invite=<code>`. Sign-in redirects to `/league/join?code=…` after success; sign-up goes further — after `authClient.signUp.email` succeeds it directly fires the `league.join` tRPC mutation ([leagues](../domain-leagues/domain-leagues.html)) and lands the new user inside their league, falling back to `/?joinError=1` if the join fails after the account was created. This is the one place the auth surface reaches into another domain's write API.",
+            "Sign-up submits `username` (lowercased) plus `displayUsername` (as typed) — the case-insensitive/display split that Better Auth's username plugin stores as two columns. All post-auth navigations use `window.location.href` rather than the router on purpose: a full navigation forces server components (the nav bar) to re-render with the new session cookie.",
+            "`password-input.tsx` is the shared show/hide password field (eye toggle, `tabIndex={-1}` so it doesn't trap keyboard flow); the settings page reuses it too. `sign-in/layout.tsx` and `sign-up/layout.tsx` exist only to attach `metadata` titles to client pages."
+          ],
+          "files": [
+            {
+              "name": "app/(auth)/layout.tsx",
+              "desc": "Chrome-free shell: wordmark header + page"
+            },
+            {
+              "name": "app/(auth)/sign-in/page.tsx",
+              "desc": "`authClient.signIn.email`; honors `?invite=` by redirecting to the join page"
+            },
+            {
+              "name": "app/(auth)/sign-up/page.tsx",
+              "desc": "`authClient.signUp.email` + optional `league.join` chain; username/displayUsername split"
+            },
+            {
+              "name": "app/(auth)/forgot-password/page.tsx",
+              "desc": "`authClient.requestPasswordReset` with a neutral \"if an account exists\" confirmation"
+            },
+            {
+              "name": "app/(auth)/reset-password/page.tsx",
+              "desc": "Reads `?token=`, confirms match, `authClient.resetPassword`"
+            },
+            {
+              "name": "app/(auth)/password-input.tsx",
+              "desc": "Shared visibility-toggle password field (also used by settings)"
+            },
+            {
+              "name": "app/(auth)/sign-in/layout.tsx",
+              "desc": "Metadata-only layout (title)"
+            },
+            {
+              "name": "app/(auth)/sign-up/layout.tsx",
+              "desc": "Metadata-only layout (title)"
+            }
+          ],
+          "exports": [
+            {
+              "name": "PasswordInput",
+              "desc": "The one reusable piece — imported by `settings/password-section.tsx` across the route-group boundary"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "Sign-up invokes `trpc.league.join` from [leagues](../domain-leagues/domain-leagues.html) when an invite code is present — account creation and league membership in one flow."
+            },
+            {
+              "dir": "calls",
+              "body": "Everything else goes through [Better Auth core](#c-core)'s `authClient`; no page here touches a repository or service directly."
+            }
+          ]
+        },
+        {
+          "id": "c-settings",
+          "name": "Settings & profile",
+          "path": "src/app/settings · src/server",
+          "detail": [
+            "`/settings` is a server page that gates on `auth.me` (redirect to `/sign-in` when null) and stacks three client sections. Two of them are Better Auth mutations: `AccountSection` re-validates the username client-side (length, charset, then `validateUsername`) before `authClient.updateUser({ username, displayUsername })`, and `PasswordSection` calls `authClient.changePassword` with current + new. Neither touches app-owned tables.",
+            "`NotificationSection` is the exception and the domain's only conventional stack: a toggle bound to `user.getNotificationPreferences` / `user.updateNotificationPreferences`, flowing `userRouter` → `userService` → `userRepo`, which reads and writes the single `pickReminderEmail` boolean on the `user` table. The service layer is a pass-through today — it exists to keep the router thin per the repo convention, and it's where profile logic would grow.",
+            "`lib/profanity.ts` is the shared username policy: a charset/length regex plus a substring check against the `bad-words` list. It runs in **both** places — client-side in `AccountSection` for fast feedback, and server-side inside the Better Auth `username` plugin's `usernameValidator` (see [Better Auth core](#c-core)), so bypassing the form doesn't bypass the rule."
+          ],
+          "files": [
+            {
+              "name": "app/settings/page.tsx",
+              "desc": "Server gate on `auth.me`; composes the three sections"
+            },
+            {
+              "name": "app/settings/account-section.tsx",
+              "desc": "Username edit — client validation then `authClient.updateUser`"
+            },
+            {
+              "name": "app/settings/password-section.tsx",
+              "desc": "`authClient.changePassword` (current + new + confirm)"
+            },
+            {
+              "name": "app/settings/notification-section.tsx",
+              "desc": "Pick-reminder toggle over the `user` tRPC procedures"
+            },
+            {
+              "name": "server/routers/user.ts",
+              "desc": "Two protected procedures: get/update notification prefs"
+            },
+            {
+              "name": "server/services/user.ts",
+              "desc": "Thin pass-through to the repo (the growth point for profile logic)"
+            },
+            {
+              "name": "server/repositories/user.ts",
+              "desc": "Kysely read/write of `user.pickReminderEmail`; accepts an optional executor"
+            },
+            {
+              "name": "lib/profanity.ts",
+              "desc": "Username policy: regex + `bad-words` substring check, shared client/server"
+            }
+          ],
+          "exports": [
+            {
+              "name": "userRouter",
+              "desc": "Mounted as `user.*` in web-shell's `_app.ts`"
+            },
+            {
+              "name": "validateUsername",
+              "desc": "Dual-use policy — imported by `server/auth.ts` (plugin validator) and `account-section.tsx` (form feedback)"
+            },
+            {
+              "name": "AccountSection",
+              "desc": "Username editor"
+            },
+            {
+              "name": "PasswordSection",
+              "desc": "Password change form"
+            },
+            {
+              "name": "NotificationSection",
+              "desc": "Reminder-email toggle"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "reads",
+              "body": "The page gates via `auth.me` from [Better Auth core](#c-core); username/password writes go through `authClient`, not tRPC."
+            },
+            {
+              "dir": "produces",
+              "body": "The `pickReminderEmail` flag it writes is exactly what the [notification queries](#c-notify) filter on — the toggle is the opt-out for the reminder pipeline."
+            }
+          ]
+        },
+        {
+          "id": "c-notify",
+          "name": "Pick-reminder notifications",
+          "path": "src/server/services · src/server/repositories",
+          "detail": [
+            "The pipeline that nags league members before a tournament locks. Both files deliberately drop the `server-only` guard and import `db-core` directly (the same pattern as the sync repos) because their caller is golf-data's cron route, not a tRPC procedure.",
+            "`sendPickReminders(tournamentId, name)` runs two eligibility queries: members with **no pick** for the tournament, and — only if the field is populated — members whose picked golfer has no `CONFIRMED` entry in `tournamentField`. Both queries exclude bots, exclude users who toggled `pickReminderEmail` off, restrict to `ACTIVE` members of `PRIVATE` leagues, and anti-join against `notification_log` so nobody is emailed twice. Results are aggregated **per user across leagues** (a pick-not-in-field finding upgrades a no-pick row for the same league), rendered with `pickReminderEmail` and shipped as one `sendBatchEmail` call.",
+            "Delivery logging is best-effort by design: after a successful batch, one `notification_log` row per user is inserted with `ON CONFLICT DO NOTHING` on `(userId, tournamentId, type)`; a failed insert is logged but not fatal since the unique constraint dedups the next run. A known trade-off is annotated in the code: if a 100+ recipient batch fails on a later chunk, earlier chunks were sent but never logged, so those users could be re-emailed next tick.",
+            "`sendTestPickReminder(tournamentId, email)` is the admin-facing sibling: it rebuilds a real user's actual league/pick state so the preview email is truthful, but skips `notification_log` entirely so it can be re-sent freely. `findUpcomingTournamentsWithinHours` is the scheduling query the cron uses to decide *which* tournaments are within the reminder window."
+          ],
+          "diagrams": [
+            {
+              "id": "d-reminder",
+              "kind": "flowchart",
+              "d2": "direction: right\n\"cron tick (golf-data)\" -> \"tournaments within 16h\"\n\"tournaments within 16h\" -> \"no-pick query\"\n\"tournaments within 16h\" -> \"pick-not-in-field query\": \"if field populated\"\n\"no-pick query\" -> \"aggregate per user\"\n\"pick-not-in-field query\" -> \"aggregate per user\"\n\"aggregate per user\" -> \"sendBatchEmail (Resend)\"\n\"sendBatchEmail (Resend)\" -> \"notification_log insert\": \"on success\"\n\"notification_log insert\": { class: store }\n\"notification_log insert\" -> \"dedup on next run\"",
+              "mermaid": "flowchart LR\n  cron[\"cron tick golf-data\"] --> up[\"tournaments within 16h\"]\n  up --> np[\"no-pick query\"]\n  up -->|if field populated| nf[\"pick-not-in-field query\"]\n  np --> agg[\"aggregate per user\"]\n  nf --> agg\n  agg --> send[\"sendBatchEmail via Resend\"]\n  send -->|on success| log[(\"notification_log\")]\n  log --> dedup[\"dedup on next run\"]\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class log store;",
+              "caption": "One email per user per tournament, ever — the `(userId, tournamentId, type)` unique constraint is the idempotency key, not the cron schedule."
+            }
+          ],
+          "files": [
+            {
+              "name": "server/services/notification.ts",
+              "desc": "Aggregation + batch send + best-effort logging; the admin test-send variant"
+            },
+            {
+              "name": "server/repositories/notification.ts",
+              "desc": "Eligibility queries (anti-joins on `pick`, `tournamentField`, `notificationLog`), dedup insert, upcoming-tournament window"
+            }
+          ],
+          "exports": [
+            {
+              "name": "sendPickReminders",
+              "desc": "Called per upcoming tournament by golf-data's `cron-sync`"
+            },
+            {
+              "name": "sendTestPickReminder",
+              "desc": "Called by the admin router — realistic preview, never logged"
+            },
+            {
+              "name": "findUpcomingTournamentsWithinHours",
+              "desc": "The cron's scheduling window query (called with 16h)"
+            },
+            {
+              "name": "findMembersWithNoPick",
+              "desc": "Per-league rows of members missing a pick, minus bots/opt-outs/already-notified"
+            },
+            {
+              "name": "findMembersWithPickNotInField",
+              "desc": "Members whose golfer lacks a `CONFIRMED` field entry"
+            },
+            {
+              "name": "hasPopulatedField",
+              "desc": "Gate so pick-not-in-field only runs once a field exists"
+            },
+            {
+              "name": "insertNotificationLog",
+              "desc": "`ON CONFLICT DO NOTHING` dedup write"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[golf-data](../domain-golf-data/domain-golf-data.html)'s `cron-sync` imports `findUpcomingTournamentsWithinHours` + `sendPickReminders` and runs them on the sync tick — reminders piggyback on the ESPN sync cron, there is no separate scheduler."
+            },
+            {
+              "dir": "called by",
+              "body": "[admin](../domain-admin/domain-admin.html)'s router exposes `sendTestPickReminder` as an admin procedure."
+            },
+            {
+              "dir": "reads",
+              "body": "Queries join tables owned by neighbors: `pick` ([game](../domain-game/domain-game.html)), `league`/`leagueMember` ([leagues](../domain-leagues/domain-leagues.html)), `tournament`/`tournamentField` ([golf-data](../domain-golf-data/domain-golf-data.html)) — a read-only data seam, no code imports from those domains."
+            },
+            {
+              "dir": "consumes",
+              "body": "[Transactional email](#c-email) for rendering and delivery."
+            }
+          ]
+        },
+        {
+          "id": "c-email",
+          "name": "Transactional email",
+          "path": "src/server/services",
+          "detail": [
+            "`email.ts` is the only file that talks to Resend: a lazily-constructed singleton client (so builds without the API key don't explode at import time), a configurable `EMAIL_FROM` sender with a dev fallback, and two functions — `sendEmail` for one message and `sendBatchEmail`, which chunks into groups of 100 to respect Resend's batch-API ceiling and throws on the first failed chunk.",
+            "`email-templates.ts` keeps rendering separate from delivery: pure functions returning `{ subject, html }` built from a shared table-layout `layout()` (inline styles only — email-client-safe, PPGL green header, a footer link to `/settings` as the manage-notifications escape hatch) and a `button()` helper. `resetPasswordEmail` takes the Better Auth reset link; `pickReminderEmail` renders the per-league issue list (\"No pick yet\" vs \"*golfer* is not in the field\") with a dashboard CTA. Links are absolute via `NEXT_PUBLIC_APP_URL`.",
+            "Two producers, one gateway: the Better Auth `sendResetPassword` hook and the notification service. Nothing else in the repo sends mail."
+          ],
+          "files": [
+            {
+              "name": "server/services/email.ts",
+              "desc": "Resend gateway — lazy client, `EMAIL_FROM`, single + 100-chunk batch send"
+            },
+            {
+              "name": "server/services/email-templates.ts",
+              "desc": "Pure `{ subject, html }` builders on a shared inline-styled table layout"
+            }
+          ],
+          "exports": [
+            {
+              "name": "sendEmail",
+              "desc": "Single send — used by the reset hook and the admin test reminder"
+            },
+            {
+              "name": "sendBatchEmail",
+              "desc": "Chunked batch send — used by `sendPickReminders`"
+            },
+            {
+              "name": "resetPasswordEmail",
+              "desc": "Rendered inside `server/auth.ts`'s `sendResetPassword` hook"
+            },
+            {
+              "name": "pickReminderEmail",
+              "desc": "Rendered by the notification service per user"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "[Better Auth core](#c-core) (reset flow) and [pick-reminder notifications](#c-notify) (batch reminders) — the only two mail producers in the app."
+            },
+            {
+              "dir": "calls",
+              "body": "Resend's send + batch APIs (external); template links point users back at `/dashboard` and `/settings`."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "Five Prisma models in `prisma/schema.prisma`. The first four are Better Auth's tables — the library reads and writes them directly through the shared Kysely instance; app code only ever touches the extra columns it added to `User`.",
+      "rows": [
+        {
+          "name": "User",
+          "desc": "Identity plus PPGL extensions: `username`/`displayUsername` (case-insensitive vs as-typed), `role` (checked by web-shell's `adminProcedure`), `isBot` (excluded from reminders; used by game's bot picks), `pickReminderEmail` (the settings toggle). Referenced by nearly every domain via `LeagueMember`, commissioner relations, and adjustment audit fields."
+        },
+        {
+          "name": "Account",
+          "desc": "Per-provider credential row — for email/password this is where the hashed `password` lives, cascade-deleted with the user."
+        },
+        {
+          "name": "Session",
+          "desc": "Server-side session rows keyed by unique `token`, with IP/user-agent metadata; the cookie references these."
+        },
+        {
+          "name": "Verification",
+          "desc": "Short-lived verification values (password-reset tokens) keyed by `identifier`, with expiry."
+        },
+        {
+          "name": "NotificationLog",
+          "desc": "Send-dedup ledger: unique `(userId, tournamentId, type)` — one `PICK_REMINDER` per user per tournament, ever."
+        }
+      ],
+      "note": "`User` is this domain's biggest export in disguise: every other domain's rows ultimately hang off `user.id`, but only accounts (and Better Auth) may write the identity columns."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "A small tRPC surface (identity is read-mostly over tRPC), one HTTP catch-all that *is* the credential API, and two function-level seams consumed by cron and admin.",
+      "exposes": [
+        {
+          "api": "auth.me",
+          "note": "Public session probe — `null` or the projected user; called by server pages across every UI domain"
+        },
+        {
+          "api": "user.getNotificationPreferences",
+          "note": "Protected — reads the `pickReminderEmail` flag"
+        },
+        {
+          "api": "user.updateNotificationPreferences",
+          "note": "Protected — the settings toggle write"
+        },
+        {
+          "api": "/api/auth/[...all]",
+          "note": "Better Auth catch-all (`GET`/`POST`) — sign-up, sign-in, sign-out, password reset/change, `updateUser` all live here, outside tRPC"
+        }
+      ],
+      "depends": [
+        {
+          "name": "web-shell",
+          "path": "src",
+          "href": "../domain-web-shell/domain-web-shell.html"
+        },
+        {
+          "name": "leagues",
+          "path": "src/server/routers/league.ts",
+          "href": "../domain-leagues/domain-leagues.html"
+        }
+      ],
+      "note": "Module-level seams beyond tRPC: `auth` itself is imported by web-shell's `trpc.ts` (`getSession` per request) and admin's service (`requestPasswordReset`); [golf-data](../domain-golf-data/domain-golf-data.html)'s `cron-sync` imports `sendPickReminders` + `findUpcomingTournamentsWithinHours`; [admin](../domain-admin/domain-admin.html)'s router imports `sendTestPickReminder`. Dependencies going out: web-shell supplies `router`/`protectedProcedure`, `db`/`db-core`, and the tRPC clients; the sign-up page calls leagues' `league.join`. The notification queries also read `pick`, `league`, and `tournament` tables owned by [game](../domain-game/domain-game.html), [leagues](../domain-leagues/domain-leagues.html), and golf-data — data-level reads with no code import."
+    }
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:423d17cd8e3b9b27faf53b58ee30fd57507b3e8db5c9f197ade133158142f26b",
+    "date": "2026-07-21",
+    "commit": "662c5aea21d551822d864db988922e040298ecd4"
+  }
+}

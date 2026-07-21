@@ -1,0 +1,1950 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="visual-skills · visual-atlas"><title>Leagues &amp; commissioner</title><style>/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --panel: #f7f8fa;
+  --panel-deep: #f0f2f5;
+  --border: #e3e6ea;
+  --border-strong: #c8cdd5;
+  --ink: #1c2024;
+  --ink-muted: #5a626c;
+  --ink-faint: #646b75;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: #eff4ff;
+  --accent-border: #bfdbfe;
+  --add: #16a34a;
+  --add-bg: #f0fdf4;
+  --add-border: #bbf7d0;
+  --remove: #dc2626;
+  --remove-bg: #fef2f2;
+  --remove-border: #fecaca;
+  --change: #d97706;
+  --change-bg: #fffbeb;
+  --change-border: #fde68a;
+  --risk-low: #16a34a;
+  --risk-low-bg: #f0fdf4;
+  --risk-low-border: #bbf7d0;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+
+  --sidebar-w: 264px;
+  --topbar-h: 52px;
+  --radius: 6px;
+  --radius-sm: 4px;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== TOP BAR ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--topbar-h);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+}
+
+.topbar-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  line-height: 1.5;
+}
+
+.chip-risk {
+  color: var(--risk-low);
+  background: var(--risk-low-bg);
+  border-color: var(--risk-low-border);
+}
+
+.chip-stat {
+  color: var(--ink-muted);
+  background: var(--panel-deep);
+  border-color: var(--border);
+  font-weight: 500;
+}
+
+.chip-pr {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+  font-weight: 600;
+}
+
+.diff-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.diff-add { color: var(--add); }
+.diff-rem { color: var(--remove); }
+
+.topbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-strong);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  color: var(--ink-muted);
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+.sidebar-toggle:hover { background: var(--panel-deep); border-color: var(--border-strong); }
+.sidebar-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ===== LAYOUT ===== */
+.layout {
+  display: flex;
+  min-height: calc(100vh - var(--topbar-h));
+  position: relative;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+.sidebar-section {
+  padding: 16px 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-section:last-child { border-bottom: none; }
+
+.sidebar-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 14px 8px;
+  display: block;
+}
+
+/* File tree */
+.file-list { list-style: none; }
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 100ms ease-out;
+  line-height: 1.4;
+}
+.file-item:hover { background: var(--panel-deep); color: var(--ink); }
+.file-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.file-status {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.file-status-M { color: var(--change); }
+.file-status-A { color: var(--add); }
+.file-status-D { color: var(--remove); }
+.file-status-R { color: var(--change); }
+
+.file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-stat {
+  font-size: var(--text-xs);
+  font-family: var(--font-sans);
+  color: var(--ink-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.file-stat .plus { color: var(--add); font-weight: 600; }
+.file-stat .minus { color: var(--remove); font-weight: 600; }
+
+/* Outline nav */
+.outline-list { list-style: none; }
+
+.outline-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.outline-item:hover { background: var(--panel-deep); color: var(--ink); border-left-color: var(--border-strong); }
+.outline-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-item.is-active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-subtle); font-weight: 500; }
+
+.outline-num {
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  font-weight: 600;
+  width: 16px;
+  flex-shrink: 0;
+}
+.outline-item.is-active .outline-num { color: var(--accent); }
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 56px 80px;
+  max-width: 1480px;
+}
+
+/* ===== TLDR ===== */
+.tldr-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.tldr-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tldr-heading {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.tldr-eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tldr-rows { display: flex; flex-direction: column; gap: 8px; }
+
+.tldr-row {
+  display: flex;
+  gap: 10px;
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.tldr-key {
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 56px;
+}
+
+.tldr-val { color: var(--ink); flex: 1; }
+
+/* ===== SECTION HEADINGS ===== */
+.section {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 40px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.section-badge {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  background: var(--panel);
+}
+
+.subsection {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 32px;
+}
+
+.subsection-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.subsection-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 0;
+}
+
+.subsection-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ===== OVERVIEW LIST ===== */
+.overview-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.overview-item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: border-color 100ms ease-out;
+}
+.overview-item:hover { border-color: var(--border-strong); }
+
+.overview-num {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  width: 18px;
+}
+
+.overview-text { color: var(--ink); flex: 1; }
+.overview-text a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.overview-text a:hover { text-decoration: underline; }
+.overview-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* ===== WALKTHROUGH PROGRESS ===== */
+.progress-rail {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;            /* scroll horizontally when there are many/long chapters */
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.progress-step {
+  flex: 1 0 auto;              /* grow to fill when few; never shrink below content -> overflow scrolls */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  transition: background 100ms ease-out;
+}
+.progress-step-label { white-space: nowrap; }
+.progress-step:last-child { border-right: none; }
+.progress-step.is-active { background: var(--accent-subtle); color: var(--accent); }
+.progress-step { text-decoration: none; cursor: pointer; }
+.progress-step:hover { background: var(--panel-deep); color: var(--ink); }
+.progress-step.is-active:hover { color: var(--accent); }
+.progress-step:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.progress-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  background: var(--panel-deep);
+  color: var(--ink-faint);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+}
+.progress-step.is-active .progress-step-num {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.progress-step-label { font-weight: 500; white-space: nowrap; }
+
+/* ===== DESCRIPTION BULLETS ===== */
+.desc-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.desc-item {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--ink);
+}
+.desc-bullet {
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  margin-top: 2px;
+}
+.desc-item code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+.desc-item strong { font-weight: 600; }
+.desc-item em { font-style: italic; color: var(--ink-muted); }
+
+/* ===== CODE BLOCKS / DIFF ===== */
+.file-diff {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.file-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 100ms ease-out;
+}
+.file-diff-header:hover { background: var(--panel-deep); }
+
+.file-diff-header summary { display: flex; align-items: center; gap: 8px; width: 100%; list-style: none; }
+.file-diff-header summary::-webkit-details-marker { display: none; }
+.file-diff-header summary::marker { display: none; }
+
+details.file-diff-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+details.file-diff-details > summary:hover { background: var(--panel-deep); }
+details.file-diff-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.file-diff-details > summary::-webkit-details-marker { display: none; }
+
+/* the actual collapsed file-diff summary: one tidy row, single chevron */
+.file-diff > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: var(--panel);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+.file-diff > summary::-webkit-details-marker { display: none; }
+.file-diff > summary::marker { content: ""; }
+.file-diff > summary:hover { background: var(--panel-deep); }
+.file-diff > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.file-diff[open] > summary { border-bottom: 1px solid var(--border); }
+.diff-counts { margin-left: auto; }
+
+.diff-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  font-weight: 500;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diff-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.diff-badge-M { color: var(--change); background: var(--change-bg); border-color: var(--change-border); }
+.diff-badge-A { color: var(--add); background: var(--add-bg); border-color: var(--add-border); }
+
+.diff-counts {
+  display: flex;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.diff-counts .plus { color: var(--add); }
+.diff-counts .minus { color: var(--remove); }
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-faint);
+  transition: transform 150ms ease-out;
+  flex-shrink: 0;
+}
+details[open] .chevron { transform: rotate(90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
+  details[open] .chevron { transform: rotate(90deg); }
+}
+
+.code-block {
+  overflow-x: auto;
+  background: var(--bg);
+  margin: 0;
+}
+.code-block pre {
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 2;
+  min-width: 0;
+}
+
+/* Token coloring — span-based, semantic only */
+.kw { color: #7c3aed; font-weight: 600; }  /* keyword */
+.fn { color: #0369a1; }                      /* function/method */
+.str { color: #16a34a; }                     /* string */
+.cm { color: var(--ink-faint); font-style: italic; } /* comment */
+.ty { color: #b45309; }                      /* type */
+.pn { color: var(--ink); }                   /* punctuation */
+.nm { color: var(--ink); }                   /* number */
+
+/* ===== DIAGRAMS ===== */
+.diagram-wrap {
+  margin-bottom: 28px;
+}
+
+.diagram-title {
+  font-size: var(--text-base);
+  font-weight: 650;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.diagram-caption {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  margin: 8px 2px 0;
+}
+
+.diagram-box {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: zoom-in;
+}
+
+/* Inline SVG for diagrams */
+.diagram-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.diagram-enlarge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 0.8rem/1 system-ui, sans-serif;
+  color: var(--ink-muted);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.diagram-enlarge:hover { border-color: var(--accent); color: var(--accent); }
+.diagram-enlarge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* zoom overlay */
+.zoom-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(15,20,28,0.85); display: none; }
+.zoom-overlay.is-open { display: block; }
+.zoom-stage { position: absolute; inset: 0; overflow: hidden; cursor: grab;
+  display: flex; align-items: center; justify-content: center; touch-action: none; }
+.zoom-stage:active { cursor: grabbing; }
+.zoom-stage svg { max-width: 94vw; max-height: 84vh; transform-origin: center center;
+  background: #fff; border-radius: 12px; box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5); }
+.zoom-controls { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 1; }
+.zoom-controls button { min-width: 40px; height: 40px; padding: 0 12px;
+  border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.96); color: #1c2024;
+  border-radius: 10px; font: 600 15px/1 system-ui, sans-serif; cursor: pointer; }
+.zoom-controls button:hover { background: #fff; }
+
+/* ===== FILES CHANGED TABLE ===== */
+.files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.files-table th {
+  background: var(--panel);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.files-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--ink);
+}
+.files-table tr:last-child td { border-bottom: none; }
+.files-table tr:hover td { background: var(--panel); }
+
+.files-table .col-status { width: 32px; font-weight: 700; font-family: var(--font-mono); font-size: var(--text-sm); }
+.files-table .col-path { font-family: var(--font-mono); }
+.files-table .col-path a { color: var(--accent); text-decoration: none; }
+.files-table .col-path a:hover { text-decoration: underline; }
+.files-table .col-stat { width: 80px; white-space: nowrap; }
+.files-table .col-role { color: var(--ink-muted); font-size: var(--text-xs); }
+
+.files-group-row td {
+  background: var(--panel-deep);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 5px 12px;
+}
+
+/* ===== API SURFACE ===== */
+.api-surface {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.api-surface-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-deep);
+}
+
+.api-name {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.api-type {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--add);
+  background: var(--add-bg);
+  border: 1px solid var(--add-border);
+  border-radius: 20px;
+  padding: 1px 7px;
+}
+
+.api-surface .code-block pre {
+  padding: 14px 18px;
+}
+
+/* ===== CALLOUT ===== */
+.callout {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  margin-bottom: 14px;
+}
+.callout-icon { font-size: var(--text-md); flex-shrink: 0; line-height: 1.5; }
+.callout-text { color: var(--ink); line-height: 1.6; }
+.callout-text strong { font-weight: 600; }
+.callout-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ===== TYPOGRAPHY UTILITIES ===== */
+.headline {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.subheadline {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 28px;
+}
+
+.section-intro {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* ===== CHAPTER MARKER ===== */
+.chapter-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+/* Bold rule separating walkthrough chapters (rendered between, never before the first). */
+.chapter-divider {
+  border: none;
+  border-top: 2px solid var(--border-strong);
+  margin: 48px 0;
+}
+.chapter-no {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.chapter-marker-num {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--panel-deep);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    height: calc(100vh - var(--topbar-h));
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 200ms ease-out;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.08);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+  }
+  .sidebar-toggle { display: flex; }
+  .main { padding: 24px 20px 60px; }
+}
+
+@media (max-width: 375px) {
+  .main { padding: 16px 14px 40px; }
+  .topbar-title { font-size: var(--text-base); }
+  .headline { font-size: var(--text-xl); }
+  .progress-step-label { display: none; }
+  .progress-step { padding: 8px 10px; }
+  .dataflow { min-width: 420px; }
+}
+
+/* Sidebar overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: var(--topbar-h);
+  background: rgba(28,32,36,0.3);
+  z-index: 40;
+}
+.sidebar-overlay.is-open { display: block; }
+
+/* Focus styles */
+a:focus-visible, button:focus-visible, details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* real code diffs inside file-diff details */
+.diff-code { background:#fff; border-top:1px solid var(--border); }
+.diff-pre { margin:0; overflow-x:auto; padding:4px 0;
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#3a4047;
+  font-variant-ligatures:none; }
+.diff-pre .dl { display:flex; align-items:baseline; min-width:max-content; }
+.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:#8b939e;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:#9aa1ab;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dc { flex:0 0 auto; white-space:pre; padding-right:20px; }
+.diff-pre .dl-add { background:#e9f7ee; } .diff-pre .dl-add .dg { color:#1a7f37; } .diff-pre .dl-add .dc { color:#0f3a1d; }
+.diff-pre .dl-del { background:#fdecec; } .diff-pre .dl-del .dg { color:#c4332e; } .diff-pre .dl-del .dc { color:#5c1a18; }
+.diff-pre .dl-ctx .dc { color:#3a4047; }
+.diff-pre .dl-hunk { background:var(--panel); color:var(--ink-muted); }
+.diff-pre .dl-hunk .dc { color:var(--ink-muted); font-weight:600; }
+.diff-more { padding:8px 16px; font:12px/1.4 system-ui,sans-serif; color:var(--ink-muted);
+  background:var(--panel); border-top:1px solid var(--border); }
+
+/* ===== separation hierarchy: chapter breaks vs within-chapter breaks ===== */
+#ch1, #ch2, #ch3 { margin-bottom: 0; }
+/* CHAPTER break: stronger + darker line */
+#ch2, #ch3 { margin-top: 0; padding-top: 48px; border-top: 2px solid #8b939e; }
+/* WITHIN a chapter: lighter line between subsections (1a/1b/1c) ... */
+.subsection { margin-bottom: 0; }
+.subsection + .subsection { border-top: 1px solid var(--border); padding-top: 40px; }
+/* ... and between file groups (a new description directly after a diff) */
+.file-diff + .desc-list,
+.file-diff + .section-intro,
+.file-diff + ul,
+.file-diff + p {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== craft pass: typography + motion polish ===== */
+html { scroll-behavior: smooth; }
+.section-title, .subsection-title, .tldr-heading { text-wrap: balance; }
+.tldr-val, .overview-text, .section-intro, .desc-item span { text-wrap: pretty; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* color pass: subtle hover lift on file rows + risk level system */
+.file-diff { transition: box-shadow 150ms ease-out, border-color 150ms ease-out; }
+.file-diff:hover { border-color: var(--accent); box-shadow: 0 6px 18px -12px rgba(37,99,235,0.35); }
+.chip-risk.risk-med { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+.chip-risk.risk-high { color: var(--remove); background: #fef2f2; border-color: #fecaca; }
+@media (prefers-reduced-motion: reduce) { .file-diff { transition: none; } }
+
+/* spec.css — reusable visual-spec components.
+   Layers ON TOP of review.css (same design tokens). Load review.css first, then this.
+   Source of truth for the spec-component catalog (skills/shared/spec-components.md).
+   The canonical example inlines a snapshot of these rules. */
+
+/* ============================================================= */
+/* ===== VISUAL-SPEC EXTENSIONS (on top of review.css) ========= */
+/* ============================================================= */
+
+/* A "spec" carries a couple of extra semantic roles the recap doesn't:
+   a 'perceived' role (GM-skill-noised judgment, gold) vs a 'factual' role
+   (computed from world state, neutral). They reuse the diagram palette so
+   the page reads as one system. */
+:root {
+  --perceived: #92600a;          /* readable gold ink for text on light */
+  --perceived-bg: #fff8e6;
+  --perceived-border: #f0c54a;
+  --reused: #6b7280;             /* preserved / untouched machinery */
+  --reused-bg: #f1f3f5;
+  --reused-border: #ced4da;
+  --store: #6d4ed8;              /* datastore ink */
+  --proc: #1971c2;              /* perception / process ink */
+}
+
+/* ---- topbar: phase + status + complexity chips ---- */
+.chip-phase { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent-border); font-weight: 700; }
+.chip-status { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.chip-complexity { color: var(--change); background: var(--change-bg); border-color: var(--change-border); font-weight: 600; }
+
+/* ---- the big idea panel ---- */
+.bigidea {
+  margin: 0 0 36px;
+  padding: 22px 26px;
+  border: 1px solid var(--perceived-border);
+  background: var(--perceived-bg);
+  border-radius: var(--radius);
+}
+.bigidea-label {
+  font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--perceived); margin-bottom: 8px;
+}
+.bigidea-line {
+  font-size: var(--text-2xl); font-weight: 800; letter-spacing: -0.025em;
+  color: var(--ink); line-height: 1.2; text-wrap: balance;
+}
+.bigidea-sub {
+  margin-top: 10px; max-width: 70ch; color: var(--ink-muted);
+  font-size: var(--text-base); line-height: 1.6; text-wrap: pretty;
+}
+.bigidea-sub strong { color: var(--ink); font-weight: 650; }
+
+/* ---- diagram legend (color is a secondary signal; labels carry meaning) ---- */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 2px 0; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-sm); color: var(--ink-muted); }
+.legend-swatch { width: 13px; height: 13px; border-radius: 3px; border: 1px solid; flex-shrink: 0; }
+
+/* svg text inherits the page sans */
+.flow-svg text { font-family: var(--font-sans); }
+
+/* ---- anatomy of a board (factual core vs perceived layer) ---- */
+.anatomy {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.anatomy-panel { padding: 16px 18px; }
+.anatomy-factual { background: var(--reused-bg); }
+.anatomy-perceived { background: var(--perceived-bg); }
+.anatomy-mid {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 0 16px; background: var(--bg);
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+}
+.anatomy-arrow { font-size: 22px; color: var(--ink-faint); line-height: 1; }
+.anatomy-fn { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); text-align: center; max-width: 130px; }
+.anatomy-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--text-base); margin-bottom: 4px; }
+.anatomy-factual .anatomy-h { color: var(--reused); }
+.anatomy-perceived .anatomy-h { color: var(--perceived); }
+.anatomy-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-bottom: 10px; }
+.anatomy-eg { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.7; color: var(--ink); }
+.anatomy-caption { font-size: var(--text-sm); color: var(--ink-muted); margin: 0 2px 28px; line-height: 1.6; }
+@media (max-width: 720px) {
+  .anatomy { grid-template-columns: 1fr; }
+  .anatomy-mid { flex-direction: row; border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 16px; }
+  .anatomy-arrow { transform: rotate(90deg); }
+}
+
+/* ---- 6 component (board) cards ---- */
+.board-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 8px; }
+.board-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px; background: var(--bg);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  display: flex; flex-direction: column;
+}
+.board-card:hover { border-color: var(--border-strong); box-shadow: 0 6px 18px -14px rgba(28,32,36,0.4); }
+.board-name { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-base); color: var(--ink); letter-spacing: -0.01em; }
+.board-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 7px 0 12px; }
+.board-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.board-row-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 2px; }
+.skill-chip { font-size: var(--text-xs); font-weight: 600; background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 20px; padding: 1px 8px; white-space: nowrap; }
+.skill-chip.is-deputy { background: var(--panel-deep); color: var(--ink-muted); border-color: var(--border); }
+.split-badge { display: inline-flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; font-size: var(--text-xs); font-weight: 600; align-self: flex-start; margin-bottom: 12px; }
+.split-badge .sb-fact { background: var(--reused-bg); color: var(--reused); padding: 2px 9px; }
+.split-badge .sb-perc { background: var(--perceived-bg); color: var(--perceived); padding: 2px 9px; border-left: 1px solid var(--border); }
+.board-fields { margin-top: auto; display: flex; flex-direction: column; gap: 5px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.field-line { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5; display: flex; gap: 7px; }
+.field-tag { flex-shrink: 0; width: 10px; font-weight: 700; }
+.field-fact .field-tag { color: var(--reused); }
+.field-perc .field-tag { color: var(--perceived); }
+.field-fact .field-names { color: var(--ink-muted); }
+.field-perc .field-names { color: var(--perceived); }
+
+/* ---- where it fits ---- */
+.fits-chain { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; margin-bottom: 26px; }
+.fits-node { flex: 1 1 220px; min-width: 200px; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--panel); }
+.fits-node.is-this { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.fits-arrow { display: flex; align-items: center; justify-content: center; padding: 0 12px; color: var(--ink-faint); font-size: 22px; flex-shrink: 0; }
+.fits-role { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 600; }
+.fits-node.is-this .fits-role { color: var(--perceived); }
+.fits-title { font-weight: 700; color: var(--ink); margin: 3px 0 5px; }
+.fits-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; }
+.fits-desc em { color: var(--ink); font-style: normal; font-weight: 600; }
+@media (max-width: 720px) {
+  .fits-chain { flex-direction: column; }
+  .fits-arrow { padding: 8px 0; }
+  .fits-arrow span { transform: rotate(90deg); display: inline-block; }
+}
+
+/* ---- layer stack ---- */
+.layer-stack { display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.layer { display: flex; align-items: baseline; gap: 12px; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; background: var(--panel); }
+.layer.is-new { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.layer.is-reused { background: var(--reused-bg); }
+.layer-label { font-weight: 700; color: var(--ink); flex-shrink: 0; }
+.layer.is-new .layer-label { color: var(--perceived); }
+.layer-note { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.45; }
+.layer-tag { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 7px; border-radius: 20px; flex-shrink: 0; }
+.layer.is-new .layer-tag { color: #fff; background: var(--change); }
+.layer.is-reused .layer-tag { color: var(--reused); background: var(--bg); border: 1px solid var(--reused-border); }
+
+/* ---- key decisions ---- */
+.decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.decision-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--bg); display: flex; gap: 12px; }
+.decision-num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--panel-deep); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: var(--text-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.decision-q { font-size: var(--text-sm); color: var(--ink-faint); font-weight: 600; line-height: 1.4; }
+.decision-a { font-weight: 650; color: var(--ink); margin-top: 4px; line-height: 1.45; }
+.decision-a code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- scope (in / out) ---- */
+.scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.scope-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.scope-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.scope-in .scope-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.scope-out .scope-head { background: var(--reused-bg); color: var(--ink-muted); }
+.scope-count { font-size: var(--text-xs); font-weight: 600; opacity: 0.8; }
+.scope-list { list-style: none; padding: 8px 0; }
+.scope-list li { display: flex; gap: 9px; padding: 6px 16px; font-size: var(--text-base); line-height: 1.5; }
+.scope-marker { flex-shrink: 0; font-weight: 700; }
+.scope-in .scope-marker { color: var(--add); }
+.scope-out .scope-marker { color: var(--ink-faint); }
+.scope-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.scope-list .defer { color: var(--ink-faint); font-size: var(--text-sm); }
+@media (max-width: 720px) { .scope-cols { grid-template-columns: 1fr; } }
+
+/* ---- rollout phases ---- */
+.phases { display: flex; flex-direction: column; gap: 14px; }
+.phase { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.phase-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.phase-tag { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-sm); color: var(--accent); background: var(--accent-subtle); border: 1px solid var(--accent-border); border-radius: var(--radius-sm); padding: 2px 9px; }
+.phase-title { font-weight: 700; color: var(--ink); }
+.phase-body { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; padding: 16px; }
+.phase-sub { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin-bottom: 8px; }
+.phase-scope p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; }
+.phase-scope code, .gate-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.phase-gate { background: var(--panel); border-radius: var(--radius-sm); padding: 12px 14px; }
+.gate-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.gate-list li { display: flex; gap: 8px; font-size: var(--text-sm); line-height: 1.5; color: var(--ink); }
+.gate-check { color: var(--add); flex-shrink: 0; font-weight: 700; }
+@media (max-width: 720px) { .phase-body { grid-template-columns: 1fr; } }
+
+/* ---- definition of done: movers + table ---- */
+.movers { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.mover { border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; background: var(--bg); }
+.mover-name { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); line-height: 1.4; }
+.mover-vals { display: flex; align-items: baseline; gap: 9px; margin: 9px 0 4px; }
+.mover-now { color: var(--ink-faint); font-weight: 600; font-size: var(--text-base); }
+.mover-now s { color: var(--remove); text-decoration-thickness: 1px; }
+.mover-arrow { color: var(--ink-faint); font-size: var(--text-base); }
+.mover-target { color: var(--add); font-weight: 800; font-size: var(--text-xl); letter-spacing: -0.02em; }
+.mover-label { font-size: var(--text-xs); color: var(--ink-faint); }
+
+.spec-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 6px 0 8px; }
+.spec-table th { text-align: left; background: var(--panel); padding: 8px 12px; font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); border-bottom: 1px solid var(--border); }
+.spec-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--ink); line-height: 1.5; }
+.spec-table tr:last-child td { border-bottom: none; }
+.spec-table tr:hover td { background: var(--panel); }
+.spec-table code { font-family: var(--font-mono); font-size: 0.86em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.spec-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.spec-table .good { color: #15803d; font-weight: 700; }
+.tbl-note { font-size: var(--text-sm); color: var(--ink-muted); margin: 2px 2px 0; }
+
+/* ---- risks ---- */
+.risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; }
+.risk-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.risk-r { display: flex; gap: 9px; padding: 12px 15px; background: var(--remove-bg); border-bottom: 1px solid var(--remove-border); font-weight: 650; color: #991b1b; font-size: var(--text-sm); line-height: 1.45; }
+.risk-icon { flex-shrink: 0; }
+.risk-m { padding: 12px 15px; font-size: var(--text-sm); color: var(--ink); line-height: 1.55; }
+.risk-m b { color: #15803d; font-weight: 700; }
+.risk-m code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- reference drill-downs ---- */
+.ref-intro { font-size: var(--text-base); color: var(--ink-muted); margin-bottom: 16px; line-height: 1.6; }
+details.ref { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; background: var(--bg); }
+details.ref > summary { display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: var(--panel); cursor: pointer; user-select: none; list-style: none; font-weight: 650; color: var(--ink); transition: background 100ms ease-out; }
+details.ref > summary::-webkit-details-marker { display: none; }
+details.ref > summary::marker { content: ""; }
+details.ref > summary:hover { background: var(--panel-deep); }
+details.ref > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.ref[open] > summary { border-bottom: 1px solid var(--border); }
+.ref-chev { width: 15px; height: 15px; color: var(--ink-faint); transition: transform 150ms ease-out; flex-shrink: 0; }
+details.ref[open] .ref-chev { transform: rotate(90deg); }
+.ref-tally { margin-left: auto; font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.ref-body { padding: 16px; }
+.ref-body > p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; margin-bottom: 12px; }
+.ref-body > p:last-child { margin-bottom: 0; }
+.ref-body .code-block { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; }
+.ref-body h4 { font-size: var(--text-base); font-weight: 700; color: var(--ink); margin: 16px 0 8px; }
+.ref-body h4:first-child { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .ref-chev { transition: none; } }
+
+/* meta list in sidebar */
+.meta-list { padding: 0 14px 8px; display: flex; flex-direction: column; gap: 9px; }
+.meta-row { font-size: var(--text-xs); line-height: 1.4; }
+.meta-row .mk { display: block; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 1px; }
+.meta-row .mv { color: var(--ink); }
+.related-list { list-style: none; padding: 0 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.related-list li { font-size: var(--text-xs); line-height: 1.4; }
+.related-list .rk { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.related-list .rv { color: var(--ink); font-family: var(--font-mono); overflow-wrap: anywhere; }
+
+/* ---- decision rationale (approval layer) ---- */
+.decision-why { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); line-height: 1.5; }
+.decision-why::before { content: "Why "; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; font-size: 0.72em; letter-spacing: 0.06em; }
+.decision-why em { color: var(--ink); font-style: normal; font-weight: 650; }
+.decision-why code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.decision-alt { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 7px; line-height: 1.5; }
+.decision-alt-tag { display: inline-block; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--remove); background: var(--remove-bg); border: 1px solid var(--remove-border); border-radius: 4px; padding: 0 5px; margin-right: 6px; vertical-align: 1px; }
+.decision-alt em { color: var(--ink); font-style: italic; }
+.decision-alt code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- before you approve ---- */
+.approve-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; align-items: start; }
+.approve-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.approve-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.approve-card.commit .approve-head { background: var(--accent-subtle); color: var(--accent); border-bottom-color: var(--accent-border); }
+.approve-card.scrutinize .approve-head { background: var(--change-bg); color: #92600a; border-bottom-color: var(--change-border); }
+.approve-card.open .approve-head { background: var(--panel-deep); color: var(--ink-muted); }
+.approve-body { padding: 13px 16px; font-size: var(--text-sm); color: var(--ink); line-height: 1.6; }
+.approve-body strong { font-weight: 700; }
+.approve-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.approve-body a:hover { text-decoration: underline; }
+.approve-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.approve-q { list-style: none; counter-reset: aq; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+.approve-q li { counter-increment: aq; display: flex; gap: 8px; font-size: var(--text-sm); color: var(--ink); line-height: 1.45; }
+.approve-q li::before { content: counter(aq); flex-shrink: 0; width: 17px; height: 17px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.approve-q code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
+
+/* atlas.css — reusable visual-atlas components.
+   Layers ON TOP of review.css + spec.css (same design tokens). Load review.css, then
+   spec.css, then this. Source of truth for the atlas-component catalog
+   (skills/shared/atlas-components.md). The canonical example inlines a snapshot of these rules.
+
+   A visual-atlas is a STANDING MAP of a codebase: one narrative `atlas.html` (system
+   onboarding map) that links down to per-domain `domain-<slug>.html` deep-dive pages. It owns
+   its own surface so its styles can evolve independently of the recap/spec. */
+
+/* ============================================================= */
+/* ===== VISUAL-ATLAS EXTENSIONS (on top of review.css + spec.css) */
+/* ============================================================= */
+
+/* Tier accents — each architectural layer gets one role tint so the map, the tiles, and the
+   sidebar all read as one system. Reuses the shared diagram palette (foundation=store violet,
+   engine=actor blue, intelligence=changed gold, narrative=added green, surface=accent,
+   harness=external gray). Color is always secondary — every tier also carries its text label. */
+:root {
+  --tier-foundation: #6d4ed8; --tier-foundation-bg: #f1ecfd;
+  --tier-engine:     #1971c2; --tier-engine-bg:     #e7f1fb;
+  --tier-intelligence: #b3791a; --tier-intelligence-bg: #fff6e2;
+  --tier-narrative:  #2f9e44; --tier-narrative-bg:  #eafaef;
+  --tier-surface:    var(--accent); --tier-surface-bg: var(--accent-subtle);
+  --tier-harness:    #6b7280; --tier-harness-bg:    #f1f3f5;
+}
+
+/* ---- topbar: domain-count + stack chips, and the back-link on domain pages ---- */
+.chip-stack { color: var(--tier-engine); background: var(--tier-engine-bg); border-color: #bcdcf5; font-weight: 600; }
+.chip-count { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.topbar-back {
+  display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; flex-shrink: 0;
+  font-size: var(--text-sm); font-weight: 600; color: var(--accent); text-decoration: none;
+  border: 1px solid var(--accent-border); background: var(--accent-subtle);
+  border-radius: 20px; padding: 3px 11px 3px 9px; transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.topbar-back:hover { background: #e0ecff; border-color: var(--accent); }
+.topbar-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- primer: "the N things to hold in your head" (atlas lead, after the TL;DR) ---- */
+.primer { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow: hidden; margin-bottom: 32px; }
+.primer-row { display: flex; gap: 14px; padding: 14px 18px; align-items: baseline; }
+.primer-row + .primer-row { border-top: 1px solid var(--border); }
+.primer-n {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; align-self: flex-start;
+  background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border);
+  font-size: var(--text-sm); font-weight: 800; display: flex; align-items: center; justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.primer-body { min-width: 0; }
+.primer-h { font-weight: 700; color: var(--ink); line-height: 1.4; letter-spacing: -0.01em; }
+.primer-p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-top: 3px; text-wrap: pretty; }
+.primer-h code, .primer-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* svg text inherits the page sans (the hand-authored domain map reuses .flow-svg from spec.css) */
+.map-svg text { font-family: var(--font-sans); }
+
+/* ---- component cards that jump to their deep-dive section ---- */
+a.board-card { text-decoration: none; color: inherit; }
+a.board-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-jump { margin-top: 10px; display: flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.card-jump .cj-arrow { transition: transform 150ms ease-out; }
+a.board-card:hover .cj-arrow { transform: translateY(2px); }
+@media (prefers-reduced-motion: reduce) { .card-jump .cj-arrow { transition: none; } }
+
+/* ---- per-component deep-dive: detail + diagram + connections ---- */
+/* reuses review.css .subsection / .subsection-header / .subsection-title / .subsection-path */
+.subsection-back { font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); text-decoration: none; white-space: nowrap; }
+.subsection-back:hover { color: var(--accent); }
+.detail-p { font-size: var(--text-base); color: var(--ink); line-height: 1.65; margin-bottom: 14px; text-wrap: pretty; }
+.detail-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.detail-p strong { font-weight: 650; }
+.detail-p em { font-style: normal; font-weight: 600; color: var(--ink); }
+
+/* connections: how this component talks to its neighbors (calls / read by / produces) */
+.conns { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 4px; }
+.conn { display: flex; align-items: baseline; gap: 10px; font-size: var(--text-sm); line-height: 1.5; }
+.conn-dir { flex-shrink: 0; min-width: 78px; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); text-align: right; }
+.conn-body { color: var(--ink); }
+.conn-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.conn-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.conn-body a:hover { text-decoration: underline; }
+.conns-label { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin: 14px 0 9px; }
+
+/* the load-bearing idea reads full-width on atlas pages (override spec.css's 70ch cap) */
+.bigidea-sub { max-width: none; }
+
+/* ---- domain index: a tile grid (the onboarding map AND the reference index) ---- */
+.domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
+.domain-tile {
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);
+  padding: 16px 18px; display: flex; flex-direction: column; text-decoration: none; color: inherit;
+  position: relative; transition: border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+a.domain-tile.is-linked:hover { border-color: var(--accent); box-shadow: 0 8px 22px -16px rgba(37,99,235,0.5); transform: translateY(-1px); }
+a.domain-tile.is-linked:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.domain-tile.is-pending { background: var(--panel); border-style: dashed; }
+.domain-tile-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.domain-tile-name { font-size: var(--text-md); font-weight: 700; color: var(--ink); letter-spacing: -0.015em; }
+.domain-tile-path { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); }
+.layer-chip {
+  margin-left: auto; font-size: var(--text-xs); font-weight: 700; padding: 1px 8px; border-radius: 20px;
+  border: 1px solid; white-space: nowrap; letter-spacing: 0.01em;
+}
+.layer-foundation   { color: var(--tier-foundation);   background: var(--tier-foundation-bg);   border-color: #d6c8f7; }
+.layer-engine       { color: var(--tier-engine);       background: var(--tier-engine-bg);       border-color: #bcdcf5; }
+.layer-intelligence { color: var(--tier-intelligence); background: var(--tier-intelligence-bg); border-color: var(--change-border); }
+.layer-narrative    { color: var(--tier-narrative);    background: var(--tier-narrative-bg);    border-color: #b6e6c4; }
+.layer-surface      { color: var(--tier-surface);      background: var(--tier-surface-bg);      border-color: var(--accent-border); }
+.layer-harness      { color: var(--tier-harness);      background: var(--tier-harness-bg);      border-color: var(--border-strong); }
+.domain-tile-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 9px 0 12px; text-wrap: pretty; }
+.domain-tile-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--text-xs); color: var(--ink-faint); margin-bottom: 11px; }
+.domain-tile-meta .dm-k { font-weight: 700; color: var(--ink-muted); }
+.domain-tile-meta code { font-family: var(--font-mono); font-size: 0.95em; color: var(--ink-muted); }
+.domain-tile-deps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--border); }
+.domain-tile-deps .dep-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; margin-right: 2px; }
+.dep-chip { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.domain-tile-foot { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: var(--text-sm); font-weight: 600; }
+.domain-tile.is-linked .domain-tile-foot { color: var(--accent); }
+.domain-tile.is-pending .domain-tile-foot { color: var(--ink-faint); font-weight: 600; }
+.domain-tile-foot .dtf-arrow { transition: transform 150ms ease-out; }
+a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
+
+/* ---- domain page: data it owns ---- */
+.owns-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.owns-row { display: grid; grid-template-columns: minmax(180px, 0.9fr) 1.6fr; gap: 14px; padding: 11px 16px; align-items: baseline; }
+.owns-row + .owns-row { border-top: 1px solid var(--border); }
+.owns-row:nth-child(even) { background: var(--panel); }
+.owns-name { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.owns-name .owns-store { color: var(--tier-foundation); }
+.owns-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; text-wrap: pretty; }
+.owns-desc code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- domain page: seams (exposes / depends on) ---- */
+.seam-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.seam-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.seam-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.seam-exposes .seam-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.seam-depends .seam-head { background: var(--panel-deep); color: var(--ink-muted); }
+.seam-body { padding: 12px 16px; }
+.seam-api { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.seam-api li { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--ink); line-height: 1.4; display: flex; gap: 8px; }
+.seam-api li::before { content: "›"; color: var(--add); font-weight: 700; flex-shrink: 0; }
+.seam-api .api-note { font-family: var(--font-sans); color: var(--ink-faint); font-size: var(--text-xs); }
+.seam-neighbors { display: flex; flex-wrap: wrap; gap: 8px; }
+.neighbor-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); font-weight: 600;
+  color: var(--ink); background: var(--panel); border: 1px solid var(--border-strong);
+  border-radius: 20px; padding: 3px 11px; text-decoration: none; transition: border-color 120ms ease-out, background 120ms ease-out;
+}
+.neighbor-chip:hover { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent); }
+.neighbor-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.neighbor-chip .nc-path { font-family: var(--font-mono); font-size: 0.85em; color: var(--ink-faint); }
+.neighbor-chip:hover .nc-path { color: var(--accent); }
+.neighbor-chip.is-flat { background: var(--panel-deep); border-style: dashed; cursor: default; color: var(--ink-muted); }
+.neighbor-chip.is-flat:hover { border-color: var(--border-strong); background: var(--panel-deep); color: var(--ink-muted); }
+@media (max-width: 720px) { .seam-cols { grid-template-columns: 1fr; } }
+
+/* sidebar: nested sub-section links under a chapter in the CONTENTS outline.
+   Used on domain pages to list a chapter's deep-dive components without a bespoke
+   second sidebar block — one uniform outline per page. */
+.outline-sub { list-style: none; margin: 1px 0 5px; }
+.outline-subitem { display: flex; align-items: center; gap: 8px; padding: 3px 14px 3px 34px; font-size: var(--text-xs); color: var(--ink-muted); text-decoration: none; border-left: 2px solid transparent; transition: background 100ms ease-out, color 100ms ease-out; }
+.outline-subitem:hover { background: var(--panel-deep); color: var(--ink); }
+.outline-subitem:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-subitem .os-dot { width: 8px; height: 8px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.14); flex-shrink: 0; }
+
+/* sidebar: a small "domains" jump-list block on the atlas */
+.nav-domains { list-style: none; }
+.nav-domain {
+  display: flex; align-items: center; gap: 8px; padding: 4px 14px; font-size: var(--text-sm);
+  color: var(--ink); text-decoration: none; transition: background 100ms ease-out;
+}
+.nav-domain:hover { background: var(--panel-deep); }
+.nav-domain:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
+.nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
+</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><a class="topbar-back" href="../atlas.html"><span aria-hidden="true">&larr;</span> Atlas</a><span class="topbar-title">Leagues &amp; commissioner</span><div class="topbar-meta"><span class="chip layer-chip layer-engine">Core game</span><span class="chip chip-stat">src</span><span class="chip chip-count">25 files</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">depends on game · golf-data · scoring · payments · accounts · web-shell</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>What it owns</span></a></li><li><a href="#components" class="outline-item" data-target="components"><span class="outline-num" aria-hidden="true">1</span><span>Components</span></a></li><li><a href="#arch" class="outline-item" data-target="arch"><span class="outline-num" aria-hidden="true">2</span><span>Internal architecture</span></a></li><li><a href="#depth" class="outline-item" data-target="depth"><span class="outline-num" aria-hidden="true">3</span><span>In depth</span></a><ul class="outline-sub" role="list"><li><a href="#c-service" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>league service</a></li><li><a href="#c-create" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>create &amp; checkout</a></li><li><a href="#c-join" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>join &amp; approval</a></li><li><a href="#c-pages" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>league pages</a></li><li><a href="#c-context" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>league context</a></li><li><a href="#c-commish" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>commissioner tools</a></li></ul></li><li><a href="#data" class="outline-item" data-target="data"><span class="outline-num" aria-hidden="true">4</span><span>Data it owns</span></a></li><li><a href="#seams" class="outline-item" data-target="seams"><span class="outline-num" aria-hidden="true">5</span><span>Seams</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Layer</span><span class="mv">Engine</span></div><div class="meta-row"><span class="mk">API</span><span class="mv">`leagueRouter` — 16 procedures</span></div><div class="meta-row"><span class="mk">Models</span><span class="mv">League · LeagueMember · LeagueMemberSeason · CommissionerAction</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Domain</span><h2 class="tldr-heading">Leagues &amp; commissioner</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">Path</span><span class="tldr-val"><code>src</code> — <code>server/{routers,services,repositories}/league.ts</code>, <code>app/league/**</code>, <code>app/leagues/</code>, <code>components/{league,commissioner}/</code>, <code>lib/league-context.ts</code></span></div><div class="tldr-row"><span class="tldr-key">Files</span><span class="tldr-val">25</span></div><div class="tldr-row"><span class="tldr-key">Owns</span><span class="tldr-val">League lifecycle (create → pay → invite → join → approve), the league pages, the active-league cookie, and commissioner tools + audit log</span></div><div class="tldr-row"><span class="tldr-key">Entry points</span><span class="tldr-val"><code>/leagues</code>, <code>/league/create</code>, <code>/league/join?code=…</code>, <code>/league/[id]</code> (+ <code>/rules</code>, <code>/settings</code>)</span></div><div class="tldr-row"><span class="tldr-key">API</span><span class="tldr-val"><code>leagueRouter</code> (<code>league.*</code>, 16 procedures) plus directly-imported service guards (<code>resolveLeagueMemberId</code>, <code>assertLeagueActive</code>)</span></div></div></div><div class="bigidea"><div class="bigidea-label">Big idea</div><div class="bigidea-line">Membership <strong>is</strong> the permission system — every other gameplay domain answers "may this user act here?" by calling into leagues.</div><p class="bigidea-sub"><code>resolveLeagueMemberId</code> and <code>assertLeagueActive</code> (src/server/services/league.ts) are imported by the pick and dashboard services; the <code>leagueMemberId</code> they return is the identity key that picks, standings, and earnings all hang off. Everyone is lazily auto-enrolled in the global league (<code>ppgl-global</code>), so the guard doubles as onboarding.</p></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#components"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">Components</span></a><a class="progress-step" href="#arch"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Internal architecture</span></a><a class="progress-step" href="#depth"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">In depth</span></a><a class="progress-step" href="#data"><div class="progress-step-num" aria-hidden="true">4</div><span class="progress-step-label">Data it owns</span></a><a class="progress-step" href="#seams"><div class="progress-step-num" aria-hidden="true">5</div><span class="progress-step-label">Seams</span></a></nav><section id="components" class="section"><div class="section-header"><h2 class="section-title">Components</h2></div><p class="section-intro">Six units: one server trio holding all the business logic, four UI surfaces, and a tiny cookie-based context layer that the whole app reads.</p><div class="board-grid"><a class="board-card" href="#c-service"><div class="board-name">league service</div><div class="board-purpose">The router → service → repository trio. All lifecycle rules live in <code>services/league.ts</code>: create/join with race-safe transactions, the member state machine, payment gating (<code>PENDING</code> leagues block everything), promo redemption, audit-log assembly, and abandoned-league cleanup.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip is-deputy">leagueRouter</span><span class="skill-chip">resolveLeagueMemberId</span><span class="skill-chip">assertLeagueActive</span><span class="skill-chip">joinLeague</span><span class="skill-chip">cleanupAbandonedLeagues</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-create"><div class="board-name">create &amp; checkout</div><div class="board-purpose"><code>/league/create</code> — one client form that handles the $15 PayPal path (league born <code>PENDING</code>, activated on capture), the promo path (free → instantly <code>PAID</code>, partial → discounted checkout), and hands off to <code>/league/created</code> with the invite link.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">CreateLeagueForm</span><span class="skill-chip">LeagueCreatedClient</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-join"><div class="board-name">join &amp; approval</div><div class="board-purpose">The invite funnel: <code>/league/join?code=…</code> previews the league (public, works signed-out), joins or requests to join, and the commissioner's inline approve/reject queue on the league page.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">JoinLeagueClient</span><span class="skill-chip">PendingMembers</span><span class="skill-chip">InviteLinkCopy</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-pages"><div class="board-name">league pages</div><div class="board-purpose"><code>/leagues</code> index and the league home <code>/league/[id]</code> — a large server component that fans out to scoring, game, and golf-data for the weekly view + season standings — plus per-league <code>/rules</code> (settings-aware how-to-play) and <code>/settings</code>.</div><div class="board-row"><span class="board-row-label">covers</span><span class="skill-chip">WeekSwipeWrapper</span><span class="skill-chip">AuditLogCollapsible</span><span class="skill-chip">LeagueSettingsForm</span><span class="skill-chip">LeagueMembers</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-context"><div class="board-name">league context</div><div class="board-purpose">Which league am I looking at? A one-year <code>ppgl-active-league</code> cookie read by every league-scoped page via <code>getActiveLeagueId</code>, written only through server actions — by the nav <code>LeagueSwitcher</code> or silently by <code>SyncLeagueContext</code> when you visit <code>/league/[id]</code>.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">getActiveLeagueId</span><span class="skill-chip">setActiveLeague</span><span class="skill-chip">LeagueSwitcher</span><span class="skill-chip">SyncLeagueContext</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-commish"><div class="board-name">commissioner tools</div><div class="board-purpose">The commissioner-mode overlay for acting on <em>other members'</em> picks: a CSS toggle plus add/edit/remove widgets that call the game domain's <code>pick.commissioner*</code> procedures — every action lands in this domain's <code>CommissionerAction</code> audit log.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">CommissionerToggle</span><span class="skill-chip">CommissionerPickActions</span><span class="skill-chip">CommissionerAddPick</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a></div></section><section id="arch" class="section"><div class="section-header"><h2 class="section-title">Internal architecture</h2></div><p class="section-intro">One thin tRPC router in front of one fat service. The service is also entered from the side — by the PayPal webhook, by the cron sync's cleanup, and by other domains' services importing its guards directly.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2759 641"><svg class="d2-3896108889 d2-svg" width="2759" height="641" viewBox="-25 -25 2759 641"><rect x="-25.000000" y="-25.000000" width="2759.000000" height="641.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-3896108889 .text-bold {
+	font-family: "d2-3896108889-font-bold";
+}
+@font-face {
+	font-family: d2-3896108889-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-3896108889 .text-italic {
+	font-family: "d2-3896108889-font-italic";
+}
+@font-face {
+	font-family: d2-3896108889-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-3896108889 .fill-N1{fill:#0A0F25;}
+		.d2-3896108889 .fill-N2{fill:#676C7E;}
+		.d2-3896108889 .fill-N3{fill:#9499AB;}
+		.d2-3896108889 .fill-N4{fill:#CFD2DD;}
+		.d2-3896108889 .fill-N5{fill:#DEE1EB;}
+		.d2-3896108889 .fill-N6{fill:#EEF1F8;}
+		.d2-3896108889 .fill-N7{fill:#FFFFFF;}
+		.d2-3896108889 .fill-B1{fill:#0D32B2;}
+		.d2-3896108889 .fill-B2{fill:#0D32B2;}
+		.d2-3896108889 .fill-B3{fill:#E3E9FD;}
+		.d2-3896108889 .fill-B4{fill:#E3E9FD;}
+		.d2-3896108889 .fill-B5{fill:#EDF0FD;}
+		.d2-3896108889 .fill-B6{fill:#F7F8FE;}
+		.d2-3896108889 .fill-AA2{fill:#4A6FF3;}
+		.d2-3896108889 .fill-AA4{fill:#EDF0FD;}
+		.d2-3896108889 .fill-AA5{fill:#F7F8FE;}
+		.d2-3896108889 .fill-AB4{fill:#EDF0FD;}
+		.d2-3896108889 .fill-AB5{fill:#F7F8FE;}
+		.d2-3896108889 .stroke-N1{stroke:#0A0F25;}
+		.d2-3896108889 .stroke-N2{stroke:#676C7E;}
+		.d2-3896108889 .stroke-N3{stroke:#9499AB;}
+		.d2-3896108889 .stroke-N4{stroke:#CFD2DD;}
+		.d2-3896108889 .stroke-N5{stroke:#DEE1EB;}
+		.d2-3896108889 .stroke-N6{stroke:#EEF1F8;}
+		.d2-3896108889 .stroke-N7{stroke:#FFFFFF;}
+		.d2-3896108889 .stroke-B1{stroke:#0D32B2;}
+		.d2-3896108889 .stroke-B2{stroke:#0D32B2;}
+		.d2-3896108889 .stroke-B3{stroke:#E3E9FD;}
+		.d2-3896108889 .stroke-B4{stroke:#E3E9FD;}
+		.d2-3896108889 .stroke-B5{stroke:#EDF0FD;}
+		.d2-3896108889 .stroke-B6{stroke:#F7F8FE;}
+		.d2-3896108889 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-3896108889 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-3896108889 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-3896108889 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-3896108889 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-3896108889 .background-color-N1{background-color:#0A0F25;}
+		.d2-3896108889 .background-color-N2{background-color:#676C7E;}
+		.d2-3896108889 .background-color-N3{background-color:#9499AB;}
+		.d2-3896108889 .background-color-N4{background-color:#CFD2DD;}
+		.d2-3896108889 .background-color-N5{background-color:#DEE1EB;}
+		.d2-3896108889 .background-color-N6{background-color:#EEF1F8;}
+		.d2-3896108889 .background-color-N7{background-color:#FFFFFF;}
+		.d2-3896108889 .background-color-B1{background-color:#0D32B2;}
+		.d2-3896108889 .background-color-B2{background-color:#0D32B2;}
+		.d2-3896108889 .background-color-B3{background-color:#E3E9FD;}
+		.d2-3896108889 .background-color-B4{background-color:#E3E9FD;}
+		.d2-3896108889 .background-color-B5{background-color:#EDF0FD;}
+		.d2-3896108889 .background-color-B6{background-color:#F7F8FE;}
+		.d2-3896108889 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-3896108889 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-3896108889 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-3896108889 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-3896108889 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-3896108889 .color-N1{color:#0A0F25;}
+		.d2-3896108889 .color-N2{color:#676C7E;}
+		.d2-3896108889 .color-N3{color:#9499AB;}
+		.d2-3896108889 .color-N4{color:#CFD2DD;}
+		.d2-3896108889 .color-N5{color:#DEE1EB;}
+		.d2-3896108889 .color-N6{color:#EEF1F8;}
+		.d2-3896108889 .color-N7{color:#FFFFFF;}
+		.d2-3896108889 .color-B1{color:#0D32B2;}
+		.d2-3896108889 .color-B2{color:#0D32B2;}
+		.d2-3896108889 .color-B3{color:#E3E9FD;}
+		.d2-3896108889 .color-B4{color:#E3E9FD;}
+		.d2-3896108889 .color-B5{color:#EDF0FD;}
+		.d2-3896108889 .color-B6{color:#F7F8FE;}
+		.d2-3896108889 .color-AA2{color:#4A6FF3;}
+		.d2-3896108889 .color-AA4{color:#EDF0FD;}
+		.d2-3896108889 .color-AA5{color:#F7F8FE;}
+		.d2-3896108889 .color-AB4{color:#EDF0FD;}
+		.d2-3896108889 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="bWVtYmVy actor"><g class="shape" ><rect x="40.000000" y="21.000000" width="105.000000" height="66.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="92.500000" y="59.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">member</text></g><g class="bGVhZ3VlIHBhZ2Vz"><g class="shape" ><rect x="548.000000" y="21.000000" width="137.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="616.500000" y="59.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">app/league/*</text></g><g class="bGVhZ3VlUm91dGVy"><g class="shape" ><rect x="1081.000000" y="0.000000" width="167.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1164.500000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">routers/league.ts</text></g><g class="bGVhZ3VlIHNlcnZpY2U= changed"><g class="shape" ><rect x="1685.000000" y="336.000000" width="145.000000" height="66.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="1757.500000" y="374.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">league service</text></g><g class="bGVhZ3VlIHJlcG9zaXRvcnk="><g class="shape" ><rect x="2179.000000" y="273.000000" width="200.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="2279.000000" y="311.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">repositories/league.ts</text></g><g class="UG9zdGdyZXM= store"><g class="shape" ><rect x="2603.000000" y="273.000000" width="106.000000" height="66.000000" stroke="#9775fa" fill="#e5dbff" style="stroke-width:2;" /></g><text x="2656.000000" y="311.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Postgres</text></g><g class="UGF5UGFs external"><g class="shape" ><rect x="2232.000000" y="399.000000" width="94.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="2279.000000" y="437.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">PayPal</text></g><g class="YWN0aXZlLWxlYWd1ZSBjb29raWU= store"><g class="shape" ><rect x="1069.000000" y="147.000000" width="191.000000" height="66.000000" stroke="#9775fa" fill="#e5dbff" style="stroke-width:2;" /></g><text x="1164.500000" y="185.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">active-league cookie</text></g><g class="UGF5UGFsIHdlYmhvb2s="><g class="shape" ><rect x="1083.000000" y="273.000000" width="162.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1164.000000" y="311.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">PayPal webhook</text></g><g class="Y3JvbiBzeW5j"><g class="shape" ><rect x="1108.000000" y="399.000000" width="113.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1164.500000" y="437.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">cron sync</text></g><g class="cGljayArIGRhc2hib2FyZCBzZXJ2aWNlcw=="><g class="shape" ><rect x="1051.000000" y="525.000000" width="226.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1164.000000" y="563.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">pick + dashboard services</text></g><g class="TGVhZ3VlU3dpdGNoZXI="><g class="shape" ><rect x="537.000000" y="167.000000" width="159.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="616.500000" y="205.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">LeagueSwitcher</text></g><g class="Y29tbWlzc2lvbmVyIHRvb2xz"><g class="shape" ><rect x="0.000000" y="293.000000" width="184.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="92.000000" y="331.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">commissioner tools</text></g><g class="cGljayByb3V0ZXI="><g class="shape" ><rect x="555.000000" y="293.000000" width="123.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="616.500000" y="331.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">pick router</text></g><g class="KG1lbWJlciAtJmd0OyBsZWFndWUgcGFnZXMpWzBd"><marker id="mk-d2-3896108889-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 147.500000 53.500000 C 317.500000 53.500000 398.100006 53.500000 544.500000 53.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /></g><g class="KGxlYWd1ZSBwYWdlcyAtJmd0OyBsZWFndWVSb3V0ZXIpWzBd"><path d="M 686.493731 47.841767 C 835.700012 36.000000 914.900024 33.000000 1076.500000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /><text x="882.000000" y="40.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">tRPC</text></g><g class="KGxlYWd1ZVJvdXRlciAtJmd0OyBsZWFndWUgc2VydmljZSlbMF0="><path d="M 1250.500000 33.000000 C 1434.500000 33.000000 1530.859985 93.500000 1727.759018 332.413211" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /></g><g class="KGxlYWd1ZSBzZXJ2aWNlIC0mZ3Q7IGxlYWd1ZSByZXBvc2l0b3J5KVswXQ=="><path d="M 1831.436986 350.001918 C 1969.500000 314.500000 2039.500000 305.500000 2175.500000 305.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /></g><g class="KGxlYWd1ZSByZXBvc2l0b3J5IC0mZ3Q7IFBvc3RncmVzKVswXQ=="><path d="M 2381.000000 305.500000 C 2468.600098 305.500000 2513.399902 305.500000 2599.000000 305.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /></g><g class="KGxlYWd1ZSBzZXJ2aWNlIC0mZ3Q7IFBheVBhbClbMF0="><path d="M 1831.436986 386.998082 C 1969.500000 422.500000 2050.100098 431.500000 2228.500000 431.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /><text x="2028.500000" y="435.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">checkout + capture</text></g><g class="KFBheVBhbCB3ZWJob29rIC0mZ3Q7IGxlYWd1ZSBzZXJ2aWNlKVswXQ=="><path d="M 1247.000000 305.500000 C 1433.800049 305.500000 1521.800049 314.700012 1681.097971 350.620131" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /><text x="1467.000000" y="314.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">handleWebhookPayment</text></g><g class="KGNyb24gc3luYyAtJmd0OyBsZWFndWUgc2VydmljZSlbMF0="><path d="M 1223.500000 431.500000 C 1429.099976 431.500000 1521.800049 422.299988 1681.097971 386.379869" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /><text x="1455.000000" y="434.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">cleanupAbandonedLeagues</text></g><g class="KHBpY2sgKyBkYXNoYm9hcmQgc2VydmljZXMgLSZndDsgbGVhZ3VlIHNlcnZpY2UpWzBd"><path d="M 1279.000000 557.500000 C 1440.199951 557.500000 1526.199951 526.299988 1703.708088 403.772293" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /><text x="1510.000000" y="538.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">resolveLeagueMemberId</text></g><g class="KExlYWd1ZVN3aXRjaGVyIC0mZ3Q7IGFjdGl2ZS1sZWFndWUgY29va2llKVswXQ=="><path d="M 697.500000 200.000000 C 837.900024 200.000000 912.500000 197.246994 1064.509922 186.520555" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /><text x="882.500000" y="204.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">server action</text></g><g class="KGxlYWd1ZSBwYWdlcyAtJmd0OyBhY3RpdmUtbGVhZ3VlIGNvb2tpZSlbMF0="><path d="M 686.443271 70.972966 C 835.700012 107.300003 912.500000 124.957001 1064.590873 157.941222" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /><text x="876.500000" y="122.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">SyncLeagueContext</text></g><g class="KGNvbW1pc3Npb25lciB0b29scyAtJmd0OyBwaWNrIHJvdXRlcilbMF0="><path d="M 185.500000 326.000000 C 325.100006 326.000000 399.500000 326.000000 551.500000 326.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3896108889-3488378134)" mask="url(#d2-3896108889)" /><text x="369.500000" y="332.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">commissioner picks</text></g><mask id="d2-3896108889" maskUnits="userSpaceOnUse" x="-25" y="-25" width="2759" height="641">
+<rect x="-25" y="-25" width="2759" height="641" fill="white"></rect>
+<rect x="864.000000" y="24.000000" width="36" height="21" fill="black"></rect>
+<rect x="1964.000000" y="419.000000" width="129" height="21" fill="black"></rect>
+<rect x="1382.000000" y="298.000000" width="170" height="21" fill="black"></rect>
+<rect x="1361.000000" y="418.000000" width="188" height="21" fill="black"></rect>
+<rect x="1427.000000" y="522.000000" width="166" height="21" fill="black"></rect>
+<rect x="838.000000" y="188.000000" width="89" height="21" fill="black"></rect>
+<rect x="809.000000" y="106.000000" width="135" height="21" fill="black"></rect>
+<rect x="303.000000" y="316.000000" width="133" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption"><code>league service</code> is the hub: fronted by the router, but also called directly by the payments webhook, the golf-data cron, and the game domain's services. The commissioner UI bypasses it entirely — those mutations belong to the pick router.</p><div class="callout"><span class="callout-icon" aria-hidden="true">&#9737;</span><span class="callout-text">Note the two side doors into the service: <code>handleWebhookPayment</code> (from <code>src/app/api/paypal/webhook/route.ts</code>) and <code>cleanupAbandonedLeagues</code> (from <code>src/server/services/cron-sync.ts</code>). Neither goes through tRPC.</span></div></section><section id="depth" class="section"><div class="section-header"><h2 class="section-title">In depth</h2></div><div class="subsection" id="c-service"><div class="subsection-header"><h3 class="subsection-title">league service <span class="subsection-path">src/server/{routers,services,repositories}/league.ts</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>routers/league.ts</code> is deliberately thin — 16 procedures that only zod-validate and delegate (league name 3–50 chars, <code>maxGolferUses</code> 1–3, everything else booleans and ids). All 16 are <code>protectedProcedure</code> except <code>league.preview</code>, which is public so an invite link can render a league preview to signed-out visitors.</p><p class="detail-p"><code>services/league.ts</code> holds the real rules. Creation inserts League + commissioner LeagueMember + LeagueMemberSeason atomically via <code>withTransaction</code> (shared helper <code>insertLeagueWithMember</code>). Joins are race-safe twice over: the 20-member cap (<code>MAX_LEAGUE_SIZE</code>) is re-counted <em>inside</em> the transaction to kill the TOCTOU window, and a concurrent double-join is caught by the <code>@@unique([userId, leagueId])</code> constraint then re-queried. The same catch-requery pattern makes <code>ensureGlobalLeagueMembership</code> idempotent — global-league membership is created lazily the first time any league-scoped call runs.</p><p class="detail-p">Member lifecycle: joining an open league → <code>ACTIVE</code>; with <code>requireApproval</code> on → <code>PENDING</code> (no season row until approved, so pending members never appear in standings). <code>approveMember</code> re-checks the cap, flips to <code>ACTIVE</code>, inserts the season row, and logs an <code>APPROVE_MEMBER</code> audit action. <code>rejectMember</code> hard-deletes the row — the code comments that no audit entry is possible because <code>CommissionerAction.targetMemberId</code> has an FK to the member being deleted. <code>removeMember</code> soft-removes (<code>REMOVED</code>) but scrubs the member's planned picks, season rows, and earnings adjustments; locked picks survive. Removed members can rejoin (back through approval if required).</p><p class="detail-p">Payment gating: privately created leagues are born <code>paymentStatus: PENDING</code> and inert — <code>assertLeagueActive</code> rejects picks and <code>joinLeague</code> rejects joins until PayPal capture (client <code>captureOrder</code> or webhook <code>handleWebhookPayment</code>) flips them to <code>PAID</code> via <code>confirmPayment</code>, which also redeems any deferred partial-discount promo. <code>cleanupAbandonedLeagues</code> deletes <code>PENDING</code> leagues older than 48h; the repo re-checks <code>paymentStatus</code> inside its delete transaction to avoid racing a late webhook.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1576 253"><svg class="d2-3407025129 d2-svg" width="1576" height="253" viewBox="-25 -24 1576 253"><rect x="-25.000000" y="-24.000000" width="1576.000000" height="253.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-3407025129 .text-bold {
+	font-family: "d2-3407025129-font-bold";
+}
+@font-face {
+	font-family: d2-3407025129-font-bold;
+	src: url("data:application/font-woff;base64,d09GRgABAAAAAA60AAoAAAAAFowAAguFAAAAAAAAAAAAAAAAAAAAAAAAAABPUy8yAAAA9AAAAGAAAABgXxHXrmNtYXAAAAFUAAAApQAAAOID3AVNZ2x5ZgAAAfwAAAgKAAAK7JkYKStoZWFkAAAKCAAAADYAAAA2G38e1GhoZWEAAApAAAAAJAAAACQKfwXlaG10eAAACmQAAACXAAAAmEtEBfpsb2NhAAAK/AAAAE4AAABONnw0Im1heHAAAAtMAAAAIAAAACAAPgD3bmFtZQAAC2wAAAMoAAAIKgjwVkFwb3N0AAAOlAAAAB0AAAAg/9EAMgADAioCvAAFAAACigJYAAAASwKKAlgAAAFeADIBKQAAAgsHAwMEAwICBGAAAvcAAAADAAAAAAAAAABBREJPACAAIP//Au7/BgAAA9gBESAAAZ8AAAAAAfAClAAAACAAA3icfM03SsAAAIXhLyb22HuPHsA7iIg4CCLi7iBBcRLBO9lmC1gu4e4d3J8QxNG3vOWDH4VSgVrlE41G1f2mLTt27Tlw6MixU61zl66TP7Hdif1fcaJ15sJVkq985yPvectrXvKcpzzmIfe5y21uuub/K2zoUar06tNvwKAhw2ojRo0ZN2HSlGkzZs2Zt2DRkmUrVq1prPMDAAD//wEAAP//9xorEQAAAHichFZ9bBPnGX/e15e7xjhxzufz2Ykdf7zxnZ0PJ/Hl7DRx4oQ4HwTb+RIhlHzQCLGWQEjBjLTLxqRBtbVmtJhSGNW0Tav2ofIHQpNYNfpX164qkybB1r9KmVQxqUjDq6Jp0OQ83dkJAU3aH/FJr3K/53l+H8+9UAajAHgenwcDlIMZLMADyKyX9cuSRJioHI0SwRCVEMuMYov67i+lIBUMUvWei+5X5uZQahafXz+0NzU//++5zk71p79/Xz2Djr0PgAuPAHAfzkI5sAAcI0uiKBGaNnAyRyTC3Kt63VxRU0GZHI9uXr35TuDjABqOxVoX5bbD6mmcXc9cvgwAgCBUWMUt+CLUAJT5RFFpi0TksE1gRJH4aJq32uRwJCrQaGb8tYldZ8bj+71pR5Q07miYHArE7elxU/Ktw4cujcm+WcEVnt2+f6nOMb0PMKQAcBJnwVicWA7bbLyVpokkhyMRpU0UCUld339ubPTsviZn+0QoNNHuxNnE2aWlc4MnAtPp9B6/3l8KAD3AWdim88Z7eZknvJdPoYvqN3fuIDPOrvzgOxdWNmdJ4Ivg/l+zlEZRiCKzNI0O73lz1+43dg8e8KQc7fXJfdN7raLp0D99L5UGavPO2mqX5vcvGY1Ly+ptb6jYC9zFWTDoE7GpnEZk8RxfwVmtrszKnM0myJFIlJNZorUQJQxDJInUYp5P/fxFo8VIGVnjt372KlNuoJSZsZk2inqGwVn1jrO7trbbiXzrmQeekVH35YcPL7tHRzwPSjzofHLFGoIsioois8QgEZuN51Nv/7aHoiqz2qOsAmfVP7zR9v2Oe+sZ1P/jyErHPwAA6/x8D18E81Nq68pIYU2WIlFocur0zp2np4q/fel0X186bRq/dHDhrZGRCwcPXho/mZmfX1ycn89ASesWnAUTWJ/QmvCsHNZASeru0PGBgUz/2NByTyyBs9L0SHK++XM0/oJcD7CBMYGzUAnCFgxGM7OGEinC3O8/mogr59/97liyo6urI4mz/qn00IygfnP/PtrX2tIialw5ADCHs8BoSETx8oS9eQ09uoarVlbW87rvCw8BsIyzUAEgG7ZoZvjgj++kzYKZqrRXpi58iLPqX5QDkcgBBbWsZwBDfWEV3UZr4AACIPg0CqO6vxhJ55JniZbDqGY1PT8fJEZP5TAJunvqlOaFjrkDy0bKPfiMw8+lY27T7nh6yuyV7PzzrrrFo+qXspMcFbjdxgaXXdB56S2sYhu+AdaSqyXCEFbmmaeEIz6Gt9lQv7fPRZmO5ShXwhebao7NTYmRycagNWDyehR8471ktav7peSul+PLA8lXmz61VOq5qSusohtoDaqfzs3j2Ag0jRz9R3qHvp0IDTr7iUeJx1vsIa7DP2nqOj4+kemqFeZcyd6eFG/e56kpaioVVtEavgEceDa40oElzbibLG2k8+vpI51zbcF2B51bNlLVA9guWbgGK4k0m15/eex4t9Oe/M16X2s1WbY6PrVU9g3u6Aes9/53tAb2p1Kvu8drs8lhrXeDrFsbuQePbu871Dk400xh9TPjQKsSaRVnf3JNavRFTN2Z8bFMPL6Q4PzlEdm7p7oWdQSVZm0WA/gKTZhBa9AMnTCsTyMqbVrzmgGUjbKCzJOS+X2Szp1mCStNG7akiyu52Sfq//J1x2z7IFfjsVcHO2aVRu/vRpjytqmoy23xBUenn0+sDLskyeWSpGC4R/LLDq+pputWdXtjLEBVBNw14SrKkmiIjQRMC9t81meH64xmG2fp7JPHQuiT+qAUDASC9WquziFUGQx2h9MFAIUCRAHgc3wLi5qPgYE6eE07L/y5EIMv9HN/6Tyre6S3sIos+AaYi0qyMrtpjD8lO3NseRlDW0x+096dmKx/JlgQOlzGaO8BGFxoDbx6qrWQaQ7YiAqrccJsPnu1bAy0Kr2cd7h1dGfO5fG3aD/NKN/jbmoI+FoXZtSbyBsJtKhXS49iDQxorbR9SjU20OkirCcVHtuRc3mcATvKx2ubNoAcgnoVij7S9f3/u9EWP5JIHInHFxOJxXhTKNQUamoqZaArMzF+vOtEqqc3qUWhmN8hbENrwEEtgPC4O90ioiTw3OP4an26dkjPvRCbi3hi1WUjYmSyod4auI5/3VpNfnRs13K8xjHyJqrbDK+WsSG0puN7AMqUqA67ETQ5KrOGrRlDL9KO7b5i0Lq1TfHlZsiuv520u/WguTyt61Oo7nHKoMgxOovWwPKEjsVPa5HhmqTIO432CkeVs8uK8rvDrWVlJykqGFbvAgK2sIoWcUbb7mU+UVGIEo3K+sf88YKB6ZFEkn3lxAniMjmMAhc1HZz85DB96tSxj+v9NLVAm4p3llhhFf0H5TW9n/AiW1orfxvbkav1OEVbbnmbwT1sWphBbeoXSrDahYbUqn5/IyAwaR8BlC/tf6G0/6Oy4dqvzvcYOSNVzhl7z/wC5b/ypyQp5f9KrdJr2wFwHuV1P299bwsCKd3FGOb8yrkW2khTTEV59GR7uZmhmHKm+Ycn3mtiKhiK2cY0ovw9/5AoDpN7+nPIf0+t+ogMBAID5CO9XldhFR7AFe3+U9ygRfNcEGVZFGXZpEgBRQlISkkjuI3yG/eT3hzKq1WAClfwszCBb2kY7BYMfyjk94dC+Nl6Quq1P40SLf9/RXmo0utJUW2DRnSKabrOHTRXGzmjS8h5Uh8+Qx8yUFIQ/UvlIs9F4b8AAAD//wEAAP//qaNYXAAAAAEAAAACC4VMELMdXw889QABA+gAAAAA2F2ghAAAAADdZi82/jf+xAhtA/EAAQADAAIAAAAAAAAAAQAAA9j+7wAACJj+N/43CG0AAQAAAAAAAAAAAAAAAAAAACZ4nBzLMarCQBSG0e/+gccDBRFC0MZCAoLGtFpkimnsLljYuABXIegO7N2DNq7CxsrVmGYk9ufowZYnKKRWG2odcZW4TtS2xNXiuuK6UWuH64CrYqwqfTRgrkC0N6UCM/1RqmBqOSsr0ssmxGxPVEPU4mdi5+xCtDNDrWnUo5/9M7KKYDkR0r27XwAAAP//AQAA//+zFRt1AAAAACwALABQAHwAoAC2AOYA8gEkAUYBcgGUAboBzAHoAiACUgJ+ArAC5ANMA1gDZAOAA7ID1AQABDAEZASEBKoEzAToBSAFNgVCBVgFdgAAAAEAAAAmAJAADABjAAcAAQAAAAAAAAAAAAAAAAAEAAN4nJyUz24bVRTGf05s0wrBAkVVuonugkWR6NhUSdU2K4fUikUUB48LQkJIE8/4jzKeGXkmDuEJWPMWvEVXPATPgVij+Xzs2AXRJoqSfHfu+fOdc75zgR3+ZptK9SHwRz0xXGGvfm54iwf1E8PbtOtbhqs8qf1puEZYmxuu83mtZ/gj3lZ/M/yA/epPhh+yW20b/phn1R3Dn2w7/jL8Kfu8XeAKvOBXwxV2yQxvscOPhrd5hMWsVHlE03CNz9gzXGcP6DOhIGZCwgjHkAkjrpgRkeMTMWPCkIgQR4cWMYW+JgRCjtF/fg3wKZgRKOKYAkeMT0xAztgi/iKvlHNlHOo0s7sWBWMCLuRxSUCCI2VESkLEpeIUFGS8okGDnIH4ZhTkeORMiPFImTGiQZc2p/QZMyHH0VakkplPypCCawLld2ZRdmZAREJurK5ICMXTiV8k7w6nOLpksl2PfLoR4Usc38m75JbK9is8/bo1Zpt5l2wC5upnrK7EurnWBMe6LfO2+Fa44BXuXv3ZZPL+HoX6XyjyBVeaf6hJJWKS4NwuLXwpyHePcRzp3MFXR76nQ58Turyhr3OLHj1anNGnw2v5dunh+JouZxzLoyO8uGtLMWf8gOMbOrIpY0fWn8XEIn4mM3Xn4jhTHVMy9bxk7qnWSBXefcLlDqUb6sjlM9AelZZO80u0ZwEjU0UmhlP1cqmN3PoXmiKmqqWc7e19uQ1z273lFt+QaodLtS44lZNbMHrfVL13NHOtH4+AkJQLWQxImdKg4Ea8zwm4IsZxrO6daEsKWiufMs+NVBIxFYMOieLMyPQ3MN34xn2woXtnb0ko/5Lp5aqq+2Rx6tXtjN6oe8s737ocrU2gYVNN19Q0ENfEtB9pp9b5+/LN9bqlPOWIlJjwXy/AMzya7HPAIWNlGOhmbq9DUy9Ek5ccqvpLIlkNpefIIhzg8ZwDDnjJ83f6uGTijItbcVnP3eKYI7ocflAVC/suR7xeffv/rL+LaVO1OJ6uTi/uPcUnd1DrF9qz2/eyp4mVk5hbtNutOCNgWnJxu+s1ucd4/wAAAP//AQAA///0t09ReJxiYGYAg//nGIwYsAAAAAAA//8BAAD//y8BAgMAAAA=");
+}
+.d2-3407025129 .text-italic {
+	font-family: "d2-3407025129-font-italic";
+}
+@font-face {
+	font-family: d2-3407025129-font-italic;
+	src: url("data:application/font-woff;base64,d09GRgABAAAAAA68AAoAAAAAF0QAARhRAAAAAAAAAAAAAAAAAAAAAAAAAABPUy8yAAAA9AAAAGAAAABgW1SVeGNtYXAAAAFUAAAApQAAAOID3AVNZ2x5ZgAAAfwAAAgRAAALnChId6BoZWFkAAAKEAAAADYAAAA2G7Ur2mhoZWEAAApIAAAAJAAAACQLeAjKaG10eAAACmwAAACVAAAAmETzBF9sb2NhAAALBAAAAE4AAABOOYY27m1heHAAAAtUAAAAIAAAACAAPgD2bmFtZQAAC3QAAAMmAAAIMgntVzNwb3N0AAAOnAAAACAAAAAg/8YAMgADAeEBkAAFAAACigJY//EASwKKAlgARAFeADIBIwAAAgsFAwMEAwkCBCAAAHcAAAADAAAAAAAAAABBREJPAAEAIP//Au7/BgAAA9gBESAAAZMAAAAAAeYClAAAACAAA3icfM03SsAAAIXhLyb22HuPHsA7iIg4CCLi7iBBcRLBO9lmC1gu4e4d3J8QxNG3vOWDH4VSgVrlE41G1f2mLTt27Tlw6MixU61zl66TP7Hdif1fcaJ15sJVkq985yPvectrXvKcpzzmIfe5y21uuub/K2zoUar06tNvwKAhw2ojRo0ZN2HSlGkzZs2Zt2DRkmUrVq1prPMDAAD//wEAAP//9xorEQAAAHicfFZtTFvX/f6dcy/3BmIM5trX2AGMfa6viTEGfPG9GLANGIzBNoQEKP+El5CGNPDPC0tKXpZEacLUpZXSORXqtClaJu1Fq/ItaT9UmlJNnbRoHdU+tFOrrR+2dLRKJrVDKOsqcT3dawMm1fbl6OjY9/fy/J7nOQeKQADAp/AyUFAMZVABFgCJc1KUpCjESkkeD2FZxcNxrHAdPbz+Yzp28O91P/23z0H3XXsz+Y/Dd/Hyxgn00uTVq+qhG7Ozzz15onrRn54AAODs+wDoI5yBYjABcKzkEUUPYRiEJI54CPuo7b0SuoSm7ZL6B3T0YGq44os5dHFhoWW+NfSCOowzGwsrKwAIQtl13IBvgwOgyCWKwZYIlgK8lRVF4jJii5nnpYCsWBkGuZLH5aaDV1Ktw5UyJ4tt092Ca6C9LlZLhElD7MJgevl8n+LdW+sJH73Q0T4ZrN0TcDRotQIBwLJeK6chIAV4i5lhiEcKyHKwRSSELH33lZujd06PjY1ejr3wvIwz3794/q3ZzpE3ZibntH6RHqMcZ2C3jiHrZCWWsE6WLKH5UvWR95/GLyUkGnGm66Pup935vtrxbXDpff2XthSiSBTDIN+5K02Hrg23D9sUTqmLHOkVSCoqhDj3jdIPQsKU4daFweXz8a3m2qbkyvK3O9XPatybtcE6zgCld0eRpcElDeCtun+NM2DTf+OskqL9g5NlhbAUobSZsRRZmgzxdPy9yaVkqthuoId+4wvzNGPcNYAz6k9u3EBHNhbQGd98/evqz9HE6745n/paPvYxnMmjylklWdajb0UdfMNLM8aS3uRSermeZspK4jijTrzSfFJCExsL6Gc3pfmAekefUUd2HU/h21AOtYWI8RazEXsCEazNKYcccpxa9I8txgdmW/xjL8aCz0VcA4Pa2m/44eVkZrG359KB5K3F3ljHkcXQzGL7kcW2w+e2eNCgz9BcyANCcVJgkwjvTJwZuDYy19I1PTufSszizMDYvhea1a9R376hkARbcTw4A6XAb8dhOULtiPTWxHdOHTh74MQZpef5qaPJxGGciR84dMqkPkK8+hiN7o/LjTluTQLgIM4Aq0UjipMl1C8XH5Si90vfXcTpWGzjfu5/+wFwl54XJErieD6POLrZPrSnaBdF24L2t0fUN3FGXQ6elIOnW9AJnQaAwZNdR1+jNTBr1Vu3GSkpEkUUwjAejY9b9LzfmfINTEmesInmIjPRXTQZrxCHBJ8lUCXEgo5mw6HR+MUJqc4ZVu0Jd2Onv/ET0eXtnwxEw7l8juw6+go/BIvmQlaX6CEs4SSWlWRZx6tgqgzL8vxjT9hEmaOvpT08FkYa9PRBIRasadrrGiZ+s2Soc4bxwweHq+sPjmmpO739k1Ik7HV/LroAgTu7ju6hNaja0Z2uN4axmDdd5OOho770TNDXwTdwYnXTmBxqq5V5lz1tODbZc3a00WVrslp6FmLdcbspYHZvYYc9Bb1sY/e/wWuroMrFdCaP3qD7WfQ8tdMPNlqfhQ/rvbyL1sAO7sJ8OsuczJYjUpJuX1qHn43NNSQnmpSuGkOR+tvi2pi3OmStqR7+URZTFXtJcMowP9O7sN/n3xeokozRfW6bSbI4kHt3ZWlVs2MUMKCsgNbQGjjAn5uXkrcohiE72cIw1I5u7zaPEaGqty4yYLSJI43hffX9E81ixERx0WPc2RAZdtXzzVWkS6pp/ItYHbS6Up3HRd/YaOzF/wto/KGmjyFnvfePomtvfLypvR0AslntPoBv8D0s6u7GgJDQz7Pfy3rgX/q5O3fem9OGL7sO3+CHUKFVH2zRfEibex6qk13MpfQVhEwUw6IS3hA12fD/b9xii6kKhNtpOhfDAYAfozXw6qrOU9WaJ6xmaJwGuEbYwq1jJsrS4gGxrbmocdwdlmk6kg7TdJ8l4etNddB0nE/U96LVfqFZqfNJXa2mGrP6e+QzV5YmvX71V9u7zRrQx2gNKgtrsJi/nXHvfn8kuCuiZUhUJfy5DF2tDqEw+Lb2/4zWoAyqC/mUE2HuCsyJ5MOhKd/AVGBo2pec8jYMS3JAWwzHD/WeHfXn1s7uhZ7uvthCT3dcfwc8zUroK7SW0wZbULERE131LLdD5yWvRhnKPerXJRIQOzhc4fhFoc5X8P1OR0NeII7jdxDKC138wu3c7EfSvUzPWaRoAnyGozsZipzOGuwe9xd62qt3CgW5cue82LhlaRtphHYaWm4ul9EalBfMxcqKm/PYTVenGmyWPeV2IeUIo9VJX7i4Z1e0XV0BpN1taByf2PImWeFIFEvaE4Iq8KZ3OltoFOrbnRK69lwyXAlRVS6jfbepvNEQbSizl6KKUNHLL0fUxxUVNTUlRQpbptXVml1HX6JV7X7fjL3NfC5vT3e3WJmo7vP1pjRDrxsxdCsmB4dk9UPOptEFjav2ASLltNAOgP6KVr9911zvSwk0Q9MmgftBWt1Aq+rnJEmEfgHZVHvu2zgA/h1aBecz327vKELl3ossNUdS5QghumxP+UtJE8aINtrLryY+nTbqp9Vl59Cq+jdXj8vV40I1BTs7KiEJQUgQ9SkgsGbX4Qac0N5nORxyoo3zNk8VX+k2VPF2XzVv8+VnCStodfO95JhJH0GrevEI+nAS7uF7WhyuIM4FroZYzdUEJ628zVnJ22oB6V70AVqFMgB22zF1/JutxGQrMZdXOUtOp08bY5+UFIcYtrkeCxufxsf+AwAA//8BAAD//463bdIAAAAAAQAAAAEYUTd2cPVfDzz1AAED6AAAAADYXaDMAAAAAN1mLzf+vf7dCB0DyQACAAMAAgAAAAAAAAABAAAD2P7vAAAIQP69/bwIHQPoAML/0QAAAAAAAAAAAAAAJnicHMsxzsFgHMfx7//X+U3exFCmZ/hrO3AAja5YDGKwOYHVYncjFyAWiVM4ABEDBukjdYCP1nQ5gdXxrJxSM9xeuKaUfHAdcK1wbaiU4+rhVrO0O3N1KNQm2I5MKYVdyNTCuBK4xS1v+kkg6I+ghEJpfDbGFgQbUemfge0Z6siYB+nPwaSxXwAAAP//AQAA//9E6x99AAAAAAAALgAuAFIAhACmAL4A9AECATABVgGIAawB1AHoAgYCPgJ2AqQC3AMWA14DagN2A5gD2gQEBDIEbASmBMQE8gUeBTwFdgWMBZoFsAXOAAAAAQAAACYAjAAMAGYABwABAAAAAAAAAAAAAAAAAAQAA3icnJTbThtXFIY/B9tterqoUERu0L5MpWRMoxAl4cqUoIyKcOpxepCqSoM9PojxzMgzmJIn6HXfom+Rqz5Gn6LqdbV/L4MdRUEgBPx79jr8a61/bWCT/9igVr8L/N2cG66x3fzZ8B2+aB4Z3mC/+ZnhOg8b/xhuMGi8NdzkQaNr+BPe1f80/ClP6r8ZvstW/dDw5zyubxr+csPxr+GveMK7Ba7BM/4wXGOLwvAdNvnV8Ab3sJi1OvfYMdzga7YNN9kGekyoSJmQMcIxZMKIM2YklEQkzJgwJGGAI6RNSqWvGbGQY/TBrzERFTNiRRxT4UiJSIkpGVvEt/LKea2MQ51mdtemYkzMiTxOiclw5IzIyUg4VZyKioIXtGhR0hffgoqSgJIJKQE5M0a06HDIET3GTChxHCqSZxaRM6TinFj5nVn4zvRJyCiN1RkZA/F04pfIO+QIR4dCtquRj9YiPMTxo7w9t1y23xLo160wW8+7ZBMzVz9TdSXVzbkmONatz9vmB+GKF7hb9WedyfU9Guh/pcgnnGn+A00qE5MM57ZoE0lBkbuPY1/nkEgd+YmQHq/o8Iaezm26dGlzTI+Ql/Lt0MXxHR2OOZBHKLy4O5RijvkFx/eEsvGxE+vPYmIJv1OYuktxnKmOKYV67pkHqjVRhTefsN+hfE0dpXz62iNv6TS/THsWMzJVFGI4VS+X2iitfwNTxFS1+Nle3fttmNvuLbf4glw77NW64OQnt2B03VSD9zRzrp+AmAE5J7LokzOlRcWFeL8m5owUx4G690pbUtG+9PF5LqSShKkYhGSKM6PQ39h0Exn3/prunb0lA/l7pqeXVd0mi1Ovrmb0Rt1b3kXW5WRlAi2bar6ipr64Zqb9RDu1yj+Sb6nXLecRoeIudvtDr8AOz9llj7Gy9HUzv7zzr4S32FMHTklkNZSmfQ2PCdgl4Cm77PKcp+/1csnGGR+3xmc1f5sD9umwd201C9sO+7xci/bxzH+J7Y7qcTy6PD279TQf3EC132jfrt7NribnpzG3aFfbcUzM1HNxW6s1ufsE/wMAAP//AQAA//9yoVFAAAAAAwAA//UAAP/OADIAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-3407025129 .fill-N1{fill:#0A0F25;}
+		.d2-3407025129 .fill-N2{fill:#676C7E;}
+		.d2-3407025129 .fill-N3{fill:#9499AB;}
+		.d2-3407025129 .fill-N4{fill:#CFD2DD;}
+		.d2-3407025129 .fill-N5{fill:#DEE1EB;}
+		.d2-3407025129 .fill-N6{fill:#EEF1F8;}
+		.d2-3407025129 .fill-N7{fill:#FFFFFF;}
+		.d2-3407025129 .fill-B1{fill:#0D32B2;}
+		.d2-3407025129 .fill-B2{fill:#0D32B2;}
+		.d2-3407025129 .fill-B3{fill:#E3E9FD;}
+		.d2-3407025129 .fill-B4{fill:#E3E9FD;}
+		.d2-3407025129 .fill-B5{fill:#EDF0FD;}
+		.d2-3407025129 .fill-B6{fill:#F7F8FE;}
+		.d2-3407025129 .fill-AA2{fill:#4A6FF3;}
+		.d2-3407025129 .fill-AA4{fill:#EDF0FD;}
+		.d2-3407025129 .fill-AA5{fill:#F7F8FE;}
+		.d2-3407025129 .fill-AB4{fill:#EDF0FD;}
+		.d2-3407025129 .fill-AB5{fill:#F7F8FE;}
+		.d2-3407025129 .stroke-N1{stroke:#0A0F25;}
+		.d2-3407025129 .stroke-N2{stroke:#676C7E;}
+		.d2-3407025129 .stroke-N3{stroke:#9499AB;}
+		.d2-3407025129 .stroke-N4{stroke:#CFD2DD;}
+		.d2-3407025129 .stroke-N5{stroke:#DEE1EB;}
+		.d2-3407025129 .stroke-N6{stroke:#EEF1F8;}
+		.d2-3407025129 .stroke-N7{stroke:#FFFFFF;}
+		.d2-3407025129 .stroke-B1{stroke:#0D32B2;}
+		.d2-3407025129 .stroke-B2{stroke:#0D32B2;}
+		.d2-3407025129 .stroke-B3{stroke:#E3E9FD;}
+		.d2-3407025129 .stroke-B4{stroke:#E3E9FD;}
+		.d2-3407025129 .stroke-B5{stroke:#EDF0FD;}
+		.d2-3407025129 .stroke-B6{stroke:#F7F8FE;}
+		.d2-3407025129 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-3407025129 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-3407025129 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-3407025129 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-3407025129 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-3407025129 .background-color-N1{background-color:#0A0F25;}
+		.d2-3407025129 .background-color-N2{background-color:#676C7E;}
+		.d2-3407025129 .background-color-N3{background-color:#9499AB;}
+		.d2-3407025129 .background-color-N4{background-color:#CFD2DD;}
+		.d2-3407025129 .background-color-N5{background-color:#DEE1EB;}
+		.d2-3407025129 .background-color-N6{background-color:#EEF1F8;}
+		.d2-3407025129 .background-color-N7{background-color:#FFFFFF;}
+		.d2-3407025129 .background-color-B1{background-color:#0D32B2;}
+		.d2-3407025129 .background-color-B2{background-color:#0D32B2;}
+		.d2-3407025129 .background-color-B3{background-color:#E3E9FD;}
+		.d2-3407025129 .background-color-B4{background-color:#E3E9FD;}
+		.d2-3407025129 .background-color-B5{background-color:#EDF0FD;}
+		.d2-3407025129 .background-color-B6{background-color:#F7F8FE;}
+		.d2-3407025129 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-3407025129 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-3407025129 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-3407025129 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-3407025129 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-3407025129 .color-N1{color:#0A0F25;}
+		.d2-3407025129 .color-N2{color:#676C7E;}
+		.d2-3407025129 .color-N3{color:#9499AB;}
+		.d2-3407025129 .color-N4{color:#CFD2DD;}
+		.d2-3407025129 .color-N5{color:#DEE1EB;}
+		.d2-3407025129 .color-N6{color:#EEF1F8;}
+		.d2-3407025129 .color-N7{color:#FFFFFF;}
+		.d2-3407025129 .color-B1{color:#0D32B2;}
+		.d2-3407025129 .color-B2{color:#0D32B2;}
+		.d2-3407025129 .color-B3{color:#E3E9FD;}
+		.d2-3407025129 .color-B4{color:#E3E9FD;}
+		.d2-3407025129 .color-B5{color:#EDF0FD;}
+		.d2-3407025129 .color-B6{color:#F7F8FE;}
+		.d2-3407025129 .color-AA2{color:#4A6FF3;}
+		.d2-3407025129 .color-AA4{color:#EDF0FD;}
+		.d2-3407025129 .color-AA5{color:#F7F8FE;}
+		.d2-3407025129 .color-AB4{color:#EDF0FD;}
+		.d2-3407025129 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="am9pbg=="><g class="shape" ><rect x="0.000000" y="34.000000" width="73.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="36.500000" y="72.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">join</text></g><g class="QUNUSVZF"><g class="shape" ><rect x="314.000000" y="101.000000" width="96.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="362.000000" y="139.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">ACTIVE</text></g><g class="UEVORElORw=="><g class="shape" ><rect x="1067.000000" y="70.000000" width="109.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1121.500000" y="108.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">PENDING</text></g><g class="ZGVsZXRlZA=="><g class="shape" ><rect x="1427.000000" y="70.000000" width="99.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1476.500000" y="108.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">deleted</text></g><g class="UkVNT1ZFRA=="><g class="shape" ><rect x="675.000000" y="70.000000" width="114.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="732.000000" y="108.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">REMOVED</text></g><g class="KGpvaW4gLSZndDsgQUNUSVZFKVswXQ=="><marker id="mk-d2-3407025129-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 74.342984 83.276795 C 169.300003 123.300003 217.699997 133.500000 310.500000 133.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3407025129-3488378134)" mask="url(#d2-3407025129)" /><text x="189.000000" y="133.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">open league</text></g><g class="KGpvaW4gLSZndDsgUEVORElORylbMF0="><path d="M 74.384539 52.830288 C 169.300003 19.100000 227.199997 10.500000 277.750000 10.500000 C 328.299988 10.500000 398.100006 10.500000 452.250000 10.500000 C 506.399994 10.500000 580.400024 10.500000 637.250000 10.500000 C 694.099976 10.500000 955.799988 23.700001 1063.386638 74.784303" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3407025129-3488378134)" mask="url(#d2-3407025129)" /><text x="573.000000" y="16.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">requireApproval</text></g><g class="KFBFTkRJTkcgLSZndDsgQUNUSVZFKVswXQ=="><path d="M 1065.193319 130.357848 C 955.799988 182.300003 888.799988 195.500000 830.000000 195.500000 C 771.200012 195.500000 515.900024 186.300003 413.280282 150.807466" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3407025129-3488378134)" mask="url(#d2-3407025129)" /><text x="742.000000" y="200.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">approveMember</text></g><g class="KFBFTkRJTkcgLSZndDsgZGVsZXRlZClbMF0="><path d="M 1177.500000 103.000000 C 1276.300049 103.000000 1326.699951 103.000000 1423.500000 103.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3407025129-3488378134)" mask="url(#d2-3407025129)" /><text x="1302.000000" y="109.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">rejectMember</text></g><g class="KEFDVElWRSAtJmd0OyBSRU1PVkVEKVswXQ=="><path d="M 411.394499 116.859004 C 515.900024 81.500000 569.099976 76.699997 671.548948 92.876150" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3407025129-3488378134)" mask="url(#d2-3407025129)" /><text x="540.500000" y="85.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">removeMember</text></g><g class="KFJFTU9WRUQgLSZndDsgQUNUSVZFKVswXQ=="><path d="M 673.524474 112.811925 C 569.099976 129.300003 515.900024 133.500000 413.500000 133.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3407025129-3488378134)" mask="url(#d2-3407025129)" /><text x="543.000000" y="137.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">rejoin open</text></g><g class="KFJFTU9WRUQgLSZndDsgUEVORElORylbMF0="><path d="M 791.000000 103.000000 C 900.200012 103.000000 955.799988 103.000000 1063.000000 103.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3407025129-3488378134)" mask="url(#d2-3407025129)" /><text x="928.500000" y="109.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">rejoin w. approval</text></g><mask id="d2-3407025129" maskUnits="userSpaceOnUse" x="-25" y="-24" width="1576" height="253">
+<rect x="-25" y="-24" width="1576" height="253" fill="white"></rect>
+<rect x="146.000000" y="117.000000" width="86" height="21" fill="black"></rect>
+<rect x="518.000000" y="0.000000" width="110" height="21" fill="black"></rect>
+<rect x="685.000000" y="184.000000" width="114" height="21" fill="black"></rect>
+<rect x="1254.000000" y="93.000000" width="96" height="21" fill="black"></rect>
+<rect x="486.000000" y="69.000000" width="109" height="21" fill="black"></rect>
+<rect x="504.000000" y="121.000000" width="78" height="21" fill="black"></rect>
+<rect x="867.000000" y="93.000000" width="123" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption"><code>LeagueMemberStatus</code> transitions in <code>services/league.ts</code>. Only <code>ACTIVE</code> members get a <code>LeagueMemberSeason</code> row — which is why pending members are invisible to standings.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/routers/league.ts</span><span class="owns-desc">16 thin tRPC procedures — zod input validation, then one service call each. <code>preview</code> is the lone <code>publicProcedure</code>.</span></div><div class="owns-row"><span class="owns-name">server/services/league.ts</span><span class="owns-desc">All business logic: create/join/approve/remove, payment gating + PayPal orchestration, promo validation, audit-log assembly, cleanup. The only file other domains import guards from.</span></div><div class="owns-row"><span class="owns-name">server/repositories/league.ts</span><span class="owns-desc">Every league/member/audit query (Kysely). Functions take an optional <code>executor</code> so the service can pass a transaction. Also hosts cross-table cleanup deletes (<code>deletePlannedPicks</code>, <code>deleteEarningsAdjustments</code>) used by <code>removeMember</code>.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">leagueRouter</span><span class="owns-desc">Mounted as <code>league.*</code> in <code>_app.ts</code>; the domain's entire tRPC surface.</span></div><div class="owns-row"><span class="owns-name">resolveLeagueMemberId</span><span class="owns-desc">userId + leagueId → active <code>leagueMemberId</code>, or throws. The cross-domain authz primitive (imported by pick + dashboard services).</span></div><div class="owns-row"><span class="owns-name">assertLeagueActive</span><span class="owns-desc">Rejects any mutation against a <code>PENDING</code> (unpaid) league; global league always passes.</span></div><div class="owns-row"><span class="owns-name">ensureGlobalLeagueMembership</span><span class="owns-desc">Lazy, idempotent, race-safe auto-enrollment in <code>ppgl-global</code>.</span></div><div class="owns-row"><span class="owns-name">joinLeague</span><span class="owns-desc">Invite-code join with size cap, approval flow, and removed-member reactivation.</span></div><div class="owns-row"><span class="owns-name">getAuditLog</span><span class="owns-desc">Reads <code>CommissionerAction</code> rows, parses the <code>details</code> JSON, and batch-resolves golfer/tournament names via golf-data repos.</span></div><div class="owns-row"><span class="owns-name">handleWebhookPayment</span><span class="owns-desc">Verifies the PayPal webhook signature then confirms payment — the server-to-server path when the client capture never lands.</span></div><div class="owns-row"><span class="owns-name">cleanupAbandonedLeagues</span><span class="owns-desc">Deletes 48h-old unpaid leagues; invoked from golf-data's <code>cron-sync.ts</code>.</span></div><div class="owns-row"><span class="owns-name">createCommissionerAction</span><span class="owns-desc">(repo) Audit-log insert — also called by game's pick service and admin's service when they act on members.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">guards</span><span class="conn-body"><a href="../domain-game/domain-game.html">game</a> — <code>services/pick.ts</code> and <code>services/dashboard.ts</code> import <code>resolveLeagueMemberId</code> / <code>assertLeagueActive</code>; the pick service also reads <code>getMaxGolferUses</code> and writes audit rows via <code>createCommissionerAction</code>.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><a href="../domain-payments/domain-payments.html">payments</a> — <code>paypalProvider</code> (<code>lib/paypal.ts</code>) for checkout/capture/webhook-verify, <code>LEAGUE_CREATION_PRICE</code> (<code>lib/payment.ts</code>), and <code>repositories/promo-code.ts</code> for promo lookup; redemption (<code>redeemPromoCode</code>) lives in this domain's repo.</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><a href="../domain-golf-data/domain-golf-data.html">golf-data</a> — <code>golferRepo.findNamesByIds</code> / <code>tournamentRepo.findNamesByIds</code> to humanize audit entries, and <code>getCurrentSeason</code> (<code>lib/season.ts</code>) for season rows.</span></div><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><a href="../domain-scoring/domain-scoring.html">scoring</a> and <a href="../domain-admin/domain-admin.html">admin</a> — leaderboard/earnings-adjustment services verify membership via <code>leagueRepo</code> lookups; admin lists a user's commissioned leagues.</span></div><div class="conn"><span class="conn-dir">invoked by</span><span class="conn-body"><code>src/app/api/paypal/webhook/route.ts</code> (<a href="../domain-payments/domain-payments.html">payments</a>) calls <code>handleWebhookPayment</code>; <code>src/server/services/cron-sync.ts</code> (<a href="../domain-golf-data/domain-golf-data.html">golf-data</a>) calls <code>cleanupAbandonedLeagues</code>.</span></div></div></div><div class="subsection" id="c-create"><div class="subsection-header"><h3 class="subsection-title">create &amp; checkout <span class="subsection-path">src/app/league/{create,created}</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>CreateLeagueForm</code> is a single client component handling three payment paths. No promo: <code>league.create</code> makes a <code>PENDING</code> league, then <code>league.createCheckoutSession</code> fetches a PayPal order id and the form swaps to an embedded <code>PayPalButtons</code> checkout (<code>@paypal/react-paypal-js</code>); on approval it calls <code>league.captureOrder</code> and routes to <code>/league/created</code>. Free promo: <code>league.createWithPromo</code> redeems the code inside the creation transaction and the league is born <code>PAID</code> — straight to the success page. Partial-discount promo: league is <code>PENDING</code> with <code>promoCodeId</code> set, checkout runs at the discounted price, and redemption is deferred to payment confirmation.</p><p class="detail-p">The form also collects the rule settings that the rest of the game reads back later: format (<code>maxGolferUses</code> — "One and Done" vs "Double Use"), <code>burnStalePicks</code>, <code>showPicksBeforeLock</code>, and <code>requireApproval</code>. <code>/league/created</code> reads <code>?id=&amp;code=</code> and shows the copyable invite URL (<code>/league/join?code=…</code>) — the commissioner's first job is distribution.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2270 339"><svg class="d2-3515034073 d2-svg" width="2270" height="339" viewBox="-25 -25 2270 339"><rect x="-25.000000" y="-25.000000" width="2270.000000" height="339.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-3515034073 .text-bold {
+	font-family: "d2-3515034073-font-bold";
+}
+@font-face {
+	font-family: d2-3515034073-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-3515034073 .text-italic {
+	font-family: "d2-3515034073-font-italic";
+}
+@font-face {
+	font-family: d2-3515034073-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-3515034073 .fill-N1{fill:#0A0F25;}
+		.d2-3515034073 .fill-N2{fill:#676C7E;}
+		.d2-3515034073 .fill-N3{fill:#9499AB;}
+		.d2-3515034073 .fill-N4{fill:#CFD2DD;}
+		.d2-3515034073 .fill-N5{fill:#DEE1EB;}
+		.d2-3515034073 .fill-N6{fill:#EEF1F8;}
+		.d2-3515034073 .fill-N7{fill:#FFFFFF;}
+		.d2-3515034073 .fill-B1{fill:#0D32B2;}
+		.d2-3515034073 .fill-B2{fill:#0D32B2;}
+		.d2-3515034073 .fill-B3{fill:#E3E9FD;}
+		.d2-3515034073 .fill-B4{fill:#E3E9FD;}
+		.d2-3515034073 .fill-B5{fill:#EDF0FD;}
+		.d2-3515034073 .fill-B6{fill:#F7F8FE;}
+		.d2-3515034073 .fill-AA2{fill:#4A6FF3;}
+		.d2-3515034073 .fill-AA4{fill:#EDF0FD;}
+		.d2-3515034073 .fill-AA5{fill:#F7F8FE;}
+		.d2-3515034073 .fill-AB4{fill:#EDF0FD;}
+		.d2-3515034073 .fill-AB5{fill:#F7F8FE;}
+		.d2-3515034073 .stroke-N1{stroke:#0A0F25;}
+		.d2-3515034073 .stroke-N2{stroke:#676C7E;}
+		.d2-3515034073 .stroke-N3{stroke:#9499AB;}
+		.d2-3515034073 .stroke-N4{stroke:#CFD2DD;}
+		.d2-3515034073 .stroke-N5{stroke:#DEE1EB;}
+		.d2-3515034073 .stroke-N6{stroke:#EEF1F8;}
+		.d2-3515034073 .stroke-N7{stroke:#FFFFFF;}
+		.d2-3515034073 .stroke-B1{stroke:#0D32B2;}
+		.d2-3515034073 .stroke-B2{stroke:#0D32B2;}
+		.d2-3515034073 .stroke-B3{stroke:#E3E9FD;}
+		.d2-3515034073 .stroke-B4{stroke:#E3E9FD;}
+		.d2-3515034073 .stroke-B5{stroke:#EDF0FD;}
+		.d2-3515034073 .stroke-B6{stroke:#F7F8FE;}
+		.d2-3515034073 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-3515034073 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-3515034073 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-3515034073 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-3515034073 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-3515034073 .background-color-N1{background-color:#0A0F25;}
+		.d2-3515034073 .background-color-N2{background-color:#676C7E;}
+		.d2-3515034073 .background-color-N3{background-color:#9499AB;}
+		.d2-3515034073 .background-color-N4{background-color:#CFD2DD;}
+		.d2-3515034073 .background-color-N5{background-color:#DEE1EB;}
+		.d2-3515034073 .background-color-N6{background-color:#EEF1F8;}
+		.d2-3515034073 .background-color-N7{background-color:#FFFFFF;}
+		.d2-3515034073 .background-color-B1{background-color:#0D32B2;}
+		.d2-3515034073 .background-color-B2{background-color:#0D32B2;}
+		.d2-3515034073 .background-color-B3{background-color:#E3E9FD;}
+		.d2-3515034073 .background-color-B4{background-color:#E3E9FD;}
+		.d2-3515034073 .background-color-B5{background-color:#EDF0FD;}
+		.d2-3515034073 .background-color-B6{background-color:#F7F8FE;}
+		.d2-3515034073 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-3515034073 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-3515034073 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-3515034073 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-3515034073 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-3515034073 .color-N1{color:#0A0F25;}
+		.d2-3515034073 .color-N2{color:#676C7E;}
+		.d2-3515034073 .color-N3{color:#9499AB;}
+		.d2-3515034073 .color-N4{color:#CFD2DD;}
+		.d2-3515034073 .color-N5{color:#DEE1EB;}
+		.d2-3515034073 .color-N6{color:#EEF1F8;}
+		.d2-3515034073 .color-N7{color:#FFFFFF;}
+		.d2-3515034073 .color-B1{color:#0D32B2;}
+		.d2-3515034073 .color-B2{color:#0D32B2;}
+		.d2-3515034073 .color-B3{color:#E3E9FD;}
+		.d2-3515034073 .color-B4{color:#E3E9FD;}
+		.d2-3515034073 .color-B5{color:#EDF0FD;}
+		.d2-3515034073 .color-B6{color:#F7F8FE;}
+		.d2-3515034073 .color-AA2{color:#4A6FF3;}
+		.d2-3515034073 .color-AA4{color:#EDF0FD;}
+		.d2-3515034073 .color-AA5{color:#F7F8FE;}
+		.d2-3515034073 .color-AB4{color:#EDF0FD;}
+		.d2-3515034073 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="Y3JlYXRlIGZvcm0="><g class="shape" ><rect x="0.000000" y="126.000000" width="127.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="63.500000" y="164.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">create form</text></g><g class="JiMzNDtsZWFndWUuY3JlYXRlJiMzNDs="><g class="shape" ><rect x="382.000000" y="63.000000" width="141.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="452.500000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">league.create</text></g><g class="UEVORElORyBsZWFndWU="><g class="shape" ><rect x="747.000000" y="63.000000" width="159.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="826.500000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">PENDING league</text></g><g class="UGF5UGFsIGNoZWNrb3V0"><g class="shape" ><rect x="1281.000000" y="0.000000" width="162.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1362.000000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">PayPal checkout</text></g><g class="JiMzNDtsZWFndWUuY2FwdHVyZU9yZGVyJiMzNDs="><g class="shape" ><rect x="1707.000000" y="0.000000" width="193.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1803.500000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">league.captureOrder</text></g><g class="UEFJRCBsZWFndWU="><g class="shape" ><rect x="2092.000000" y="126.000000" width="128.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="2156.000000" y="164.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">PAID league</text></g><g class="JiMzNDtsZWFndWUuY3JlYXRlV2l0aFByb21vJiMzNDs="><g class="shape" ><rect x="715.000000" y="189.000000" width="222.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="826.000000" y="227.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">league.createWithPromo</text></g><g class="ZGVsZXRlZA=="><g class="shape" ><rect x="1313.000000" y="147.000000" width="99.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1362.500000" y="185.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">deleted</text></g><g class="KGNyZWF0ZSBmb3JtIC0mZ3Q7ICYjMzQ7bGVhZ3VlLmNyZWF0ZSYjMzQ7KVswXQ=="><marker id="mk-d2-3515034073-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 128.400315 137.376459 C 228.899994 104.400002 280.100006 96.000000 378.500000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3515034073-3488378134)" mask="url(#d2-3515034073)" /><text x="251.500000" y="106.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">no promo</text></g><g class="KCYjMzQ7bGVhZ3VlLmNyZWF0ZSYjMzQ7IC0mZ3Q7IFBFTkRJTkcgbGVhZ3VlKVswXQ=="><path d="M 525.000000 96.000000 C 599.799988 96.000000 644.500000 96.000000 742.500000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3515034073-3488378134)" mask="url(#d2-3515034073)" /></g><g class="KFBFTkRJTkcgbGVhZ3VlIC0mZ3Q7IFBheVBhbCBjaGVja291dClbMF0="><path d="M 908.417483 71.974442 C 1068.500000 24.507999 1143.400024 15.300000 1277.013185 26.175492" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3515034073-3488378134)" mask="url(#d2-3515034073)" /><text x="1091.000000" y="27.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">createCheckoutSession</text></g><g class="KFBheVBhbCBjaGVja291dCAtJmd0OyAmIzM0O2xlYWd1ZS5jYXB0dXJlT3JkZXImIzM0OylbMF0="><path d="M 1445.000000 33.000000 C 1548.599976 33.000000 1601.400024 33.000000 1703.000000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3515034073-3488378134)" mask="url(#d2-3515034073)" /></g><g class="KCYjMzQ7bGVhZ3VlLmNhcHR1cmVPcmRlciYjMzQ7IC0mZ3Q7IFBBSUQgbGVhZ3VlKVswXQ=="><path d="M 1902.000000 33.000000 C 1976.800049 33.000000 2019.599976 51.599998 2110.858425 123.524014" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3515034073-3488378134)" mask="url(#d2-3515034073)" /></g><g class="KGNyZWF0ZSBmb3JtIC0mZ3Q7ICYjMzQ7bGVhZ3VlLmNyZWF0ZVdpdGhQcm9tbyYjMzQ7KVswXQ=="><path d="M 128.400315 180.623541 C 228.899994 213.600006 294.100006 222.000000 353.500000 222.000000 C 412.899994 222.000000 638.200012 222.000000 711.000000 222.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3515034073-3488378134)" mask="url(#d2-3515034073)" /><text x="418.000000" y="228.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">promo code</text></g><g class="KCYjMzQ7bGVhZ3VlLmNyZWF0ZVdpdGhQcm9tbyYjMzQ7IC0mZ3Q7IFBBSUQgbGVhZ3VlKVswXQ=="><path d="M 938.959836 244.398804 C 1074.599976 272.000000 1159.599976 279.000000 1235.500000 279.000000 C 1311.400024 279.000000 1404.599976 279.000000 1468.500000 279.000000 C 1532.400024 279.000000 1620.699951 279.000000 1689.250000 279.000000 C 1757.800049 279.000000 2019.199951 261.600006 2108.799999 194.399999" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3515034073-3488378134)" mask="url(#d2-3515034073)" /><text x="1535.000000" y="285.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">free promo</text></g><g class="KCYjMzQ7bGVhZ3VlLmNyZWF0ZVdpdGhQcm9tbyYjMzQ7IC0mZ3Q7IFBheVBhbCBjaGVja291dClbMF0="><path d="M 901.827262 188.186912 C 1067.199951 114.599998 1143.400024 87.400002 1277.119430 53.970143" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3515034073-3488378134)" mask="url(#d2-3515034073)" /><text x="1086.000000" y="113.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">partial discount</text></g><g class="KFBFTkRJTkcgbGVhZ3VlIC0mZ3Q7IGRlbGV0ZWQpWzBd"><path d="M 908.417483 120.024559 C 1068.500000 167.490997 1149.699951 179.500000 1308.500000 179.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3515034073-3488378134)" mask="url(#d2-3515034073)" /><text x="1106.000000" y="179.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">48h cleanup</text></g><mask id="d2-3515034073" maskUnits="userSpaceOnUse" x="-25" y="-25" width="2270" height="339">
+<rect x="-25" y="-25" width="2270" height="339" fill="white"></rect>
+<rect x="218.000000" y="90.000000" width="67" height="21" fill="black"></rect>
+<rect x="1013.000000" y="11.000000" width="156" height="21" fill="black"></rect>
+<rect x="376.000000" y="212.000000" width="84" height="21" fill="black"></rect>
+<rect x="1497.000000" y="269.000000" width="76" height="21" fill="black"></rect>
+<rect x="1031.000000" y="97.000000" width="110" height="21" fill="black"></rect>
+<rect x="1064.000000" y="163.000000" width="84" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption">Three routes to a live league. A <code>PENDING</code> league is fully inert — no joins, no picks — until capture; abandon it and the cron deletes it after 48 hours.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/league/create/page.tsx</span><span class="owns-desc">Server shell: <code>auth.me</code> gate → renders the client form.</span></div><div class="owns-row"><span class="owns-name">app/league/create/create-league-form.tsx</span><span class="owns-desc">The three-path form: settings + promo validation (<code>league.validatePromoCode</code>) + embedded <code>PayPalButtons</code> checkout. Reads env var name <code>NEXT_PUBLIC_PAYPAL_CLIENT_ID</code>.</span></div><div class="owns-row"><span class="owns-name">app/league/created/page.tsx</span><span class="owns-desc">Success page; redirects home if <code>?id</code>/<code>?code</code> are missing.</span></div><div class="owns-row"><span class="owns-name">app/league/created/league-created-client.tsx</span><span class="owns-desc">Invite-link display + clipboard copy, CTA into the new league.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">CreateLeagueForm</span><span class="owns-desc">Client component owning the whole create→pay state machine (<code>pendingLeague</code> state flips it into checkout mode).</span></div><div class="owns-row"><span class="owns-name">LeagueCreatedClient</span><span class="owns-desc">Copyable invite URL built from <code>window.location.origin</code>.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>league.create</code>, <code>league.createWithPromo</code>, <code>league.validatePromoCode</code>, <code>league.createCheckoutSession</code>, <code>league.captureOrder</code> — all on <a href="#c-service">league service</a>.</span></div><div class="conn"><span class="conn-dir">consumes</span><span class="conn-body"><a href="../domain-payments/domain-payments.html">payments</a> — the PayPal JS SDK (<code>PayPalScriptProvider</code>/<code>PayPalButtons</code>); server-side order handling goes through <code>paypalProvider</code>.</span></div></div></div><div class="subsection" id="c-join"><div class="subsection-header"><h3 class="subsection-title">join &amp; approval <span class="subsection-path">src/app/league/join + app/league/[id]</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>/league/join?code=…</code> is the invite landing page and it works signed-out: the server page calls public <code>league.preview</code> for name + member count, then branches on auth and membership state. Signed-out visitors get sign-up/sign-in links that carry <code>?invite=&lt;code&gt;</code> through the auth flow; existing members get a "Go to League" shortcut; unpaid leagues show an "awaiting payment" notice instead of a join button.</p><p class="detail-p"><code>JoinLeagueClient</code> fires <code>league.join</code> and renders the outcome: <code>ACTIVE</code> → "You're In!" with a How-to-Play CTA; <code>PENDING</code> → "Request Sent" interstitial. On the approval side, <code>PendingMembers</code> (rendered on the league page only for the commissioner of a <code>requireApproval</code> league) polls <code>league.pendingMembers</code> and mutates <code>league.approveMember</code> / <code>league.rejectMember</code>, then invalidates the query <em>and</em> <code>router.refresh()</code>es so the server-rendered header badge and standings update together. Meanwhile a pending member visiting <code>/league/[id]</code> sees a blocked interstitial that points them at the global league while they wait.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/league/join/page.tsx</span><span class="owns-desc">Server page: <code>league.preview</code> by invite code, resolves the visitor's <code>memberStatus</code> via <code>league.myLeagues</code>, handles invalid/missing codes.</span></div><div class="owns-row"><span class="owns-name">app/league/join/join-league-client.tsx</span><span class="owns-desc">Join button + all outcome states (joined / pending / already member / unpaid league / signed-out).</span></div><div class="owns-row"><span class="owns-name">app/league/[id]/pending-members.tsx</span><span class="owns-desc">Commissioner approval queue: approve/reject with shared disabled state and a combined query-invalidate + server refresh.</span></div><div class="owns-row"><span class="owns-name">app/league/[id]/invite-link-copy.tsx</span><span class="owns-desc">Read-only invite-URL input + clipboard copy, shown in the league page's Invite Link card.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">JoinLeagueClient</span><span class="owns-desc">Client join flow around <code>league.join</code>.</span></div><div class="owns-row"><span class="owns-name">PendingMembers</span><span class="owns-desc">Approve/reject queue over <code>league.pendingMembers</code>.</span></div><div class="owns-row"><span class="owns-name">InviteLinkCopy</span><span class="owns-desc">Same copy pattern as the created page, reused on the league home.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>league.preview</code> (public), <code>league.join</code>, <code>league.pendingMembers</code>, <code>league.approveMember</code>, <code>league.rejectMember</code> — see <a href="#c-service">league service</a>.</span></div><div class="conn"><span class="conn-dir">hands off</span><span class="conn-body"><a href="../domain-accounts/domain-accounts.html">accounts</a> — signed-out joiners route through <code>/sign-up?invite=&lt;code&gt;</code> / <code>/sign-in?invite=&lt;code&gt;</code> so the invite survives authentication.</span></div></div></div><div class="subsection" id="c-pages"><div class="subsection-header"><h3 class="subsection-title">league pages <span class="subsection-path">src/app/leagues + src/app/league/[id]</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>/league/[id]/page.tsx</code> is the biggest page in the app — a server component that fans out in <code>Promise.all</code> to five other-domain procedures: <code>leaderboard.byLeague</code> (season standings), <code>pick.leagueCurrentWeek</code> (this week's picks), <code>league.auditLog</code>, <code>tournament.schedule</code>, and <code>leaderboard.weeklyStandings</code> when a <code>?week=</code> param selects a past tournament. A local <code>leagueHref</code> helper threads <code>page</code>/<code>twPage</code>/<code>week</code> params through every pagination and navigation link, and <code>WeekSwipeWrapper</code> adds mobile swipe-to-navigate between weeks on top of the arrow links.</p><p class="detail-p">The page renders differently by viewer: pending members get an interstitial, commissioners get the pending-members queue and an unpaid-league banner with a "Complete Payment" link back into checkout, private-league members get the invite-link card and the commissioner-actions audit log. The inline pick table swaps between a "planned" view (before lock, only if <code>showPicksBeforeLock</code> or picks are the viewer's own — enforced server-side in game's service) and a live/final earnings view.</p><p class="detail-p"><code>/league/[id]/rules</code> is a settings-aware how-to-play: its withdrawal, visibility, and joining sections change copy based on the league's <code>burnStalePicks</code> / <code>showPicksBeforeLock</code> / <code>requireApproval</code> flags. <code>/league/[id]/settings</code> lets the commissioner edit those same flags via <code>league.updateSettings</code> (non-commissioners see a read-only form) and manage the roster — <code>LeagueMembers</code> confirms then fires <code>league.removeMember</code>, warning that planned picks will be deleted.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/leagues/page.tsx</span><span class="owns-desc">League index: global league pinned on top, private leagues below with Pending Payment badges, Create League CTA.</span></div><div class="owns-row"><span class="owns-name">app/league/[id]/page.tsx</span><span class="owns-desc">The league home: weekly view + standings orchestrator; branches for pending members, unpaid leagues, commissioners.</span></div><div class="owns-row"><span class="owns-name">app/league/[id]/week-swipe-wrapper.tsx</span><span class="owns-desc">Touch swipe → <code>router.push</code> between prev/next week URLs (50px threshold, ignores vertical scrolls).</span></div><div class="owns-row"><span class="owns-name">app/league/[id]/audit-log-collapsible.tsx</span><span class="owns-desc">Renders audit entries as sentences ("X changed a pick for Y"), parsing the <code>details</code> JSON per action type; collapsed to 5.</span></div><div class="owns-row"><span class="owns-name">app/league/[id]/rules/page.tsx</span><span class="owns-desc">How-to-play with screenshots, glossary, and rule cards that mirror the league's actual settings.</span></div><div class="owns-row"><span class="owns-name">app/league/[id]/settings/page.tsx</span><span class="owns-desc">Server shell: fetches <code>league.details</code> + (commissioner-only) <code>league.members</code>.</span></div><div class="owns-row"><span class="owns-name">app/league/[id]/settings/league-settings-form.tsx</span><span class="owns-desc">Name/format/toggles form → <code>league.updateSettings</code>; inputs disabled unless commissioner.</span></div><div class="owns-row"><span class="owns-name">app/league/[id]/settings/league-members.tsx</span><span class="owns-desc">Roster with confirm-to-remove rows → <code>league.removeMember</code>.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">WeekSwipeWrapper</span><span class="owns-desc">Mobile week navigation wrapper around the weekly section.</span></div><div class="owns-row"><span class="owns-name">AuditLogCollapsible</span><span class="owns-desc">Human-readable commissioner-action feed.</span></div><div class="owns-row"><span class="owns-name">LeagueSettingsForm</span><span class="owns-desc">Commissioner settings editor (same fields as the create form).</span></div><div class="owns-row"><span class="owns-name">LeagueMembers</span><span class="owns-desc">Commissioner roster management.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><a href="../domain-scoring/domain-scoring.html">scoring</a> — <code>leaderboard.byLeague</code> + <code>leaderboard.weeklyStandings</code>, and renders its <code>WeeklyStandingsTable</code> component for past weeks.</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><a href="../domain-game/domain-game.html">game</a> — <code>pick.leagueCurrentWeek</code>, <code>pick.myPickForTournament</code>, <code>pick.remainingPool</code>, and embeds its <code>LeagueThisWeekPicker</code> for inline picking.</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><a href="../domain-golf-data/domain-golf-data.html">golf-data</a> — <code>tournament.schedule</code> for week navigation, <code>GolferAvatar</code> headshots, golfer/tournament links.</span></div><div class="conn"><span class="conn-dir">guards via</span><span class="conn-body"><a href="../domain-accounts/domain-accounts.html">accounts</a> — every page starts with <code>auth.me</code> and redirects to <code>/sign-in</code>.</span></div></div></div><div class="subsection" id="c-context"><div class="subsection-header"><h3 class="subsection-title">league context <span class="subsection-path">src/lib/league-context.ts + src/components/league</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">The active league is a single httpOnly cookie (<code>ppgl-active-league</code>, 1-year max-age) managed by two server actions in <code>lib/league-context.ts</code>. <code>getActiveLeagueId</code> validates the cookie against the user's actual leagues (falling back to the first league) and honors a <code>searchParams</code> override for deep links — it deliberately never <em>writes</em> during render, because Next.js only allows cookie writes in server actions and route handlers.</p><p class="detail-p">Two writers exist: <code>LeagueSwitcher</code>, the nav-bar <code>&lt;select&gt;</code> (rendered by web-shell's <code>nav-bar.tsx</code> from <code>league.myLeagues</code>), which sets the cookie in a transition then either pushes to the new league's page or refreshes in place — it also smuggles a "+ Create League" option into the dropdown; and <code>SyncLeagueContext</code>, a render-nothing client component mounted on <code>/league/[id]</code> that syncs the cookie once on mount, so simply visiting a league makes it your active one. Dashboard, season, tournament, and member pages all read the same cookie to scope their queries.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">lib/league-context.ts</span><span class="owns-desc"><code>"use server"</code> cookie accessors; read validates against the caller's league list, write is server-action-only.</span></div><div class="owns-row"><span class="owns-name">components/league/league-switcher.tsx</span><span class="owns-desc">Nav dropdown: set cookie → navigate or refresh; hides itself when the user has ≤1 league.</span></div><div class="owns-row"><span class="owns-name">components/league/sync-league-context.tsx</span><span class="owns-desc">Mount-once effect that calls <code>setActiveLeague(leagueId)</code> from the client so it executes as a server action.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">getActiveLeagueId</span><span class="owns-desc">Cookie → validated active league id, with searchParam override for invite/deep links.</span></div><div class="owns-row"><span class="owns-name">setActiveLeague</span><span class="owns-desc">Server action writing the httpOnly cookie.</span></div><div class="owns-row"><span class="owns-name">LeagueSwitcher</span><span class="owns-desc">The app-wide league selector.</span></div><div class="owns-row"><span class="owns-name">SyncLeagueContext</span><span class="owns-desc">Silent cookie sync on league-page visits.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><a href="../domain-web-shell/domain-web-shell.html">web-shell</a> — <code>components/layout/nav-bar.tsx</code> calls <code>getActiveLeagueId</code> and renders <code>LeagueSwitcher</code>.</span></div><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><a href="../domain-game/domain-game.html">game</a> and <a href="../domain-scoring/domain-scoring.html">scoring</a> — dashboard, season, tournament, and member pages read <code>getActiveLeagueId</code> to scope their data fetches.</span></div></div></div><div class="subsection" id="c-commish"><div class="subsection-header"><h3 class="subsection-title">commissioner tools <span class="subsection-path">src/components/commissioner</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">These widgets let a commissioner fix <em>someone else's</em> pick — the escape hatch for "my buddy forgot to pick before lock." <code>CommissionerToggle</code> is pure DOM: it flips a <code>data-commissioner-active</code> attribute on the nearest <code>[data-commissioner-container]</code>, and CSS reveals the per-row action buttons. No server state; commissioner-ness was already decided server-side by whichever page rendered the toggle.</p><p class="detail-p"><code>CommissionerPickActions</code> (edit/remove an existing pick) and <code>CommissionerAddPick</code> (add a missing one) share a pattern: local golfer typeahead over a pre-fetched list, a live <code>pick.commissionerValidate</code> query surfacing warnings (already used, exhausted uses — exhaustion hard-blocks the Add button), then <code>pick.commissionerUpdate</code> / <code>pick.commissionerRemove</code> / <code>pick.commissionerAdd</code>. Those mutations live in the game domain's pick service, which enforces commissioner authorization again server-side and writes the <code>CommissionerAction</code> rows this domain's audit log displays. The components are mounted from game-domain surfaces: the season page (<code>app/season/[userId]/page.tsx</code>) and the planner timeline.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">components/commissioner/commissioner-toggle.tsx</span><span class="owns-desc">CSS-only mode switch via a data attribute; <code>aria-pressed</code> button.</span></div><div class="owns-row"><span class="owns-name">components/commissioner/commissioner-pick-actions.tsx</span><span class="owns-desc">Edit/remove flow with typeahead, validation warnings, confirm step; full query invalidation on success.</span></div><div class="owns-row"><span class="owns-name">components/commissioner/commissioner-add-pick.tsx</span><span class="owns-desc">Add-pick flow; blocks submission when the golfer's uses are exhausted.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">CommissionerToggle</span><span class="owns-desc">Enter/exit commissioner mode.</span></div><div class="owns-row"><span class="owns-name">CommissionerPickActions</span><span class="owns-desc">Edit or remove a member's pick.</span></div><div class="owns-row"><span class="owns-name">CommissionerAddPick</span><span class="owns-desc">Add a pick on a member's behalf.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><a href="../domain-game/domain-game.html">game</a> — <code>pick.commissionerValidate</code>, <code>pick.commissionerAdd</code>, <code>pick.commissionerUpdate</code>, <code>pick.commissionerRemove</code>; the pick service writes the audit rows via this domain's <code>createCommissionerAction</code>.</span></div><div class="conn"><span class="conn-dir">mounted by</span><span class="conn-body"><a href="../domain-game/domain-game.html">game</a> — <code>app/season/[userId]/page.tsx</code> and <code>components/planner/planner-timeline.tsx</code> render these widgets on commissioner-visible rows.</span></div><div class="conn"><span class="conn-dir">produces</span><span class="conn-body">Audit entries surfaced by <a href="#c-pages"><code>AuditLogCollapsible</code></a> on the league home.</span></div></div></div></section><section id="data" class="section"><div class="section-header"><h2 class="section-title">Data it owns</h2></div><p class="section-intro">The membership graph and its paper trail. All writes go through <code>repositories/league.ts</code>.</p><div class="owns-list"><div class="owns-row"><span class="owns-name">League</span><span class="owns-desc">Name, unique <code>inviteCode</code>, season, <code>type</code> (<code>GLOBAL</code>/<code>PRIVATE</code>), <code>commissionerId</code>, the rule flags (<code>maxGolferUses</code>, <code>burnStalePicks</code>, <code>showPicksBeforeLock</code>, <code>requireApproval</code>), and payment state (<code>paymentStatus</code>, <code>paymentSessionId</code>, <code>promoCodeId</code>).</span></div><div class="owns-row"><span class="owns-name">LeagueMember</span><span class="owns-desc">user ↔ league with <code>status</code> (<code>ACTIVE</code>/<code>PENDING</code>/<code>REMOVED</code>) and <code>@@unique([userId, leagueId])</code> — the constraint the join/global-enroll race handling leans on. Its <code>id</code> (<code>leagueMemberId</code>) is the key picks and earnings hang off.</span></div><div class="owns-row"><span class="owns-name">LeagueMemberSeason</span><span class="owns-desc">Per-member-per-season row created here on join/approval; the <code>totalEarnings</code>/<code>totalPicks</code>/<code>totalMissedCuts</code> rollups on it are <em>written</em> by scoring's earnings pipeline.</span></div><div class="owns-row"><span class="owns-name">CommissionerAction</span><span class="owns-desc">Append-only audit log: <code>action</code> string + <code>details</code> JSON (golfer/tournament ids resolved to names at read time). Written here (approve/remove) and by game's pick service + admin.</span></div></div><p class="diagram-caption"><code>PromoCode</code> is referenced (<code>League.promoCodeId</code>) and <em>redeemed</em> here (<code>redeemPromoCode</code> guards uses/expiry in SQL), but the model and its CRUD belong to <a href="../domain-payments/domain-payments.html">payments</a>. <code>Pick</code> belongs to <a href="../domain-game/domain-game.html">game</a> — this domain only deletes <code>PLANNED</code> picks when removing a member.</p></section><section id="seams" class="section"><div class="section-header"><h2 class="section-title">Seams</h2></div><p class="section-intro">One tRPC router out; two service functions that act as the app-wide membership guard; five domains leaned on.</p><div class="seam-cols"><div class="seam-col seam-exposes"><div class="seam-head"><span aria-hidden="true">&#8593;</span> Exposes</div><div class="seam-body"><ul class="seam-api"><li>league.myLeagues <span class="api-note">— Leagues for the nav switcher and join-page membership check; auto-enrolls the caller in the global league first.</span></li><li>league.preview <span class="api-note">— Public — invite-link landing preview (name, member count, paid state).</span></li><li>league.create <span class="api-note">— Creates a `PENDING` league awaiting payment.</span></li><li>league.validatePromoCode <span class="api-note">— Checks active/uses/expiry, returns discount + final price.</span></li><li>league.createWithPromo <span class="api-note">— Free promo → `PAID` immediately; partial → `PENDING` + discounted checkout.</span></li><li>league.createCheckoutSession <span class="api-note">— Commissioner-only; PayPal order for an unpaid league.</span></li><li>league.captureOrder <span class="api-note">— Client-side capture path; verifies the order belongs to the league.</span></li><li>league.join <span class="api-note">— Invite-code join — cap-checked, approval-aware, reactivates `REMOVED` members.</span></li><li>league.details <span class="api-note">— League + member count + caller&#39;s `memberStatus`; membership required.</span></li><li>league.updateSettings <span class="api-note">— Commissioner-only edit of name and rule flags.</span></li><li>league.pendingMembers <span class="api-note">— Commissioner-only approval queue.</span></li><li>league.approveMember <span class="api-note">— Flips `PENDING`→`ACTIVE`, creates the season row, logs `APPROVE_MEMBER`.</span></li><li>league.rejectMember <span class="api-note">— Hard-deletes the pending membership (no audit row possible — FK).</span></li><li>league.members <span class="api-note">— Active roster with usernames; any member may read.</span></li><li>league.removeMember <span class="api-note">— Commissioner-only soft remove + scrub of planned picks/season/adjustments; logs `REMOVE_MEMBER`.</span></li><li>league.auditLog <span class="api-note">— Commissioner-action feed with names resolved from golf-data.</span></li></ul></div></div><div class="seam-col seam-depends"><div class="seam-head"><span aria-hidden="true">&#8595;</span> Depends on</div><div class="seam-body"><div class="seam-neighbors"><a class="neighbor-chip" href="../domain-game/domain-game.html">game <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-golf-data/domain-golf-data.html">golf-data <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-scoring/domain-scoring.html">scoring <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-payments/domain-payments.html">payments <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-accounts/domain-accounts.html">accounts <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-web-shell/domain-web-shell.html">web-shell <span class="nc-path">src</span></a></div><p class="diagram-caption" style="margin-top:14px;">Beyond tRPC, the load-bearing seam is direct service imports: <code>resolveLeagueMemberId</code> / <code>assertLeagueActive</code> (used by <a href="../domain-game/domain-game.html">game</a>'s pick + dashboard services), <code>handleWebhookPayment</code> (called from <a href="../domain-payments/domain-payments.html">payments</a>' webhook route), <code>cleanupAbandonedLeagues</code> (called from <a href="../domain-golf-data/domain-golf-data.html">golf-data</a>'s cron sync), and repo-level <code>createCommissionerAction</code> / <code>getMaxGolferUses</code> (game + <a href="../domain-admin/domain-admin.html">admin</a>). The dependency arrows point both ways: leagues guards them, they call it.</p></div></div></div></section></main></div><div id="zoom-overlay" class="zoom-overlay" aria-hidden="true"><div class="zoom-controls"><button id="zoom-out" type="button" aria-label="Zoom out">&#8722;</button><button id="zoom-reset" type="button">Reset</button><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-close" type="button" aria-label="Close">&#10006;</button></div><div id="zoom-stage" class="zoom-stage"></div></div><script>(function() {
+  'use strict';
+
+  // Sidebar toggle
+  var toggle = document.getElementById('sidebar-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+
+  function openSidebar() {
+    sidebar.classList.add('is-open');
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('is-open');
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function() {
+      if (sidebar.classList.contains('is-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  // Close sidebar on nav click (mobile)
+  var outlineLinks = document.querySelectorAll('.outline-item, .file-item');
+  outlineLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 900) {
+        closeSidebar();
+      }
+    });
+  });
+
+  // Scroll-spy for outline
+  var outlineItems = document.querySelectorAll('.outline-item[data-target]');
+  var sections = Array.prototype.map.call(outlineItems, function(it) {
+    var t = it.getAttribute('data-target');
+    return { id: t, target: t };
+  });
+
+  function updateActive(activeId) {
+    outlineItems.forEach(function(item) {
+      var t = item.getAttribute('data-target');
+      if (t === activeId) {
+        item.classList.add('is-active');
+      } else {
+        item.classList.remove('is-active');
+      }
+    });
+  }
+
+  var topbarH = 52;
+
+  function onScroll() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var winH = window.innerHeight;
+    var active = null;
+
+    for (var i = sections.length - 1; i >= 0; i--) {
+      var el = document.getElementById(sections[i].id);
+      if (el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.top <= topbarH + 32) {
+          active = sections[i].target;
+          break;
+        }
+      }
+    }
+
+    if (active) {
+      updateActive(active);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Progress rail: highlight chapter based on scroll
+  var progressSteps = document.querySelectorAll('.progress-step');
+  var chapters = Array.prototype.map.call(progressSteps, function(s) {
+    var h = s.getAttribute('href') || '';
+    return h.charAt(0) === '#' ? document.getElementById(h.slice(1)) : null;
+  });
+
+  function updateProgress() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = 0;
+    for (var i = chapters.length - 1; i >= 0; i--) {
+      if (chapters[i]) {
+        var rect = chapters[i].getBoundingClientRect();
+        if (rect.top <= topbarH + 48) {
+          active = i;
+          break;
+        }
+      }
+    }
+    progressSteps.forEach(function(step, idx) {
+      if (idx === active) {
+        step.classList.add('is-active');
+      } else {
+        step.classList.remove('is-active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+})();
+
+(function(){
+  'use strict';
+  var ov=document.getElementById('zoom-overlay'), stage=document.getElementById('zoom-stage');
+  var cur,scale=1,tx=0,ty=0,drag=false,moved=false,lx=0,ly=0;
+  function apply(){ if(cur) cur.style.transform='translate('+tx+'px,'+ty+'px) scale('+scale+')'; }
+  function openSvg(svg){ stage.innerHTML=''; cur=svg.cloneNode(true); cur.removeAttribute('width'); cur.removeAttribute('height'); stage.appendChild(cur); scale=1;tx=0;ty=0;apply(); ov.classList.add('is-open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+  function closeOv(){ ov.classList.remove('is-open'); ov.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  document.querySelectorAll('.diagram-box').forEach(function(box){
+    var svg=box.querySelector('svg.diagram-svg'); if(!svg) return;
+    box.addEventListener('click', function(){ openSvg(svg); });
+  });
+  document.getElementById('zoom-close').addEventListener('click', closeOv);
+  document.getElementById('zoom-reset').addEventListener('click', function(){ scale=1;tx=0;ty=0;apply(); });
+  document.getElementById('zoom-in').addEventListener('click', function(){ scale=Math.min(8,scale*1.25); apply(); });
+  document.getElementById('zoom-out').addEventListener('click', function(){ scale=Math.max(0.3,scale/1.25); apply(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeOv(); });
+  stage.addEventListener('wheel', function(e){ e.preventDefault(); scale=Math.min(8,Math.max(0.3, scale*(e.deltaY<0?1.12:0.89))); apply(); }, {passive:false});
+  stage.addEventListener('pointerdown', function(e){ drag=true; moved=false; lx=e.clientX; ly=e.clientY; try{stage.setPointerCapture(e.pointerId);}catch(_){} });
+  stage.addEventListener('pointermove', function(e){ if(!drag)return; moved=true; tx+=e.clientX-lx; ty+=e.clientY-ly; lx=e.clientX; ly=e.clientY; apply(); });
+  stage.addEventListener('pointerup', function(){ drag=false; });
+  stage.addEventListener('pointercancel', function(){ drag=false; });
+  stage.addEventListener('click', function(e){ if(!moved && e.target===stage) closeOv(); });
+})();
+
+(function(){
+  'use strict';
+  function openTo(hash){
+    if(!hash || hash.charAt(0) !== '#') return;
+    var el = document.getElementById(hash.slice(1));
+    if(!el) return;
+    var p = el;
+    while(p){ if(p.tagName && p.tagName.toLowerCase() === 'details') p.open = true; p = p.parentElement; }
+    if(el.tagName && el.tagName.toLowerCase() === 'details') el.open = true;
+    var d = el.querySelector && el.querySelector('details.file-diff');
+    if(d) d.open = true;
+  }
+  window.addEventListener('hashchange', function(){ openTo(location.hash); });
+  if(location.hash) openTo(location.hash);
+})();
+</script></body></html>

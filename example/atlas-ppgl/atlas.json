@@ -1,0 +1,185 @@
+{
+  "kind": "atlas",
+  "title": "System Atlas · ppgl",
+  "stack": "Next.js · tRPC · Postgres",
+  "count": "8 domains",
+  "date": "generated 2026-07-21",
+  "note": "static HTML output",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Root",
+      "value": "`src/` (app · components · lib · server)"
+    },
+    {
+      "key": "Domains",
+      "value": "8 (all with pages)"
+    },
+    {
+      "key": "Read first",
+      "value": "web-shell → game → golf-data"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "atlas-tldr",
+      "id": "tldr",
+      "eyebrow": "Start here",
+      "heading": "A season-long fantasy golf game — pick one PGA Tour golfer a week, earn his real prize money, never reuse a golfer — built as a Next.js + tRPC monolith whose heartbeat is a 15-minute ESPN sync cron.",
+      "rows": [
+        {
+          "key": "What",
+          "value": "PPGL (Perfect Pick Golf League, [ppgl.app](https://ppgl.app)): private leagues with PayPal checkout, a season planner for future-week prepicks, live projected earnings during tournaments, and commissioner + admin override surfaces. One Vercel deployment, one Postgres (Neon)."
+        },
+        {
+          "key": "Shape",
+          "value": "A strict three-layer server — **routers** (thin, validate → service) → **services** (business logic, `withTransaction`) → **repositories** (the only layer that touches `db`) — under a Next.js App Router front. Eight domains: five product slices, a data layer, an ops surface, and the shared shell."
+        },
+        {
+          "key": "Spine",
+          "value": "The weekly loop: a user plans a PLANNED pick → the cron locks it when the tournament starts (field + not-yet-used validation) → live sync writes projected earnings all weekend → completion promotes real money and triggers the earnings rollup → standings re-rank."
+        }
+      ],
+      "primer": [
+        {
+          "h": "The cron is the heartbeat.",
+          "p": "`GET /api/cron/sync` runs every 15 minutes and drives *every* game-state transition: it locks PLANNED picks at tee-off, projects live earnings, promotes final results, kicks the earnings rollup, runs bot auto-picks, sends pick reminders, and cleans up abandoned leagues. Nothing else moves the game clock."
+        },
+        {
+          "h": "Picks are soft until they're hard.",
+          "p": "A PLANNED pick is a free-floating intention — movable, deletable, not consuming the golfer. Only the LOCKED status burns a golfer for the season. Reads *overlay* the lock the moment `startDate` passes; the cron makes it real in the database shortly after."
+        },
+        {
+          "h": "Membership is the permission system.",
+          "p": "`resolveLeagueMemberId` + `assertLeagueActive` gate every gameplay mutation, and the `leagueMemberId` they return is the key picks, standings, and earnings all hang off. Everyone is lazily auto-enrolled in the global league on first contact, so the guard doubles as onboarding."
+        },
+        {
+          "h": "Money is recomputed, never incremented.",
+          "p": "`LeagueMemberSeason` is a materialized rollup: every trigger recomputes a member's whole season from one SQL aggregate over LOCKED picks (plus commissioner adjustments) and overwrites the row. There is no ledger to drift."
+        },
+        {
+          "h": "Auth checks live in exactly one place.",
+          "p": "The three-rung procedure ladder in `src/server/trpc.ts` — `publicProcedure` → `protectedProcedure` → `adminProcedure` — is the only authorization boundary; page-level redirects are UX, not security."
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "map",
+      "title": "The domain map",
+      "badge": "8 domains",
+      "intro": "Five product slices (`game`, `leagues`, `scoring`, `accounts`, `payments`) over a data layer (`golf-data`) and the shared shell (`web-shell`), with `admin` as an operator lens that writes into all of them. Arrows are the load-bearing runtime edges — every domain additionally rides web-shell's tRPC/db plumbing (those edges are omitted for legibility), and `admin` reaches into every slice.",
+      "diagram": {
+        "id": "domain-map",
+        "kind": "architecture",
+        "d2": "direction: down\nespn: { label: \"ESPN APIs\"; class: external }\npaypal: { label: \"PayPal\"; class: external }\ngolfdata: { label: \"golf-data\\nESPN sync · tournaments · golfers\"; class: changed }\ngame: { label: \"game\\npicks · planner · dashboard\" }\nleagues: { label: \"leagues\\nlifecycle · commissioner\" }\nscoring: { label: \"scoring\\nrollup · standings\" }\naccounts: { label: \"accounts\\nauth · email\" }\npayments: { label: \"payments\\ncheckout · promos\" }\nadmin: { label: \"admin\\nback-office\" }\nwebshell: { label: \"web-shell\\ntrpc · db · chrome\"; class: store }\ngolfdata -> espn: polls 15m\ngolfdata -> game: locks picks\ngolfdata -> scoring: rollup\ngolfdata -> accounts: reminders\ngolfdata -> leagues: cleanup\ngame -> golfdata: schedule\ngame -> leagues: member guards\ngame -> scoring: recalc\nscoring -> leagues: membership\nleagues -> payments: checkout\npayments -> paypal\npayments -> leagues: webhook confirm\nadmin -> golfdata: sync ops\nadmin -> scoring: rollup ops\n",
+        "mermaid": "graph TD\n  espn[\"ESPN APIs\"]\n  paypal[\"PayPal\"]\n  golfdata[\"golf-data · ESPN sync\"]\n  game[\"game · picks + planner\"]\n  leagues[\"leagues · lifecycle\"]\n  scoring[\"scoring · rollup + standings\"]\n  accounts[\"accounts · auth + email\"]\n  payments[\"payments · checkout + promos\"]\n  admin[\"admin · back-office\"]\n  webshell[\"web-shell · trpc + db + chrome\"]\n  golfdata -->|polls 15m| espn\n  golfdata -->|locks picks| game\n  golfdata -->|rollup| scoring\n  golfdata -->|reminders| accounts\n  golfdata -->|cleanup| leagues\n  game -->|schedule| golfdata\n  game -->|member guards| leagues\n  game -->|recalc| scoring\n  scoring -->|membership| leagues\n  leagues -->|checkout| payments\n  payments --> paypal\n  payments -->|webhook confirm| leagues\n  admin -->|sync ops| golfdata\n  admin -->|rollup ops| scoring\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef external fill:#e9ecef,stroke:#868e96,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class golfdata changed;\n  class espn,paypal external;\n  class webshell store;",
+        "legend": [
+          {
+            "label": "The heartbeat — its cron drives every game-state transition",
+            "fill": "#ffd43b",
+            "stroke": "#f08c00"
+          },
+          {
+            "label": "External world (ESPN, PayPal)",
+            "fill": "#e9ecef",
+            "stroke": "#868e96"
+          },
+          {
+            "label": "Shared plumbing every domain rides",
+            "fill": "#e5dbff",
+            "stroke": "#9775fa"
+          }
+        ],
+        "caption": "`golf-data` is highlighted because its 15-minute cron is the game clock: pick locking, live money, finals, rollups, reminders, and league cleanup all fire from it. `payments` is the one domain not mounted on the tRPC root router — PayPal runs over plain API routes."
+      }
+    },
+    {
+      "type": "diagram-section",
+      "id": "spine",
+      "title": "The weekly loop",
+      "badge": "runtime",
+      "intro": "The one flow worth memorizing — what happens to a single pick across a tournament week. Everything left of the lock is user intent; everything right of it is machine-driven by the sync cron.",
+      "diagram": {
+        "id": "weekly-loop",
+        "kind": "flowchart",
+        "d2": "direction: right\nuser: { label: \"member\"; class: actor }\nplan: { label: \"PLANNED pick\\n(soft reservation)\" }\nlock: { label: \"cron locks at tee-off\\nfield + unused validation\"; class: changed }\nlive: { label: \"live sync\\nprojected earnings\" }\nfinal: { label: \"results promoted\\nreal prize money\" }\nrollup: { label: \"season rollup\\nrecompute + overwrite\" }\nstandings: { label: \"standings\"; class: store }\nuser -> plan: plan / submit\nplan -> lock: tournament starts\nlock -> live: all weekend\nlive -> final: tournament completes\nfinal -> rollup\nrollup -> standings\n",
+        "mermaid": "flowchart LR\n  user([\"member\"]) -->|plan / submit| plan[\"PLANNED pick (soft reservation)\"]\n  plan -->|tournament starts| lock[\"cron locks at tee-off: field + unused validation\"]\n  lock -->|all weekend| live[\"live sync: projected earnings\"]\n  live -->|tournament completes| final[\"results promoted: real prize money\"]\n  final --> rollup[\"season rollup: recompute + overwrite\"]\n  rollup --> standings[(\"standings\")]\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  class lock changed;",
+        "caption": "A stale PLANNED pick (golfer not in field, or already used) is *not* burned — it's left behind and the member simply earns $0 that week, per the league's `burnStalePicks` policy. Missed weeks are the absence of a row, not a status."
+      }
+    },
+    {
+      "type": "domain-index",
+      "id": "domains",
+      "title": "The 8 domains",
+      "badge": "all with pages",
+      "intro": "Each domain owns one slice of the product. Every tile links to a full deep-dive page: what it owns, how its pieces wire up, what it exposes, and what it depends on.",
+      "tiles": [
+        {
+          "name": "game",
+          "path": "server/*/pick* · components/planner",
+          "layer": "engine",
+          "layerLabel": "Core game",
+          "purpose": "The product core: weekly pick CRUD, the season planner (PLANNED prepicks), bot auto-picks, and the dashboard. Owns the `Pick` model and its one-pick-per-week unique constraint.",
+          "href": "domain-game/domain-game.html"
+        },
+        {
+          "name": "golf-data",
+          "path": "server/services/golf-data · sync",
+          "layer": "intelligence",
+          "layerLabel": "Data",
+          "purpose": "The one-way clock: a 15-minute cron pulls ESPN schedule/field/leaderboard data through a provider-agnostic interface and drives every game-state transition. Owns tournaments, golfers, results.",
+          "href": "domain-golf-data/domain-golf-data.html"
+        },
+        {
+          "name": "leagues",
+          "path": "server/*/league* · app/league",
+          "layer": "engine",
+          "layerLabel": "Core game",
+          "purpose": "League lifecycle — create → checkout → invite → join → approval — plus commissioner tools with an append-only audit log. Membership *is* the app's permission system.",
+          "href": "domain-leagues/domain-leagues.html"
+        },
+        {
+          "name": "scoring",
+          "path": "server/*/earnings* · leaderboard",
+          "layer": "engine",
+          "layerLabel": "Core game",
+          "purpose": "The money engine: converts LOCKED picks × tournament results into season totals via a recompute-and-overwrite rollup, and serves every leaderboard and standings view.",
+          "href": "domain-scoring/domain-scoring.html"
+        },
+        {
+          "name": "accounts",
+          "path": "server/auth.ts · app/(auth)",
+          "layer": "engine",
+          "layerLabel": "Platform",
+          "purpose": "Identity and comms: one Better Auth instance behind a catch-all route (sessions in the app's own Postgres), settings, and the cron-driven pick-reminder email pipeline.",
+          "href": "domain-accounts/domain-accounts.html"
+        },
+        {
+          "name": "payments",
+          "path": "lib/paypal.ts · app/api/paypal",
+          "layer": "engine",
+          "layerLabel": "Platform",
+          "purpose": "The only money-in path: PayPal checkout for private leagues with a webhook backstop, and promo codes (free bypass + partial discounts). No orders table — the `League` row is the ledger.",
+          "href": "domain-payments/domain-payments.html"
+        },
+        {
+          "name": "admin",
+          "path": "app/admin · server/*/admin.ts",
+          "layer": "surface",
+          "layerLabel": "Operations",
+          "purpose": "The operator back-office: 35 `adminProcedure`-gated procedures over tournaments, results, users, golfers, leagues, and the cron console. Owns no models — a write-everywhere lens.",
+          "href": "domain-admin/domain-admin.html"
+        },
+        {
+          "name": "web-shell",
+          "path": "server/trpc.ts · lib/db* · app/layout",
+          "layer": "foundation",
+          "layerLabel": "Foundation",
+          "purpose": "The pipe, not the water: the tRPC procedure ladder (the app's only auth boundary), the Kysely db core with `withTransaction`, and the chrome every page shares.",
+          "href": "domain-web-shell/domain-web-shell.html"
+        }
+      ]
+    }
+  ]
+}

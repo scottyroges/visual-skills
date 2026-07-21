@@ -1,0 +1,1090 @@
+[
+  {
+    "type": "overview",
+    "id": "overview",
+    "headline": "Tournaments get an admin-set estimated purse that fills in wherever the official ESPN purse is missing",
+    "points": [
+      {
+        "text": "nullable `estimatedPurse` column on [Tournament](#diff-1), set from the [admin tournament form](#diff-2) via `admin.updateTournament`"
+      },
+      {
+        "text": "`syncLiveStandings` now [falls back to the estimate](#diff-19) for projected earnings instead of bailing with 0 players when ESPN has no purse"
+      },
+      {
+        "text": "new [`formatPurse`](#diff-8) helper renders estimates as `~$20,000,000` on the home, dashboard, league, and tournament pages"
+      },
+      {
+        "text": "ESPN sync still writes only `purse`, and `purse` always wins — the estimate never overwrites or masks a confirmed value"
+      },
+      {
+        "text": "the fallback and precedence rules are pinned by four [sync tests](#diff-18)"
+      }
+    ],
+    "facets": {
+      "what": "Add an estimated purse to tournaments, used for live earnings projections and page display until ESPN publishes the real one",
+      "why": "ESPN often has no purse until tournament week — pages showed nothing and live projected earnings were silently skipped",
+      "size": "21 files, +102/−34 — roughly half of it tests and fixture updates"
+    },
+    "risk": {
+      "level": "low",
+      "note": "additive nullable column; official purse always takes precedence, so behavior is unchanged wherever a real purse exists"
+    },
+    "diagram": {
+      "type": "diagram",
+      "id": "ov-resolution",
+      "title": "Effective purse resolution — the one rule applied everywhere",
+      "kind": "flowchart",
+      "d2": "direction: right\n\"official purse from ESPN?\" -> \"show purse, project earnings\": yes\n\"official purse from ESPN?\" -> \"estimatedPurse set by admin?\": no\n\"estimatedPurse set by admin?\" -> \"show ~estimate, project earnings\": yes\n\"estimatedPurse set by admin?\" -> \"hide purse, skip projections\": no\n\"show ~estimate, project earnings\": { class: added }",
+      "mermaid": "flowchart LR\n  A{official purse from ESPN?} -->|yes| B[show purse, project earnings]\n  A -->|no| C{estimatedPurse set by admin?}\n  C -->|yes| D[\"show ~estimate, project earnings\"]\n  C -->|no| E[hide purse, skip projections]\n  classDef added fill:#d3f9d8,stroke:#37b24d,color:#1b1b1b;\n  class D added;"
+    }
+  },
+  {
+    "type": "diagram",
+    "id": "where-it-fits",
+    "title": "Feature home — how the estimate flows through the stack",
+    "kind": "architecture",
+    "d2": "direction: right\n\"Admin\": { class: actor }\n\"ESPN API\": { class: external }\n\"admin.updateTournament\": { class: changed }\n\"adminService + adminRepo\": { class: changed }\n\"sync service\": { class: changed }\n\"tournament table\": { class: store }\n\"formatPurse\": { class: added }\n\"user pages\": { class: changed }\n\"Admin\" -> \"admin.updateTournament\": sets estimate\n\"admin.updateTournament\" -> \"adminService + adminRepo\"\n\"adminService + adminRepo\" -> \"tournament table\": estimated_purse\n\"ESPN API\" -> \"sync service\": official purse\n\"sync service\" -> \"tournament table\": writes purse\n\"tournament table\" -> \"sync service\": estimatedPurse fallback\n\"tournament table\" -> \"user pages\": purse + estimatedPurse\n\"user pages\" -> \"formatPurse\": \"~ prefix display\"",
+    "mermaid": "flowchart LR\n  Admin[Admin] -->|sets estimate| RT[admin.updateTournament]\n  RT --> SVC[adminService + adminRepo]\n  SVC -->|estimated_purse| DB[(tournament table)]\n  ESPN[ESPN API] -->|official purse| SYNC[sync service]\n  SYNC -->|writes purse| DB\n  DB -->|estimatedPurse fallback| SYNC\n  DB -->|purse + estimatedPurse| PAGES[user pages]\n  PAGES -->|\"~ prefix display\"| FMT[formatPurse]\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef added fill:#d3f9d8,stroke:#37b24d,color:#1b1b1b;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class RT,SVC,SYNC,PAGES changed;\n  class FMT added;\n  class Admin actor;\n  class ESPN external;\n  class DB store;"
+  },
+  {
+    "type": "file-tree",
+    "id": "files",
+    "title": "Files changed",
+    "files": [
+      {
+        "path": "prisma/migrations/20260514001141_add_estimated_purse/migration.sql",
+        "status": "A",
+        "added": 2,
+        "deleted": 0
+      },
+      {
+        "path": "prisma/schema.prisma",
+        "status": "M",
+        "added": 3,
+        "deleted": 2
+      },
+      {
+        "path": "src/app/admin/tournaments/[id]/tournament-admin.tsx",
+        "status": "M",
+        "added": 16,
+        "deleted": 3
+      },
+      {
+        "path": "src/app/admin/tournaments/page.tsx",
+        "status": "M",
+        "added": 1,
+        "deleted": 1
+      },
+      {
+        "path": "src/app/dashboard/page.tsx",
+        "status": "M",
+        "added": 3,
+        "deleted": 3
+      },
+      {
+        "path": "src/app/league/[id]/page.tsx",
+        "status": "M",
+        "added": 3,
+        "deleted": 3
+      },
+      {
+        "path": "src/app/page.tsx",
+        "status": "M",
+        "added": 3,
+        "deleted": 3
+      },
+      {
+        "path": "src/app/tournament/[id]/page.tsx",
+        "status": "M",
+        "added": 4,
+        "deleted": 4
+      },
+      {
+        "path": "src/lib/format.ts",
+        "status": "M",
+        "added": 6,
+        "deleted": 0
+      },
+      {
+        "path": "src/server/repositories/admin.ts",
+        "status": "M",
+        "added": 3,
+        "deleted": 0
+      },
+      {
+        "path": "src/server/repositories/pick.ts",
+        "status": "M",
+        "added": 1,
+        "deleted": 0
+      },
+      {
+        "path": "src/server/repositories/sync.ts",
+        "status": "M",
+        "added": 1,
+        "deleted": 1
+      },
+      {
+        "path": "src/server/repositories/tournament.ts",
+        "status": "M",
+        "added": 1,
+        "deleted": 0
+      },
+      {
+        "path": "src/server/routers/admin.ts",
+        "status": "M",
+        "added": 1,
+        "deleted": 0
+      },
+      {
+        "path": "src/server/services/admin.test.ts",
+        "status": "M",
+        "added": 5,
+        "deleted": 0
+      },
+      {
+        "path": "src/server/services/admin.ts",
+        "status": "M",
+        "added": 1,
+        "deleted": 0
+      },
+      {
+        "path": "src/server/services/dashboard.test.ts",
+        "status": "M",
+        "added": 1,
+        "deleted": 0
+      },
+      {
+        "path": "src/server/services/pick.test.ts",
+        "status": "M",
+        "added": 4,
+        "deleted": 0
+      },
+      {
+        "path": "src/server/services/sync.test.ts",
+        "status": "M",
+        "added": 28,
+        "deleted": 6
+      },
+      {
+        "path": "src/server/services/sync.ts",
+        "status": "M",
+        "added": 14,
+        "deleted": 8
+      },
+      {
+        "path": "src/server/services/tournament.test.ts",
+        "status": "M",
+        "added": 1,
+        "deleted": 0
+      }
+    ]
+  },
+  {
+    "type": "schema",
+    "id": "schema-diff",
+    "title": "Schema changes",
+    "kind": "erd",
+    "d2": "Tournament: {\n  shape: sql_table\n  class: changed\n  \"id\": \"String\"\n  \"espnId\": \"String?\"\n  \"season\": \"Int\"\n  \"name\": \"String\"\n  \"course\": \"String?\"\n  \"city\": \"String?\"\n  \"country\": \"String?\"\n  \"startDate\": \"DateTime\"\n  \"endDate\": \"DateTime\"\n  \"purse\": \"Int?\"\n  \"status\": \"TournamentStatus\"\n  \"completedAt\": \"DateTime?\"\n  \"excluded\": \"Boolean\"\n  \"imageUrl\": \"String?\"\n  \"updatedAt\": \"DateTime\"\n  \"fields\": \"TournamentField[]\"\n  \"results\": \"TournamentResult[]\"\n  \"picks\": \"Pick[]\"\n  \"notificationLogs\": \"NotificationLog[]\"\n  \"estimatedPurse\": \"Int?  (+ added)\"\n}"
+  },
+  {
+    "type": "api",
+    "id": "api-admin",
+    "title": "tRPC: admin",
+    "procedures": [
+      {
+        "name": "admin.updateTournament",
+        "auth": "admin",
+        "kind": "mutation",
+        "input": "z.object({\n        id: z.string(),\n        name: z.string().optional(),\n        course: z.string().optional(),\n        startDate: z.string().optional(),\n        endDate: z.string().optional(),\n        purse: z.number().int().nullable().optional(),\n        estimatedPurse: z.number().int().nullable().optional(),\n        status: z\n          .enum([\"UPCOMING\", \"IN_PROGRESS\", \"FINALIZING\", \"COMPLETED\", \"CANCELLED\"])\n          .optional(),\n      })",
+        "change": "changed"
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "id": "grp-schema",
+    "title": "The foundation — one nullable column",
+    "description": "The entire data-model footprint of the feature: a second, deliberately separate purse column so the admin's guess and ESPN's confirmed value can never clobber each other.",
+    "blocks": [
+      {
+        "type": "diff",
+        "id": "diff-1",
+        "title": "schema.prisma",
+        "path": "prisma/schema.prisma",
+        "description": "**A separate `estimatedPurse Int?` beside `purse` — not a flag on the existing column.**\n\n- `estimatedPurse Int? @map(\"estimated_purse\")` on the `Tournament` model\n- keeping it separate means ESPN sync keeps writing `purse` untouched, and precedence is a pure read-time rule\n- nullable with no default — every existing row and code path behaves exactly as before until an admin fills it in",
+        "hunks": [
+          {
+            "header": "@@ -115,8 +115,9 @@ model Tournament {",
+            "lines": [
+              "   country     String?",
+              "   startDate   DateTime         @map(\"start_date\")",
+              "   endDate     DateTime         @map(\"end_date\")",
+              "-  purse       Int?",
+              "-  status      TournamentStatus @default(UPCOMING)",
+              "+  purse          Int?",
+              "+  estimatedPurse Int?             @map(\"estimated_purse\")",
+              "+  status         TournamentStatus @default(UPCOMING)",
+              "   completedAt DateTime?        @map(\"completed_at\")",
+              "   excluded    Boolean          @default(false)",
+              "   imageUrl    String?          @map(\"image_url\")"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-0",
+        "title": "migration.sql",
+        "path": "prisma/migrations/20260514001141_add_estimated_purse/migration.sql",
+        "description": "**Purely additive `ALTER TABLE` — nullable column, no backfill, no default.**",
+        "hunks": [
+          {
+            "header": "@@ -0,0 +1,2 @@",
+            "lines": [
+              "+-- AlterTable",
+              "+ALTER TABLE \"tournament\" ADD COLUMN     \"estimated_purse\" INTEGER;"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "id": "grp-fallback",
+    "title": "The core behavior — live projections fall back to the estimate",
+    "description": "The real payoff of the PR: `syncLiveStandings` used to silently skip projected earnings whenever ESPN had no purse. Now the admin's estimate keeps live money on the board during tournament week.",
+    "blocks": [
+      {
+        "type": "diff",
+        "id": "diff-19",
+        "title": "sync.ts",
+        "path": "src/server/services/sync.ts",
+        "description": "**The behavioral heart — projections no longer die when ESPN has no purse.**\n\n- `syncLiveStandings` previously returned `playerCount: 0` inside the catch the moment the ESPN purse fetch failed — live projected earnings simply didn't happen\n- now the catch only logs; `effectivePurse = purse ?? tournament.estimatedPurse` decides afterwards, and the sync bails only when *both* are null\n- `calculateEarnings(effectivePurse, results)` projects payouts off the estimate, so members see live earnings mid-tournament\n- `SyncFieldsResult.purse` is renamed `effectivePurse` with a doc comment — the value can now be an estimate, and the name says so\n\nReads the column selected by [the sync repository](#diff-11).",
+        "diagram": {
+          "type": "diagram",
+          "id": "diff-19-diag",
+          "title": "syncLiveStandings with the estimated-purse fallback",
+          "kind": "sequence",
+          "d2": "shape: sequence_diagram\ncron: { class: actor }\nsync: { class: changed }\nESPN: { class: external }\ndb: { class: store }\ncron -> sync: syncLiveStandings(id)\nsync -> db: findTournamentForSync — purse, estimatedPurse\nsync -> ESPN: getResults(espnId)\nESPN -> sync: live leaderboard\nsync -> ESPN: getEventDetails(espnId) for purse\nESPN -> sync: fails — purse not published\nsync -> sync: effectivePurse = purse ?? estimatedPurse\nsync -> db: upsert projected earnings from calculateEarnings",
+          "mermaid": "sequenceDiagram\n  cron->>sync: syncLiveStandings(id)\n  sync->>db: findTournamentForSync (purse, estimatedPurse)\n  sync->>ESPN: getResults(espnId)\n  ESPN-->>sync: live leaderboard\n  sync->>ESPN: getEventDetails(espnId) for purse\n  ESPN-->>sync: fails — purse not published\n  sync->>sync: effectivePurse = purse ?? estimatedPurse\n  sync->>db: upsert projected earnings from calculateEarnings"
+        },
+        "hunks": [
+          {
+            "header": "@@ -26,7 +26,8 @@ export interface SyncFieldsResult {",
+            "lines": [
+              "   tournamentId: string;",
+              "   tournamentName: string;",
+              "   fieldCount: number;",
+              "-  purse: number | null;",
+              "+  /** The confirmed ESPN purse, or estimated purse as fallback. */",
+              "+  effectivePurse: number | null;",
+              " }",
+              " ",
+              " /**"
+            ]
+          },
+          {
+            "header": "@@ -74,7 +75,7 @@ export async function syncFields(tournamentId: string): Promise<SyncFieldsResult",
+            "lines": [
+              "     tournamentId: tournament.id,",
+              "     tournamentName: tournament.name,",
+              "     fieldCount,",
+              "-    purse,",
+              "+    effectivePurse: purse ?? tournament.estimatedPurse,",
+              "   };",
+              " }",
+              " "
+            ]
+          },
+          {
+            "header": "@@ -202,16 +203,21 @@ export async function syncLiveStandings(",
+            "lines": [
+              "       await syncRepo.updateTournamentPurse(tournament.id, purse);",
+              "     } catch (e) {",
+              "       console.warn(`[sync] Could not fetch purse for ${tournament.name}:`, e);",
+              "-      return {",
+              "-        tournamentId: tournament.id,",
+              "-        tournamentName: tournament.name,",
+              "-        playerCount: 0,",
+              "-      };",
+              "     }",
+              "   }",
+              " ",
+              "+  // Fall back to estimated purse if ESPN purse is still unavailable",
+              "+  const effectivePurse = purse ?? tournament.estimatedPurse;",
+              "+  if (effectivePurse === null) {",
+              "+    return {",
+              "+      tournamentId: tournament.id,",
+              "+      tournamentName: tournament.name,",
+              "+      playerCount: 0,",
+              "+    };",
+              "+  }",
+              "+",
+              "   // Project earnings using payout calculator",
+              "-  const projectedEarnings = calculateEarnings(purse, results);",
+              "+  const projectedEarnings = calculateEarnings(effectivePurse, results);",
+              " ",
+              "   let playerCount = 0;",
+              "   for (const result of results) {"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-11",
+        "title": "sync.ts (repository)",
+        "path": "src/server/repositories/sync.ts",
+        "description": "**`findTournamentForSync` now selects `estimatedPurse`** — so [the sync service](#diff-19) can fall back without a second query.",
+        "hunks": [
+          {
+            "header": "@@ -13,7 +13,7 @@ import { TournamentStatus } from \"@/generated/kysely/enums\";",
+            "lines": [
+              " export async function findTournamentForSync(tournamentId: string) {",
+              "   return db",
+              "     .selectFrom(\"tournament\")",
+              "-    .select([\"id\", \"name\", \"espnId\", \"purse\", \"season\", \"status\"])",
+              "+    .select([\"id\", \"name\", \"espnId\", \"purse\", \"estimatedPurse\", \"season\", \"status\"])",
+              "     .where(\"id\", \"=\", tournamentId)",
+              "     .executeTakeFirst();",
+              " }"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "id": "grp-admin",
+    "title": "The write path — how an admin sets the estimate",
+    "description": "Form field → tRPC input → service → repository patch: the standard router/service/repository chain widened by one optional field, plus the admin UI that makes ownership of each value obvious.",
+    "blocks": [
+      {
+        "type": "diff",
+        "id": "diff-2",
+        "title": "tournament-admin.tsx",
+        "path": "src/app/admin/tournaments/[id]/tournament-admin.tsx",
+        "description": "**The admin form gains an \"Estimated Purse\" field — and clarifies who owns which value.**\n\n- new controlled `estimatedPurse` input, submitted through [`admin.updateTournament`](#diff-13) as an int or `null` (clearing is possible)\n- the old \"Purse ($) (optional)\" label becomes \"Purse ($) (from ESPN)\" with placeholder \"Set by ESPN sync\" — signaling admins normally shouldn't type there\n- the read-only info panel shows `~$X` when only the estimate exists, and \"Not set\" when neither does",
+        "hunks": [
+          {
+            "header": "@@ -20,6 +20,7 @@ interface Tournament {",
+            "lines": [
+              "   startDate: Date;",
+              "   endDate: Date;",
+              "   purse: number | null;",
+              "+  estimatedPurse: number | null;",
+              "   status: string;",
+              "   excluded: boolean;",
+              "   season: number;"
+            ]
+          },
+          {
+            "header": "@@ -73,6 +74,7 @@ export function TournamentAdmin({",
+            "lines": [
+              "   const [startDate, setStartDate] = useState(toInputDateTime(initial.startDate));",
+              "   const [endDate, setEndDate] = useState(toInputDateTime(initial.endDate));",
+              "   const [purse, setPurse] = useState(initial.purse?.toString() ?? \"\");",
+              "+  const [estimatedPurse, setEstimatedPurse] = useState(initial.estimatedPurse?.toString() ?? \"\");",
+              "   const [status, setStatus] = useState(initial.status);",
+              "   const [message, setMessage] = useState(\"\");",
+              "   const [showForceConfirm, setShowForceConfirm] = useState(false);"
+            ]
+          },
+          {
+            "header": "@@ -236,6 +238,7 @@ export function TournamentAdmin({",
+            "lines": [
+              "             startDate: fromInputDateTime(startDate),",
+              "             endDate: fromInputDateTime(endDate),",
+              "             purse: purse ? parseInt(purse, 10) : null,",
+              "+            estimatedPurse: estimatedPurse ? parseInt(estimatedPurse, 10) : null,",
+              "             status: status as",
+              "               | \"UPCOMING\"",
+              "               | \"IN_PROGRESS\""
+            ]
+          },
+          {
+            "header": "@@ -288,12 +291,22 @@ export function TournamentAdmin({",
+            "lines": [
+              " ",
+              "         <div className={styles.row}>",
+              "           <label className={styles.field}>",
+              "-            <span className={styles.label}>Purse ($) <span className={styles.optional}>(optional)</span></span>",
+              "+            <span className={styles.label}>Estimated Purse ($) <span className={styles.optional}>(optional)</span></span>",
+              "+            <input",
+              "+              type=\"number\"",
+              "+              value={estimatedPurse}",
+              "+              onChange={(e) => setEstimatedPurse(e.target.value)}",
+              "+              placeholder=\"e.g. 20000000\"",
+              "+              className={styles.input}",
+              "+            />",
+              "+          </label>",
+              "+          <label className={styles.field}>",
+              "+            <span className={styles.label}>Purse ($) <span className={styles.optional}>(from ESPN)</span></span>",
+              "             <input",
+              "               type=\"number\"",
+              "               value={purse}",
+              "               onChange={(e) => setPurse(e.target.value)}",
+              "-              placeholder=\"e.g. 20000000\"",
+              "+              placeholder=\"Set by ESPN sync\"",
+              "               className={styles.input}",
+              "             />",
+              "           </label>"
+            ]
+          },
+          {
+            "header": "@@ -380,7 +393,7 @@ export function TournamentAdmin({",
+            "lines": [
+              "           <div>",
+              "             <span className={styles.infoLabel}>Purse</span>",
+              "             <span>",
+              "-              {initial.purse ? formatCurrency(initial.purse) : \"Not set\"}",
+              "+              {initial.purse ? formatCurrency(initial.purse) : initial.estimatedPurse ? `~${formatCurrency(initial.estimatedPurse)}` : \"Not set\"}",
+              "             </span>",
+              "           </div>",
+              "           <div>"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-13",
+        "title": "admin.ts (router)",
+        "path": "src/server/routers/admin.ts",
+        "description": "**The tRPC input accepts the estimate.**\n\n- `estimatedPurse: z.number().int().nullable().optional()` on `admin.updateTournament` — same shape as `purse`\n- `nullable()` lets an admin clear a stale estimate once the real purse lands",
+        "hunks": [
+          {
+            "header": "@@ -62,6 +62,7 @@ export const adminRouter = router({",
+            "lines": [
+              "         startDate: z.string().optional(),",
+              "         endDate: z.string().optional(),",
+              "         purse: z.number().int().nullable().optional(),",
+              "+        estimatedPurse: z.number().int().nullable().optional(),",
+              "         status: z",
+              "           .enum([\"UPCOMING\", \"IN_PROGRESS\", \"FINALIZING\", \"COMPLETED\", \"CANCELLED\"])",
+              "           .optional(),"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-15",
+        "title": "admin.ts (service)",
+        "path": "src/server/services/admin.ts",
+        "description": "**Service signature pass-through** — `adminService.updateTournament` forwards `estimatedPurse` to [the repository](#diff-9); the router's zod already validated it.",
+        "hunks": [
+          {
+            "header": "@@ -89,6 +89,7 @@ export async function updateTournament(",
+            "lines": [
+              "     startDate?: string;",
+              "     endDate?: string;",
+              "     purse?: number | null;",
+              "+    estimatedPurse?: number | null;",
+              "     status?: TournamentStatus;",
+              "   },",
+              " ) {"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-9",
+        "title": "admin.ts (repository)",
+        "path": "src/server/repositories/admin.ts",
+        "description": "**The admin repository reads and writes the new column.**\n\n- `findTournaments` and `findTournamentById` select `estimatedPurse` so the admin pages can show it\n- `updateTournament` accepts `estimatedPurse?: number | null` in its patch type",
+        "hunks": [
+          {
+            "header": "@@ -62,6 +62,7 @@ export async function findTournaments(",
+            "lines": [
+              "       \"startDate\",",
+              "       \"endDate\",",
+              "       \"purse\",",
+              "+      \"estimatedPurse\",",
+              "       \"status\",",
+              "       \"excluded\",",
+              "       \"season\","
+            ]
+          },
+          {
+            "header": "@@ -97,6 +98,7 @@ export async function findTournamentById(id: string) {",
+            "lines": [
+              "       \"startDate\",",
+              "       \"endDate\",",
+              "       \"purse\",",
+              "+      \"estimatedPurse\",",
+              "       \"status\",",
+              "       \"excluded\",",
+              "       \"season\","
+            ]
+          },
+          {
+            "header": "@@ -175,6 +177,7 @@ export async function updateTournament(",
+            "lines": [
+              "     startDate?: Date;",
+              "     endDate?: Date;",
+              "     purse?: number | null;",
+              "+    estimatedPurse?: number | null;",
+              "     status?: TournamentStatus;",
+              "   },",
+              " ) {"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-3",
+        "title": "page.tsx (admin list)",
+        "path": "src/app/admin/tournaments/page.tsx",
+        "description": "**Admin list shows the three-way purse state** — `$X` confirmed, `~$X` estimated, `—` neither.",
+        "hunks": [
+          {
+            "header": "@@ -83,7 +83,7 @@ export default async function AdminTournamentsPage({",
+            "lines": [
+              "                 {formatDate(t.startDate)} – {formatDate(t.endDate)}",
+              "               </span>",
+              "               <span className={styles.colPurse}>",
+              "-                {t.purse ? formatCurrency(t.purse) : \"—\"}",
+              "+                {t.purse ? formatCurrency(t.purse) : t.estimatedPurse ? `~${formatCurrency(t.estimatedPurse)}` : \"—\"}",
+              "               </span>",
+              "               <span",
+              "                 className={`${styles.colStatus} ${"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "id": "grp-display",
+    "title": "The read path — one formatter, four pages, and the repos that feed them",
+    "description": "A single `formatPurse` helper enforces the `~` convention everywhere users see a purse, replacing what would otherwise be four inline ternaries; two repository selects plumb the column to those pages.",
+    "blocks": [
+      {
+        "type": "diff",
+        "id": "diff-8",
+        "title": "format.ts",
+        "path": "src/lib/format.ts",
+        "description": "**`formatPurse` — the precedence rule as one shared helper.**\n\n- confirmed `purse` → `formatCurrency(purse)`, no prefix\n- else `estimatedPurse` → `~`-prefixed currency\n- else `null`, which doubles as the render guard in `{formatPurse(t) && …}`\n- centralizing it keeps the `~` convention identical across the home, dashboard, league, and tournament pages",
+        "hunks": [
+          {
+            "header": "@@ -42,6 +42,12 @@ export function isMissedCut(pick: {",
+            "lines": [
+              "   );",
+              " }",
+              " ",
+              "+export function formatPurse(tournament: { purse: number | null; estimatedPurse: number | null }): string | null {",
+              "+  if (tournament.purse) return formatCurrency(tournament.purse);",
+              "+  if (tournament.estimatedPurse) return `~${formatCurrency(tournament.estimatedPurse)}`;",
+              "+  return null;",
+              "+}",
+              "+",
+              " export function formatDate(date: Date | string): string {",
+              "   return new Date(date).toLocaleDateString(\"en-US\", {",
+              "     month: \"short\","
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-7",
+        "title": "page.tsx (tournament)",
+        "path": "src/app/tournament/[id]/page.tsx",
+        "description": "**Tournament page adopts `formatPurse` — plus one nuance for the pick module.**\n\n- the header purse badge switches to [`formatPurse`](#diff-8)\n- `DashboardPickModule` receives `purse: tournament.purse ?? tournament.estimatedPurse ?? null` — the module just needs *a* number, so the estimate passes through untagged",
+        "hunks": [
+          {
+            "header": "@@ -3,7 +3,7 @@ import { notFound, redirect } from \"next/navigation\";",
+            "lines": [
+              " import Link from \"next/link\";",
+              " import { serverTRPC } from \"@/lib/trpc/server\";",
+              " import { getActiveLeagueId } from \"@/lib/league-context\";",
+              "-import { formatCurrency, formatDate, formatPosition, formatScore } from \"@/lib/format\";",
+              "+import { formatCurrency, formatDate, formatPosition, formatPurse, formatScore } from \"@/lib/format\";",
+              " import { CountryFlag } from \"@/components/country-flag/country-flag\";",
+              " import { GolferAvatar } from \"@/components/golfer/golfer-avatar\";",
+              " import { DashboardPickModule } from \"@/components/dashboard/dashboard-pick-module\";"
+            ]
+          },
+          {
+            "header": "@@ -128,9 +128,9 @@ export default async function TournamentPage({",
+            "lines": [
+              "                 </p>",
+              "               </div>",
+              "               <div className={styles.headerRight}>",
+              "-                {tournament.purse && (",
+              "+                {formatPurse(tournament) && (",
+              "                   <span className={styles.purse}>",
+              "-                    {formatCurrency(tournament.purse)}",
+              "+                    {formatPurse(tournament)}",
+              "                   </span>",
+              "                 )}",
+              "                 <span"
+            ]
+          },
+          {
+            "header": "@@ -170,7 +170,7 @@ export default async function TournamentPage({",
+            "lines": [
+              "               course: tournament.course,",
+              "               startDate: tournament.startDate,",
+              "               endDate: tournament.endDate,",
+              "-              purse: tournament.purse,",
+              "+              purse: tournament.purse ?? tournament.estimatedPurse ?? null,",
+              "               status: tournament.status,",
+              "             }}",
+              "             currentPick={currentPick}"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-4",
+        "title": "page.tsx (dashboard)",
+        "path": "src/app/dashboard/page.tsx",
+        "description": "**Dashboard swaps the raw `tournament.purse` render for [`formatPurse`](#diff-8)** — the helper's `null` return keeps the existing conditional-render pattern intact.",
+        "hunks": [
+          {
+            "header": "@@ -3,7 +3,7 @@ import { redirect } from \"next/navigation\";",
+            "lines": [
+              " import Link from \"next/link\";",
+              " import { serverTRPC } from \"@/lib/trpc/server\";",
+              " import { getActiveLeagueId } from \"@/lib/league-context\";",
+              "-import { formatCurrency, formatDate, formatPosition, formatScore } from \"@/lib/format\";",
+              "+import { formatCurrency, formatDate, formatPosition, formatPurse, formatScore } from \"@/lib/format\";",
+              " import { DashboardPickModule } from \"@/components/dashboard/dashboard-pick-module\";",
+              " import { GolferAvatar } from \"@/components/golfer/golfer-avatar\";",
+              " import styles from \"./dashboard.module.css\";"
+            ]
+          },
+          {
+            "header": "@@ -117,9 +117,9 @@ export default async function DashboardPage({",
+            "lines": [
+              "               </p>",
+              "             </div>",
+              "             <div className={styles.tournamentRight}>",
+              "-              {tournament.purse && (",
+              "+              {formatPurse(tournament) && (",
+              "                 <span className={styles.purse}>",
+              "-                  {formatCurrency(tournament.purse)}",
+              "+                  {formatPurse(tournament)}",
+              "                 </span>",
+              "               )}",
+              "               <span"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-5",
+        "title": "page.tsx (league)",
+        "path": "src/app/league/[id]/page.tsx",
+        "description": "**League page: same swap** for the live-week meta line (`Purse: ~$X`).",
+        "hunks": [
+          {
+            "header": "@@ -2,7 +2,7 @@ import type { Metadata } from \"next\";",
+            "lines": [
+              " import { redirect } from \"next/navigation\";",
+              " import Link from \"next/link\";",
+              " import { serverTRPC } from \"@/lib/trpc/server\";",
+              "-import { formatCurrency, formatDate, formatPosition, formatScore } from \"@/lib/format\";",
+              "+import { formatCurrency, formatDate, formatPosition, formatPurse, formatScore } from \"@/lib/format\";",
+              " import { GolferAvatar } from \"@/components/golfer/golfer-avatar\";",
+              " import { SyncLeagueContext } from \"@/components/league/sync-league-context\";",
+              " import { LeagueThisWeekPicker } from \"@/components/league/league-this-week-picker\";"
+            ]
+          },
+          {
+            "header": "@@ -266,9 +266,9 @@ export default async function LeagueDetailPage({",
+            "lines": [
+              "               ) : <span className={styles.weekArrowPlaceholder} />}",
+              "               <p className={styles.liveMeta}>",
+              "                 {formatDate(displayTournament.startDate)} – {formatDate(displayTournament.endDate)}",
+              "-                {displayTournament.purse && (",
+              "+                {formatPurse(displayTournament) && (",
+              "                   <span className={styles.liveMetaPurse}>",
+              "-                    <span className={styles.liveMetaSep}> · </span>Purse: {formatCurrency(displayTournament.purse)}",
+              "+                    <span className={styles.liveMetaSep}> · </span>Purse: {formatPurse(displayTournament)}",
+              "                   </span>",
+              "                 )}",
+              "               </p>"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-6",
+        "title": "page.tsx (home)",
+        "path": "src/app/page.tsx",
+        "description": "**Home page: same swap** for the upcoming-tournament aside.",
+        "hunks": [
+          {
+            "header": "@@ -2,7 +2,7 @@ import type { Metadata } from \"next\";",
+            "lines": [
+              " import { redirect } from \"next/navigation\";",
+              " import Link from \"next/link\";",
+              " import { serverTRPC } from \"@/lib/trpc/server\";",
+              "-import { formatCurrency, formatDate } from \"@/lib/format\";",
+              "+import { formatCurrency, formatDate, formatPurse } from \"@/lib/format\";",
+              " import styles from \"./page.module.css\";",
+              " ",
+              " export const metadata: Metadata = {"
+            ]
+          },
+          {
+            "header": "@@ -83,11 +83,11 @@ export default async function Home() {",
+            "lines": [
+              "                   {formatDate(tournament.startDate)} –{\" \"}",
+              "                   {formatDate(tournament.endDate)}",
+              "                 </p>",
+              "-                {tournament.purse && (",
+              "+                {formatPurse(tournament) && (",
+              "                   <>",
+              "                     <p className={styles.asidePurseLabel}>Purse</p>",
+              "                     <p className={styles.asidePurse}>",
+              "-                      {formatCurrency(tournament.purse)}",
+              "+                      {formatPurse(tournament)}",
+              "                     </p>",
+              "                   </>",
+              "                 )}"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-12",
+        "title": "tournament.ts (repository)",
+        "path": "src/server/repositories/tournament.ts",
+        "description": "**`estimatedPurse` joins the shared `COLUMNS` list** — every tournament read now carries the field, which is what lets the pages above call `formatPurse`.",
+        "hunks": [
+          {
+            "header": "@@ -13,6 +13,7 @@ const COLUMNS = [",
+            "lines": [
+              "   \"startDate\",",
+              "   \"endDate\",",
+              "   \"purse\",",
+              "+  \"estimatedPurse\",",
+              "   \"status\",",
+              "   \"season\",",
+              "   \"imageUrl\","
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-10",
+        "title": "pick.ts (repository)",
+        "path": "src/server/repositories/pick.ts",
+        "description": "**`findAllSeasonPicks` selects `tournament.estimatedPurse`** so season pick-history rows carry the field too.",
+        "hunks": [
+          {
+            "header": "@@ -424,6 +424,7 @@ export async function findAllSeasonPicks(",
+            "lines": [
+              "       \"tournament.startDate\",",
+              "       \"tournament.endDate\",",
+              "       \"tournament.purse\",",
+              "+      \"tournament.estimatedPurse\",",
+              "       \"tournament.status as tournamentStatus\",",
+              "       \"pick.golferId\",",
+              "       \"golfer.name as golferName\","
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "id": "grp-tests",
+    "title": "Tests — the fallback pinned, fixtures widened",
+    "description": "New sync tests pin the fallback and precedence contract; the other four files just add `estimatedPurse: null` to tournament fixtures so mocks match the widened row type.",
+    "blocks": [
+      {
+        "type": "diff",
+        "id": "diff-18",
+        "title": "sync.test.ts",
+        "path": "src/server/services/sync.test.ts",
+        "description": "**Four tests pin the fallback contract.**\n\n- `syncFields` and `syncLiveStandings` each get a \"falls back to estimated purse\" case: `purse: null, estimatedPurse: 20000000` with ESPN down asserts `calculateEarnings` runs with `20000000`\n- the old \"continues without purse\" tests become \"neither ESPN nor estimated\" — the truly-empty case still returns 0 players / null purse\n- existing assertions rename `result.purse` → `result.effectivePurse`; with `purse: 25000000` set they confirm the confirmed value still wins",
+        "hunks": [
+          {
+            "header": "@@ -83,7 +83,7 @@ const {",
+            "lines": [
+              " ",
+              " // --- Test data ---",
+              " ",
+              "-const TOURNAMENT = { id: \"t1\", name: \"The Players\", espnId: \"401580340\", purse: 25000000, season: 2026, status: \"IN_PROGRESS\" as const };",
+              "+const TOURNAMENT = { id: \"t1\", name: \"The Players\", espnId: \"401580340\", purse: 25000000, estimatedPurse: null, season: 2026, status: \"IN_PROGRESS\" as const };",
+              " ",
+              " const FIELD = [",
+              "   { espnId: \"esp-1\", name: \"Scottie Scheffler\", country: \"United States\" },"
+            ]
+          },
+          {
+            "header": "@@ -119,7 +119,7 @@ describe(\"sync\", () => {",
+            "lines": [
+              " ",
+              "       expect(result.fieldCount).toBe(2);",
+              "       expect(result.tournamentName).toBe(\"The Players\");",
+              "-      expect(result.purse).toBe(25000000);",
+              "+      expect(result.effectivePurse).toBe(25000000);",
+              "       expect(mockGetField).toHaveBeenCalledWith(\"401580340\");",
+              "       expect(mockUpsertGolfer).toHaveBeenCalledTimes(2);",
+              "       expect(mockUpsertTournamentField).toHaveBeenCalledTimes(2);"
+            ]
+          },
+          {
+            "header": "@@ -132,7 +132,7 @@ describe(\"sync\", () => {",
+            "lines": [
+              " ",
+              "       const result = await syncFields(\"t1\");",
+              " ",
+              "-      expect(result.purse).toBe(25000000);",
+              "+      expect(result.effectivePurse).toBe(25000000);",
+              "       expect(mockGetEventDetails).toHaveBeenCalledWith(\"401580340\");",
+              "       expect(mockUpdateTournamentPurse).toHaveBeenCalledWith(\"t1\", 25000000);",
+              "     });"
+            ]
+          },
+          {
+            "header": "@@ -146,7 +146,17 @@ describe(\"sync\", () => {",
+            "lines": [
+              "       expect(mockGetEventDetails).not.toHaveBeenCalled();",
+              "     });",
+              " ",
+              "-    it(\"continues without purse if ESPN details fetch fails\", async () => {",
+              "+    it(\"falls back to estimated purse when ESPN purse unavailable\", async () => {",
+              "+      mockFindTournamentForSync.mockResolvedValueOnce({ ...TOURNAMENT, purse: null, estimatedPurse: 20000000 });",
+              "+      mockGetField.mockResolvedValueOnce([]);",
+              "+      mockGetEventDetails.mockRejectedValueOnce(new Error(\"ESPN down\"));",
+              "+",
+              "+      const result = await syncFields(\"t1\");",
+              "+",
+              "+      expect(result.effectivePurse).toBe(20000000);",
+              "+    });",
+              "+",
+              "+    it(\"returns null purse when neither ESPN nor estimated available\", async () => {",
+              "       mockFindTournamentForSync.mockResolvedValueOnce({ ...TOURNAMENT, purse: null });",
+              "       mockGetField.mockResolvedValueOnce(FIELD);",
+              "       mockGetEventDetails.mockRejectedValueOnce(new Error(\"ESPN down\"));"
+            ]
+          },
+          {
+            "header": "@@ -154,7 +164,7 @@ describe(\"sync\", () => {",
+            "lines": [
+              "       const result = await syncFields(\"t1\");",
+              " ",
+              "       expect(result.fieldCount).toBe(2);",
+              "-      expect(result.purse).toBeNull();",
+              "+      expect(result.effectivePurse).toBeNull();",
+              "     });",
+              " ",
+              "     it(\"throws when tournament not found\", async () => {"
+            ]
+          },
+          {
+            "header": "@@ -295,7 +305,19 @@ describe(\"sync\", () => {",
+            "lines": [
+              "       expect(result.playerCount).toBe(2);",
+              "     });",
+              " ",
+              "-    it(\"returns 0 players when purse unavailable\", async () => {",
+              "+    it(\"uses estimated purse when ESPN purse unavailable\", async () => {",
+              "+      mockFindTournamentForSync.mockResolvedValueOnce({ ...TOURNAMENT, purse: null, estimatedPurse: 20000000 });",
+              "+      mockGetResults.mockResolvedValueOnce(RESULTS);",
+              "+      mockGetEventDetails.mockRejectedValueOnce(new Error(\"ESPN down\"));",
+              "+      mockCalculateEarnings.mockReturnValueOnce(new Map());",
+              "+",
+              "+      const result = await syncLiveStandings(\"t1\");",
+              "+",
+              "+      expect(result.playerCount).toBe(2);",
+              "+      expect(mockCalculateEarnings).toHaveBeenCalledWith(20000000, RESULTS);",
+              "+    });",
+              "+",
+              "+    it(\"returns 0 players when neither ESPN nor estimated purse available\", async () => {",
+              "       mockFindTournamentForSync.mockResolvedValueOnce({ ...TOURNAMENT, purse: null });",
+              "       mockGetResults.mockResolvedValueOnce(RESULTS);",
+              "       mockGetEventDetails.mockRejectedValueOnce(new Error(\"ESPN down\"));"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-14",
+        "title": "admin.test.ts",
+        "path": "src/server/services/admin.test.ts",
+        "description": "**Fixture updates only** — `estimatedPurse: null` added to the admin-service tournament mocks.",
+        "hunks": [
+          {
+            "header": "@@ -81,6 +81,7 @@ describe(\"adminService\", () => {",
+            "lines": [
+              "         startDate: new Date(),",
+              "         endDate: new Date(),",
+              "         purse: 20000000,",
+              "+        estimatedPurse: null,",
+              "         status: \"UPCOMING\",",
+              "         excluded: false,",
+              "         season: 2026,"
+            ]
+          },
+          {
+            "header": "@@ -110,6 +111,7 @@ describe(\"adminService\", () => {",
+            "lines": [
+              "     startDate: new Date(),",
+              "     endDate: new Date(),",
+              "     purse: 20000000,",
+              "+    estimatedPurse: null,",
+              "     status: \"UPCOMING\" as const,",
+              "     excluded: false,",
+              "     season: 2026,"
+            ]
+          },
+          {
+            "header": "@@ -559,6 +561,7 @@ describe(\"adminService\", () => {",
+            "lines": [
+              "         startDate: new Date(),",
+              "         endDate: new Date(),",
+              "         purse: null,",
+              "+        estimatedPurse: null,",
+              "         status: \"IN_PROGRESS\",",
+              "         season: 2026,",
+              "         imageUrl: null,"
+            ]
+          },
+          {
+            "header": "@@ -603,6 +606,7 @@ describe(\"adminService\", () => {",
+            "lines": [
+              "         startDate: new Date(),",
+              "         endDate: new Date(),",
+              "         purse: null,",
+              "+        estimatedPurse: null,",
+              "         status: \"COMPLETED\",",
+              "         season: 2026,",
+              "         imageUrl: null,"
+            ]
+          },
+          {
+            "header": "@@ -661,6 +665,7 @@ describe(\"adminService\", () => {",
+            "lines": [
+              "         startDate: new Date(),",
+              "         endDate: new Date(),",
+              "         purse: null,",
+              "+        estimatedPurse: null,",
+              "         status: \"IN_PROGRESS\",",
+              "         season: 2026,",
+              "         imageUrl: null,"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-17",
+        "title": "pick.test.ts",
+        "path": "src/server/services/pick.test.ts",
+        "description": "**Fixture updates only** — `estimatedPurse: null` on pick-service tournament and season-pick mocks.",
+        "hunks": [
+          {
+            "header": "@@ -46,6 +46,7 @@ function makeTournament(overrides: Partial<Awaited<ReturnType<typeof tournamentR",
+            "lines": [
+              "     startDate: FUTURE_DATE,",
+              "     endDate: FUTURE_DATE,",
+              "     purse: null,",
+              "+    estimatedPurse: null,",
+              "     status: \"UPCOMING\" as const,",
+              "     season: 2026,",
+              "     imageUrl: null,"
+            ]
+          },
+          {
+            "header": "@@ -773,6 +774,7 @@ describe(\"pickService\", () => {",
+            "lines": [
+              "           startDate: FUTURE_DATE,",
+              "           endDate: FUTURE_DATE,",
+              "           purse: 9000000,",
+              "+          estimatedPurse: null,",
+              "           tournamentStatus: \"UPCOMING\" as const,",
+              "           golferId: \"g1\",",
+              "           golferEspnId: \"12345\","
+            ]
+          },
+          {
+            "header": "@@ -790,6 +792,7 @@ describe(\"pickService\", () => {",
+            "lines": [
+              "           startDate: PAST_DATE,",
+              "           endDate: PAST_DATE,",
+              "           purse: 8000000,",
+              "+          estimatedPurse: null,",
+              "           tournamentStatus: \"COMPLETED\" as const,",
+              "           golferId: \"g2\",",
+              "           golferEspnId: \"12346\","
+            ]
+          },
+          {
+            "header": "@@ -820,6 +823,7 @@ describe(\"pickService\", () => {",
+            "lines": [
+              "           startDate: FUTURE_DATE,",
+              "           endDate: FUTURE_DATE,",
+              "           purse: 9000000,",
+              "+          estimatedPurse: null,",
+              "           tournamentStatus: \"UPCOMING\" as const,",
+              "           golferId: \"g1\",",
+              "           golferEspnId: \"12345\","
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-16",
+        "title": "dashboard.test.ts",
+        "path": "src/server/services/dashboard.test.ts",
+        "description": "**Fixture update only** — `estimatedPurse: null` in `makeTournament`.",
+        "hunks": [
+          {
+            "header": "@@ -29,6 +29,7 @@ function makeTournament(overrides: Record<string, unknown> = {}) {",
+            "lines": [
+              "     startDate: FUTURE_DATE,",
+              "     endDate: FUTURE_DATE,",
+              "     purse: 9800000,",
+              "+    estimatedPurse: null,",
+              "     status: \"UPCOMING\" as const,",
+              "     season: 2026,",
+              "     imageUrl: null,"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "diff",
+        "id": "diff-20",
+        "title": "tournament.test.ts",
+        "path": "src/server/services/tournament.test.ts",
+        "description": "**Fixture update only** — `estimatedPurse: null` in the mock tournament.",
+        "hunks": [
+          {
+            "header": "@@ -19,6 +19,7 @@ const mockTournament = {",
+            "lines": [
+              "   startDate: new Date(\"2026-04-02\"),",
+              "   endDate: new Date(\"2026-04-05\"),",
+              "   purse: 9800000,",
+              "+  estimatedPurse: null,",
+              "   status: \"COMPLETED\" as const,",
+              "   season: 2026,",
+              "   imageUrl: null,"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

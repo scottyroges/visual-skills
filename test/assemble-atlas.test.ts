@@ -175,29 +175,28 @@ describe("depth + owns + seams", () => {
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { lintAtlas } from "../src/lint-atlas.js";
-const fix = (p: string) => JSON.parse(readFileSync(new URL("../example/atlas-sports-rpg/" + p, import.meta.url), "utf8"));
+const fix = (p: string) => JSON.parse(readFileSync(new URL("../example/atlas-ppgl/" + p, import.meta.url), "utf8"));
 
 describe("canonical regeneration (acceptance)", () => {
-  it("atlas.json renders the spine, the domain map, and 7 tiles", async () => {
+  it("atlas.json renders the spine, the domain map, and 8 tiles", async () => {
     const doc = fix("atlas.json");
     const html = await assembleAtlas(doc.blocks, { ...doc, title: doc.title });
     expect(html).toContain('id="spine" class="section"');
-    expect(html).toContain("map-svg");
-    expect(html).toContain('class="progress-step-label">Spine');
-    expect((html.match(/class="domain-tile /g) || []).length).toBe(7);
-    expect(html).not.toMatch(/season spine/i);
+    expect(html).toContain('id="map"');
+    expect(html).toContain('class="progress-step-label">The weekly loop');
+    expect((html.match(/class="domain-tile /g) || []).length).toBe(8);
   });
-  it("domain-brain.json renders 6 deep sections each with files + exports + connections", async () => {
-    const doc = fix("domain-brain/domain-brain.json");
+  it("domain-game.json renders 5 deep sections each with files + exports + connections", async () => {
+    const doc = fix("domain-game/domain-game.json");
     const html = await assembleDomain(doc.blocks, { ...doc, title: doc.title });
-    for (const id of ["c-gm","c-coach","c-owner","c-player","c-scout","c-agent"]) expect(html).toContain(`id="${id}"`);
-    expect((html.match(/conns-label">Key files/g) || []).length).toBe(6);
-    expect((html.match(/conns-label">Connections/g) || []).length).toBe(6);
+    for (const id of ["c-pick-service","c-pick-lock","c-bot-picks","c-dashboard","c-planner-ui"]) expect(html).toContain(`id="${id}"`);
+    expect((html.match(/conns-label">Key files/g) || []).length).toBe(5);
+    expect((html.match(/conns-label">Connections/g) || []).length).toBe(5);
   });
-  it("domain-story.json renders 7 deep sections", async () => {
-    const doc = fix("domain-story/domain-story.json");
+  it("domain-golf-data.json renders 7 deep sections", async () => {
+    const doc = fix("domain-golf-data/domain-golf-data.json");
     const html = await assembleDomain(doc.blocks, { ...doc, title: doc.title });
-    for (const id of ["c-observer","c-memory","c-director","c-km","c-prose","c-news","c-identity"]) expect(html).toContain(`id="${id}"`);
+    for (const id of ["c-espn","c-payout","c-sync","c-cron","c-tournaments","c-golfers","c-display"]) expect(html).toContain(`id="${id}"`);
     expect((html.match(/conns-label">Connections/g) || []).length).toBe(7);
   });
 });
@@ -239,7 +238,7 @@ it("surfaces completeness warnings through onWarn for a bare atlas", async () =>
 
 it("emits no completeness warnings for the canonical atlas blocks", async () => {
   const blocks = JSON.parse(
-    readFileSync(join(__dirname, "..", "example", "atlas-sports-rpg", "atlas.json"), "utf8"),
+    readFileSync(join(__dirname, "..", "example", "atlas-ppgl", "atlas.json"), "utf8"),
   ).blocks;
   const warns: string[] = [];
   await assembleAtlas(blocks, { title: "Canonical", onWarn: (m) => warns.push(m) });

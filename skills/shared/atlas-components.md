@@ -6,7 +6,7 @@ that links down to per-domain `domain-<slug>.html` deep-dive + reference pages. 
 [Diagram Catalog](diagrams.md) (the d2/mermaid diagrams the renderer compiles) and the
 [Spec-Component Catalog](spec-components.md) (whose card vocabulary the domain pages reuse).
 
-**Worked reference:** [`example/atlas-sports-rpg/`](../../example/atlas-sports-rpg/) — `atlas.json →
+**Worked reference:** [`example/atlas-ppgl/`](../../example/atlas-ppgl/) — `atlas.json →
 atlas.html` plus a `domain-<slug>/` folder per domain (`domain-<slug>.json → domain-<slug>.html`).
 The canonical "what good looks like" build; every recipe below is lifted from it.
 

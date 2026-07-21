@@ -1,0 +1,1705 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="visual-skills · visual-spec"><title>Spec · Season Planner (Phase 4)</title><style>/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --panel: #f7f8fa;
+  --panel-deep: #f0f2f5;
+  --border: #e3e6ea;
+  --border-strong: #c8cdd5;
+  --ink: #1c2024;
+  --ink-muted: #5a626c;
+  --ink-faint: #646b75;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: #eff4ff;
+  --accent-border: #bfdbfe;
+  --add: #16a34a;
+  --add-bg: #f0fdf4;
+  --add-border: #bbf7d0;
+  --remove: #dc2626;
+  --remove-bg: #fef2f2;
+  --remove-border: #fecaca;
+  --change: #d97706;
+  --change-bg: #fffbeb;
+  --change-border: #fde68a;
+  --risk-low: #16a34a;
+  --risk-low-bg: #f0fdf4;
+  --risk-low-border: #bbf7d0;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+
+  --sidebar-w: 264px;
+  --topbar-h: 52px;
+  --radius: 6px;
+  --radius-sm: 4px;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== TOP BAR ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--topbar-h);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+}
+
+.topbar-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  line-height: 1.5;
+}
+
+.chip-risk {
+  color: var(--risk-low);
+  background: var(--risk-low-bg);
+  border-color: var(--risk-low-border);
+}
+
+.chip-stat {
+  color: var(--ink-muted);
+  background: var(--panel-deep);
+  border-color: var(--border);
+  font-weight: 500;
+}
+
+.chip-pr {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+  font-weight: 600;
+}
+
+.diff-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.diff-add { color: var(--add); }
+.diff-rem { color: var(--remove); }
+
+.topbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-strong);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  color: var(--ink-muted);
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+.sidebar-toggle:hover { background: var(--panel-deep); border-color: var(--border-strong); }
+.sidebar-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ===== LAYOUT ===== */
+.layout {
+  display: flex;
+  min-height: calc(100vh - var(--topbar-h));
+  position: relative;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+.sidebar-section {
+  padding: 16px 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-section:last-child { border-bottom: none; }
+
+.sidebar-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 14px 8px;
+  display: block;
+}
+
+/* File tree */
+.file-list { list-style: none; }
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 100ms ease-out;
+  line-height: 1.4;
+}
+.file-item:hover { background: var(--panel-deep); color: var(--ink); }
+.file-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.file-status {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.file-status-M { color: var(--change); }
+.file-status-A { color: var(--add); }
+.file-status-D { color: var(--remove); }
+.file-status-R { color: var(--change); }
+
+.file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-stat {
+  font-size: var(--text-xs);
+  font-family: var(--font-sans);
+  color: var(--ink-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.file-stat .plus { color: var(--add); font-weight: 600; }
+.file-stat .minus { color: var(--remove); font-weight: 600; }
+
+/* Outline nav */
+.outline-list { list-style: none; }
+
+.outline-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.outline-item:hover { background: var(--panel-deep); color: var(--ink); border-left-color: var(--border-strong); }
+.outline-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-item.is-active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-subtle); font-weight: 500; }
+
+.outline-num {
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  font-weight: 600;
+  width: 16px;
+  flex-shrink: 0;
+}
+.outline-item.is-active .outline-num { color: var(--accent); }
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 56px 80px;
+  max-width: 1480px;
+}
+
+/* ===== TLDR ===== */
+.tldr-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.tldr-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tldr-heading {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.tldr-eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tldr-rows { display: flex; flex-direction: column; gap: 8px; }
+
+.tldr-row {
+  display: flex;
+  gap: 10px;
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.tldr-key {
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 56px;
+}
+
+.tldr-val { color: var(--ink); flex: 1; }
+
+/* ===== SECTION HEADINGS ===== */
+.section {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 40px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.section-badge {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  background: var(--panel);
+}
+
+.subsection {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 32px;
+}
+
+.subsection-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.subsection-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 0;
+}
+
+.subsection-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ===== OVERVIEW LIST ===== */
+.overview-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.overview-item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: border-color 100ms ease-out;
+}
+.overview-item:hover { border-color: var(--border-strong); }
+
+.overview-num {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  width: 18px;
+}
+
+.overview-text { color: var(--ink); flex: 1; }
+.overview-text a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.overview-text a:hover { text-decoration: underline; }
+.overview-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* ===== WALKTHROUGH PROGRESS ===== */
+.progress-rail {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;            /* scroll horizontally when there are many/long chapters */
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.progress-step {
+  flex: 1 0 auto;              /* grow to fill when few; never shrink below content -> overflow scrolls */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  transition: background 100ms ease-out;
+}
+.progress-step-label { white-space: nowrap; }
+.progress-step:last-child { border-right: none; }
+.progress-step.is-active { background: var(--accent-subtle); color: var(--accent); }
+.progress-step { text-decoration: none; cursor: pointer; }
+.progress-step:hover { background: var(--panel-deep); color: var(--ink); }
+.progress-step.is-active:hover { color: var(--accent); }
+.progress-step:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.progress-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  background: var(--panel-deep);
+  color: var(--ink-faint);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+}
+.progress-step.is-active .progress-step-num {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.progress-step-label { font-weight: 500; white-space: nowrap; }
+
+/* ===== DESCRIPTION BULLETS ===== */
+.desc-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.desc-item {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--ink);
+}
+.desc-bullet {
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  margin-top: 2px;
+}
+.desc-item code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+.desc-item strong { font-weight: 600; }
+.desc-item em { font-style: italic; color: var(--ink-muted); }
+
+/* ===== CODE BLOCKS / DIFF ===== */
+.file-diff {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.file-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 100ms ease-out;
+}
+.file-diff-header:hover { background: var(--panel-deep); }
+
+.file-diff-header summary { display: flex; align-items: center; gap: 8px; width: 100%; list-style: none; }
+.file-diff-header summary::-webkit-details-marker { display: none; }
+.file-diff-header summary::marker { display: none; }
+
+details.file-diff-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+details.file-diff-details > summary:hover { background: var(--panel-deep); }
+details.file-diff-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.file-diff-details > summary::-webkit-details-marker { display: none; }
+
+/* the actual collapsed file-diff summary: one tidy row, single chevron */
+.file-diff > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: var(--panel);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+.file-diff > summary::-webkit-details-marker { display: none; }
+.file-diff > summary::marker { content: ""; }
+.file-diff > summary:hover { background: var(--panel-deep); }
+.file-diff > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.file-diff[open] > summary { border-bottom: 1px solid var(--border); }
+.diff-counts { margin-left: auto; }
+
+.diff-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  font-weight: 500;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diff-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.diff-badge-M { color: var(--change); background: var(--change-bg); border-color: var(--change-border); }
+.diff-badge-A { color: var(--add); background: var(--add-bg); border-color: var(--add-border); }
+
+.diff-counts {
+  display: flex;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.diff-counts .plus { color: var(--add); }
+.diff-counts .minus { color: var(--remove); }
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-faint);
+  transition: transform 150ms ease-out;
+  flex-shrink: 0;
+}
+details[open] .chevron { transform: rotate(90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
+  details[open] .chevron { transform: rotate(90deg); }
+}
+
+.code-block {
+  overflow-x: auto;
+  background: var(--bg);
+  margin: 0;
+}
+.code-block pre {
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 2;
+  min-width: 0;
+}
+
+/* Token coloring — span-based, semantic only */
+.kw { color: #7c3aed; font-weight: 600; }  /* keyword */
+.fn { color: #0369a1; }                      /* function/method */
+.str { color: #16a34a; }                     /* string */
+.cm { color: var(--ink-faint); font-style: italic; } /* comment */
+.ty { color: #b45309; }                      /* type */
+.pn { color: var(--ink); }                   /* punctuation */
+.nm { color: var(--ink); }                   /* number */
+
+/* ===== DIAGRAMS ===== */
+.diagram-wrap {
+  margin-bottom: 28px;
+}
+
+.diagram-title {
+  font-size: var(--text-base);
+  font-weight: 650;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.diagram-caption {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  margin: 8px 2px 0;
+}
+
+.diagram-box {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: zoom-in;
+}
+
+/* Inline SVG for diagrams */
+.diagram-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.diagram-enlarge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 0.8rem/1 system-ui, sans-serif;
+  color: var(--ink-muted);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.diagram-enlarge:hover { border-color: var(--accent); color: var(--accent); }
+.diagram-enlarge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* zoom overlay */
+.zoom-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(15,20,28,0.85); display: none; }
+.zoom-overlay.is-open { display: block; }
+.zoom-stage { position: absolute; inset: 0; overflow: hidden; cursor: grab;
+  display: flex; align-items: center; justify-content: center; touch-action: none; }
+.zoom-stage:active { cursor: grabbing; }
+.zoom-stage svg { max-width: 94vw; max-height: 84vh; transform-origin: center center;
+  background: #fff; border-radius: 12px; box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5); }
+.zoom-controls { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 1; }
+.zoom-controls button { min-width: 40px; height: 40px; padding: 0 12px;
+  border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.96); color: #1c2024;
+  border-radius: 10px; font: 600 15px/1 system-ui, sans-serif; cursor: pointer; }
+.zoom-controls button:hover { background: #fff; }
+
+/* ===== FILES CHANGED TABLE ===== */
+.files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.files-table th {
+  background: var(--panel);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.files-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--ink);
+}
+.files-table tr:last-child td { border-bottom: none; }
+.files-table tr:hover td { background: var(--panel); }
+
+.files-table .col-status { width: 32px; font-weight: 700; font-family: var(--font-mono); font-size: var(--text-sm); }
+.files-table .col-path { font-family: var(--font-mono); }
+.files-table .col-path a { color: var(--accent); text-decoration: none; }
+.files-table .col-path a:hover { text-decoration: underline; }
+.files-table .col-stat { width: 80px; white-space: nowrap; }
+.files-table .col-role { color: var(--ink-muted); font-size: var(--text-xs); }
+
+.files-group-row td {
+  background: var(--panel-deep);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 5px 12px;
+}
+
+/* ===== API SURFACE ===== */
+.api-surface {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.api-surface-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-deep);
+}
+
+.api-name {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.api-type {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--add);
+  background: var(--add-bg);
+  border: 1px solid var(--add-border);
+  border-radius: 20px;
+  padding: 1px 7px;
+}
+
+.api-surface .code-block pre {
+  padding: 14px 18px;
+}
+
+/* ===== CALLOUT ===== */
+.callout {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  margin-bottom: 14px;
+}
+.callout-icon { font-size: var(--text-md); flex-shrink: 0; line-height: 1.5; }
+.callout-text { color: var(--ink); line-height: 1.6; }
+.callout-text strong { font-weight: 600; }
+.callout-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ===== TYPOGRAPHY UTILITIES ===== */
+.headline {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.subheadline {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 28px;
+}
+
+.section-intro {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* ===== CHAPTER MARKER ===== */
+.chapter-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+/* Bold rule separating walkthrough chapters (rendered between, never before the first). */
+.chapter-divider {
+  border: none;
+  border-top: 2px solid var(--border-strong);
+  margin: 48px 0;
+}
+.chapter-no {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.chapter-marker-num {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--panel-deep);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    height: calc(100vh - var(--topbar-h));
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 200ms ease-out;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.08);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+  }
+  .sidebar-toggle { display: flex; }
+  .main { padding: 24px 20px 60px; }
+}
+
+@media (max-width: 375px) {
+  .main { padding: 16px 14px 40px; }
+  .topbar-title { font-size: var(--text-base); }
+  .headline { font-size: var(--text-xl); }
+  .progress-step-label { display: none; }
+  .progress-step { padding: 8px 10px; }
+  .dataflow { min-width: 420px; }
+}
+
+/* Sidebar overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: var(--topbar-h);
+  background: rgba(28,32,36,0.3);
+  z-index: 40;
+}
+.sidebar-overlay.is-open { display: block; }
+
+/* Focus styles */
+a:focus-visible, button:focus-visible, details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* real code diffs inside file-diff details */
+.diff-code { background:#fff; border-top:1px solid var(--border); }
+.diff-pre { margin:0; overflow-x:auto; padding:4px 0;
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#3a4047;
+  font-variant-ligatures:none; }
+.diff-pre .dl { display:flex; align-items:baseline; min-width:max-content; }
+.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:#8b939e;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:#9aa1ab;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dc { flex:0 0 auto; white-space:pre; padding-right:20px; }
+.diff-pre .dl-add { background:#e9f7ee; } .diff-pre .dl-add .dg { color:#1a7f37; } .diff-pre .dl-add .dc { color:#0f3a1d; }
+.diff-pre .dl-del { background:#fdecec; } .diff-pre .dl-del .dg { color:#c4332e; } .diff-pre .dl-del .dc { color:#5c1a18; }
+.diff-pre .dl-ctx .dc { color:#3a4047; }
+.diff-pre .dl-hunk { background:var(--panel); color:var(--ink-muted); }
+.diff-pre .dl-hunk .dc { color:var(--ink-muted); font-weight:600; }
+.diff-more { padding:8px 16px; font:12px/1.4 system-ui,sans-serif; color:var(--ink-muted);
+  background:var(--panel); border-top:1px solid var(--border); }
+
+/* ===== separation hierarchy: chapter breaks vs within-chapter breaks ===== */
+#ch1, #ch2, #ch3 { margin-bottom: 0; }
+/* CHAPTER break: stronger + darker line */
+#ch2, #ch3 { margin-top: 0; padding-top: 48px; border-top: 2px solid #8b939e; }
+/* WITHIN a chapter: lighter line between subsections (1a/1b/1c) ... */
+.subsection { margin-bottom: 0; }
+.subsection + .subsection { border-top: 1px solid var(--border); padding-top: 40px; }
+/* ... and between file groups (a new description directly after a diff) */
+.file-diff + .desc-list,
+.file-diff + .section-intro,
+.file-diff + ul,
+.file-diff + p {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== craft pass: typography + motion polish ===== */
+html { scroll-behavior: smooth; }
+.section-title, .subsection-title, .tldr-heading { text-wrap: balance; }
+.tldr-val, .overview-text, .section-intro, .desc-item span { text-wrap: pretty; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* color pass: subtle hover lift on file rows + risk level system */
+.file-diff { transition: box-shadow 150ms ease-out, border-color 150ms ease-out; }
+.file-diff:hover { border-color: var(--accent); box-shadow: 0 6px 18px -12px rgba(37,99,235,0.35); }
+.chip-risk.risk-med { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+.chip-risk.risk-high { color: var(--remove); background: #fef2f2; border-color: #fecaca; }
+@media (prefers-reduced-motion: reduce) { .file-diff { transition: none; } }
+
+/* spec.css — reusable visual-spec components.
+   Layers ON TOP of review.css (same design tokens). Load review.css first, then this.
+   Source of truth for the spec-component catalog (skills/shared/spec-components.md).
+   The canonical example inlines a snapshot of these rules. */
+
+/* ============================================================= */
+/* ===== VISUAL-SPEC EXTENSIONS (on top of review.css) ========= */
+/* ============================================================= */
+
+/* A "spec" carries a couple of extra semantic roles the recap doesn't:
+   a 'perceived' role (GM-skill-noised judgment, gold) vs a 'factual' role
+   (computed from world state, neutral). They reuse the diagram palette so
+   the page reads as one system. */
+:root {
+  --perceived: #92600a;          /* readable gold ink for text on light */
+  --perceived-bg: #fff8e6;
+  --perceived-border: #f0c54a;
+  --reused: #6b7280;             /* preserved / untouched machinery */
+  --reused-bg: #f1f3f5;
+  --reused-border: #ced4da;
+  --store: #6d4ed8;              /* datastore ink */
+  --proc: #1971c2;              /* perception / process ink */
+}
+
+/* ---- topbar: phase + status + complexity chips ---- */
+.chip-phase { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent-border); font-weight: 700; }
+.chip-status { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.chip-complexity { color: var(--change); background: var(--change-bg); border-color: var(--change-border); font-weight: 600; }
+
+/* ---- the big idea panel ---- */
+.bigidea {
+  margin: 0 0 36px;
+  padding: 22px 26px;
+  border: 1px solid var(--perceived-border);
+  background: var(--perceived-bg);
+  border-radius: var(--radius);
+}
+.bigidea-label {
+  font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--perceived); margin-bottom: 8px;
+}
+.bigidea-line {
+  font-size: var(--text-2xl); font-weight: 800; letter-spacing: -0.025em;
+  color: var(--ink); line-height: 1.2; text-wrap: balance;
+}
+.bigidea-sub {
+  margin-top: 10px; max-width: 70ch; color: var(--ink-muted);
+  font-size: var(--text-base); line-height: 1.6; text-wrap: pretty;
+}
+.bigidea-sub strong { color: var(--ink); font-weight: 650; }
+
+/* ---- diagram legend (color is a secondary signal; labels carry meaning) ---- */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 2px 0; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-sm); color: var(--ink-muted); }
+.legend-swatch { width: 13px; height: 13px; border-radius: 3px; border: 1px solid; flex-shrink: 0; }
+
+/* svg text inherits the page sans */
+.flow-svg text { font-family: var(--font-sans); }
+
+/* ---- anatomy of a board (factual core vs perceived layer) ---- */
+.anatomy {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.anatomy-panel { padding: 16px 18px; }
+.anatomy-factual { background: var(--reused-bg); }
+.anatomy-perceived { background: var(--perceived-bg); }
+.anatomy-mid {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 0 16px; background: var(--bg);
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+}
+.anatomy-arrow { font-size: 22px; color: var(--ink-faint); line-height: 1; }
+.anatomy-fn { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); text-align: center; max-width: 130px; }
+.anatomy-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--text-base); margin-bottom: 4px; }
+.anatomy-factual .anatomy-h { color: var(--reused); }
+.anatomy-perceived .anatomy-h { color: var(--perceived); }
+.anatomy-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-bottom: 10px; }
+.anatomy-eg { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.7; color: var(--ink); }
+.anatomy-caption { font-size: var(--text-sm); color: var(--ink-muted); margin: 0 2px 28px; line-height: 1.6; }
+@media (max-width: 720px) {
+  .anatomy { grid-template-columns: 1fr; }
+  .anatomy-mid { flex-direction: row; border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 16px; }
+  .anatomy-arrow { transform: rotate(90deg); }
+}
+
+/* ---- 6 component (board) cards ---- */
+.board-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 8px; }
+.board-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px; background: var(--bg);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  display: flex; flex-direction: column;
+}
+.board-card:hover { border-color: var(--border-strong); box-shadow: 0 6px 18px -14px rgba(28,32,36,0.4); }
+.board-name { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-base); color: var(--ink); letter-spacing: -0.01em; }
+.board-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 7px 0 12px; }
+.board-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.board-row-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 2px; }
+.skill-chip { font-size: var(--text-xs); font-weight: 600; background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 20px; padding: 1px 8px; white-space: nowrap; }
+.skill-chip.is-deputy { background: var(--panel-deep); color: var(--ink-muted); border-color: var(--border); }
+.split-badge { display: inline-flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; font-size: var(--text-xs); font-weight: 600; align-self: flex-start; margin-bottom: 12px; }
+.split-badge .sb-fact { background: var(--reused-bg); color: var(--reused); padding: 2px 9px; }
+.split-badge .sb-perc { background: var(--perceived-bg); color: var(--perceived); padding: 2px 9px; border-left: 1px solid var(--border); }
+.board-fields { margin-top: auto; display: flex; flex-direction: column; gap: 5px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.field-line { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5; display: flex; gap: 7px; }
+.field-tag { flex-shrink: 0; width: 10px; font-weight: 700; }
+.field-fact .field-tag { color: var(--reused); }
+.field-perc .field-tag { color: var(--perceived); }
+.field-fact .field-names { color: var(--ink-muted); }
+.field-perc .field-names { color: var(--perceived); }
+
+/* ---- where it fits ---- */
+.fits-chain { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; margin-bottom: 26px; }
+.fits-node { flex: 1 1 220px; min-width: 200px; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--panel); }
+.fits-node.is-this { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.fits-arrow { display: flex; align-items: center; justify-content: center; padding: 0 12px; color: var(--ink-faint); font-size: 22px; flex-shrink: 0; }
+.fits-role { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 600; }
+.fits-node.is-this .fits-role { color: var(--perceived); }
+.fits-title { font-weight: 700; color: var(--ink); margin: 3px 0 5px; }
+.fits-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; }
+.fits-desc em { color: var(--ink); font-style: normal; font-weight: 600; }
+@media (max-width: 720px) {
+  .fits-chain { flex-direction: column; }
+  .fits-arrow { padding: 8px 0; }
+  .fits-arrow span { transform: rotate(90deg); display: inline-block; }
+}
+
+/* ---- layer stack ---- */
+.layer-stack { display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.layer { display: flex; align-items: baseline; gap: 12px; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; background: var(--panel); }
+.layer.is-new { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.layer.is-reused { background: var(--reused-bg); }
+.layer-label { font-weight: 700; color: var(--ink); flex-shrink: 0; }
+.layer.is-new .layer-label { color: var(--perceived); }
+.layer-note { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.45; }
+.layer-tag { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 7px; border-radius: 20px; flex-shrink: 0; }
+.layer.is-new .layer-tag { color: #fff; background: var(--change); }
+.layer.is-reused .layer-tag { color: var(--reused); background: var(--bg); border: 1px solid var(--reused-border); }
+
+/* ---- key decisions ---- */
+.decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.decision-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--bg); display: flex; gap: 12px; }
+.decision-num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--panel-deep); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: var(--text-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.decision-q { font-size: var(--text-sm); color: var(--ink-faint); font-weight: 600; line-height: 1.4; }
+.decision-a { font-weight: 650; color: var(--ink); margin-top: 4px; line-height: 1.45; }
+.decision-a code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- scope (in / out) ---- */
+.scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.scope-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.scope-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.scope-in .scope-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.scope-out .scope-head { background: var(--reused-bg); color: var(--ink-muted); }
+.scope-count { font-size: var(--text-xs); font-weight: 600; opacity: 0.8; }
+.scope-list { list-style: none; padding: 8px 0; }
+.scope-list li { display: flex; gap: 9px; padding: 6px 16px; font-size: var(--text-base); line-height: 1.5; }
+.scope-marker { flex-shrink: 0; font-weight: 700; }
+.scope-in .scope-marker { color: var(--add); }
+.scope-out .scope-marker { color: var(--ink-faint); }
+.scope-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.scope-list .defer { color: var(--ink-faint); font-size: var(--text-sm); }
+@media (max-width: 720px) { .scope-cols { grid-template-columns: 1fr; } }
+
+/* ---- rollout phases ---- */
+.phases { display: flex; flex-direction: column; gap: 14px; }
+.phase { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.phase-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.phase-tag { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-sm); color: var(--accent); background: var(--accent-subtle); border: 1px solid var(--accent-border); border-radius: var(--radius-sm); padding: 2px 9px; }
+.phase-title { font-weight: 700; color: var(--ink); }
+.phase-body { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; padding: 16px; }
+.phase-sub { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin-bottom: 8px; }
+.phase-scope p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; }
+.phase-scope code, .gate-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.phase-gate { background: var(--panel); border-radius: var(--radius-sm); padding: 12px 14px; }
+.gate-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.gate-list li { display: flex; gap: 8px; font-size: var(--text-sm); line-height: 1.5; color: var(--ink); }
+.gate-check { color: var(--add); flex-shrink: 0; font-weight: 700; }
+@media (max-width: 720px) { .phase-body { grid-template-columns: 1fr; } }
+
+/* ---- definition of done: movers + table ---- */
+.movers { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.mover { border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; background: var(--bg); }
+.mover-name { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); line-height: 1.4; }
+.mover-vals { display: flex; align-items: baseline; gap: 9px; margin: 9px 0 4px; }
+.mover-now { color: var(--ink-faint); font-weight: 600; font-size: var(--text-base); }
+.mover-now s { color: var(--remove); text-decoration-thickness: 1px; }
+.mover-arrow { color: var(--ink-faint); font-size: var(--text-base); }
+.mover-target { color: var(--add); font-weight: 800; font-size: var(--text-xl); letter-spacing: -0.02em; }
+.mover-label { font-size: var(--text-xs); color: var(--ink-faint); }
+
+.spec-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 6px 0 8px; }
+.spec-table th { text-align: left; background: var(--panel); padding: 8px 12px; font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); border-bottom: 1px solid var(--border); }
+.spec-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--ink); line-height: 1.5; }
+.spec-table tr:last-child td { border-bottom: none; }
+.spec-table tr:hover td { background: var(--panel); }
+.spec-table code { font-family: var(--font-mono); font-size: 0.86em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.spec-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.spec-table .good { color: #15803d; font-weight: 700; }
+.tbl-note { font-size: var(--text-sm); color: var(--ink-muted); margin: 2px 2px 0; }
+
+/* ---- risks ---- */
+.risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; }
+.risk-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.risk-r { display: flex; gap: 9px; padding: 12px 15px; background: var(--remove-bg); border-bottom: 1px solid var(--remove-border); font-weight: 650; color: #991b1b; font-size: var(--text-sm); line-height: 1.45; }
+.risk-icon { flex-shrink: 0; }
+.risk-m { padding: 12px 15px; font-size: var(--text-sm); color: var(--ink); line-height: 1.55; }
+.risk-m b { color: #15803d; font-weight: 700; }
+.risk-m code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- reference drill-downs ---- */
+.ref-intro { font-size: var(--text-base); color: var(--ink-muted); margin-bottom: 16px; line-height: 1.6; }
+details.ref { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; background: var(--bg); }
+details.ref > summary { display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: var(--panel); cursor: pointer; user-select: none; list-style: none; font-weight: 650; color: var(--ink); transition: background 100ms ease-out; }
+details.ref > summary::-webkit-details-marker { display: none; }
+details.ref > summary::marker { content: ""; }
+details.ref > summary:hover { background: var(--panel-deep); }
+details.ref > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.ref[open] > summary { border-bottom: 1px solid var(--border); }
+.ref-chev { width: 15px; height: 15px; color: var(--ink-faint); transition: transform 150ms ease-out; flex-shrink: 0; }
+details.ref[open] .ref-chev { transform: rotate(90deg); }
+.ref-tally { margin-left: auto; font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.ref-body { padding: 16px; }
+.ref-body > p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; margin-bottom: 12px; }
+.ref-body > p:last-child { margin-bottom: 0; }
+.ref-body .code-block { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; }
+.ref-body h4 { font-size: var(--text-base); font-weight: 700; color: var(--ink); margin: 16px 0 8px; }
+.ref-body h4:first-child { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .ref-chev { transition: none; } }
+
+/* meta list in sidebar */
+.meta-list { padding: 0 14px 8px; display: flex; flex-direction: column; gap: 9px; }
+.meta-row { font-size: var(--text-xs); line-height: 1.4; }
+.meta-row .mk { display: block; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 1px; }
+.meta-row .mv { color: var(--ink); }
+.related-list { list-style: none; padding: 0 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.related-list li { font-size: var(--text-xs); line-height: 1.4; }
+.related-list .rk { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.related-list .rv { color: var(--ink); font-family: var(--font-mono); overflow-wrap: anywhere; }
+
+/* ---- decision rationale (approval layer) ---- */
+.decision-why { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); line-height: 1.5; }
+.decision-why::before { content: "Why "; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; font-size: 0.72em; letter-spacing: 0.06em; }
+.decision-why em { color: var(--ink); font-style: normal; font-weight: 650; }
+.decision-why code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.decision-alt { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 7px; line-height: 1.5; }
+.decision-alt-tag { display: inline-block; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--remove); background: var(--remove-bg); border: 1px solid var(--remove-border); border-radius: 4px; padding: 0 5px; margin-right: 6px; vertical-align: 1px; }
+.decision-alt em { color: var(--ink); font-style: italic; }
+.decision-alt code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- before you approve ---- */
+.approve-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; align-items: start; }
+.approve-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.approve-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.approve-card.commit .approve-head { background: var(--accent-subtle); color: var(--accent); border-bottom-color: var(--accent-border); }
+.approve-card.scrutinize .approve-head { background: var(--change-bg); color: #92600a; border-bottom-color: var(--change-border); }
+.approve-card.open .approve-head { background: var(--panel-deep); color: var(--ink-muted); }
+.approve-body { padding: 13px 16px; font-size: var(--text-sm); color: var(--ink); line-height: 1.6; }
+.approve-body strong { font-weight: 700; }
+.approve-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.approve-body a:hover { text-decoration: underline; }
+.approve-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.approve-q { list-style: none; counter-reset: aq; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+.approve-q li { counter-increment: aq; display: flex; gap: 8px; font-size: var(--text-sm); color: var(--ink); line-height: 1.45; }
+.approve-q li::before { content: counter(aq); flex-shrink: 0; width: 17px; height: 17px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.approve-q code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
+</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><span class="topbar-title">Spec · Season Planner (Phase 4)</span><div class="topbar-meta"><span class="chip chip-phase">Phase 4</span><span class="chip chip-status">Completed · shipped</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">2026-04-13</span><span class="chip chip-complexity">Medium · 2 PRs · service + cron + page</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>TL;DR &amp; the big idea</span></a></li><li><a href="#flow" class="outline-item" data-target="flow"><span class="outline-num" aria-hidden="true">1</span><span>How it works</span></a></li><li><a href="#pieces" class="outline-item" data-target="pieces"><span class="outline-num" aria-hidden="true">2</span><span>The pieces</span></a></li><li><a href="#fits" class="outline-item" data-target="fits"><span class="outline-num" aria-hidden="true">3</span><span>Where it fits</span></a></li><li><a href="#decisions" class="outline-item" data-target="decisions"><span class="outline-num" aria-hidden="true">4</span><span>Key decisions</span></a></li><li><a href="#scope" class="outline-item" data-target="scope"><span class="outline-num" aria-hidden="true">5</span><span>Scope</span></a></li><li><a href="#rollout" class="outline-item" data-target="rollout"><span class="outline-num" aria-hidden="true">6</span><span>Rollout</span></a></li><li><a href="#done" class="outline-item" data-target="done"><span class="outline-num" aria-hidden="true">7</span><span>Definition of done</span></a></li><li><a href="#risks" class="outline-item" data-target="risks"><span class="outline-num" aria-hidden="true">8</span><span>Risks</span></a></li><li><a href="#approve" class="outline-item" data-target="approve"><span class="outline-num" aria-hidden="true">9</span><span>Before you approve</span></a></li><li><a href="#reference" class="outline-item" data-target="reference"><span class="outline-num" aria-hidden="true">&#8212;</span><span>Reference (drill-down)</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Related</span><ul class="related-list" role="list"><li><span class="rk">Predecessor</span><br><span class="rv">Phase 3 · pick CRUD + read-side locking · shipped</span></li><li><span class="rk">Consumer</span><br><span class="rv">Phase 10 · polish — drag-and-drop, picker warnings</span></li><li><span class="rk">Source</span><br><span class="rv">docs/plans/completed/phase-4-season-planner.md</span></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Status</span><span class="mv">Complete — authored as the approval doc it would have been</span></div><div class="meta-row"><span class="mk">Created</span><span class="mv">2026-04-13</span></div><div class="meta-row"><span class="mk">PRs</span><span class="mv">2 · backend first, page second</span></div><div class="meta-row"><span class="mk">Grounded in</span><span class="mv">src/server + src/components/planner + prisma/schema.prisma</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">TL;DR</span><h2 class="tldr-heading">Let players plan their whole season — and let a cron job, not the user, turn plans into real picks.</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">What</span><span class="tldr-val">A <strong>Season Planner</strong>: slot golfers into any future tournament as <code>PLANNED</code> prepicks; the daily cron promotes valid plans to <code>LOCKED</code> in the database when the tournament starts.</span></div><div class="tldr-row"><span class="tldr-key">Why</span><span class="tldr-val">PPGL's strategy game is season-long — allocate ~200 golfers across ~40 weeks, no reuse. But picks were week-at-a-time: no way to reserve Scheffler for the Masters in March, or see the whole board at once.</span></div><div class="tldr-row"><span class="tldr-key">Closes</span><span class="tldr-val">Turns the app from a weekly chore into a <strong>persistent strategic tool</strong> — the full remaining schedule with prepick slots, results behind you, plans ahead of you.</span></div><div class="tldr-row"><span class="tldr-key">Size</span><span class="tldr-val">2 PRs · 5 new service methods · 5 new tRPC endpoints · 1 cron auto-lock routine · 1 page + picker flow. <strong>No schema migration</strong> — <code>Pick</code> already carries <code>status</code> + <code>lockedAt</code>.</span></div></div></div><div class="bigidea"><div class="bigidea-label">The big idea</div><div class="bigidea-line">“A plan costs nothing until the cron makes it real.”</div><p class="bigidea-sub">A <code>PLANNED</code> pick is a <strong>soft reservation</strong> — invisible to opponents, freely editable, and it does <em>not</em> consume the golfer. Only the unattended cron promotion to <code>LOCKED</code> burns the golfer, earns money, and shows the pick to the league. If a plan turns out invalid on start day, it goes <strong>stale instead of burning the golfer</strong>: the user gets a $0 week, never a lost asset.</p></div></section><nav class="progress-rail" aria-label="Jump to section"><a class="progress-step is-active" href="#flow"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">How it works</span></a><a class="progress-step" href="#pieces"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">The pieces</span></a><a class="progress-step" href="#fits"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">Where it fits</span></a><a class="progress-step" href="#decisions"><div class="progress-step-num" aria-hidden="true">4</div><span class="progress-step-label">Key decisions</span></a><a class="progress-step" href="#scope"><div class="progress-step-num" aria-hidden="true">5</div><span class="progress-step-label">Scope</span></a><a class="progress-step" href="#rollout"><div class="progress-step-num" aria-hidden="true">6</div><span class="progress-step-label">Rollout</span></a><a class="progress-step" href="#done"><div class="progress-step-num" aria-hidden="true">7</div><span class="progress-step-label">Definition of done</span></a><a class="progress-step" href="#risks"><div class="progress-step-num" aria-hidden="true">8</div><span class="progress-step-label">Risks</span></a><a class="progress-step" href="#approve"><div class="progress-step-num" aria-hidden="true">9</div><span class="progress-step-label">Before you approve</span></a></nav><section id="flow" class="section"><div class="section-header"><h2 class="section-title">How it works</h2><span class="section-badge">two writers, one row</span></div><p class="section-intro">Two paths write the same <code>pick</code> row. The user path (top) creates and edits <code>PLANNED</code> rows through the planner page — cheap, reversible, private. The cron path (bottom) runs inside <code>/api/cron/sync</code>: when a tournament's start date passes, <code>startTournaments</code> flips it <code>UPCOMING → IN_PROGRESS</code> and — in the same transaction — <code>lockPlannedPicksForTournament</code> validates each plan (golfer in the published field, golfer not already used this season) and promotes the valid ones to <code>LOCKED</code>. Invalid plans are skipped, not burned. Everything downstream of <code>LOCKED</code> — earnings rollup, opponent visibility — is preserved machinery that never learns <code>PLANNED</code> exists.</p><div class="diagram-wrap"><p class="diagram-title">PLANNED → LOCKED lifecycle</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#x2922; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 4280 305"><svg class="d2-3774318150 d2-svg" width="4280" height="305" viewBox="-25 -25 4280 305"><rect x="-25.000000" y="-25.000000" width="4280.000000" height="305.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-3774318150 .text-bold {
+	font-family: "d2-3774318150-font-bold";
+}
+@font-face {
+	font-family: d2-3774318150-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-3774318150 .text-italic {
+	font-family: "d2-3774318150-font-italic";
+}
+@font-face {
+	font-family: d2-3774318150-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-3774318150 .fill-N1{fill:#0A0F25;}
+		.d2-3774318150 .fill-N2{fill:#676C7E;}
+		.d2-3774318150 .fill-N3{fill:#9499AB;}
+		.d2-3774318150 .fill-N4{fill:#CFD2DD;}
+		.d2-3774318150 .fill-N5{fill:#DEE1EB;}
+		.d2-3774318150 .fill-N6{fill:#EEF1F8;}
+		.d2-3774318150 .fill-N7{fill:#FFFFFF;}
+		.d2-3774318150 .fill-B1{fill:#0D32B2;}
+		.d2-3774318150 .fill-B2{fill:#0D32B2;}
+		.d2-3774318150 .fill-B3{fill:#E3E9FD;}
+		.d2-3774318150 .fill-B4{fill:#E3E9FD;}
+		.d2-3774318150 .fill-B5{fill:#EDF0FD;}
+		.d2-3774318150 .fill-B6{fill:#F7F8FE;}
+		.d2-3774318150 .fill-AA2{fill:#4A6FF3;}
+		.d2-3774318150 .fill-AA4{fill:#EDF0FD;}
+		.d2-3774318150 .fill-AA5{fill:#F7F8FE;}
+		.d2-3774318150 .fill-AB4{fill:#EDF0FD;}
+		.d2-3774318150 .fill-AB5{fill:#F7F8FE;}
+		.d2-3774318150 .stroke-N1{stroke:#0A0F25;}
+		.d2-3774318150 .stroke-N2{stroke:#676C7E;}
+		.d2-3774318150 .stroke-N3{stroke:#9499AB;}
+		.d2-3774318150 .stroke-N4{stroke:#CFD2DD;}
+		.d2-3774318150 .stroke-N5{stroke:#DEE1EB;}
+		.d2-3774318150 .stroke-N6{stroke:#EEF1F8;}
+		.d2-3774318150 .stroke-N7{stroke:#FFFFFF;}
+		.d2-3774318150 .stroke-B1{stroke:#0D32B2;}
+		.d2-3774318150 .stroke-B2{stroke:#0D32B2;}
+		.d2-3774318150 .stroke-B3{stroke:#E3E9FD;}
+		.d2-3774318150 .stroke-B4{stroke:#E3E9FD;}
+		.d2-3774318150 .stroke-B5{stroke:#EDF0FD;}
+		.d2-3774318150 .stroke-B6{stroke:#F7F8FE;}
+		.d2-3774318150 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-3774318150 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-3774318150 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-3774318150 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-3774318150 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-3774318150 .background-color-N1{background-color:#0A0F25;}
+		.d2-3774318150 .background-color-N2{background-color:#676C7E;}
+		.d2-3774318150 .background-color-N3{background-color:#9499AB;}
+		.d2-3774318150 .background-color-N4{background-color:#CFD2DD;}
+		.d2-3774318150 .background-color-N5{background-color:#DEE1EB;}
+		.d2-3774318150 .background-color-N6{background-color:#EEF1F8;}
+		.d2-3774318150 .background-color-N7{background-color:#FFFFFF;}
+		.d2-3774318150 .background-color-B1{background-color:#0D32B2;}
+		.d2-3774318150 .background-color-B2{background-color:#0D32B2;}
+		.d2-3774318150 .background-color-B3{background-color:#E3E9FD;}
+		.d2-3774318150 .background-color-B4{background-color:#E3E9FD;}
+		.d2-3774318150 .background-color-B5{background-color:#EDF0FD;}
+		.d2-3774318150 .background-color-B6{background-color:#F7F8FE;}
+		.d2-3774318150 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-3774318150 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-3774318150 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-3774318150 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-3774318150 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-3774318150 .color-N1{color:#0A0F25;}
+		.d2-3774318150 .color-N2{color:#676C7E;}
+		.d2-3774318150 .color-N3{color:#9499AB;}
+		.d2-3774318150 .color-N4{color:#CFD2DD;}
+		.d2-3774318150 .color-N5{color:#DEE1EB;}
+		.d2-3774318150 .color-N6{color:#EEF1F8;}
+		.d2-3774318150 .color-N7{color:#FFFFFF;}
+		.d2-3774318150 .color-B1{color:#0D32B2;}
+		.d2-3774318150 .color-B2{color:#0D32B2;}
+		.d2-3774318150 .color-B3{color:#E3E9FD;}
+		.d2-3774318150 .color-B4{color:#E3E9FD;}
+		.d2-3774318150 .color-B5{color:#EDF0FD;}
+		.d2-3774318150 .color-B6{color:#F7F8FE;}
+		.d2-3774318150 .color-AA2{color:#4A6FF3;}
+		.d2-3774318150 .color-AA4{color:#EDF0FD;}
+		.d2-3774318150 .color-AA5{color:#F7F8FE;}
+		.d2-3774318150 .color-AB4{color:#EDF0FD;}
+		.d2-3774318150 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="cGxhbm5lcg== changed"><g class="shape" ><rect x="0.000000" y="189.000000" width="192.000000" height="66.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="96.000000" y="227.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Season Planner page</text></g><g class="cm91dGVy changed"><g class="shape" ><rect x="528.000000" y="189.000000" width="344.000000" height="66.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="700.000000" y="227.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">pick router: plan / updatePlan / deletePlan</text></g><g class="c3Zj changed"><g class="shape" ><rect x="1153.000000" y="189.000000" width="246.000000" height="66.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="1276.000000" y="227.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">pick service: PLANNED CRUD</text></g><g class="cGlja3Jvdw== store"><g class="shape" ><rect x="1891.000000" y="189.000000" width="190.000000" height="66.000000" stroke="#9775fa" fill="#e5dbff" style="stroke-width:2;" /></g><text x="1986.000000" y="227.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">pick row — PLANNED</text></g><g class="Y3Jvbg== external"><g class="shape" ><rect x="638.000000" y="63.000000" width="125.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="700.500000" y="101.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Vercel cron</text></g><g class="c3luYw== external"><g class="shape" ><rect x="1167.000000" y="63.000000" width="218.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="1276.000000" y="101.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">/api/cron/sync (existing)</text></g><g class="c3RhcnQ= changed"><g class="shape" ><rect x="1796.000000" y="63.000000" width="379.000000" height="66.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="1985.500000" y="101.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">startTournaments: UPCOMING → IN_PROGRESS</text></g><g class="bG9jaw== changed"><g class="shape" ><rect x="2631.000000" y="126.000000" width="281.000000" height="66.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="2771.500000" y="164.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">lockPlannedPicksForTournament</text></g><g class="bG9ja2Vkcm93 store"><g class="shape" ><rect x="3362.000000" y="63.000000" width="257.000000" height="66.000000" stroke="#9775fa" fill="#e5dbff" style="stroke-width:2;" /></g><text x="3490.500000" y="101.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">pick row — LOCKED + lockedAt</text></g><g class="c3RhbGU="><g class="shape" ><rect x="3334.000000" y="189.000000" width="313.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="3490.500000" y="227.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">stale plan — skipped, golfer preserved</text></g><g class="ZWFybg== external"><g class="shape" ><rect x="3968.000000" y="0.000000" width="262.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="4099.000000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">earnings rollup — LOCKED only</text></g><g class="b3Bw external"><g class="shape" ><rect x="3988.000000" y="126.000000" width="223.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="4099.500000" y="164.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">league views / opponents</text></g><g class="KHBsYW5uZXIgLSZndDsgcm91dGVyKVswXQ=="><marker id="mk-d2-3774318150-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 194.000000 222.000000 C 326.399994 222.000000 393.600006 222.000000 524.000000 222.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /><text x="360.000000" y="228.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">tap-to-assign</text></g><g class="KHJvdXRlciAtJmd0OyBzdmMpWzBd"><path d="M 873.500000 222.000000 C 984.299988 222.000000 1040.699951 222.000000 1149.500000 222.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /></g><g class="KHN2YyAtJmd0OyBwaWNrcm93KVswXQ=="><path d="M 1400.500000 222.000000 C 1557.699951 222.000000 1656.099976 222.000000 1886.500000 222.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /><text x="1644.500000" y="228.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">insert / update / delete</text></g><g class="KGNyb24gLSZndDsgc3luYylbMF0="><path d="M 765.500000 96.000000 C 962.700012 96.000000 1043.500000 96.000000 1163.500000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /><text x="965.500000" y="102.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">daily</text></g><g class="KHN5bmMgLSZndDsgc3RhcnQpWzBd"><path d="M 1386.500000 96.000000 C 1554.900024 96.000000 1637.300049 96.000000 1792.500000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /></g><g class="KHN0YXJ0IC0mZ3Q7IGxvY2spWzBd"><path d="M 2177.000000 96.000000 C 2357.399902 96.000000 2448.600098 103.800003 2627.057264 134.325584" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /><text x="2404.000000" y="106.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">per starting tournament, one tx</text></g><g class="KHBpY2tyb3cgLSZndDsgbG9jaylbMF0="><path d="M 2083.500000 222.000000 C 2338.699951 222.000000 2448.600098 214.199997 2627.057264 183.674416" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /><text x="2357.500000" y="226.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">PLANNED picks</text></g><g class="KGxvY2sgLSZndDsgbG9ja2Vkcm93KVswXQ=="><path d="M 2913.968334 133.645513 C 3080.800049 103.599998 3170.800049 96.000000 3358.000000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /><text x="3136.000000" y="104.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">valid: in field AND not used</text></g><g class="KGxvY2sgLSZndDsgc3RhbGUpWzBd"><path d="M 2913.968334 184.354487 C 3080.800049 214.399994 3165.199951 222.000000 3330.000000 222.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /><text x="3122.000000" y="224.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">invalid: skipped</text></g><g class="KGxvY2tlZHJvdyAtJmd0OyBlYXJuKVswXQ=="><path d="M 3620.462743 69.615759 C 3769.699951 40.400002 3839.699951 33.000000 3964.500000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /></g><g class="KGxvY2tlZHJvdyAtJmd0OyBvcHApWzBd"><path d="M 3620.462743 122.384241 C 3769.699951 151.600006 3843.500000 159.000000 3983.500000 159.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-3774318150-3488378134)" mask="url(#d2-3774318150)" /><text x="3801.500000" y="160.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">now visible</text></g><mask id="d2-3774318150" maskUnits="userSpaceOnUse" x="-25" y="-25" width="4280" height="305">
+<rect x="-25" y="-25" width="4280" height="305" fill="white"></rect>
+<rect x="314.000000" y="212.000000" width="92" height="21" fill="black"></rect>
+<rect x="1568.000000" y="212.000000" width="153" height="21" fill="black"></rect>
+<rect x="947.000000" y="86.000000" width="37" height="21" fill="black"></rect>
+<rect x="2298.000000" y="90.000000" width="212" height="21" fill="black"></rect>
+<rect x="2306.000000" y="210.000000" width="103" height="21" fill="black"></rect>
+<rect x="3047.000000" y="88.000000" width="178" height="21" fill="black"></rect>
+<rect x="3068.000000" y="208.000000" width="108" height="21" fill="black"></rect>
+<rect x="3763.000000" y="144.000000" width="77" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption"><span style="display:inline-flex;align-items:center;gap:6px;margin-right:14px;font-size:var(--text-xs);color:var(--ink-muted);"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#ffd43b;border:1px solid #f08c00;"></span>Changed</span><span style="display:inline-flex;align-items:center;gap:6px;margin-right:14px;font-size:var(--text-xs);color:var(--ink-muted);"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f1f3f5;border:1px solid #adb5bd;"></span>External</span><span style="display:inline-flex;align-items:center;gap:6px;margin-right:14px;font-size:var(--text-xs);color:var(--ink-muted);"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#e5dbff;border:1px solid #9775fa;"></span>Datastore</span></p></div></section><section id="pieces" class="section"><div class="section-header"><h2 class="section-title">The pieces</h2><span class="section-badge">6 components</span></div><p class="section-intro">One new page, one new cron routine, and a widened pick service — all writing the same <code>Pick</code> row. The signature shape of the whole phase is the <strong>two lives of a pick</strong>:</p><div class="anatomy"><div class="anatomy-panel anatomy-factual"><div class="anatomy-h"><span>&#9632;</span> PLANNED — soft reservation</div><div class="anatomy-desc">Invisible to opponents, freely editable, and it does <strong>not</strong> consume the golfer. Change it, delete it, or plan the golfer nowhere else — no cost.</div><div class="anatomy-eg">status: PLANNED · lockedAt: null</div></div><div class="anatomy-mid"><div class="anatomy-arrow" aria-hidden="true">&rarr;</div><div class="anatomy-fn">cron: validate(inField, notUsed) → promote</div></div><div class="anatomy-panel anatomy-perceived"><div class="anatomy-h"><span>&#9632;</span> LOCKED — committed pick</div><div class="anatomy-desc">Burns the golfer for the season, earns real prize money via the rollup, and is <strong>visible to the league</strong>. Identical whether locked manually or by cron.</div><div class="anatomy-eg">status: LOCKED · lockedAt: startDate</div></div></div><p class="anatomy-caption">Every pick row is exactly one of these two states, and <code>@@unique([leagueMemberId, tournamentId])</code> guarantees one row per member per tournament — so the planner and the Make Pick page can never diverge.</p><div class="board-grid"><div class="board-card"><div class="board-name">pick service — PLANNED CRUD</div><div class="board-purpose">Create, swap, and remove plans with validation: tournament must be in the future, golfer must exist, one pick per tournament.</div><div class="board-row"><span class="board-row-label">skill</span><span class="skill-chip">planPick</span><span class="skill-chip">updatePlannedPick</span><span class="skill-chip">removePlannedPick</span></div></div><div class="board-card"><div class="board-name">pick repository — season queries</div><div class="board-purpose">The planner's data spine: all picks (both statuses) with tournament, golfer, and result data, ordered by start date.</div><div class="board-row"><span class="board-row-label">skill</span><span class="skill-chip">findAllSeasonPicks</span><span class="skill-chip">findPlannedPicksForTournament</span><span class="skill-chip is-deputy">findSeasonPlannedGolferIds</span></div></div><div class="board-card"><div class="board-name">pick-lock — auto-lock core</div><div class="board-purpose">The cron's promotion routine. Built on <code>db-core</code> (no <code>server-only</code> guard) so the API route and tests can call it; accepts a transaction executor.</div><div class="board-row"><span class="board-row-label">skill</span><span class="skill-chip">lockPlannedPicksForTournament</span></div></div><div class="board-card"><div class="board-name">cron wiring — startTournaments</div><div class="board-purpose">On each sync run: find UPCOMING tournaments whose start date passed, flip to IN_PROGRESS and lock plans in one transaction per tournament.</div><div class="board-row"><span class="board-row-label">skill</span><span class="skill-chip">startTournaments</span><span class="skill-chip is-deputy">runFullSync</span></div></div><div class="board-card"><div class="board-name">Season Planner page</div><div class="board-purpose">Full season timeline — completed weeks collapsed with results, upcoming weeks with prepick slots, stale plans flagged as missed. Tap a row to assign.</div><div class="board-row"><span class="board-row-label">skill</span><span class="skill-chip">PlannerTimeline</span><span class="skill-chip">GolferPicker</span><span class="skill-chip is-deputy">RemainingPool</span></div></div><div class="board-card"><div class="board-name">earnings rollup fix</div><div class="board-purpose">Both rollup paths filter <code>pick.status = 'LOCKED'</code> so a speculative plan can never inflate standings.</div><div class="board-row"><span class="board-row-label">skill</span><span class="skill-chip">recalculateSeasonForMember</span><span class="skill-chip">rollupForTournament</span></div></div></div><p class="anatomy-caption" style="margin-top:14px;">Deep detail — the auto-lock algorithm, the tRPC surface, and the <code>Pick</code> schema — is in the <a href="#reference">reference drawers</a>.</p></section><section id="fits" class="section"><div class="section-header"><h2 class="section-title">Where it fits</h2></div><p class="section-intro">Phase 3 built the pick machinery for the current week; Phase 4 extends it across the whole season without changing what a pick <em>is</em>. Everything downstream keeps consuming <code>LOCKED</code> picks, unaware that some of them were born as plans.</p><div class="fits-chain"><div class="fits-node"><div class="fits-role">Predecessor · Phase 3</div><div class="fits-title">Pick CRUD + locking</div><div class="fits-desc">One pick per week, <code>PLANNED</code>/<code>LOCKED</code> statuses, read-side locking, remaining-pool queries, the daily <code>/api/cron/sync</code> endpoint.</div></div><div class="fits-arrow" aria-hidden="true"><span>&rarr;</span></div><div class="fits-node is-this"><div class="fits-role">This phase</div><div class="fits-title">Season Planner</div><div class="fits-desc">Prepicks across the <em>whole</em> season + the cron promotion that makes them real — the strategic layer.</div></div><div class="fits-arrow" aria-hidden="true"><span>&rarr;</span></div><div class="fits-node"><div class="fits-role">Consumers</div><div class="fits-title">Earnings · league views · Phase 10</div><div class="fits-desc">Rollups and opponent views consume <code>LOCKED</code> picks unchanged; Phase 10 polish adds drag-and-drop and picker warnings on top.</div></div></div><div class="layer-stack"><div class="layer is-new"><span class="layer-tag">New</span><span class="layer-label">Season Planner page + GolferPicker</span><span class="layer-note">timeline UI, tap-to-assign, stale-plan indicators</span></div><div class="layer is-new"><span class="layer-tag">New</span><span class="layer-label">PLANNED CRUD · plan / updatePlan / deletePlan · allSeasonPicks</span><span class="layer-note">service + router surface for prepicks</span></div><div class="layer is-new"><span class="layer-tag">New</span><span class="layer-label">lockPlannedPicksForTournament (in startTournaments)</span><span class="layer-note">the write-side promotion inside the existing cron</span></div><div class="layer is-reused"><span class="layer-tag">Kept</span><span class="layer-label">/api/cron/sync · tournament.schedule · resolveLeagueMemberId</span><span class="layer-note">existing cron endpoint, schedule query, and member scoping — reused as-is</span></div><div class="layer is-reused"><span class="layer-tag">Kept</span><span class="layer-label">Pick schema + @@unique(leagueMemberId, tournamentId)</span><span class="layer-note">no migration; the constraint is what makes update-in-place safe</span></div><div class="layer is-reused"><span class="layer-tag">Kept</span><span class="layer-label">earnings rollup machinery</span><span class="layer-note">only gains a LOCKED filter — the calculation is untouched</span></div></div></section><section id="decisions" class="section"><div class="section-header"><h2 class="section-title">Key decisions</h2><span class="section-badge">8 locked · 3 contested</span></div><p class="section-intro">The whole design hangs on the first two: what a plan <em>reserves</em>, and <em>who</em> turns it into a real pick.</p><div class="decision-grid"><div class="decision-card"><span class="decision-num">1</span><div><div class="decision-q">What does a PLANNED pick reserve?</div><div class="decision-a">Nothing — it's a soft reservation. Only <code>LOCKED</code> picks consume a golfer for the season.</div><div class="decision-why">Planning three months out shouldn't cost options today. The exhausted-golfer query counts only <code>LOCKED</code> picks, so a golfer can be planned for week 10 <em>and</em> picked for week 8.</div><div class="decision-alt"><span class="decision-alt-tag">Rejected</span>Hard reservation (PLANNED blocks the remaining pool) — one speculative plan would lock away a golfer the user may never actually field, and stale plans would silently shrink the pool.</div></div></div><div class="decision-card"><span class="decision-num">2</span><div><div class="decision-q">How does a plan become a real pick?</div><div class="decision-a">Write-side: the daily cron promotes valid <code>PLANNED</code> → <code>LOCKED</code> in the database on tournament start day.</div><div class="decision-why">After promotion the pick is <em>indistinguishable</em> from a manually submitted one — it burns the golfer, earns via the rollup, and is visible to opponents. One code path downstream, forever.</div><div class="decision-alt"><span class="decision-alt-tag">Rejected</span>Extending read-side locking (compute LOCKED at read time, never write). Earnings, opponent visibility, and pool queries would each need PLANNED-aware special cases — three subtle forks instead of one DB write.</div></div></div><div class="decision-card"><span class="decision-num">3</span><div><div class="decision-q">When is field membership validated?</div><div class="decision-a">At lock time (cron), never at plan time.</div><div class="decision-why">Tournament fields aren't published until a few days before the event — plan-time validation is impossible for most of the season, so validation moves to the only moment the field is known.</div><div class="decision-alt"><span class="decision-alt-tag">Rejected</span>Per-tournament "likely in field" predictions in the picker — there's no historical field-entry data to predict from. Deferred; the picker shows the global remaining pool instead.</div></div></div><div class="decision-card"><span class="decision-num">4</span><div><div class="decision-q">What happens to a plan that fails validation on start day?</div><div class="decision-a">It goes stale — skipped by the cron and flagged "missed" on the timeline. The user gets $0 that week but keeps the golfer.</div><div class="decision-why">Burning a golfer the user never actually fielded would punish twice for one mistake. Worst case is a lost week, never a lost asset.</div></div></div><div class="decision-card"><span class="decision-num">5</span><div><div class="decision-q">What if Make Pick submits over an existing PLANNED pick?</div><div class="decision-a"><code>submit</code> updates the existing pick's golfer in place; <code>LOCKED</code> picks are rejected with <code>PRECONDITION_FAILED</code>.</div><div class="decision-why"><code>@@unique([leagueMemberId, tournamentId])</code> guarantees one row per member per tournament — both flows converge on that row instead of racing to create duplicates.</div></div></div><div class="decision-card"><span class="decision-num">6</span><div><div class="decision-q">What does the planner's season query return?</div><div class="decision-a">Raw DB status from <code>getAllSeasonPicks</code> — no read-side masking.</div><div class="decision-why">The planner must distinguish <code>PLANNED</code> (editable), <code>LOCKED</code> (done), and stale <code>PLANNED</code> (missed). Read-side locking would erase exactly the distinction the page exists to show.</div></div></div><div class="decision-card"><span class="decision-num">7</span><div><div class="decision-q">Where does the auto-lock code live?</div><div class="decision-a">A <code>pick-lock</code> module built on <code>db-core</code> — no <code>server-only</code> guard — following the <code>earnings-core</code> pattern.</div><div class="decision-why">The cron API route and tests both need to call it. Its two validation queries are inlined rather than spun into a new repo file — not worth the indirection.</div></div></div><div class="decision-card"><span class="decision-num">8</span><div><div class="decision-q">How do users assign a golfer to a week?</div><div class="decision-a">Tap-to-assign: tap a tournament row, pick from a searchable, world-ranking-sorted drawer.</div><div class="decision-why">Simpler to build and works on mobile, where most picks happen.</div><div class="decision-alt"><span class="decision-alt-tag">Rejected</span>Drag-and-drop planning — deferred to Phase 10 polish. High interaction cost on touch screens for zero strategic benefit in v1.</div></div></div></div></section><section id="scope" class="section"><div class="section-header"><h2 class="section-title">Scope</h2></div><div class="scope-cols"><div class="scope-col scope-in"><div class="scope-head">In scope <span class="scope-count">&#183; 7 goals</span></div><ul class="scope-list"><li><span class="scope-marker">&#10003;</span><span><code>PLANNED</code> pick CRUD across repository, service, and tRPC router (<code>plan</code>, <code>updatePlan</code>, <code>deletePlan</code>, <code>plannedPicks</code>, <code>allSeasonPicks</code>)</span></li><li><span class="scope-marker">&#10003;</span><span><code>submit</code> update-in-place semantics for existing <code>PLANNED</code> picks; hard reject on <code>LOCKED</code></span></li><li><span class="scope-marker">&#10003;</span><span>Cron auto-lock: <code>UPCOMING → IN_PROGRESS</code> flip + <code>PLANNED → LOCKED</code> promotion, atomic per tournament</span></li><li><span class="scope-marker">&#10003;</span><span>Earnings rollup filtered to <code>status = 'LOCKED'</code> in both rollup paths</span></li><li><span class="scope-marker">&#10003;</span><span>Season Planner page: full timeline, status indicators (planned / locked / missed / results), completed weeks collapsed</span></li><li><span class="scope-marker">&#10003;</span><span>Golfer picker: remaining pool, name search, world-ranking sort</span></li><li><span class="scope-marker">&#10003;</span><span>NavBar link + responsive layout with brand tokens</span></li></ul></div><div class="scope-col scope-out"><div class="scope-head">Out of scope <span class="scope-count">&#183; anti-goals</span></div><ul class="scope-list"><li><span class="scope-marker">&times;</span><span>Drag-and-drop planning — tap-to-assign only in v1 <span class="defer">&rarr; → Phase 10</span></span></li><li><span class="scope-marker">&times;</span><span>Per-tournament "likely in field" predictions — no historical field-entry data exists</span></li><li><span class="scope-marker">&times;</span><span>Warning when picking a golfer already LOCKED elsewhere <span class="defer">&rarr; → polish</span></span></li><li><span class="scope-marker">&times;</span><span>Remaining-golfers-per-ranking-tier counts ("3 top-25 left") <span class="defer">&rarr; → polish</span></span></li><li><span class="scope-marker">&times;</span><span>Manual PLANNED → LOCKED confirmation step — rejected outright; the cron is the confirmation</span></li><li><span class="scope-marker">&times;</span><span>Auto-deleting stale plans — they stay visible as "missed" so users see what slipped</span></li></ul></div></div></section><section id="rollout" class="section"><div class="section-header"><h2 class="section-title">Rollout</h2><span class="section-badge">2 PRs · backend first</span></div><p class="section-intro">Backend lands first and is fully test-gated before any UI exists — the cron promotion is unattended, so its three validation outcomes are proven in PR 1, not discovered in production.</p><div class="phases"><div class="phase"><div class="phase-head"><span class="phase-tag">PR 1</span><span class="phase-title">PLANNED service layer + cron auto-lock</span></div><div class="phase-body"><div class="phase-scope"><div class="phase-sub">Scope</div><p>Repository queries (<code>findAllSeasonPicks</code>, <code>findPlannedPicksForTournament</code>, <code>findSeasonPlannedGolferIds</code>), five service methods, <code>submit</code> update-in-place semantics, <code>lockPlannedPicksForTournament</code> wired into <code>startTournaments</code> inside <code>/api/cron/sync</code>, <code>LOCKED</code> filter on both earnings rollups, and the five router endpoints.</p></div><div class="phase-gate"><div class="phase-sub">Acceptance gate</div><ul class="gate-list"><li><span class="gate-check">&#10003;</span>Plan CRUD tests: creation, duplicate-golfer validation, swap, delete, can't plan a started tournament</li><li><span class="gate-check">&#10003;</span><code>submit</code> updates an existing PLANNED pick in place and rejects LOCKED with PRECONDITION_FAILED</li><li><span class="gate-check">&#10003;</span>Auto-lock: valid pick → LOCKED · golfer not in field → stays unburned · golfer already used → skipped</li><li><span class="gate-check">&#10003;</span>Earnings rollup excludes PLANNED picks in both paths</li></ul></div></div></div><div class="phase"><div class="phase-head"><span class="phase-tag">PR 2</span><span class="phase-title">Season Planner page</span></div><div class="phase-body"><div class="phase-scope"><div class="phase-sub">Scope</div><p>The <code>/planner</code> timeline built on <code>allSeasonPicks</code> + <code>tournament.schedule</code>: per-tournament name/dates/purse/status, pick status indicators, collapsed completed section with results, "Add Plan" → golfer picker (search + world ranking), Change/Remove on planned picks, NavBar link.</p></div><div class="phase-gate"><div class="phase-sub">Acceptance gate</div><ul class="gate-list"><li><span class="gate-check">&#10003;</span>A user can plan picks across the full remaining season and see them auto-lock on start day</li><li><span class="gate-check">&#10003;</span>Stale plans render with a "missed" indicator and can be manually removed</li><li><span class="gate-check">&#10003;</span>Completed tournaments show results but stay de-emphasized</li><li><span class="gate-check">&#10003;</span>Responsive layout on mobile with brand tokens</li></ul></div></div></div></div></section><section id="done" class="section"><div class="section-header"><h2 class="section-title">Definition of done</h2><span class="section-badge">shipped</span></div><p class="section-intro">Done is behavioral: the three auto-lock outcomes, the two <code>submit</code> outcomes, and a clean earnings ledger. The movers are what the phase changes about the product.</p><div class="movers"><div class="mover"><div class="mover-name">planning horizon</div><div class="mover-vals"><span class="mover-now">now <s>current week only</s></span><span class="mover-arrow">&rarr;</span><span class="mover-target">full remaining season</span></div><div class="mover-label">the strategic game becomes playable</div></div><div class="mover"><div class="mover-name">lock mechanism</div><div class="mover-vals"><span class="mover-now">now <s>manual submit before start</s></span><span class="mover-arrow">&rarr;</span><span class="mover-target">cron auto-promotes on start day</span></div><div class="mover-label">plans become picks unattended</div></div><div class="mover"><div class="mover-name">earnings input</div><div class="mover-vals"><span class="mover-now">now <s>every pick row</s></span><span class="mover-arrow">&rarr;</span><span class="mover-target">LOCKED picks only</span></div><div class="mover-label">plans can never inflate standings</div></div></div><table class="spec-table"><thead><tr><th>Behavior</th><th>Outcome</th><th>Why it validates</th></tr></thead><tbody><tr><td>Auto-lock · golfer in field, not used</td><td class="num good">pick → <code>LOCKED</code> with <code>lockedAt</code></td><td>the happy path pays out exactly like a manual pick</td></tr><tr><td>Auto-lock · golfer not in field</td><td class="num good">plan skipped — golfer <strong>not</strong> burned</td><td>worst case is a $0 week, never a lost asset</td></tr><tr><td>Auto-lock · golfer already used</td><td class="num good">plan skipped</td><td>the season-long no-reuse rule holds even for unattended writes</td></tr><tr><td><code>submit</code> over a PLANNED pick</td><td class="num good">golfer swapped in place</td><td>Make Pick and Planner converge on one row</td></tr><tr><td><code>submit</code> over a LOCKED pick</td><td class="num good"><code>PRECONDITION_FAILED</code></td><td>locked means locked — no path rewrites history</td></tr><tr><td>Earnings rollup</td><td class="num good"><code>WHERE status = 'LOCKED'</code> in both paths</td><td>standings reflect only committed picks</td></tr></tbody></table><p class="tbl-note">All outcomes are covered by the PR 1 test gate; the phase shipped with every checklist item in the source plan checked.</p></section><section id="risks" class="section"><div class="section-header"><h2 class="section-title">Risks</h2></div><p class="section-intro">The risk profile is concentrated in one place: an unattended cron writing money-bearing rows.</p><div class="risk-grid"><div class="risk-card"><div class="risk-r"><span class="risk-icon">&#9888;</span><span>The cron misses or fails the start-day run — plans never lock, users silently get $0 weeks.</span></div><div class="risk-m"><b>Mitigation:</b> Catch-up by construction: <code>startTournaments</code> selects every <code>UPCOMING</code> tournament with <code>startDate &lt;= now</code> on <em>every</em> run, so the next successful run promotes whatever the failed one missed. Promotion is idempotent — it only touches rows still <code>PLANNED</code>.</div></div><div class="risk-card"><div class="risk-r"><span class="risk-icon">&#9888;</span><span>Partial failure mid-promotion: tournament flipped to IN_PROGRESS but its picks left unlocked.</span></div><div class="risk-m"><b>Mitigation:</b> One transaction per tournament: the status flip and <code>lockPlannedPicksForTournament</code> share a <code>withTransaction</code> scope — either both commit or neither does.</div></div><div class="risk-card"><div class="risk-r"><span class="risk-icon">&#9888;</span><span>PLANNED rows leak into money or visibility paths and inflate standings or spoil picks.</span></div><div class="risk-m"><b>Mitigation:</b> Explicit LOCKED filters in both earnings rollup queries and the league current-week view, each covered by tests — <code>PLANNED</code> is invisible everywhere except the owner's planner.</div></div><div class="risk-card"><div class="risk-r"><span class="risk-icon">&#9888;</span><span>A user edits a plan at the same moment the cron locks it.</span></div><div class="risk-m"><b>Mitigation:</b> Start-date guard on every mutation: <code>updatePlan</code>/<code>deletePlan</code> re-check the tournament and reject with <code>PRECONDITION_FAILED</code> once it has started; the cron only touches rows still <code>PLANNED</code>. No cross-member race exists — golfer uniqueness is per-member.</div></div><div class="risk-card"><div class="risk-r"><span class="risk-icon">&#9888;</span><span>Stale plans confuse users — a week quietly earns nothing.</span></div><div class="risk-m"><b>Mitigation:</b> Visible, not deleted: stale plans stay on the timeline with a "missed" indicator so users see exactly what slipped, and can clear it themselves.</div></div></div></section><section id="approve" class="section"><div class="section-header"><h2 class="section-title">Before you approve</h2><span class="section-badge">sign-off</span></div><p class="section-intro">This page is the approval surface for the phase as designed; it shipped in exactly this shape (with a few post-ship evolutions logged in the reference).</p><div class="approve-grid"><div class="approve-card commit"><div class="approve-head"><span aria-hidden="true">&#9634;</span> What you&#39;re approving</div><div class="approve-body">A <strong>two-PR staged delivery</strong>: PR 1 lands the service layer + cron promotion behind a full test gate before any UI exists; PR 2 is additive UI. <strong>No schema migration</strong> — <code>Pick</code> already carries <code>status</code>, <code>lockedAt</code>, and the unique constraint. The only shared surfaces touched are <code>submit</code> and the earnings rollup, both test-gated, so rollback is a straight revert.</div></div><div class="approve-card scrutinize"><div class="approve-head"><span aria-hidden="true">&#9888;</span> Scrutinize hardest</div><div class="approve-body"><code>lockPlannedPicksForTournament</code> — an <strong>unattended DB write that moves money</strong>. Too-strict validation hands out silent $0 weeks; too-loose burns golfers users never fielded or double-locks a golfer. Walk the promotion loop and its two checks before signing off. <a href="#ref-autolock">See the algorithm walkthrough ›</a></div></div><div class="approve-card open"><div class="approve-head"><span aria-hidden="true">&#9711;</span> Still open — non-blocking</div><div class="approve-body">Deferred to polish; none block PR 1 or PR 2.<ol class="approve-q"><li>Should the planner show remaining golfers per world-ranking tier ("3 top-25 left")?</li><li>Does the golfer picker need virtualization at 200+ golfers, or is search + ranking sort enough?</li><li>Should the picker warn when a golfer is already LOCKED for another week? (deferred)</li></ol></div></div></div></section><section id="reference" class="section"><div class="section-header"><h2 class="section-title">Reference</h2><span class="section-badge">drill-down</span></div><p class="ref-intro">Full depth for the careful reader — the auto-lock algorithm, the API surface, the schema, the open-question log, and how the shipped code evolved past this plan.</p><details class="ref" id="ref-autolock"><summary><svg class="ref-chev" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Auto-lock algorithm — the promotion loop, both checks, and the transaction<span class="ref-tally">pick-lock.ts · sync.ts</span></summary><div class="ref-body"><p>The promotion runs inside <code>startTournaments</code> (<code>src/server/services/sync.ts</code>), which wraps each starting tournament in one transaction:</p>
+<pre class="shiki github-light" style="background-color:#fff;color:#24292e"><code><span class="line"><span style="color:#D73A49">const</span><span style="color:#005CC5"> lockResult</span><span style="color:#D73A49"> =</span><span style="color:#D73A49"> await</span><span style="color:#6F42C1"> withTransaction</span><span style="color:#24292E">(</span><span style="color:#D73A49">async</span><span style="color:#24292E"> (</span><span style="color:#E36209">tx</span><span style="color:#24292E">) </span><span style="color:#D73A49">=&gt;</span><span style="color:#24292E"> {</span></span>
+<span class="line"><span style="color:#D73A49">  await</span><span style="color:#24292E"> syncRepo.</span><span style="color:#6F42C1">updateTournamentStatus</span><span style="color:#24292E">(tournament.id, TournamentStatus.</span><span style="color:#005CC5">IN_PROGRESS</span><span style="color:#24292E">, tx);</span></span>
+<span class="line"><span style="color:#D73A49">  return</span><span style="color:#6F42C1"> lockPlannedPicksForTournament</span><span style="color:#24292E">(tournament.id, tournament.season, tx);</span></span>
+<span class="line"><span style="color:#24292E">});</span></span></code></pre><p><code>lockPlannedPicksForTournament</code> (<code>src/server/repositories/pick-lock.ts</code> — built on <code>db-core</code>, no <code>server-only</code> guard, executor-injectable for transactions and tests) then walks every <code>PLANNED</code> pick for the tournament:</p>
+<ol>
+<li><strong>Field check</strong> — the golfer must have a <code>CONFIRMED</code> <code>tournamentField</code> entry for this tournament. Not in the field → the plan is <em>not</em> promoted (skip mode returns the golfer to the pool; leagues can opt into <code>burnStalePicks</code> to lock anyway).</li>
+<li><strong>Usage check</strong> — count the member's <code>LOCKED</code> picks for this golfer this season; at or above the league's <code>maxGolferUses</code> (default 1) → skipped, stays unpromoted.</li>
+<li><strong>Promote</strong> — passes both → <code>UPDATE pick SET status = 'LOCKED', lockedAt = now()</code>.</li>
+<li><strong>Cleanup</strong> — after locking, any <em>other</em> <code>PLANNED</code> picks for golfers that just became exhausted are removed, so the planner never shows a plan that can no longer lock.</li>
+</ol>
+<p>Returns <code>{ locked, skipped, cleaned }</code>, which the cron logs per tournament. Each pick is processed independently — golfer uniqueness is per-member, so there is no cross-member race.</p>
+</div></details><details class="ref" id="ref-api"><summary><svg class="ref-chev" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>tRPC surface — five new endpoints on the pick router<span class="ref-tally">3 mutations · 2 queries</span></summary><div class="ref-body"><p>All endpoints are <code>protectedProcedure</code>s scoped through <code>resolveLeagueMemberId(userId, leagueId)</code> — a user can only ever touch their own membership's picks.</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Kind</th>
+<th>Service</th>
+<th>Semantics</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pick.plan</code></td>
+<td>mutation</td>
+<td><code>planPick</code></td>
+<td>Creates a <code>PLANNED</code> pick. Rejects: unknown tournament/golfer (<code>NOT_FOUND</code>), started tournament (<code>PRECONDITION_FAILED</code>), existing pick for the tournament (<code>CONFLICT</code>).</td>
+</tr>
+<tr>
+<td><code>pick.updatePlan</code></td>
+<td>mutation</td>
+<td><code>updatePlannedPick</code></td>
+<td>Swaps the golfer on an existing <code>PLANNED</code> pick. <code>NOT_FOUND</code> unless the pick exists <em>and</em> is <code>PLANNED</code> — LOCKED picks are unreachable.</td>
+</tr>
+<tr>
+<td><code>pick.deletePlan</code></td>
+<td>mutation</td>
+<td><code>removePlannedPick</code></td>
+<td>Deletes a <code>PLANNED</code> pick; same PLANNED-only guard, plus the tournament must not have started.</td>
+</tr>
+<tr>
+<td><code>pick.plannedPicks</code></td>
+<td>query</td>
+<td><code>getPlannedPicks</code></td>
+<td>The member's <code>PLANNED</code> picks for the season.</td>
+</tr>
+<tr>
+<td><code>pick.allSeasonPicks</code></td>
+<td>query</td>
+<td><code>getAllSeasonPicks</code></td>
+<td>Every pick (both statuses) with tournament, golfer, purse, and result data — the planner timeline's spine, ordered by start date.</td>
+</tr>
+</tbody></table>
+<p>The Make Pick flow's guard is the same shape: an existing <code>PLANNED</code> pick is updated in place; a <code>LOCKED</code> pick rejects with <code>PRECONDITION_FAILED</code>.</p>
+</div></details><details class="ref" id="ref-schema"><summary><svg class="ref-chev" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Pick schema — no migration needed<span class="ref-tally">prisma/schema.prisma</span></summary><div class="ref-body"><p>The phase rides entirely on the existing model — <code>status</code> defaults to <code>PLANNED</code>, <code>lockedAt</code> records the promotion moment, and the unique constraint is what makes update-in-place safe:</p>
+<pre class="shiki github-light" style="background-color:#fff;color:#24292e"><code><span class="line"><span style="color:#D73A49">model</span><span style="color:#6F42C1"> Pick</span><span style="color:#24292E"> {</span></span>
+<span class="line"><span style="color:#24292E">  id             </span><span style="color:#005CC5">String</span><span style="color:#6F42C1">     @id</span><span style="color:#6F42C1"> @default</span><span style="color:#24292E">(</span><span style="color:#005CC5">uuid</span><span style="color:#24292E">())</span></span>
+<span class="line"><span style="color:#24292E">  leagueMemberId </span><span style="color:#005CC5">String</span><span style="color:#6F42C1">     @map</span><span style="color:#24292E">(</span><span style="color:#032F62">"league_member_id"</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">  tournamentId   </span><span style="color:#005CC5">String</span><span style="color:#6F42C1">     @map</span><span style="color:#24292E">(</span><span style="color:#032F62">"tournament_id"</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">  golferId       </span><span style="color:#005CC5">String</span><span style="color:#6F42C1">     @map</span><span style="color:#24292E">(</span><span style="color:#032F62">"golfer_id"</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">  status         </span><span style="color:#005CC5">PickStatus</span><span style="color:#6F42C1"> @default</span><span style="color:#24292E">(</span><span style="color:#005CC5">PLANNED</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">  createdAt      </span><span style="color:#005CC5">DateTime</span><span style="color:#6F42C1">   @default</span><span style="color:#24292E">(</span><span style="color:#005CC5">now</span><span style="color:#24292E">()) </span><span style="color:#6F42C1">@map</span><span style="color:#24292E">(</span><span style="color:#032F62">"created_at"</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">  updatedAt      </span><span style="color:#005CC5">DateTime</span><span style="color:#6F42C1">   @updatedAt</span><span style="color:#6F42C1"> @map</span><span style="color:#24292E">(</span><span style="color:#032F62">"updated_at"</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">  lockedAt       </span><span style="color:#005CC5">DateTime</span><span style="color:#D73A49">?</span><span style="color:#6F42C1">  @map</span><span style="color:#24292E">(</span><span style="color:#032F62">"locked_at"</span><span style="color:#24292E">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6F42C1">  @@unique</span><span style="color:#24292E">([</span><span style="color:#005CC5">leagueMemberId</span><span style="color:#24292E">, </span><span style="color:#005CC5">tournamentId</span><span style="color:#24292E">])</span></span>
+<span class="line"><span style="color:#6F42C1">  @@map</span><span style="color:#24292E">(</span><span style="color:#032F62">"pick"</span><span style="color:#24292E">)</span></span>
+<span class="line"><span style="color:#24292E">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D73A49">enum</span><span style="color:#6F42C1"> PickStatus</span><span style="color:#24292E"> {</span></span>
+<span class="line"><span style="color:#24292E">  PLANNED</span></span>
+<span class="line"><span style="color:#24292E">  LOCKED</span></span>
+<span class="line"><span style="color:#24292E">}</span></span></code></pre></div></details><details class="ref" id="ref-questions"><summary><svg class="ref-chev" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Open-question log — 11 raised, 8 resolved in-design<span class="ref-tally">8 resolved · 3 deferred</span></summary><div class="ref-body"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Resolution</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Should PLANNED picks be visible to opponents?</td>
+<td><strong>No</strong> — only LOCKED picks are visible; auto-locked picks follow the same visibility rules as any other.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Show remaining golfers per ranking tier?</td>
+<td><em>Deferred to polish.</em></td>
+</tr>
+<tr>
+<td>3</td>
+<td>How does the picker handle 200+ golfers?</td>
+<td>Search + world-ranking sort; <em>virtualize only if slow.</em></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Should PLANNED picks block golfer availability?</td>
+<td><strong>No</strong> — soft reservation; only LOCKED consumes.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Validate field membership at plan time?</td>
+<td><strong>No</strong> — fields unknown for future tournaments; validate at auto-lock.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Manual PLANNED → LOCKED confirmation step?</td>
+<td><strong>No</strong> — the daily cron is the confirmation.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Make Pick conflicts with a PLANNED pick?</td>
+<td><strong><code>submit</code> updates the golfer in place; LOCKED rejected.</strong></td>
+</tr>
+<tr>
+<td>8</td>
+<td>What happens to stale PLANNED picks?</td>
+<td><strong>Left in place with a "missed" indicator; not auto-deleted.</strong></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Combined query for all pick statuses?</td>
+<td><strong>Yes</strong> — <code>getAllSeasonPicks</code> returns PLANNED + LOCKED.</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Does auto-lock need to write to the DB?</td>
+<td><strong>Yes</strong> — promotion burns the golfer, enables earnings, reveals the pick.</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Should earnings rollup filter by status?</td>
+<td><strong>Yes</strong> — <code>WHERE pick.status = 'LOCKED'</code> in both paths.</td>
+</tr>
+</tbody></table>
+</div></details><details class="ref" id="ref-evolution"><summary><svg class="ref-chev" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>As shipped — how the live code evolved past this plan<span class="ref-tally">7 deltas, same model</span></summary><div class="ref-body"><p>The phase shipped as designed, and the PLANNED/LOCKED model then absorbed every later feature <strong>without a schema change</strong> — the best evidence the core decisions held. Verified deltas between this plan and today's code:</p>
+<ul>
+<li><strong>Cron cadence:</strong> daily 10:00 UTC → <strong>every 15 minutes</strong> (<code>vercel.json</code>), so locks land within minutes of a start time rather than hours.</li>
+<li><strong>Route:</strong> the planner shipped at <strong><code>/season</code></strong> (NavBar "Season") rather than <code>/planner</code>, merged with the season history view.</li>
+<li><strong><code>maxGolferUses</code>:</strong> the binary "already used" check generalized to a per-league use limit (<code>findExhaustedGolferIds</code>), letting leagues allow golfer reuse.</li>
+<li><strong>Stale-plan handling hardened:</strong> skip-mode now <em>deletes</em> a not-in-field plan at lock time (golfer returns to the pool immediately), leagues can opt into <strong><code>burnStalePicks</code></strong> to lock it anyway, and a post-lock cleanup removes other plans for golfers that just became exhausted.</li>
+<li><strong>Duplicate-plan UX:</strong> planning a golfer already planned elsewhere now <strong>moves the plan</strong> instead of rejecting it.</li>
+<li><strong>Pre-lock visibility:</strong> leagues can opt into <strong><code>showPicksBeforeLock</code></strong> to reveal PLANNED picks to the league early.</li>
+<li><strong><code>planMultiple</code>:</strong> one tap can plan a golfer across all of a user's leagues, skipping ineligible ones per league.</li>
+</ul>
+<p>One reversal worth noting: <code>getAllSeasonPicks</code> now <em>does</em> apply read-side locking (the plan chose raw status); stale plans are instead surfaced by the timeline's own start-date check and largely removed at lock time by the cron cleanup.</p>
+</div></details></section></main></div><div id="zoom-overlay" class="zoom-overlay" aria-hidden="true"><div class="zoom-controls"><button id="zoom-out" type="button" aria-label="Zoom out">&#8722;</button><button id="zoom-reset" type="button">Reset</button><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-close" type="button" aria-label="Close">&#10006;</button></div><div id="zoom-stage" class="zoom-stage"></div></div><script>(function() {
+  'use strict';
+
+  // Sidebar toggle
+  var toggle = document.getElementById('sidebar-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+
+  function openSidebar() {
+    sidebar.classList.add('is-open');
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('is-open');
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function() {
+      if (sidebar.classList.contains('is-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  // Close sidebar on nav click (mobile)
+  var outlineLinks = document.querySelectorAll('.outline-item, .file-item');
+  outlineLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 900) {
+        closeSidebar();
+      }
+    });
+  });
+
+  // Scroll-spy for outline
+  var outlineItems = document.querySelectorAll('.outline-item[data-target]');
+  var sections = Array.prototype.map.call(outlineItems, function(it) {
+    var t = it.getAttribute('data-target');
+    return { id: t, target: t };
+  });
+
+  function updateActive(activeId) {
+    outlineItems.forEach(function(item) {
+      var t = item.getAttribute('data-target');
+      if (t === activeId) {
+        item.classList.add('is-active');
+      } else {
+        item.classList.remove('is-active');
+      }
+    });
+  }
+
+  var topbarH = 52;
+
+  function onScroll() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var winH = window.innerHeight;
+    var active = null;
+
+    for (var i = sections.length - 1; i >= 0; i--) {
+      var el = document.getElementById(sections[i].id);
+      if (el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.top <= topbarH + 32) {
+          active = sections[i].target;
+          break;
+        }
+      }
+    }
+
+    if (active) {
+      updateActive(active);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Progress rail: highlight chapter based on scroll
+  var progressSteps = document.querySelectorAll('.progress-step');
+  var chapters = Array.prototype.map.call(progressSteps, function(s) {
+    var h = s.getAttribute('href') || '';
+    return h.charAt(0) === '#' ? document.getElementById(h.slice(1)) : null;
+  });
+
+  function updateProgress() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = 0;
+    for (var i = chapters.length - 1; i >= 0; i--) {
+      if (chapters[i]) {
+        var rect = chapters[i].getBoundingClientRect();
+        if (rect.top <= topbarH + 48) {
+          active = i;
+          break;
+        }
+      }
+    }
+    progressSteps.forEach(function(step, idx) {
+      if (idx === active) {
+        step.classList.add('is-active');
+      } else {
+        step.classList.remove('is-active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+})();
+
+(function(){
+  'use strict';
+  var ov=document.getElementById('zoom-overlay'), stage=document.getElementById('zoom-stage');
+  var cur,scale=1,tx=0,ty=0,drag=false,moved=false,lx=0,ly=0;
+  function apply(){ if(cur) cur.style.transform='translate('+tx+'px,'+ty+'px) scale('+scale+')'; }
+  function openSvg(svg){ stage.innerHTML=''; cur=svg.cloneNode(true); cur.removeAttribute('width'); cur.removeAttribute('height'); stage.appendChild(cur); scale=1;tx=0;ty=0;apply(); ov.classList.add('is-open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+  function closeOv(){ ov.classList.remove('is-open'); ov.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  document.querySelectorAll('.diagram-box').forEach(function(box){
+    var svg=box.querySelector('svg.diagram-svg'); if(!svg) return;
+    box.addEventListener('click', function(){ openSvg(svg); });
+  });
+  document.getElementById('zoom-close').addEventListener('click', closeOv);
+  document.getElementById('zoom-reset').addEventListener('click', function(){ scale=1;tx=0;ty=0;apply(); });
+  document.getElementById('zoom-in').addEventListener('click', function(){ scale=Math.min(8,scale*1.25); apply(); });
+  document.getElementById('zoom-out').addEventListener('click', function(){ scale=Math.max(0.3,scale/1.25); apply(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeOv(); });
+  stage.addEventListener('wheel', function(e){ e.preventDefault(); scale=Math.min(8,Math.max(0.3, scale*(e.deltaY<0?1.12:0.89))); apply(); }, {passive:false});
+  stage.addEventListener('pointerdown', function(e){ drag=true; moved=false; lx=e.clientX; ly=e.clientY; try{stage.setPointerCapture(e.pointerId);}catch(_){} });
+  stage.addEventListener('pointermove', function(e){ if(!drag)return; moved=true; tx+=e.clientX-lx; ty+=e.clientY-ly; lx=e.clientX; ly=e.clientY; apply(); });
+  stage.addEventListener('pointerup', function(){ drag=false; });
+  stage.addEventListener('pointercancel', function(){ drag=false; });
+  stage.addEventListener('click', function(e){ if(!moved && e.target===stage) closeOv(); });
+})();
+
+(function(){
+  'use strict';
+  function openTo(hash){
+    if(!hash || hash.charAt(0) !== '#') return;
+    var el = document.getElementById(hash.slice(1));
+    if(!el) return;
+    var p = el;
+    while(p){ if(p.tagName && p.tagName.toLowerCase() === 'details') p.open = true; p = p.parentElement; }
+    if(el.tagName && el.tagName.toLowerCase() === 'details') el.open = true;
+    var d = el.querySelector && el.querySelector('details.file-diff');
+    if(d) d.open = true;
+  }
+  window.addEventListener('hashchange', function(){ openTo(location.hash); });
+  if(location.hash) openTo(location.hash);
+})();
+</script></body></html>

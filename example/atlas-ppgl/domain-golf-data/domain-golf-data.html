@@ -1,0 +1,1943 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="visual-skills · visual-atlas"><title>Golf data &amp; sync</title><style>/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --panel: #f7f8fa;
+  --panel-deep: #f0f2f5;
+  --border: #e3e6ea;
+  --border-strong: #c8cdd5;
+  --ink: #1c2024;
+  --ink-muted: #5a626c;
+  --ink-faint: #646b75;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: #eff4ff;
+  --accent-border: #bfdbfe;
+  --add: #16a34a;
+  --add-bg: #f0fdf4;
+  --add-border: #bbf7d0;
+  --remove: #dc2626;
+  --remove-bg: #fef2f2;
+  --remove-border: #fecaca;
+  --change: #d97706;
+  --change-bg: #fffbeb;
+  --change-border: #fde68a;
+  --risk-low: #16a34a;
+  --risk-low-bg: #f0fdf4;
+  --risk-low-border: #bbf7d0;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+
+  --sidebar-w: 264px;
+  --topbar-h: 52px;
+  --radius: 6px;
+  --radius-sm: 4px;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== TOP BAR ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--topbar-h);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+}
+
+.topbar-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  line-height: 1.5;
+}
+
+.chip-risk {
+  color: var(--risk-low);
+  background: var(--risk-low-bg);
+  border-color: var(--risk-low-border);
+}
+
+.chip-stat {
+  color: var(--ink-muted);
+  background: var(--panel-deep);
+  border-color: var(--border);
+  font-weight: 500;
+}
+
+.chip-pr {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+  font-weight: 600;
+}
+
+.diff-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.diff-add { color: var(--add); }
+.diff-rem { color: var(--remove); }
+
+.topbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-strong);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  color: var(--ink-muted);
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+.sidebar-toggle:hover { background: var(--panel-deep); border-color: var(--border-strong); }
+.sidebar-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ===== LAYOUT ===== */
+.layout {
+  display: flex;
+  min-height: calc(100vh - var(--topbar-h));
+  position: relative;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+.sidebar-section {
+  padding: 16px 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-section:last-child { border-bottom: none; }
+
+.sidebar-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 14px 8px;
+  display: block;
+}
+
+/* File tree */
+.file-list { list-style: none; }
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 100ms ease-out;
+  line-height: 1.4;
+}
+.file-item:hover { background: var(--panel-deep); color: var(--ink); }
+.file-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.file-status {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.file-status-M { color: var(--change); }
+.file-status-A { color: var(--add); }
+.file-status-D { color: var(--remove); }
+.file-status-R { color: var(--change); }
+
+.file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-stat {
+  font-size: var(--text-xs);
+  font-family: var(--font-sans);
+  color: var(--ink-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.file-stat .plus { color: var(--add); font-weight: 600; }
+.file-stat .minus { color: var(--remove); font-weight: 600; }
+
+/* Outline nav */
+.outline-list { list-style: none; }
+
+.outline-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.outline-item:hover { background: var(--panel-deep); color: var(--ink); border-left-color: var(--border-strong); }
+.outline-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-item.is-active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-subtle); font-weight: 500; }
+
+.outline-num {
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  font-weight: 600;
+  width: 16px;
+  flex-shrink: 0;
+}
+.outline-item.is-active .outline-num { color: var(--accent); }
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 56px 80px;
+  max-width: 1480px;
+}
+
+/* ===== TLDR ===== */
+.tldr-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.tldr-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tldr-heading {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.tldr-eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tldr-rows { display: flex; flex-direction: column; gap: 8px; }
+
+.tldr-row {
+  display: flex;
+  gap: 10px;
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.tldr-key {
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 56px;
+}
+
+.tldr-val { color: var(--ink); flex: 1; }
+
+/* ===== SECTION HEADINGS ===== */
+.section {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 40px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.section-badge {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  background: var(--panel);
+}
+
+.subsection {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 32px;
+}
+
+.subsection-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.subsection-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 0;
+}
+
+.subsection-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ===== OVERVIEW LIST ===== */
+.overview-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.overview-item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: border-color 100ms ease-out;
+}
+.overview-item:hover { border-color: var(--border-strong); }
+
+.overview-num {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  width: 18px;
+}
+
+.overview-text { color: var(--ink); flex: 1; }
+.overview-text a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.overview-text a:hover { text-decoration: underline; }
+.overview-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* ===== WALKTHROUGH PROGRESS ===== */
+.progress-rail {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;            /* scroll horizontally when there are many/long chapters */
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.progress-step {
+  flex: 1 0 auto;              /* grow to fill when few; never shrink below content -> overflow scrolls */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  transition: background 100ms ease-out;
+}
+.progress-step-label { white-space: nowrap; }
+.progress-step:last-child { border-right: none; }
+.progress-step.is-active { background: var(--accent-subtle); color: var(--accent); }
+.progress-step { text-decoration: none; cursor: pointer; }
+.progress-step:hover { background: var(--panel-deep); color: var(--ink); }
+.progress-step.is-active:hover { color: var(--accent); }
+.progress-step:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.progress-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  background: var(--panel-deep);
+  color: var(--ink-faint);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+}
+.progress-step.is-active .progress-step-num {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.progress-step-label { font-weight: 500; white-space: nowrap; }
+
+/* ===== DESCRIPTION BULLETS ===== */
+.desc-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.desc-item {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--ink);
+}
+.desc-bullet {
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  margin-top: 2px;
+}
+.desc-item code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+.desc-item strong { font-weight: 600; }
+.desc-item em { font-style: italic; color: var(--ink-muted); }
+
+/* ===== CODE BLOCKS / DIFF ===== */
+.file-diff {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.file-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 100ms ease-out;
+}
+.file-diff-header:hover { background: var(--panel-deep); }
+
+.file-diff-header summary { display: flex; align-items: center; gap: 8px; width: 100%; list-style: none; }
+.file-diff-header summary::-webkit-details-marker { display: none; }
+.file-diff-header summary::marker { display: none; }
+
+details.file-diff-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+details.file-diff-details > summary:hover { background: var(--panel-deep); }
+details.file-diff-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.file-diff-details > summary::-webkit-details-marker { display: none; }
+
+/* the actual collapsed file-diff summary: one tidy row, single chevron */
+.file-diff > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: var(--panel);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+.file-diff > summary::-webkit-details-marker { display: none; }
+.file-diff > summary::marker { content: ""; }
+.file-diff > summary:hover { background: var(--panel-deep); }
+.file-diff > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.file-diff[open] > summary { border-bottom: 1px solid var(--border); }
+.diff-counts { margin-left: auto; }
+
+.diff-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  font-weight: 500;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diff-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.diff-badge-M { color: var(--change); background: var(--change-bg); border-color: var(--change-border); }
+.diff-badge-A { color: var(--add); background: var(--add-bg); border-color: var(--add-border); }
+
+.diff-counts {
+  display: flex;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.diff-counts .plus { color: var(--add); }
+.diff-counts .minus { color: var(--remove); }
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-faint);
+  transition: transform 150ms ease-out;
+  flex-shrink: 0;
+}
+details[open] .chevron { transform: rotate(90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
+  details[open] .chevron { transform: rotate(90deg); }
+}
+
+.code-block {
+  overflow-x: auto;
+  background: var(--bg);
+  margin: 0;
+}
+.code-block pre {
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 2;
+  min-width: 0;
+}
+
+/* Token coloring — span-based, semantic only */
+.kw { color: #7c3aed; font-weight: 600; }  /* keyword */
+.fn { color: #0369a1; }                      /* function/method */
+.str { color: #16a34a; }                     /* string */
+.cm { color: var(--ink-faint); font-style: italic; } /* comment */
+.ty { color: #b45309; }                      /* type */
+.pn { color: var(--ink); }                   /* punctuation */
+.nm { color: var(--ink); }                   /* number */
+
+/* ===== DIAGRAMS ===== */
+.diagram-wrap {
+  margin-bottom: 28px;
+}
+
+.diagram-title {
+  font-size: var(--text-base);
+  font-weight: 650;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.diagram-caption {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  margin: 8px 2px 0;
+}
+
+.diagram-box {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: zoom-in;
+}
+
+/* Inline SVG for diagrams */
+.diagram-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.diagram-enlarge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 0.8rem/1 system-ui, sans-serif;
+  color: var(--ink-muted);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.diagram-enlarge:hover { border-color: var(--accent); color: var(--accent); }
+.diagram-enlarge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* zoom overlay */
+.zoom-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(15,20,28,0.85); display: none; }
+.zoom-overlay.is-open { display: block; }
+.zoom-stage { position: absolute; inset: 0; overflow: hidden; cursor: grab;
+  display: flex; align-items: center; justify-content: center; touch-action: none; }
+.zoom-stage:active { cursor: grabbing; }
+.zoom-stage svg { max-width: 94vw; max-height: 84vh; transform-origin: center center;
+  background: #fff; border-radius: 12px; box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5); }
+.zoom-controls { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 1; }
+.zoom-controls button { min-width: 40px; height: 40px; padding: 0 12px;
+  border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.96); color: #1c2024;
+  border-radius: 10px; font: 600 15px/1 system-ui, sans-serif; cursor: pointer; }
+.zoom-controls button:hover { background: #fff; }
+
+/* ===== FILES CHANGED TABLE ===== */
+.files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.files-table th {
+  background: var(--panel);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.files-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--ink);
+}
+.files-table tr:last-child td { border-bottom: none; }
+.files-table tr:hover td { background: var(--panel); }
+
+.files-table .col-status { width: 32px; font-weight: 700; font-family: var(--font-mono); font-size: var(--text-sm); }
+.files-table .col-path { font-family: var(--font-mono); }
+.files-table .col-path a { color: var(--accent); text-decoration: none; }
+.files-table .col-path a:hover { text-decoration: underline; }
+.files-table .col-stat { width: 80px; white-space: nowrap; }
+.files-table .col-role { color: var(--ink-muted); font-size: var(--text-xs); }
+
+.files-group-row td {
+  background: var(--panel-deep);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 5px 12px;
+}
+
+/* ===== API SURFACE ===== */
+.api-surface {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.api-surface-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-deep);
+}
+
+.api-name {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.api-type {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--add);
+  background: var(--add-bg);
+  border: 1px solid var(--add-border);
+  border-radius: 20px;
+  padding: 1px 7px;
+}
+
+.api-surface .code-block pre {
+  padding: 14px 18px;
+}
+
+/* ===== CALLOUT ===== */
+.callout {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  margin-bottom: 14px;
+}
+.callout-icon { font-size: var(--text-md); flex-shrink: 0; line-height: 1.5; }
+.callout-text { color: var(--ink); line-height: 1.6; }
+.callout-text strong { font-weight: 600; }
+.callout-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ===== TYPOGRAPHY UTILITIES ===== */
+.headline {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.subheadline {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 28px;
+}
+
+.section-intro {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* ===== CHAPTER MARKER ===== */
+.chapter-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+/* Bold rule separating walkthrough chapters (rendered between, never before the first). */
+.chapter-divider {
+  border: none;
+  border-top: 2px solid var(--border-strong);
+  margin: 48px 0;
+}
+.chapter-no {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.chapter-marker-num {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--panel-deep);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    height: calc(100vh - var(--topbar-h));
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 200ms ease-out;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.08);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+  }
+  .sidebar-toggle { display: flex; }
+  .main { padding: 24px 20px 60px; }
+}
+
+@media (max-width: 375px) {
+  .main { padding: 16px 14px 40px; }
+  .topbar-title { font-size: var(--text-base); }
+  .headline { font-size: var(--text-xl); }
+  .progress-step-label { display: none; }
+  .progress-step { padding: 8px 10px; }
+  .dataflow { min-width: 420px; }
+}
+
+/* Sidebar overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: var(--topbar-h);
+  background: rgba(28,32,36,0.3);
+  z-index: 40;
+}
+.sidebar-overlay.is-open { display: block; }
+
+/* Focus styles */
+a:focus-visible, button:focus-visible, details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* real code diffs inside file-diff details */
+.diff-code { background:#fff; border-top:1px solid var(--border); }
+.diff-pre { margin:0; overflow-x:auto; padding:4px 0;
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#3a4047;
+  font-variant-ligatures:none; }
+.diff-pre .dl { display:flex; align-items:baseline; min-width:max-content; }
+.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:#8b939e;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:#9aa1ab;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dc { flex:0 0 auto; white-space:pre; padding-right:20px; }
+.diff-pre .dl-add { background:#e9f7ee; } .diff-pre .dl-add .dg { color:#1a7f37; } .diff-pre .dl-add .dc { color:#0f3a1d; }
+.diff-pre .dl-del { background:#fdecec; } .diff-pre .dl-del .dg { color:#c4332e; } .diff-pre .dl-del .dc { color:#5c1a18; }
+.diff-pre .dl-ctx .dc { color:#3a4047; }
+.diff-pre .dl-hunk { background:var(--panel); color:var(--ink-muted); }
+.diff-pre .dl-hunk .dc { color:var(--ink-muted); font-weight:600; }
+.diff-more { padding:8px 16px; font:12px/1.4 system-ui,sans-serif; color:var(--ink-muted);
+  background:var(--panel); border-top:1px solid var(--border); }
+
+/* ===== separation hierarchy: chapter breaks vs within-chapter breaks ===== */
+#ch1, #ch2, #ch3 { margin-bottom: 0; }
+/* CHAPTER break: stronger + darker line */
+#ch2, #ch3 { margin-top: 0; padding-top: 48px; border-top: 2px solid #8b939e; }
+/* WITHIN a chapter: lighter line between subsections (1a/1b/1c) ... */
+.subsection { margin-bottom: 0; }
+.subsection + .subsection { border-top: 1px solid var(--border); padding-top: 40px; }
+/* ... and between file groups (a new description directly after a diff) */
+.file-diff + .desc-list,
+.file-diff + .section-intro,
+.file-diff + ul,
+.file-diff + p {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== craft pass: typography + motion polish ===== */
+html { scroll-behavior: smooth; }
+.section-title, .subsection-title, .tldr-heading { text-wrap: balance; }
+.tldr-val, .overview-text, .section-intro, .desc-item span { text-wrap: pretty; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* color pass: subtle hover lift on file rows + risk level system */
+.file-diff { transition: box-shadow 150ms ease-out, border-color 150ms ease-out; }
+.file-diff:hover { border-color: var(--accent); box-shadow: 0 6px 18px -12px rgba(37,99,235,0.35); }
+.chip-risk.risk-med { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+.chip-risk.risk-high { color: var(--remove); background: #fef2f2; border-color: #fecaca; }
+@media (prefers-reduced-motion: reduce) { .file-diff { transition: none; } }
+
+/* spec.css — reusable visual-spec components.
+   Layers ON TOP of review.css (same design tokens). Load review.css first, then this.
+   Source of truth for the spec-component catalog (skills/shared/spec-components.md).
+   The canonical example inlines a snapshot of these rules. */
+
+/* ============================================================= */
+/* ===== VISUAL-SPEC EXTENSIONS (on top of review.css) ========= */
+/* ============================================================= */
+
+/* A "spec" carries a couple of extra semantic roles the recap doesn't:
+   a 'perceived' role (GM-skill-noised judgment, gold) vs a 'factual' role
+   (computed from world state, neutral). They reuse the diagram palette so
+   the page reads as one system. */
+:root {
+  --perceived: #92600a;          /* readable gold ink for text on light */
+  --perceived-bg: #fff8e6;
+  --perceived-border: #f0c54a;
+  --reused: #6b7280;             /* preserved / untouched machinery */
+  --reused-bg: #f1f3f5;
+  --reused-border: #ced4da;
+  --store: #6d4ed8;              /* datastore ink */
+  --proc: #1971c2;              /* perception / process ink */
+}
+
+/* ---- topbar: phase + status + complexity chips ---- */
+.chip-phase { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent-border); font-weight: 700; }
+.chip-status { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.chip-complexity { color: var(--change); background: var(--change-bg); border-color: var(--change-border); font-weight: 600; }
+
+/* ---- the big idea panel ---- */
+.bigidea {
+  margin: 0 0 36px;
+  padding: 22px 26px;
+  border: 1px solid var(--perceived-border);
+  background: var(--perceived-bg);
+  border-radius: var(--radius);
+}
+.bigidea-label {
+  font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--perceived); margin-bottom: 8px;
+}
+.bigidea-line {
+  font-size: var(--text-2xl); font-weight: 800; letter-spacing: -0.025em;
+  color: var(--ink); line-height: 1.2; text-wrap: balance;
+}
+.bigidea-sub {
+  margin-top: 10px; max-width: 70ch; color: var(--ink-muted);
+  font-size: var(--text-base); line-height: 1.6; text-wrap: pretty;
+}
+.bigidea-sub strong { color: var(--ink); font-weight: 650; }
+
+/* ---- diagram legend (color is a secondary signal; labels carry meaning) ---- */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 2px 0; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-sm); color: var(--ink-muted); }
+.legend-swatch { width: 13px; height: 13px; border-radius: 3px; border: 1px solid; flex-shrink: 0; }
+
+/* svg text inherits the page sans */
+.flow-svg text { font-family: var(--font-sans); }
+
+/* ---- anatomy of a board (factual core vs perceived layer) ---- */
+.anatomy {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.anatomy-panel { padding: 16px 18px; }
+.anatomy-factual { background: var(--reused-bg); }
+.anatomy-perceived { background: var(--perceived-bg); }
+.anatomy-mid {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 0 16px; background: var(--bg);
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+}
+.anatomy-arrow { font-size: 22px; color: var(--ink-faint); line-height: 1; }
+.anatomy-fn { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); text-align: center; max-width: 130px; }
+.anatomy-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--text-base); margin-bottom: 4px; }
+.anatomy-factual .anatomy-h { color: var(--reused); }
+.anatomy-perceived .anatomy-h { color: var(--perceived); }
+.anatomy-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-bottom: 10px; }
+.anatomy-eg { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.7; color: var(--ink); }
+.anatomy-caption { font-size: var(--text-sm); color: var(--ink-muted); margin: 0 2px 28px; line-height: 1.6; }
+@media (max-width: 720px) {
+  .anatomy { grid-template-columns: 1fr; }
+  .anatomy-mid { flex-direction: row; border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 16px; }
+  .anatomy-arrow { transform: rotate(90deg); }
+}
+
+/* ---- 6 component (board) cards ---- */
+.board-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 8px; }
+.board-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px; background: var(--bg);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  display: flex; flex-direction: column;
+}
+.board-card:hover { border-color: var(--border-strong); box-shadow: 0 6px 18px -14px rgba(28,32,36,0.4); }
+.board-name { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-base); color: var(--ink); letter-spacing: -0.01em; }
+.board-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 7px 0 12px; }
+.board-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.board-row-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 2px; }
+.skill-chip { font-size: var(--text-xs); font-weight: 600; background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 20px; padding: 1px 8px; white-space: nowrap; }
+.skill-chip.is-deputy { background: var(--panel-deep); color: var(--ink-muted); border-color: var(--border); }
+.split-badge { display: inline-flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; font-size: var(--text-xs); font-weight: 600; align-self: flex-start; margin-bottom: 12px; }
+.split-badge .sb-fact { background: var(--reused-bg); color: var(--reused); padding: 2px 9px; }
+.split-badge .sb-perc { background: var(--perceived-bg); color: var(--perceived); padding: 2px 9px; border-left: 1px solid var(--border); }
+.board-fields { margin-top: auto; display: flex; flex-direction: column; gap: 5px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.field-line { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5; display: flex; gap: 7px; }
+.field-tag { flex-shrink: 0; width: 10px; font-weight: 700; }
+.field-fact .field-tag { color: var(--reused); }
+.field-perc .field-tag { color: var(--perceived); }
+.field-fact .field-names { color: var(--ink-muted); }
+.field-perc .field-names { color: var(--perceived); }
+
+/* ---- where it fits ---- */
+.fits-chain { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; margin-bottom: 26px; }
+.fits-node { flex: 1 1 220px; min-width: 200px; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--panel); }
+.fits-node.is-this { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.fits-arrow { display: flex; align-items: center; justify-content: center; padding: 0 12px; color: var(--ink-faint); font-size: 22px; flex-shrink: 0; }
+.fits-role { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 600; }
+.fits-node.is-this .fits-role { color: var(--perceived); }
+.fits-title { font-weight: 700; color: var(--ink); margin: 3px 0 5px; }
+.fits-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; }
+.fits-desc em { color: var(--ink); font-style: normal; font-weight: 600; }
+@media (max-width: 720px) {
+  .fits-chain { flex-direction: column; }
+  .fits-arrow { padding: 8px 0; }
+  .fits-arrow span { transform: rotate(90deg); display: inline-block; }
+}
+
+/* ---- layer stack ---- */
+.layer-stack { display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.layer { display: flex; align-items: baseline; gap: 12px; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; background: var(--panel); }
+.layer.is-new { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.layer.is-reused { background: var(--reused-bg); }
+.layer-label { font-weight: 700; color: var(--ink); flex-shrink: 0; }
+.layer.is-new .layer-label { color: var(--perceived); }
+.layer-note { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.45; }
+.layer-tag { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 7px; border-radius: 20px; flex-shrink: 0; }
+.layer.is-new .layer-tag { color: #fff; background: var(--change); }
+.layer.is-reused .layer-tag { color: var(--reused); background: var(--bg); border: 1px solid var(--reused-border); }
+
+/* ---- key decisions ---- */
+.decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.decision-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--bg); display: flex; gap: 12px; }
+.decision-num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--panel-deep); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: var(--text-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.decision-q { font-size: var(--text-sm); color: var(--ink-faint); font-weight: 600; line-height: 1.4; }
+.decision-a { font-weight: 650; color: var(--ink); margin-top: 4px; line-height: 1.45; }
+.decision-a code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- scope (in / out) ---- */
+.scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.scope-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.scope-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.scope-in .scope-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.scope-out .scope-head { background: var(--reused-bg); color: var(--ink-muted); }
+.scope-count { font-size: var(--text-xs); font-weight: 600; opacity: 0.8; }
+.scope-list { list-style: none; padding: 8px 0; }
+.scope-list li { display: flex; gap: 9px; padding: 6px 16px; font-size: var(--text-base); line-height: 1.5; }
+.scope-marker { flex-shrink: 0; font-weight: 700; }
+.scope-in .scope-marker { color: var(--add); }
+.scope-out .scope-marker { color: var(--ink-faint); }
+.scope-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.scope-list .defer { color: var(--ink-faint); font-size: var(--text-sm); }
+@media (max-width: 720px) { .scope-cols { grid-template-columns: 1fr; } }
+
+/* ---- rollout phases ---- */
+.phases { display: flex; flex-direction: column; gap: 14px; }
+.phase { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.phase-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.phase-tag { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-sm); color: var(--accent); background: var(--accent-subtle); border: 1px solid var(--accent-border); border-radius: var(--radius-sm); padding: 2px 9px; }
+.phase-title { font-weight: 700; color: var(--ink); }
+.phase-body { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; padding: 16px; }
+.phase-sub { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin-bottom: 8px; }
+.phase-scope p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; }
+.phase-scope code, .gate-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.phase-gate { background: var(--panel); border-radius: var(--radius-sm); padding: 12px 14px; }
+.gate-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.gate-list li { display: flex; gap: 8px; font-size: var(--text-sm); line-height: 1.5; color: var(--ink); }
+.gate-check { color: var(--add); flex-shrink: 0; font-weight: 700; }
+@media (max-width: 720px) { .phase-body { grid-template-columns: 1fr; } }
+
+/* ---- definition of done: movers + table ---- */
+.movers { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.mover { border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; background: var(--bg); }
+.mover-name { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); line-height: 1.4; }
+.mover-vals { display: flex; align-items: baseline; gap: 9px; margin: 9px 0 4px; }
+.mover-now { color: var(--ink-faint); font-weight: 600; font-size: var(--text-base); }
+.mover-now s { color: var(--remove); text-decoration-thickness: 1px; }
+.mover-arrow { color: var(--ink-faint); font-size: var(--text-base); }
+.mover-target { color: var(--add); font-weight: 800; font-size: var(--text-xl); letter-spacing: -0.02em; }
+.mover-label { font-size: var(--text-xs); color: var(--ink-faint); }
+
+.spec-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 6px 0 8px; }
+.spec-table th { text-align: left; background: var(--panel); padding: 8px 12px; font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); border-bottom: 1px solid var(--border); }
+.spec-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--ink); line-height: 1.5; }
+.spec-table tr:last-child td { border-bottom: none; }
+.spec-table tr:hover td { background: var(--panel); }
+.spec-table code { font-family: var(--font-mono); font-size: 0.86em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.spec-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.spec-table .good { color: #15803d; font-weight: 700; }
+.tbl-note { font-size: var(--text-sm); color: var(--ink-muted); margin: 2px 2px 0; }
+
+/* ---- risks ---- */
+.risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; }
+.risk-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.risk-r { display: flex; gap: 9px; padding: 12px 15px; background: var(--remove-bg); border-bottom: 1px solid var(--remove-border); font-weight: 650; color: #991b1b; font-size: var(--text-sm); line-height: 1.45; }
+.risk-icon { flex-shrink: 0; }
+.risk-m { padding: 12px 15px; font-size: var(--text-sm); color: var(--ink); line-height: 1.55; }
+.risk-m b { color: #15803d; font-weight: 700; }
+.risk-m code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- reference drill-downs ---- */
+.ref-intro { font-size: var(--text-base); color: var(--ink-muted); margin-bottom: 16px; line-height: 1.6; }
+details.ref { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; background: var(--bg); }
+details.ref > summary { display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: var(--panel); cursor: pointer; user-select: none; list-style: none; font-weight: 650; color: var(--ink); transition: background 100ms ease-out; }
+details.ref > summary::-webkit-details-marker { display: none; }
+details.ref > summary::marker { content: ""; }
+details.ref > summary:hover { background: var(--panel-deep); }
+details.ref > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.ref[open] > summary { border-bottom: 1px solid var(--border); }
+.ref-chev { width: 15px; height: 15px; color: var(--ink-faint); transition: transform 150ms ease-out; flex-shrink: 0; }
+details.ref[open] .ref-chev { transform: rotate(90deg); }
+.ref-tally { margin-left: auto; font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.ref-body { padding: 16px; }
+.ref-body > p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; margin-bottom: 12px; }
+.ref-body > p:last-child { margin-bottom: 0; }
+.ref-body .code-block { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; }
+.ref-body h4 { font-size: var(--text-base); font-weight: 700; color: var(--ink); margin: 16px 0 8px; }
+.ref-body h4:first-child { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .ref-chev { transition: none; } }
+
+/* meta list in sidebar */
+.meta-list { padding: 0 14px 8px; display: flex; flex-direction: column; gap: 9px; }
+.meta-row { font-size: var(--text-xs); line-height: 1.4; }
+.meta-row .mk { display: block; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 1px; }
+.meta-row .mv { color: var(--ink); }
+.related-list { list-style: none; padding: 0 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.related-list li { font-size: var(--text-xs); line-height: 1.4; }
+.related-list .rk { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.related-list .rv { color: var(--ink); font-family: var(--font-mono); overflow-wrap: anywhere; }
+
+/* ---- decision rationale (approval layer) ---- */
+.decision-why { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); line-height: 1.5; }
+.decision-why::before { content: "Why "; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; font-size: 0.72em; letter-spacing: 0.06em; }
+.decision-why em { color: var(--ink); font-style: normal; font-weight: 650; }
+.decision-why code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.decision-alt { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 7px; line-height: 1.5; }
+.decision-alt-tag { display: inline-block; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--remove); background: var(--remove-bg); border: 1px solid var(--remove-border); border-radius: 4px; padding: 0 5px; margin-right: 6px; vertical-align: 1px; }
+.decision-alt em { color: var(--ink); font-style: italic; }
+.decision-alt code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- before you approve ---- */
+.approve-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; align-items: start; }
+.approve-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.approve-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.approve-card.commit .approve-head { background: var(--accent-subtle); color: var(--accent); border-bottom-color: var(--accent-border); }
+.approve-card.scrutinize .approve-head { background: var(--change-bg); color: #92600a; border-bottom-color: var(--change-border); }
+.approve-card.open .approve-head { background: var(--panel-deep); color: var(--ink-muted); }
+.approve-body { padding: 13px 16px; font-size: var(--text-sm); color: var(--ink); line-height: 1.6; }
+.approve-body strong { font-weight: 700; }
+.approve-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.approve-body a:hover { text-decoration: underline; }
+.approve-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.approve-q { list-style: none; counter-reset: aq; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+.approve-q li { counter-increment: aq; display: flex; gap: 8px; font-size: var(--text-sm); color: var(--ink); line-height: 1.45; }
+.approve-q li::before { content: counter(aq); flex-shrink: 0; width: 17px; height: 17px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.approve-q code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
+
+/* atlas.css — reusable visual-atlas components.
+   Layers ON TOP of review.css + spec.css (same design tokens). Load review.css, then
+   spec.css, then this. Source of truth for the atlas-component catalog
+   (skills/shared/atlas-components.md). The canonical example inlines a snapshot of these rules.
+
+   A visual-atlas is a STANDING MAP of a codebase: one narrative `atlas.html` (system
+   onboarding map) that links down to per-domain `domain-<slug>.html` deep-dive pages. It owns
+   its own surface so its styles can evolve independently of the recap/spec. */
+
+/* ============================================================= */
+/* ===== VISUAL-ATLAS EXTENSIONS (on top of review.css + spec.css) */
+/* ============================================================= */
+
+/* Tier accents — each architectural layer gets one role tint so the map, the tiles, and the
+   sidebar all read as one system. Reuses the shared diagram palette (foundation=store violet,
+   engine=actor blue, intelligence=changed gold, narrative=added green, surface=accent,
+   harness=external gray). Color is always secondary — every tier also carries its text label. */
+:root {
+  --tier-foundation: #6d4ed8; --tier-foundation-bg: #f1ecfd;
+  --tier-engine:     #1971c2; --tier-engine-bg:     #e7f1fb;
+  --tier-intelligence: #b3791a; --tier-intelligence-bg: #fff6e2;
+  --tier-narrative:  #2f9e44; --tier-narrative-bg:  #eafaef;
+  --tier-surface:    var(--accent); --tier-surface-bg: var(--accent-subtle);
+  --tier-harness:    #6b7280; --tier-harness-bg:    #f1f3f5;
+}
+
+/* ---- topbar: domain-count + stack chips, and the back-link on domain pages ---- */
+.chip-stack { color: var(--tier-engine); background: var(--tier-engine-bg); border-color: #bcdcf5; font-weight: 600; }
+.chip-count { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.topbar-back {
+  display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; flex-shrink: 0;
+  font-size: var(--text-sm); font-weight: 600; color: var(--accent); text-decoration: none;
+  border: 1px solid var(--accent-border); background: var(--accent-subtle);
+  border-radius: 20px; padding: 3px 11px 3px 9px; transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.topbar-back:hover { background: #e0ecff; border-color: var(--accent); }
+.topbar-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- primer: "the N things to hold in your head" (atlas lead, after the TL;DR) ---- */
+.primer { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow: hidden; margin-bottom: 32px; }
+.primer-row { display: flex; gap: 14px; padding: 14px 18px; align-items: baseline; }
+.primer-row + .primer-row { border-top: 1px solid var(--border); }
+.primer-n {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; align-self: flex-start;
+  background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border);
+  font-size: var(--text-sm); font-weight: 800; display: flex; align-items: center; justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.primer-body { min-width: 0; }
+.primer-h { font-weight: 700; color: var(--ink); line-height: 1.4; letter-spacing: -0.01em; }
+.primer-p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-top: 3px; text-wrap: pretty; }
+.primer-h code, .primer-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* svg text inherits the page sans (the hand-authored domain map reuses .flow-svg from spec.css) */
+.map-svg text { font-family: var(--font-sans); }
+
+/* ---- component cards that jump to their deep-dive section ---- */
+a.board-card { text-decoration: none; color: inherit; }
+a.board-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-jump { margin-top: 10px; display: flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.card-jump .cj-arrow { transition: transform 150ms ease-out; }
+a.board-card:hover .cj-arrow { transform: translateY(2px); }
+@media (prefers-reduced-motion: reduce) { .card-jump .cj-arrow { transition: none; } }
+
+/* ---- per-component deep-dive: detail + diagram + connections ---- */
+/* reuses review.css .subsection / .subsection-header / .subsection-title / .subsection-path */
+.subsection-back { font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); text-decoration: none; white-space: nowrap; }
+.subsection-back:hover { color: var(--accent); }
+.detail-p { font-size: var(--text-base); color: var(--ink); line-height: 1.65; margin-bottom: 14px; text-wrap: pretty; }
+.detail-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.detail-p strong { font-weight: 650; }
+.detail-p em { font-style: normal; font-weight: 600; color: var(--ink); }
+
+/* connections: how this component talks to its neighbors (calls / read by / produces) */
+.conns { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 4px; }
+.conn { display: flex; align-items: baseline; gap: 10px; font-size: var(--text-sm); line-height: 1.5; }
+.conn-dir { flex-shrink: 0; min-width: 78px; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); text-align: right; }
+.conn-body { color: var(--ink); }
+.conn-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.conn-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.conn-body a:hover { text-decoration: underline; }
+.conns-label { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin: 14px 0 9px; }
+
+/* the load-bearing idea reads full-width on atlas pages (override spec.css's 70ch cap) */
+.bigidea-sub { max-width: none; }
+
+/* ---- domain index: a tile grid (the onboarding map AND the reference index) ---- */
+.domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
+.domain-tile {
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);
+  padding: 16px 18px; display: flex; flex-direction: column; text-decoration: none; color: inherit;
+  position: relative; transition: border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+a.domain-tile.is-linked:hover { border-color: var(--accent); box-shadow: 0 8px 22px -16px rgba(37,99,235,0.5); transform: translateY(-1px); }
+a.domain-tile.is-linked:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.domain-tile.is-pending { background: var(--panel); border-style: dashed; }
+.domain-tile-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.domain-tile-name { font-size: var(--text-md); font-weight: 700; color: var(--ink); letter-spacing: -0.015em; }
+.domain-tile-path { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); }
+.layer-chip {
+  margin-left: auto; font-size: var(--text-xs); font-weight: 700; padding: 1px 8px; border-radius: 20px;
+  border: 1px solid; white-space: nowrap; letter-spacing: 0.01em;
+}
+.layer-foundation   { color: var(--tier-foundation);   background: var(--tier-foundation-bg);   border-color: #d6c8f7; }
+.layer-engine       { color: var(--tier-engine);       background: var(--tier-engine-bg);       border-color: #bcdcf5; }
+.layer-intelligence { color: var(--tier-intelligence); background: var(--tier-intelligence-bg); border-color: var(--change-border); }
+.layer-narrative    { color: var(--tier-narrative);    background: var(--tier-narrative-bg);    border-color: #b6e6c4; }
+.layer-surface      { color: var(--tier-surface);      background: var(--tier-surface-bg);      border-color: var(--accent-border); }
+.layer-harness      { color: var(--tier-harness);      background: var(--tier-harness-bg);      border-color: var(--border-strong); }
+.domain-tile-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 9px 0 12px; text-wrap: pretty; }
+.domain-tile-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--text-xs); color: var(--ink-faint); margin-bottom: 11px; }
+.domain-tile-meta .dm-k { font-weight: 700; color: var(--ink-muted); }
+.domain-tile-meta code { font-family: var(--font-mono); font-size: 0.95em; color: var(--ink-muted); }
+.domain-tile-deps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--border); }
+.domain-tile-deps .dep-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; margin-right: 2px; }
+.dep-chip { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.domain-tile-foot { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: var(--text-sm); font-weight: 600; }
+.domain-tile.is-linked .domain-tile-foot { color: var(--accent); }
+.domain-tile.is-pending .domain-tile-foot { color: var(--ink-faint); font-weight: 600; }
+.domain-tile-foot .dtf-arrow { transition: transform 150ms ease-out; }
+a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
+
+/* ---- domain page: data it owns ---- */
+.owns-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.owns-row { display: grid; grid-template-columns: minmax(180px, 0.9fr) 1.6fr; gap: 14px; padding: 11px 16px; align-items: baseline; }
+.owns-row + .owns-row { border-top: 1px solid var(--border); }
+.owns-row:nth-child(even) { background: var(--panel); }
+.owns-name { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.owns-name .owns-store { color: var(--tier-foundation); }
+.owns-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; text-wrap: pretty; }
+.owns-desc code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- domain page: seams (exposes / depends on) ---- */
+.seam-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.seam-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.seam-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.seam-exposes .seam-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.seam-depends .seam-head { background: var(--panel-deep); color: var(--ink-muted); }
+.seam-body { padding: 12px 16px; }
+.seam-api { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.seam-api li { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--ink); line-height: 1.4; display: flex; gap: 8px; }
+.seam-api li::before { content: "›"; color: var(--add); font-weight: 700; flex-shrink: 0; }
+.seam-api .api-note { font-family: var(--font-sans); color: var(--ink-faint); font-size: var(--text-xs); }
+.seam-neighbors { display: flex; flex-wrap: wrap; gap: 8px; }
+.neighbor-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); font-weight: 600;
+  color: var(--ink); background: var(--panel); border: 1px solid var(--border-strong);
+  border-radius: 20px; padding: 3px 11px; text-decoration: none; transition: border-color 120ms ease-out, background 120ms ease-out;
+}
+.neighbor-chip:hover { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent); }
+.neighbor-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.neighbor-chip .nc-path { font-family: var(--font-mono); font-size: 0.85em; color: var(--ink-faint); }
+.neighbor-chip:hover .nc-path { color: var(--accent); }
+.neighbor-chip.is-flat { background: var(--panel-deep); border-style: dashed; cursor: default; color: var(--ink-muted); }
+.neighbor-chip.is-flat:hover { border-color: var(--border-strong); background: var(--panel-deep); color: var(--ink-muted); }
+@media (max-width: 720px) { .seam-cols { grid-template-columns: 1fr; } }
+
+/* sidebar: nested sub-section links under a chapter in the CONTENTS outline.
+   Used on domain pages to list a chapter's deep-dive components without a bespoke
+   second sidebar block — one uniform outline per page. */
+.outline-sub { list-style: none; margin: 1px 0 5px; }
+.outline-subitem { display: flex; align-items: center; gap: 8px; padding: 3px 14px 3px 34px; font-size: var(--text-xs); color: var(--ink-muted); text-decoration: none; border-left: 2px solid transparent; transition: background 100ms ease-out, color 100ms ease-out; }
+.outline-subitem:hover { background: var(--panel-deep); color: var(--ink); }
+.outline-subitem:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-subitem .os-dot { width: 8px; height: 8px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.14); flex-shrink: 0; }
+
+/* sidebar: a small "domains" jump-list block on the atlas */
+.nav-domains { list-style: none; }
+.nav-domain {
+  display: flex; align-items: center; gap: 8px; padding: 4px 14px; font-size: var(--text-sm);
+  color: var(--ink); text-decoration: none; transition: background 100ms ease-out;
+}
+.nav-domain:hover { background: var(--panel-deep); }
+.nav-domain:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
+.nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
+</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><a class="topbar-back" href="../atlas.html"><span aria-hidden="true">&larr;</span> Atlas</a><span class="topbar-title">Golf data &amp; sync</span><div class="topbar-meta"><span class="chip layer-chip layer-intelligence">Data</span><span class="chip chip-stat">src</span><span class="chip chip-count">24 files</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">depends on accounts · game · leagues · scoring · web-shell</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>What it owns</span></a></li><li><a href="#components" class="outline-item" data-target="components"><span class="outline-num" aria-hidden="true">1</span><span>Components</span></a></li><li><a href="#arch" class="outline-item" data-target="arch"><span class="outline-num" aria-hidden="true">2</span><span>Internal architecture</span></a></li><li><a href="#depth" class="outline-item" data-target="depth"><span class="outline-num" aria-hidden="true">3</span><span>In depth</span></a><ul class="outline-sub" role="list"><li><a href="#c-espn" class="outline-subitem"><span class="os-dot" style="background:#ffd43b;border-color:#f08c00;"></span>ESPN provider</a></li><li><a href="#c-payout" class="outline-subitem"><span class="os-dot" style="background:#ffd43b;border-color:#f08c00;"></span>Payout table</a></li><li><a href="#c-sync" class="outline-subitem"><span class="os-dot" style="background:#ffd43b;border-color:#f08c00;"></span>Sync pipeline</a></li><li><a href="#c-cron" class="outline-subitem"><span class="os-dot" style="background:#ffd43b;border-color:#f08c00;"></span>Cron entry</a></li><li><a href="#c-tournaments" class="outline-subitem"><span class="os-dot" style="background:#ffd43b;border-color:#f08c00;"></span>Tournaments</a></li><li><a href="#c-golfers" class="outline-subitem"><span class="os-dot" style="background:#ffd43b;border-color:#f08c00;"></span>Golfers</a></li><li><a href="#c-display" class="outline-subitem"><span class="os-dot" style="background:#ffd43b;border-color:#f08c00;"></span>Display helpers</a></li></ul></li><li><a href="#data" class="outline-item" data-target="data"><span class="outline-num" aria-hidden="true">4</span><span>Data it owns</span></a></li><li><a href="#seams" class="outline-item" data-target="seams"><span class="outline-num" aria-hidden="true">5</span><span>Seams</span></a></li></ul></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Domain</span><h2 class="tldr-heading">Golf data &amp; sync</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">Path</span><span class="tldr-val">src (ESPN provider under <code>server/services/golf-data/</code>, sync pipeline in <code>server/services/</code>, tournament + golfer verticals, display libs)</span></div><div class="tldr-row"><span class="tldr-key">Files</span><span class="tldr-val">24</span></div><div class="tldr-row"><span class="tldr-key">Entry points</span><span class="tldr-val"><code>GET /api/cron/sync</code> (Vercel cron, every 15 min) · 6 public tRPC procedures (<code>tournament.*</code>, <code>golfer.*</code>)</span></div><div class="tldr-row"><span class="tldr-key">External</span><span class="tldr-val">Two unauthenticated ESPN JSON APIs — the site scoreboard (names, scores, rounds) and the core API (purse, actual earnings)</span></div></div></div><div class="bigidea"><div class="bigidea-label">The one-way clock</div><div class="bigidea-line">ESPN is the single source of truth and data flows one direction only: a 15-minute Vercel cron pulls schedule, field, and leaderboard data, upserts it keyed on <code>espnId</code>, and drives every game-state transition — locking picks when a tournament starts, projecting earnings from the payout table while it's live, and promoting real prize money into standings only when ESPN's core API finally reports it.</div><p class="bigidea-sub">The <code>FINALIZING</code> status is the trick: ESPN flips an event to <code>STATUS_FINAL</code> hours before it posts real earnings, so the cron parks the tournament there (keeping projections in standings) and retries every run until the winner's earnings are non-zero.</p></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#components"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">Components</span></a><a class="progress-step" href="#arch"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Internal architecture</span></a><a class="progress-step" href="#depth"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">In depth</span></a><a class="progress-step" href="#data"><div class="progress-step-num" aria-hidden="true">4</div><span class="progress-step-label">Data it owns</span></a><a class="progress-step" href="#seams"><div class="progress-step-num" aria-hidden="true">5</div><span class="progress-step-label">Seams</span></a></nav><section id="components" class="section"><div class="section-header"><h2 class="section-title">Components</h2></div><p class="section-intro">Three ingestion layers (provider → sync service → upsert repos) orchestrated by one cron entry, plus the two read-side verticals (tournaments, golfers) and the shared display helpers they render with.</p><div class="board-grid"><a class="board-card" href="#c-espn"><div class="board-name">ESPN provider</div><div class="board-purpose">The only code that talks to ESPN. Wraps two ESPN APIs behind the provider-agnostic <code>GolfDataProvider</code> interface and normalizes their quirks: tie detection, made-cut heuristics, timezone-safe dates.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">espnProvider</span><span class="skill-chip">GolfDataProvider</span><span class="skill-chip">mapCompetitorsToResults</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-payout"><div class="board-name">Payout table</div><div class="board-purpose">Standard PGA Tour payout percentages (positions 1–65, winner 18%) used to <em>project</em> live earnings from current positions. Final earnings always come from ESPN, never from this table.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">calculateEarnings</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-sync"><div class="board-name">Sync pipeline</div><div class="board-purpose">The five idempotent sync operations — fields, live standings, final results, completion checks, tournament starts — plus the espnId-keyed upsert repos they write through.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">syncFields</span><span class="skill-chip">syncLiveStandings</span><span class="skill-chip">syncResults</span><span class="skill-chip">startTournaments</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-cron"><div class="board-name">Cron entry</div><div class="board-purpose"><code>runFullSync</code> sequences the whole pipeline (6 steps, each individually error-trapped) behind a <code>CRON_SECRET</code>-guarded HTTP route, and logs every run to <code>cron_log</code>.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">runFullSync</span><span class="skill-chip">GET</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-tournaments"><div class="board-name">Tournaments</div><div class="board-purpose">Read-side vertical: <code>tournament.*</code> router → service → repo, and the <code>/tournament/[id]</code> page that renders the field, live leaderboard, or final results with a league pick overlay.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">tournamentRouter</span><span class="skill-chip">findFieldWithResults</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-golfers"><div class="board-name">Golfers</div><div class="board-purpose">Read-side vertical: <code>golfer.*</code> router → service → repo, and the <code>/golfer/[id]</code> profile page with SQL-computed season stats (earnings, best finish, missed cuts).</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">golferRouter</span><span class="skill-chip">getSeasonStats</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-display"><div class="board-name">Display helpers</div><div class="board-purpose">Shared presentational vocabulary used across the whole app: ESPN CDN headshots with initials fallback, country-name → flag-icons mapping, and the single source of truth for "current season".</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">GolferAvatar</span><span class="skill-chip">CountryFlag</span><span class="skill-chip">getCurrentSeason</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a></div></section><section id="arch" class="section"><div class="section-header"><h2 class="section-title">Internal architecture</h2></div><p class="section-intro">The hero flow: every 15 minutes Vercel hits the cron route, which runs the 6-step pipeline. The sync service is the hinge — it pulls from ESPN, writes through the upsert repos, and pushes side effects into the game and scoring domains.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2332 620"><svg class="d2-2448805625 d2-svg" width="2332" height="620" viewBox="-25 -25 2332 620"><rect x="-25.000000" y="-25.000000" width="2332.000000" height="620.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-2448805625 .text-bold {
+	font-family: "d2-2448805625-font-bold";
+}
+@font-face {
+	font-family: d2-2448805625-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-2448805625 .text-italic {
+	font-family: "d2-2448805625-font-italic";
+}
+@font-face {
+	font-family: d2-2448805625-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-2448805625 .fill-N1{fill:#0A0F25;}
+		.d2-2448805625 .fill-N2{fill:#676C7E;}
+		.d2-2448805625 .fill-N3{fill:#9499AB;}
+		.d2-2448805625 .fill-N4{fill:#CFD2DD;}
+		.d2-2448805625 .fill-N5{fill:#DEE1EB;}
+		.d2-2448805625 .fill-N6{fill:#EEF1F8;}
+		.d2-2448805625 .fill-N7{fill:#FFFFFF;}
+		.d2-2448805625 .fill-B1{fill:#0D32B2;}
+		.d2-2448805625 .fill-B2{fill:#0D32B2;}
+		.d2-2448805625 .fill-B3{fill:#E3E9FD;}
+		.d2-2448805625 .fill-B4{fill:#E3E9FD;}
+		.d2-2448805625 .fill-B5{fill:#EDF0FD;}
+		.d2-2448805625 .fill-B6{fill:#F7F8FE;}
+		.d2-2448805625 .fill-AA2{fill:#4A6FF3;}
+		.d2-2448805625 .fill-AA4{fill:#EDF0FD;}
+		.d2-2448805625 .fill-AA5{fill:#F7F8FE;}
+		.d2-2448805625 .fill-AB4{fill:#EDF0FD;}
+		.d2-2448805625 .fill-AB5{fill:#F7F8FE;}
+		.d2-2448805625 .stroke-N1{stroke:#0A0F25;}
+		.d2-2448805625 .stroke-N2{stroke:#676C7E;}
+		.d2-2448805625 .stroke-N3{stroke:#9499AB;}
+		.d2-2448805625 .stroke-N4{stroke:#CFD2DD;}
+		.d2-2448805625 .stroke-N5{stroke:#DEE1EB;}
+		.d2-2448805625 .stroke-N6{stroke:#EEF1F8;}
+		.d2-2448805625 .stroke-N7{stroke:#FFFFFF;}
+		.d2-2448805625 .stroke-B1{stroke:#0D32B2;}
+		.d2-2448805625 .stroke-B2{stroke:#0D32B2;}
+		.d2-2448805625 .stroke-B3{stroke:#E3E9FD;}
+		.d2-2448805625 .stroke-B4{stroke:#E3E9FD;}
+		.d2-2448805625 .stroke-B5{stroke:#EDF0FD;}
+		.d2-2448805625 .stroke-B6{stroke:#F7F8FE;}
+		.d2-2448805625 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-2448805625 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-2448805625 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-2448805625 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-2448805625 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-2448805625 .background-color-N1{background-color:#0A0F25;}
+		.d2-2448805625 .background-color-N2{background-color:#676C7E;}
+		.d2-2448805625 .background-color-N3{background-color:#9499AB;}
+		.d2-2448805625 .background-color-N4{background-color:#CFD2DD;}
+		.d2-2448805625 .background-color-N5{background-color:#DEE1EB;}
+		.d2-2448805625 .background-color-N6{background-color:#EEF1F8;}
+		.d2-2448805625 .background-color-N7{background-color:#FFFFFF;}
+		.d2-2448805625 .background-color-B1{background-color:#0D32B2;}
+		.d2-2448805625 .background-color-B2{background-color:#0D32B2;}
+		.d2-2448805625 .background-color-B3{background-color:#E3E9FD;}
+		.d2-2448805625 .background-color-B4{background-color:#E3E9FD;}
+		.d2-2448805625 .background-color-B5{background-color:#EDF0FD;}
+		.d2-2448805625 .background-color-B6{background-color:#F7F8FE;}
+		.d2-2448805625 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-2448805625 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-2448805625 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-2448805625 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-2448805625 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-2448805625 .color-N1{color:#0A0F25;}
+		.d2-2448805625 .color-N2{color:#676C7E;}
+		.d2-2448805625 .color-N3{color:#9499AB;}
+		.d2-2448805625 .color-N4{color:#CFD2DD;}
+		.d2-2448805625 .color-N5{color:#DEE1EB;}
+		.d2-2448805625 .color-N6{color:#EEF1F8;}
+		.d2-2448805625 .color-N7{color:#FFFFFF;}
+		.d2-2448805625 .color-B1{color:#0D32B2;}
+		.d2-2448805625 .color-B2{color:#0D32B2;}
+		.d2-2448805625 .color-B3{color:#E3E9FD;}
+		.d2-2448805625 .color-B4{color:#E3E9FD;}
+		.d2-2448805625 .color-B5{color:#EDF0FD;}
+		.d2-2448805625 .color-B6{color:#F7F8FE;}
+		.d2-2448805625 .color-AA2{color:#4A6FF3;}
+		.d2-2448805625 .color-AA4{color:#EDF0FD;}
+		.d2-2448805625 .color-AA5{color:#F7F8FE;}
+		.d2-2448805625 .color-AB4{color:#EDF0FD;}
+		.d2-2448805625 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="JiMzNDtWZXJjZWwgY3JvbiAoZXZlcnkgMTUgbWluKSYjMzQ7 actor"><g class="shape" ><rect x="0.000000" y="315.000000" width="229.000000" height="66.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="114.500000" y="353.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Vercel cron (every 15 min)</text></g><g class="R0VUIC9hcGkvY3Jvbi9zeW5j"><g class="shape" ><rect x="559.000000" y="315.000000" width="179.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="648.500000" y="353.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">GET /api/cron/sync</text></g><g class="cnVuRnVsbFN5bmM="><g class="shape" ><rect x="923.000000" y="315.000000" width="130.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="988.000000" y="353.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">runFullSync</text></g><g class="c3luYyBzZXJ2aWNl"><g class="shape" ><rect x="1323.000000" y="252.000000" width="131.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1388.500000" y="290.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">sync service</text></g><g class="RVNQTiBBUElz external"><g class="shape" ><rect x="1824.000000" y="0.000000" width="116.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="1882.000000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">ESPN APIs</text></g><g class="cGF5b3V0IGNhbGN1bGF0b3I="><g class="shape" ><rect x="1797.000000" y="126.000000" width="170.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1882.000000" y="164.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">payout calculator</text></g><g class="dXBzZXJ0ICsgc3luYyByZXBvcw=="><g class="shape" ><rect x="1792.000000" y="252.000000" width="181.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1882.500000" y="290.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">upsert + sync repos</text></g><g class="UG9zdGdyZXM= store"><g class="shape" ><rect x="2176.000000" y="252.000000" width="106.000000" height="66.000000" stroke="#9775fa" fill="#e5dbff" style="stroke-width:2;" /></g><text x="2229.000000" y="290.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Postgres</text></g><g class="Y3Jvbl9sb2c= store"><g class="shape" ><rect x="1335.000000" y="378.000000" width="108.000000" height="66.000000" stroke="#9775fa" fill="#e5dbff" style="stroke-width:2;" /></g><text x="1389.000000" y="416.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">cron_log</text></g><g class="JiMzNDtlYXJuaW5ncyByb2xsdXAgKHNjb3JpbmcpJiMzNDs="><g class="shape" ><rect x="1773.000000" y="378.000000" width="218.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1882.000000" y="416.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">earnings rollup (scoring)</text></g><g class="JiMzNDtwaWNrIGxvY2tpbmcgKGdhbWUpJiMzNDs="><g class="shape" ><rect x="1791.000000" y="504.000000" width="182.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1882.000000" y="542.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">pick locking (game)</text></g><g class="KCYjMzQ7VmVyY2VsIGNyb24gKGV2ZXJ5IDE1IG1pbikmIzM0OyAtJmd0OyBHRVQgL2FwaS9jcm9uL3N5bmMpWzBd"><marker id="mk-d2-2448805625-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 231.000000 348.000000 C 361.000000 348.000000 427.000000 348.000000 555.000000 348.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2448805625-3488378134)" mask="url(#d2-2448805625)" /><text x="394.500000" y="354.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">Bearer CRON_SECRET</text></g><g class="KEdFVCAvYXBpL2Nyb24vc3luYyAtJmd0OyBydW5GdWxsU3luYylbMF0="><path d="M 739.500000 348.000000 C 811.900024 348.000000 849.099976 348.000000 919.500000 348.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2448805625-3488378134)" mask="url(#d2-2448805625)" /></g><g class="KHJ1bkZ1bGxTeW5jIC0mZ3Q7IHN5bmMgc2VydmljZSlbMF0="><path d="M 1054.905666 327.393010 C 1161.000000 293.600006 1215.000000 285.000000 1319.000000 285.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2448805625-3488378134)" mask="url(#d2-2448805625)" /><text x="1185.000000" y="295.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">6 steps</text></g><g class="KHN5bmMgc2VydmljZSAtJmd0OyBFU1BOIEFQSXMpWzBd"><path d="M 1418.833785 250.509692 C 1574.300049 76.799004 1655.699951 33.000000 1820.500000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2448805625-3488378134)" mask="url(#d2-2448805625)" /><text x="1585.500000" y="76.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">fetch</text></g><g class="KHN5bmMgc2VydmljZSAtJmd0OyBwYXlvdXQgY2FsY3VsYXRvcilbMF0="><path d="M 1449.244833 251.022474 C 1580.300049 177.600006 1650.300049 159.000000 1793.500000 159.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2448805625-3488378134)" mask="url(#d2-2448805625)" /><text x="1613.000000" y="174.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">project live earnings</text></g><g class="KHN5bmMgc2VydmljZSAtJmd0OyB1cHNlcnQgKyBzeW5jIHJlcG9zKVswXQ=="><path d="M 1455.500000 285.000000 C 1581.500000 285.000000 1649.099976 285.000000 1787.500000 285.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2448805625-3488378134)" mask="url(#d2-2448805625)" /><text x="1622.500000" y="291.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">upsert</text></g><g class="KHVwc2VydCArIHN5bmMgcmVwb3MgLSZndDsgUG9zdGdyZXMpWzBd"><path d="M 1975.500000 285.000000 C 2061.500000 285.000000 2102.100098 285.000000 2172.500000 285.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2448805625-3488378134)" mask="url(#d2-2448805625)" /></g><g class="KHN5bmMgc2VydmljZSAtJmd0OyAmIzM0O2Vhcm5pbmdzIHJvbGx1cCAoc2NvcmluZykmIzM0OylbMF0="><path d="M 1449.244833 318.977526 C 1580.300049 392.399994 1645.500000 411.000000 1769.500000 411.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2448805625-3488378134)" mask="url(#d2-2448805625)" /><text x="1601.500000" y="404.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">on results</text></g><g class="KHN5bmMgc2VydmljZSAtJmd0OyAmIzM0O3BpY2sgbG9ja2luZyAoZ2FtZSkmIzM0OylbMF0="><path d="M 1418.833789 319.490304 C 1574.300049 493.200012 1649.099976 537.000000 1787.500000 537.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2448805625-3488378134)" mask="url(#d2-2448805625)" /><text x="1572.000000" y="496.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">on tournament start</text></g><g class="KHJ1bkZ1bGxTeW5jIC0mZ3Q7IGNyb25fbG9nKVswXQ=="><path d="M 1054.905666 368.606990 C 1161.000000 402.399994 1217.300049 411.000000 1330.500000 411.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2448805625-3488378134)" mask="url(#d2-2448805625)" /><text x="1191.500000" y="412.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">log every run</text></g><mask id="d2-2448805625" maskUnits="userSpaceOnUse" x="-25" y="-25" width="2332" height="620">
+<rect x="-25" y="-25" width="2332" height="620" fill="white"></rect>
+<rect x="320.000000" y="338.000000" width="149" height="21" fill="black"></rect>
+<rect x="1160.000000" y="279.000000" width="50" height="21" fill="black"></rect>
+<rect x="1567.000000" y="60.000000" width="37" height="21" fill="black"></rect>
+<rect x="1544.000000" y="158.000000" width="138" height="21" fill="black"></rect>
+<rect x="1599.000000" y="275.000000" width="47" height="21" fill="black"></rect>
+<rect x="1567.000000" y="388.000000" width="69" height="21" fill="black"></rect>
+<rect x="1503.000000" y="480.000000" width="138" height="21" fill="black"></rect>
+<rect x="1147.000000" y="396.000000" width="89" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption">Reads-side (<code>tournament.*</code> / <code>golfer.*</code> tRPC) is deliberately off this diagram — it only ever queries Postgres; nothing user-facing calls ESPN.</p><div class="callout"><span class="callout-icon" aria-hidden="true">&#9737;</span><span class="callout-text">Step order inside <code>runFullSync</code> is load-bearing: completion checks run <strong>before</strong> live standings so a finished tournament's final results are never overwritten with projections, and bot auto-picks run <strong>before</strong> <code>startTournaments</code> so they get locked with everyone else's.</span></div></section><section id="depth" class="section"><div class="section-header"><h2 class="section-title">In depth</h2></div><div class="subsection" id="c-espn"><div class="subsection-header"><h3 class="subsection-title">ESPN provider <span class="subsection-path">src/server/services/golf-data</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>types.ts</code> defines the provider-agnostic contract (<code>GolfDataProvider</code> with <code>getSchedule</code> / <code>getField</code> / <code>getResults</code> / <code>getEarnings</code> / <code>getEventStatus</code> / <code>getEventDetails</code>) plus the neutral data shapes (<code>TournamentData</code>, <code>GolferFieldEntry</code>, <code>TournamentResultData</code>, <code>EarningsData</code>). The rest of the app only ever sees these — a future Data Golf provider would slot in behind the same interface.</p><p class="detail-p"><code>espn/client.ts</code> implements it as a singleton <code>EspnProvider</code> class over two ESPN endpoints: the <strong>site scoreboard</strong> (<code>site.api.espn.com</code>, has athlete names/scores/linescores but no money) and the <strong>core API</strong> (<code>sports.core.api.espn.com</code>, has purse + actual <code>earnings</code> per competitor, but everything else is <code>$ref</code> links). <code>getEarnings</code> merges the two by competitor id. All fetches carry a 10-second <code>AbortSignal</code> timeout, and the season schedule is cached in-process per season year.</p><p class="detail-p">A quirk worth knowing: ESPN has no per-event competitor endpoint the client uses — <code>fetchCompetitors</code> looks up the event's <em>date</em> from the cached schedule, refetches the scoreboard for that date (<code>?dates=YYYYMMDD</code>), then finds the event in the response. TBD/placeholder entries without <code>athlete.displayName</code> are filtered out.</p><p class="detail-p"><code>espn/mappers.ts</code> is where ESPN's mess is normalized. Ties: ESPN's <code>order</code> field is sequential even for tied players (and can reflect tee times during live play), so results are re-grouped by score string and assigned true tied positions with <code>tiedCount</code>. Made cut: players with fewer than 3 linescores missed the cut — unless nobody has reached round 3 yet, in which case the cut hasn't happened and everyone is in play. Dates: ESPN ISO timestamps carry arbitrary UTC times that shift the calendar day in US timezones, so <code>parseEspnDate</code> pins every date to 17:00 UTC (~noon ET).</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1829 242"><svg class="d2-1251077432 d2-svg" width="1829" height="242" viewBox="-25 -25 1829 242"><rect x="-25.000000" y="-25.000000" width="1829.000000" height="242.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-1251077432 .text-bold {
+	font-family: "d2-1251077432-font-bold";
+}
+@font-face {
+	font-family: d2-1251077432-font-bold;
+	src: url("data:application/font-woff;base64,d09GRgABAAAAAA0QAAoAAAAAFBAAAguFAAAAAAAAAAAAAAAAAAAAAAAAAABPUy8yAAAA9AAAAGAAAABgXxHXrmNtYXAAAAFUAAAAlQAAALwDJgOgZ2x5ZgAAAewAAAaoAAAIyL1YQ+xoZWFkAAAIlAAAADYAAAA2G38e1GhoZWEAAAjMAAAAJAAAACQKfwXdaG10eAAACPAAAAB4AAAAeDfsBURsb2NhAAAJaAAAAD4AAAA+IkogZG1heHAAAAmoAAAAIAAAACAANgD3bmFtZQAACcgAAAMoAAAIKgjwVkFwb3N0AAAM8AAAAB0AAAAg/9EAMgADAioCvAAFAAACigJYAAAASwKKAlgAAAFeADIBKQAAAgsHAwMEAwICBGAAAvcAAAADAAAAAAAAAABBREJPACAAIP//Au7/BgAAA9gBESAAAZ8AAAAAAfAClAAAACAAA3icdM09SsMAAIbhJyb+xajxX+PiAbyEiIObiBdwkoCDCB5J0c1FOxXao/QEPcJXKKVb3/UZXhRKBRqVX3RapdqVazfu3Hvw6MmL3puPhIXdLu1Z79V7kkmmGWeUYQb5z19+8p2vfM4PqypcWlOqrNuwacu22o7Grj37WgcOHTl24tSZcxc6ZgAAAP//AQAA//99/CKxAAAAeJxcVU1s2/YVf/+/JGp26NgURVGURH2QFinZlmyJIuUPKbJs+bOSbdmI47T+SINgy+bYyWJncTsXOzQbsFZFsCobsnXYLiuwAeshCAZ0BbzDLl3Q3FKsp3YZMOySw4xCGIZUlgaScpzkYP8v1O+99/t4D2ywAIAv4jtggTboBAcwAAoVosKKLIv2tJJOi6wlLSPKvoAdjQ9/J0et0ai1J3g38ObGBiqt4ztHV14rXbz4342RkcZv/vxJ4z208wkAbj4FwOO4Am1AAdB2RZYkWSQIC63Qoiza/931bmeHt8NKck8f3nv468inETSbySS2ldRW48e4crT7wQcAAAjizRoewHfBC2ATJElNaZqSdLF2SRIFgmCcLiWppVkCrS2+s3T2vcXcpdAclxb7ZnqXpyM599wiWfz51pVflhVhneWT62OXrnVzqxcAQwkAF3EF2s2JlaTLxTgJQpSVpKapKUkSxdLHl94vL9y+EPMNLsXjS4M+XCncvnbt/ambkdW5ufNho78SAPoPrsApgzcmxCiMyISYErrb+Oarr1Anruy//cNf7B9/C49xBSxGRapU1Qdt9TKAK0CC84VeRIZSkmpKb+Xx9I3Jyd2J8vTeaKaAK/LqfPFi/5do8bLSo/NkYizhCpwG9jkMu062jqKZME8mrhdy6p0P3yoXh7PZ4SKuhFfmptfYxjdPnqALiYEBSe+TA8A0roBdRxLVECNSD++jp/dx1/7+0aFZr6dZQ5+jOnAgArCCLkza0MQuGwoxlKjrnU5qadXQ6S+FhVtVLEYDo91q/+bwxrf32q2BqW9xYXouEyDP5eZWOkOym3md796+3viX4hOvs/S59l7ezRr18s0aduEDcELAcIIs2kVKYexGMYMuWR9SFOyMy4UmQuO8ldypWvmCkFnpz2ysSNpyX9QZIUNBFR/8sejhz3y/ePaN3N5k8SexzxynDX26mzV0gOrgedlronDiNAJxE1fz0z8oxKd8E2JQzeUG3HF6OLxMZm8sLu1m/ewGX8yPlpjOC0GvyZXcrKE6PgAagsdcGcCyqjzHktQq8/Xq1ZGNVHSQI6p77VbPJHbLDrrXKWr95LtvlG+c8bmLfzgaT3jEPSf3meP0+NTMBGCj93+iOrhb/BwXMVwQcrmUpN67RUnpVVBg6vrY+JWRqbV+K2580T6ZULWEtP6r+3KfoJFndhfLu7ncZoEOt2lK6LzHj4ajar+ZRzcA2sUP9Ff3RvrFQDK6/alXx8a6F8YDqS5vh4f0+s+fR29t2bzqcookrthsIcm/03gbwAJCM4btqA79MAKzBjOSmtKJ0M2kHo/AKozYCoQgGzro9nIShMV0tUEa3XK4IBmffD28PjhFe4NuT3R4Xe0L/Wne3pZaSfMBhxBdWH29sD/LyzLPy3I0OSqHFS5EerOPPIN9mYi1IxLwJrusjkJvZj5Cbp4SnEOz3e2dLtoxMq6U4+hBT1SORiLRnka1m2O7LBY35+MBoNmENAB8iR9hCXwAYAce3jE4yzdryIEPoNNUn1KoZ2b6W3GkSrXZ7ISDDJOvvYLFoy9YB0JbNrv+OwALj+oQMhLNKibTx/Gi9Nntz968nqfJhJqnQ7OJhVeqfDA8oP/rR4ejgVhvREhsrjUeopAWGWjcaz1mDQyo3to8rRrH6IQJGywlyzNVPuiLuNFhzh87BuLYxj0wvWfo2PnSlj6JZUsl5MpdLRSu5nLbhcJ2LhaPx+KxWCs32d2lxRvZm6XRfFGPj5n5aexCdaDBD8CedGdYQZJZhj6JvN4nPyO/ejmzoQUzHtu8pC339jgjH+PfJzziT3fO7uW83PzPUPezwBuzo9uoDo4X+DWdbE7uLUqMr93dwXX5sk50eC6ZsNl+ZLVGk43HgIBp1tBvUR1kQ1c5rafMuB1yHKupEzDG6WL9mHESjxLfkcaEXCDk5+Me/0jku2eHzgXGPCnP0JAUzEYvk1JglfOyNOWi28nuoejEsuxecbpkN3f6lDgUH18zM0g1a2gb7+qb3iZIqiqq6bRiHJ6TJQWr84Ui9ebNmyJPcu0snSa/t/xgi7h1a+fTnjBh3SRIEyvTrKH/oUNd/xe8SbVW09/LM1V/0Ce5qnunLIFZcnMNpRr/UKMeHk03uibCfcaNPoMAPtJ5ZGVNkwVBNJacqVXRPziMsBWLmiYlU6t/nXPmw70RKT6bX9wze8gDwOfo8Pgu5qvosNEFqPkRHoIl/Ei/rdRzgOF4PByOx/FQjyj26H/wfwAAAP//AQAA//9JMMf7AAEAAAACC4VUIL1TXw889QABA+gAAAAA2F2ghAAAAADdZi82/jf+xAhtA/EAAQADAAIAAAAAAAAAAQAAA9j+7wAACJj+N/43CG0AAQAAAAAAAAAAAAAAAAAAAB4CsgBQAMgAAAI9//oCRgAuAnsATQIkAE0BLQBNAlQATQJlAE0CLAAZAg8AKgI9AEEB0wAkAj0AJwIGACQBVQAYAhYAIgEUADcBHgBBA1kAQQI8AEECKwAkAj0AQQGOAEEBuwAVAX8AEQI4ADwBLAAuARQAQQAA/60AAAAsACwAUAB8AKAAtgDCAOQBCgEcAVQBhgGyAeQCGAI+AqYCsgLOAwADIgNOA34DngPaBAAEIgRCBE4EZAAAAAEAAAAeAJAADABjAAcAAQAAAAAAAAAAAAAAAAAEAAN4nJyUz24bVRTGf05s0wrBAkVVuonugkWR6NhUSdU2K4fUikUUB48LQkJIE8/4jzKeGXkmDuEJWPMWvEVXPATPgVij+Xzs2AXRJoqSfHfu+fOdc75zgR3+ZptK9SHwRz0xXGGvfm54iwf1E8PbtOtbhqs8qf1puEZYmxuu83mtZ/gj3lZ/M/yA/epPhh+yW20b/phn1R3Dn2w7/jL8Kfu8XeAKvOBXwxV2yQxvscOPhrd5hMWsVHlE03CNz9gzXGcP6DOhIGZCwgjHkAkjrpgRkeMTMWPCkIgQR4cWMYW+JgRCjtF/fg3wKZgRKOKYAkeMT0xAztgi/iKvlHNlHOo0s7sWBWMCLuRxSUCCI2VESkLEpeIUFGS8okGDnIH4ZhTkeORMiPFImTGiQZc2p/QZMyHH0VakkplPypCCawLld2ZRdmZAREJurK5ICMXTiV8k7w6nOLpksl2PfLoR4Usc38m75JbK9is8/bo1Zpt5l2wC5upnrK7EurnWBMe6LfO2+Fa44BXuXv3ZZPL+HoX6XyjyBVeaf6hJJWKS4NwuLXwpyHePcRzp3MFXR76nQ58Turyhr3OLHj1anNGnw2v5dunh+JouZxzLoyO8uGtLMWf8gOMbOrIpY0fWn8XEIn4mM3Xn4jhTHVMy9bxk7qnWSBXefcLlDqUb6sjlM9AelZZO80u0ZwEjU0UmhlP1cqmN3PoXmiKmqqWc7e19uQ1z273lFt+QaodLtS44lZNbMHrfVL13NHOtH4+AkJQLWQxImdKg4Ea8zwm4IsZxrO6daEsKWiufMs+NVBIxFYMOieLMyPQ3MN34xn2woXtnb0ko/5Lp5aqq+2Rx6tXtjN6oe8s737ocrU2gYVNN19Q0ENfEtB9pp9b5+/LN9bqlPOWIlJjwXy/AMzya7HPAIWNlGOhmbq9DUy9Ek5ccqvpLIlkNpefIIhzg8ZwDDnjJ83f6uGTijItbcVnP3eKYI7ocflAVC/suR7xeffv/rL+LaVO1OJ6uTi/uPcUnd1DrF9qz2/eyp4mVk5hbtNutOCNgWnJxu+s1ucd4/wAAAP//AQAA///0t09ReJxiYGYAg//nGIwYsAAAAAAA//8BAAD//y8BAgMAAAA=");
+}
+.d2-1251077432 .text-italic {
+	font-family: "d2-1251077432-font-italic";
+}
+@font-face {
+	font-family: d2-1251077432-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-1251077432 .fill-N1{fill:#0A0F25;}
+		.d2-1251077432 .fill-N2{fill:#676C7E;}
+		.d2-1251077432 .fill-N3{fill:#9499AB;}
+		.d2-1251077432 .fill-N4{fill:#CFD2DD;}
+		.d2-1251077432 .fill-N5{fill:#DEE1EB;}
+		.d2-1251077432 .fill-N6{fill:#EEF1F8;}
+		.d2-1251077432 .fill-N7{fill:#FFFFFF;}
+		.d2-1251077432 .fill-B1{fill:#0D32B2;}
+		.d2-1251077432 .fill-B2{fill:#0D32B2;}
+		.d2-1251077432 .fill-B3{fill:#E3E9FD;}
+		.d2-1251077432 .fill-B4{fill:#E3E9FD;}
+		.d2-1251077432 .fill-B5{fill:#EDF0FD;}
+		.d2-1251077432 .fill-B6{fill:#F7F8FE;}
+		.d2-1251077432 .fill-AA2{fill:#4A6FF3;}
+		.d2-1251077432 .fill-AA4{fill:#EDF0FD;}
+		.d2-1251077432 .fill-AA5{fill:#F7F8FE;}
+		.d2-1251077432 .fill-AB4{fill:#EDF0FD;}
+		.d2-1251077432 .fill-AB5{fill:#F7F8FE;}
+		.d2-1251077432 .stroke-N1{stroke:#0A0F25;}
+		.d2-1251077432 .stroke-N2{stroke:#676C7E;}
+		.d2-1251077432 .stroke-N3{stroke:#9499AB;}
+		.d2-1251077432 .stroke-N4{stroke:#CFD2DD;}
+		.d2-1251077432 .stroke-N5{stroke:#DEE1EB;}
+		.d2-1251077432 .stroke-N6{stroke:#EEF1F8;}
+		.d2-1251077432 .stroke-N7{stroke:#FFFFFF;}
+		.d2-1251077432 .stroke-B1{stroke:#0D32B2;}
+		.d2-1251077432 .stroke-B2{stroke:#0D32B2;}
+		.d2-1251077432 .stroke-B3{stroke:#E3E9FD;}
+		.d2-1251077432 .stroke-B4{stroke:#E3E9FD;}
+		.d2-1251077432 .stroke-B5{stroke:#EDF0FD;}
+		.d2-1251077432 .stroke-B6{stroke:#F7F8FE;}
+		.d2-1251077432 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-1251077432 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-1251077432 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-1251077432 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-1251077432 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-1251077432 .background-color-N1{background-color:#0A0F25;}
+		.d2-1251077432 .background-color-N2{background-color:#676C7E;}
+		.d2-1251077432 .background-color-N3{background-color:#9499AB;}
+		.d2-1251077432 .background-color-N4{background-color:#CFD2DD;}
+		.d2-1251077432 .background-color-N5{background-color:#DEE1EB;}
+		.d2-1251077432 .background-color-N6{background-color:#EEF1F8;}
+		.d2-1251077432 .background-color-N7{background-color:#FFFFFF;}
+		.d2-1251077432 .background-color-B1{background-color:#0D32B2;}
+		.d2-1251077432 .background-color-B2{background-color:#0D32B2;}
+		.d2-1251077432 .background-color-B3{background-color:#E3E9FD;}
+		.d2-1251077432 .background-color-B4{background-color:#E3E9FD;}
+		.d2-1251077432 .background-color-B5{background-color:#EDF0FD;}
+		.d2-1251077432 .background-color-B6{background-color:#F7F8FE;}
+		.d2-1251077432 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-1251077432 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-1251077432 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-1251077432 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-1251077432 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-1251077432 .color-N1{color:#0A0F25;}
+		.d2-1251077432 .color-N2{color:#676C7E;}
+		.d2-1251077432 .color-N3{color:#9499AB;}
+		.d2-1251077432 .color-N4{color:#CFD2DD;}
+		.d2-1251077432 .color-N5{color:#DEE1EB;}
+		.d2-1251077432 .color-N6{color:#EEF1F8;}
+		.d2-1251077432 .color-N7{color:#FFFFFF;}
+		.d2-1251077432 .color-B1{color:#0D32B2;}
+		.d2-1251077432 .color-B2{color:#0D32B2;}
+		.d2-1251077432 .color-B3{color:#E3E9FD;}
+		.d2-1251077432 .color-B4{color:#E3E9FD;}
+		.d2-1251077432 .color-B5{color:#EDF0FD;}
+		.d2-1251077432 .color-B6{color:#F7F8FE;}
+		.d2-1251077432 .color-AA2{color:#4A6FF3;}
+		.d2-1251077432 .color-AA4{color:#EDF0FD;}
+		.d2-1251077432 .color-AA5{color:#F7F8FE;}
+		.d2-1251077432 .color-AB4{color:#EDF0FD;}
+		.d2-1251077432 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="c2l0ZSBzY29yZWJvYXJkIEFQSQ== external"><g class="shape" ><rect x="0.000000" y="0.000000" width="181.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="90.500000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">site scoreboard API</text></g><g class="Y29yZSBBUEk= external"><g class="shape" ><rect x="628.000000" y="126.000000" width="102.000000" height="66.000000" stroke="#adb5bd" fill="#f1f3f5" style="stroke-width:2;" /></g><text x="679.000000" y="164.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">core API</text></g><g class="bWFwQ29tcGV0aXRvcnNUb1Jlc3VsdHM="><g class="shape" ><rect x="562.000000" y="0.000000" width="234.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="679.000000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">mapCompetitorsToResults</text></g><g class="Z2V0RWFybmluZ3MgbWVyZ2U="><g class="shape" ><rect x="1226.000000" y="63.000000" width="179.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1315.500000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">getEarnings merge</text></g><g class="RWFybmluZ3NEYXRh"><g class="shape" ><rect x="1640.000000" y="63.000000" width="139.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1709.500000" y="101.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">EarningsData</text></g><g class="KHNpdGUgc2NvcmVib2FyZCBBUEkgLSZndDsgbWFwQ29tcGV0aXRvcnNUb1Jlc3VsdHMpWzBd"><marker id="mk-d2-1251077432-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 182.500000 33.000000 C 333.299988 33.000000 409.700012 33.000000 558.500000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1251077432-3488378134)" mask="url(#d2-1251077432)" /><text x="372.000000" y="39.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">names, scores, rounds</text></g><g class="KG1hcENvbXBldGl0b3JzVG9SZXN1bHRzIC0mZ3Q7IGdldEVhcm5pbmdzIG1lcmdlKVswXQ=="><path d="M 798.000000 33.000000 C 968.000000 33.000000 1054.000000 41.799999 1222.081222 76.198017" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1251077432-3488378134)" mask="url(#d2-1251077432)" /></g><g class="KGNvcmUgQVBJIC0mZ3Q7IGdldEVhcm5pbmdzIG1lcmdlKVswXQ=="><path d="M 732.000000 159.000000 C 954.799988 159.000000 1054.000000 150.199997 1222.081222 115.801982" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1251077432-3488378134)" mask="url(#d2-1251077432)" /><text x="979.500000" y="162.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">actual earnings, amateur flag</text></g><g class="KGdldEVhcm5pbmdzIG1lcmdlIC0mZ3Q7IEVhcm5pbmdzRGF0YSlbMF0="><path d="M 1406.500000 96.000000 C 1498.900024 96.000000 1546.099976 96.000000 1636.500000 96.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1251077432-3488378134)" mask="url(#d2-1251077432)" /></g><mask id="d2-1251077432" maskUnits="userSpaceOnUse" x="-25" y="-25" width="1829" height="242">
+<rect x="-25" y="-25" width="1829" height="242" fill="white"></rect>
+<rect x="297.000000" y="23.000000" width="150" height="21" fill="black"></rect>
+<rect x="880.000000" y="146.000000" width="199" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption">Neither ESPN API is sufficient alone: the scoreboard has who/where, the core API has the money. <code>getEarnings</code> joins them by competitor id.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/services/golf-data/types.ts</span><span class="owns-desc">Provider-agnostic contract: <code>GolfDataProvider</code> interface + neutral tournament/field/result/earnings shapes.</span></div><div class="owns-row"><span class="owns-name">server/services/golf-data/espn/client.ts</span><span class="owns-desc"><code>EspnProvider</code> class + <code>espnProvider</code> singleton; two ESPN base URLs, 10s timeouts, per-season schedule cache, scoreboard/core merge.</span></div><div class="owns-row"><span class="owns-name">server/services/golf-data/espn/mappers.ts</span><span class="owns-desc">ESPN → neutral mapping: tie regrouping by score, made-cut heuristic (≥3 linescores), noon-ET date pinning.</span></div><div class="owns-row"><span class="owns-name">server/services/golf-data/espn/types.ts</span><span class="owns-desc">Raw ESPN response shapes (<code>EspnScoreboardResponse</code>, <code>EspnCoreCompetitorRef</code>, …) — never leak past the mappers.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">espnProvider</span><span class="owns-desc">Singleton <code>GolfDataProvider</code> — the sync pipeline's only door to ESPN.</span></div><div class="owns-row"><span class="owns-name">GolfDataProvider</span><span class="owns-desc">The interface a replacement data source would implement.</span></div><div class="owns-row"><span class="owns-name">mapCompetitorsToResults</span><span class="owns-desc">The tie/cut normalizer; also used directly by seed scripts.</span></div><div class="owns-row"><span class="owns-name">mapCalendarToTournament</span><span class="owns-desc">Calendar entry → <code>TournamentData</code> with timezone-pinned dates.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body">the <a href="#c-sync">sync pipeline</a> (every ESPN call in the app funnels through <code>espnProvider</code>) and the <code>prisma/seed/*.ts</code> backfill scripts.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>site.api.espn.com</code> and <code>sports.core.api.espn.com</code> — unauthenticated public JSON, identified only by a <code>User-Agent: PPGL/1.0</code> header.</span></div></div></div><div class="subsection" id="c-payout"><div class="subsection-header"><h3 class="subsection-title">Payout table <span class="subsection-path">src/server/services/golf-data</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">A hardcoded table of standard PGA Tour payout percentages for 36-hole-cut events — positions 1 through 65, winner 18.000%, last paid spot 0.215% — with <code>calculateEarnings(purse, results)</code> on top. Tie handling matches real tour rules: N players tied at position P split the average of the payouts for positions P through P+N−1. Missed-cut players get $0.</p><p class="detail-p">This is <strong>projections only</strong>. It runs during <code>syncLiveStandings</code> to give in-progress tournaments believable dollar figures (the UI labels them "est."); the moment a tournament completes, <code>syncResults</code> overwrites everything with ESPN's actual earnings. Known accepted gaps: majors and Signature Events pay 20% to the winner, no-cut events redistribute differently, and amateurs (who earn nothing) aren't flagged in scoreboard data.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/services/golf-data/payout.ts</span><span class="owns-desc"><code>PAYOUT_PERCENTAGES</code> (1-indexed, 65 paid positions) + <code>calculateEarnings</code> with tie averaging.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">calculateEarnings</span><span class="owns-desc"><code>(purse, results) → Map&lt;espnId, dollars&gt;</code> — tie-averaged, missed cut ⇒ 0.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><code>syncLiveStandings</code> in the <a href="#c-sync">sync pipeline</a> — and nothing else; final earnings bypass this table entirely.</span></div></div></div><div class="subsection" id="c-sync"><div class="subsection-header"><h3 class="subsection-title">Sync pipeline <span class="subsection-path">src/server/services</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>services/sync.ts</code> holds the five operations the cron composes, each <strong>idempotent by construction</strong> because every write goes through espnId-keyed upserts: <code>syncFields</code> (upsert golfers + field entries, backfill the purse), <code>syncLiveStandings</code> (upsert <code>TournamentResult</code> rows with <em>projected</em> earnings from the payout table), <code>syncResults</code> (upsert real earnings, flip to <code>COMPLETED</code>, trigger rollup), <code>checkForCompletedTournaments</code> (poll ESPN status for every <code>IN_PROGRESS</code> event), and <code>startTournaments</code> (flip <code>UPCOMING → IN_PROGRESS</code>).</p><p class="detail-p">The status flip in <code>startTournaments</code> is the one place this domain uses <code>withTransaction</code>: the status update and <code>lockPlannedPicksForTournament</code> (game domain) commit atomically, so a failed lock can never leave picks editable on a tournament that's already live.</p><p class="detail-p"><code>syncResults</code> implements the <code>FINALIZING</code> dance: if ESPN reports the event final but the winner's earnings are still $0, the tournament parks in <code>FINALIZING</code> — projections stay in place, rollup still runs so standings show projected money, and every subsequent cron run retries until real earnings appear.</p><p class="detail-p"><code>repositories/sync.ts</code> and <code>repositories/upserts.ts</code> are the write-side repos. Notably they import <code>db-core</code> (not <code>lib/db</code>) and skip the <code>server-only</code> guard, because the cron route and tsx-run seed scripts execute outside React server component context. <code>upserts.ts</code> is also reused verbatim by the <code>prisma/seed/*</code> backfill scripts. <code>updateTournamentStatus</code> sets <code>completedAt</code> via <code>coalesce(completed_at, now)</code> so only the <em>first</em> completion transition stamps the time.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2472 175"><svg class="d2-2866038756 d2-svg" width="2472" height="175" viewBox="-25 -23 2472 175"><rect x="-25.000000" y="-23.000000" width="2472.000000" height="175.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-2866038756 .text-bold {
+	font-family: "d2-2866038756-font-bold";
+}
+@font-face {
+	font-family: d2-2866038756-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-2866038756 .text-italic {
+	font-family: "d2-2866038756-font-italic";
+}
+@font-face {
+	font-family: d2-2866038756-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-2866038756 .fill-N1{fill:#0A0F25;}
+		.d2-2866038756 .fill-N2{fill:#676C7E;}
+		.d2-2866038756 .fill-N3{fill:#9499AB;}
+		.d2-2866038756 .fill-N4{fill:#CFD2DD;}
+		.d2-2866038756 .fill-N5{fill:#DEE1EB;}
+		.d2-2866038756 .fill-N6{fill:#EEF1F8;}
+		.d2-2866038756 .fill-N7{fill:#FFFFFF;}
+		.d2-2866038756 .fill-B1{fill:#0D32B2;}
+		.d2-2866038756 .fill-B2{fill:#0D32B2;}
+		.d2-2866038756 .fill-B3{fill:#E3E9FD;}
+		.d2-2866038756 .fill-B4{fill:#E3E9FD;}
+		.d2-2866038756 .fill-B5{fill:#EDF0FD;}
+		.d2-2866038756 .fill-B6{fill:#F7F8FE;}
+		.d2-2866038756 .fill-AA2{fill:#4A6FF3;}
+		.d2-2866038756 .fill-AA4{fill:#EDF0FD;}
+		.d2-2866038756 .fill-AA5{fill:#F7F8FE;}
+		.d2-2866038756 .fill-AB4{fill:#EDF0FD;}
+		.d2-2866038756 .fill-AB5{fill:#F7F8FE;}
+		.d2-2866038756 .stroke-N1{stroke:#0A0F25;}
+		.d2-2866038756 .stroke-N2{stroke:#676C7E;}
+		.d2-2866038756 .stroke-N3{stroke:#9499AB;}
+		.d2-2866038756 .stroke-N4{stroke:#CFD2DD;}
+		.d2-2866038756 .stroke-N5{stroke:#DEE1EB;}
+		.d2-2866038756 .stroke-N6{stroke:#EEF1F8;}
+		.d2-2866038756 .stroke-N7{stroke:#FFFFFF;}
+		.d2-2866038756 .stroke-B1{stroke:#0D32B2;}
+		.d2-2866038756 .stroke-B2{stroke:#0D32B2;}
+		.d2-2866038756 .stroke-B3{stroke:#E3E9FD;}
+		.d2-2866038756 .stroke-B4{stroke:#E3E9FD;}
+		.d2-2866038756 .stroke-B5{stroke:#EDF0FD;}
+		.d2-2866038756 .stroke-B6{stroke:#F7F8FE;}
+		.d2-2866038756 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-2866038756 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-2866038756 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-2866038756 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-2866038756 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-2866038756 .background-color-N1{background-color:#0A0F25;}
+		.d2-2866038756 .background-color-N2{background-color:#676C7E;}
+		.d2-2866038756 .background-color-N3{background-color:#9499AB;}
+		.d2-2866038756 .background-color-N4{background-color:#CFD2DD;}
+		.d2-2866038756 .background-color-N5{background-color:#DEE1EB;}
+		.d2-2866038756 .background-color-N6{background-color:#EEF1F8;}
+		.d2-2866038756 .background-color-N7{background-color:#FFFFFF;}
+		.d2-2866038756 .background-color-B1{background-color:#0D32B2;}
+		.d2-2866038756 .background-color-B2{background-color:#0D32B2;}
+		.d2-2866038756 .background-color-B3{background-color:#E3E9FD;}
+		.d2-2866038756 .background-color-B4{background-color:#E3E9FD;}
+		.d2-2866038756 .background-color-B5{background-color:#EDF0FD;}
+		.d2-2866038756 .background-color-B6{background-color:#F7F8FE;}
+		.d2-2866038756 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-2866038756 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-2866038756 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-2866038756 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-2866038756 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-2866038756 .color-N1{color:#0A0F25;}
+		.d2-2866038756 .color-N2{color:#676C7E;}
+		.d2-2866038756 .color-N3{color:#9499AB;}
+		.d2-2866038756 .color-N4{color:#CFD2DD;}
+		.d2-2866038756 .color-N5{color:#DEE1EB;}
+		.d2-2866038756 .color-N6{color:#EEF1F8;}
+		.d2-2866038756 .color-N7{color:#FFFFFF;}
+		.d2-2866038756 .color-B1{color:#0D32B2;}
+		.d2-2866038756 .color-B2{color:#0D32B2;}
+		.d2-2866038756 .color-B3{color:#E3E9FD;}
+		.d2-2866038756 .color-B4{color:#E3E9FD;}
+		.d2-2866038756 .color-B5{color:#EDF0FD;}
+		.d2-2866038756 .color-B6{color:#F7F8FE;}
+		.d2-2866038756 .color-AA2{color:#4A6FF3;}
+		.d2-2866038756 .color-AA4{color:#EDF0FD;}
+		.d2-2866038756 .color-AA5{color:#F7F8FE;}
+		.d2-2866038756 .color-AB4{color:#EDF0FD;}
+		.d2-2866038756 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="VVBDT01JTkc="><g class="shape" ><rect x="0.000000" y="19.000000" width="123.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="61.500000" y="57.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">UPCOMING</text></g><g class="SU5fUFJPR1JFU1M="><g class="shape" ><rect x="718.000000" y="19.000000" width="145.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="790.500000" y="57.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">IN_PROGRESS</text></g><g class="Q09NUExFVEVE"><g class="shape" ><rect x="2290.000000" y="19.000000" width="132.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="2356.000000" y="57.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">COMPLETED</text></g><g class="RklOQUxJWklORw=="><g class="shape" ><rect x="1501.000000" y="61.000000" width="125.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1563.500000" y="99.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">FINALIZING</text></g><g class="KFVQQ09NSU5HIC0mZ3Q7IElOX1BST0dSRVNTKVswXQ=="><marker id="mk-d2-2866038756-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 124.500000 52.250000 C 360.899994 52.250000 480.100006 52.250000 714.500000 52.250000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2866038756-3488378134)" mask="url(#d2-2866038756)" /><text x="420.500000" y="58.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">startDate passed - lock picks atomically</text></g><g class="KElOX1BST0dSRVNTIC0mZ3Q7IENPTVBMRVRFRClbMF0="><path d="M 864.987361 44.275506 C 1103.800049 17.299000 1243.900024 10.500000 1363.750000 10.500000 C 1483.599976 10.500000 2038.800049 17.299999 2286.023245 44.069396" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2866038756-3488378134)" mask="url(#d2-2866038756)" /><text x="1576.500000" y="17.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">STATUS_FINAL + real earnings</text></g><g class="KElOX1BST0dSRVNTIC0mZ3Q7IEZJTkFMSVpJTkcpWzBd"><path d="M 864.987362 60.224486 C 1103.800049 87.199997 1231.400024 94.000000 1497.000000 94.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2866038756-3488378134)" mask="url(#d2-2866038756)" /><text x="1181.000000" y="97.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">STATUS_FINAL but winner earnings still 0</text></g><g class="KEZJTkFMSVpJTkcgLSZndDsgQ09NUExFVEVEKVswXQ=="><path d="M 1628.000000 94.000000 C 1906.000000 94.000000 2038.800049 87.199997 2286.023245 60.430604" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-2866038756-3488378134)" mask="url(#d2-2866038756)" /><text x="1959.000000" y="97.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">retry each cron run until ESPN posts earnings</text></g><mask id="d2-2866038756" maskUnits="userSpaceOnUse" x="-25" y="-23" width="2472" height="175">
+<rect x="-25" y="-23" width="2472" height="175" fill="white"></rect>
+<rect x="288.000000" y="42.000000" width="265" height="21" fill="black"></rect>
+<rect x="1476.000000" y="1.000000" width="201" height="21" fill="black"></rect>
+<rect x="1045.000000" y="81.000000" width="272" height="21" fill="black"></rect>
+<rect x="1810.000000" y="81.000000" width="298" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption">The <code>TournamentStatus</code> lifecycle as the cron drives it (<code>CANCELLED</code> and the admin <code>excluded</code> flag sit outside the automated path).</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/services/sync.ts</span><span class="owns-desc">The five sync operations; the only <code>withTransaction</code> in the domain (status flip + pick lock).</span></div><div class="owns-row"><span class="owns-name">server/repositories/sync.ts</span><span class="owns-desc">Status-driven tournament queries (<code>findUpcomingTournamentsToStart</code>, <code>findFinalizingTournaments</code>, …) + purse/status updates.</span></div><div class="owns-row"><span class="owns-name">server/repositories/upserts.ts</span><span class="owns-desc">espnId-keyed upserts for tournament / golfer / field / result — shared with seed scripts, safe to re-run.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">syncFields</span><span class="owns-desc">Field + purse for one tournament; runs for <code>UPCOMING</code> events starting within 7 days.</span></div><div class="owns-row"><span class="owns-name">syncLiveStandings</span><span class="owns-desc">Leaderboard → projected earnings via <code>calculateEarnings</code>; display-only, no rollup.</span></div><div class="owns-row"><span class="owns-name">syncResults</span><span class="owns-desc">Real earnings → <code>COMPLETED</code> (or park in <code>FINALIZING</code>); triggers scoring rollup either way.</span></div><div class="owns-row"><span class="owns-name">checkForCompletedTournaments</span><span class="owns-desc">Polls <code>getEventStatus</code> for each <code>IN_PROGRESS</code> event; returns those now <code>STATUS_FINAL</code>.</span></div><div class="owns-row"><span class="owns-name">startTournaments</span><span class="owns-desc">Atomic <code>UPCOMING → IN_PROGRESS</code> flip + planned-pick locking per tournament.</span></div><div class="owns-row"><span class="owns-name">upsertGolfer</span><span class="owns-desc">Insert-or-update by <code>espnId</code>; returns the internal golfer id.</span></div><div class="owns-row"><span class="owns-name">upsertTournamentResult</span><span class="owns-desc">Insert-or-update by <code>(tournamentId, golferId)</code> — same row holds projected then real earnings.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>rollupForTournament</code> from <a href="../domain-scoring/domain-scoring.html">scoring</a> after results land (both <code>FINALIZING</code> and <code>COMPLETED</code> paths), so member standings update in the same cron tick.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>lockPlannedPicksForTournament</code> from <a href="../domain-game/domain-game.html">game</a> inside the start-tournament transaction.</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><code>espnProvider</code> (<a href="#c-espn">ESPN provider</a>) for every fetch; <code>calculateEarnings</code> (<a href="#c-payout">payout table</a>) for live projections.</span></div></div></div><div class="subsection" id="c-cron"><div class="subsection-header"><h3 class="subsection-title">Cron entry <span class="subsection-path">src/app/api/cron/sync</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>runFullSync</code> in <code>services/cron-sync.ts</code> is the orchestrator: <strong>(1)</strong> complete finished tournaments (before live sync, so finals never get clobbered by projections), <strong>(1b)</strong> retry <code>FINALIZING</code> events, <strong>(1.5)</strong> auto-pick for bot members (before starts, so bot picks get locked), <strong>(2)</strong> start due tournaments, <strong>(3)</strong> live standings for everything in progress, <strong>(4)</strong> field sync for events starting within 7 days, <strong>(5)</strong> clean up abandoned <code>PENDING</code> leagues, <strong>(6)</strong> send pick-reminder emails for events starting within 16 hours.</p><p class="detail-p">Every step is individually try/caught into a <code>results</code> bag — one failing step never stops the rest. Any key ending in <code>Error</code> downgrades the run to <code>status: "partial"</code>, and the whole result JSON is written to <code>cron_log</code> fire-and-forget via <code>logCronRun</code>.</p><p class="detail-p">The HTTP wrapper at <code>app/api/cron/sync/route.ts</code> checks <code>Authorization: Bearer &lt;CRON_SECRET&gt;</code>, sets <code>maxDuration = 300</code> for Vercel, and returns 200 for a clean run or <strong>207 Multi-Status</strong> for a partial one. <code>vercel.json</code> schedules it every 15 minutes (<code>*/15 * * * *</code>).</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/services/cron-sync.ts</span><span class="owns-desc"><code>runFullSync</code> — the 6-step, per-step-error-trapped orchestration; no <code>server-only</code> guard so API routes can import it.</span></div><div class="owns-row"><span class="owns-name">app/api/cron/sync/route.ts</span><span class="owns-desc"><code>GET</code> handler: <code>CRON_SECRET</code> bearer check, <code>maxDuration = 300</code>, 200/207 status mapping.</span></div><div class="owns-row"><span class="owns-name">server/repositories/cron-log.ts</span><span class="owns-desc"><code>logCronRun</code> + <code>findLatestRuns</code> over the <code>cron_log</code> table.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">runFullSync</span><span class="owns-desc">The full pipeline; returns <code>SyncRunResult</code> (<code>status</code>, <code>durationMs</code>, per-step breakdown).</span></div><div class="owns-row"><span class="owns-name">GET</span><span class="owns-desc">The Vercel cron target.</span></div><div class="owns-row"><span class="owns-name">logCronRun</span><span class="owns-desc">Persist a run's JSON result; called fire-and-forget so logging never blocks the response.</span></div><div class="owns-row"><span class="owns-name">findLatestRuns</span><span class="owns-desc">Recent runs for the admin cron page and health checks.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body">beyond the <a href="#c-sync">sync pipeline</a>: <code>autoPickForBots</code> from <a href="../domain-game/domain-game.html">game</a>, <code>cleanupAbandonedLeagues</code> from <a href="../domain-leagues/domain-leagues.html">leagues</a>, and <code>sendPickReminders</code> / <code>findUpcomingTournamentsWithinHours</code> from <a href="../domain-accounts/domain-accounts.html">accounts</a>.</span></div><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><a href="../domain-admin/domain-admin.html">admin</a> — the <code>admin.runFullSync</code> mutation re-exports this exact function for the "run cron now" button, and admin/health pages read <code>cron_log</code> via <code>findLatestRuns</code>.</span></div></div></div><div class="subsection" id="c-tournaments"><div class="subsection-header"><h3 class="subsection-title">Tournaments <span class="subsection-path">src/app/tournament</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">The read-side tournament vertical follows the house layering exactly: <code>routers/tournament.ts</code> (thin, 4 procedures) → <code>services/tournament.ts</code> → <code>repositories/tournament.ts</code>. <code>getCurrent</code> picks what the dashboard shows with a deliberate priority: in-progress first (by status, since ESPN end dates can be midnight ET and date math misses Sunday afternoons), then anything completed within the last 24 hours (so users see final results before being rushed to next week), then the next upcoming event.</p><p class="detail-p"><code>getDetail</code> powers <code>/tournament/[id]</code>: field + results join, plus a <strong>league pick overlay</strong> — but only after validating the caller is actually a member of the requested league, and never for <code>GLOBAL</code> leagues (too many members to be useful). Once a tournament has started, the field re-sorts from world ranking to finish position → earnings → score.</p><p class="detail-p">The page itself branches on status: upcoming shows the field with the game domain's pick module embedded; live/completed shows the leaderboard with "est." earnings labels and the scoring domain's weekly standings table. Missed cut is <em>derived</em> in the UI ($0 earnings + no finish position, only after someone has a real position) — it is not stored.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/routers/tournament.ts</span><span class="owns-desc"><code>current</code> / <code>byId</code> / <code>schedule</code> (public) + <code>detail</code> (protected — the pick overlay needs a user).</span></div><div class="owns-row"><span class="owns-name">server/services/tournament.ts</span><span class="owns-desc">Current-tournament priority logic, league-membership validation, results sorting.</span></div><div class="owns-row"><span class="owns-name">server/repositories/tournament.ts</span><span class="owns-desc">Status-aware finders, <code>findFieldWithResults</code> join, <code>findLeagueTournamentPicks</code> for the overlay; all filter <code>excluded = false</code>.</span></div><div class="owns-row"><span class="owns-name">app/tournament/[id]/page.tsx</span><span class="owns-desc">Server component: header, pick module or weekly standings, and the field/leaderboard/results table.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">tournamentRouter</span><span class="owns-desc">Mounted as <code>tournament.*</code> in the app router.</span></div><div class="owns-row"><span class="owns-name">getCurrent</span><span class="owns-desc">In-progress → recently-completed (24h) → next-upcoming priority chain.</span></div><div class="owns-row"><span class="owns-name">getDetail</span><span class="owns-desc">Tournament + enriched field + validated league pick overlay.</span></div><div class="owns-row"><span class="owns-name">findFieldWithResults</span><span class="owns-desc">Field ⋈ golfer ⋈ result — one query behind the detail table.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><code>findLeagueById</code> / <code>findMemberByUserAndLeague</code> from <a href="../domain-leagues/domain-leagues.html">leagues</a> to gate the pick overlay; the page also resolves the active league via <code>getActiveLeagueId</code>.</span></div><div class="conn"><span class="conn-dir">composes</span><span class="conn-body">the page embeds <code>DashboardPickModule</code> from <a href="../domain-game/domain-game.html">game</a> (upcoming) and <code>WeeklyStandingsTable</code> from <a href="../domain-scoring/domain-scoring.html">scoring</a> (live/completed), fetching <code>pick.*</code> and <code>leaderboard.weeklyStandings</code> data server-side.</span></div><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><code>tournament.current</code> anchors the <a href="../domain-game/domain-game.html">game</a> dashboard; the tournament repo is also imported directly by game/scoring services.</span></div></div></div><div class="subsection" id="c-golfers"><div class="subsection-header"><h3 class="subsection-title">Golfers <span class="subsection-path">src/app/golfer</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">Same vertical shape, smaller: <code>routers/golfer.ts</code> exposes <code>byId</code> (profile + stats) and <code>listAll</code> (id + name ordered by world ranking, feeding pickers). <code>services/golfer.ts</code> composes the profile from two parallel repo calls scoped to <code>getCurrentSeason()</code>.</p><p class="detail-p"><code>getSeasonStats</code> is one aggregate SQL query — events played, total earnings, best finish, and a <strong>missed-cuts heuristic</strong>: $0 earnings + no/zero finish position on a <code>COMPLETED</code> tournament counts as a missed cut (which also absorbs WD/DQ; the schema can't distinguish them). In-progress tournaments are excluded so everyone doesn't look cut mid-Thursday.</p><p class="detail-p"><code>/golfer/[id]</code> is a public page: avatar, flag, world rank, season stat rows, and a season results table with live rows badged and estimated earnings labeled.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/routers/golfer.ts</span><span class="owns-desc"><code>byId</code> + <code>listAll</code>, both public.</span></div><div class="owns-row"><span class="owns-name">server/services/golfer.ts</span><span class="owns-desc">Profile assembly: stats + results in parallel for the current season.</span></div><div class="owns-row"><span class="owns-name">server/repositories/golfer.ts</span><span class="owns-desc">Finders + the aggregate <code>getSeasonStats</code> query with the missed-cut filter.</span></div><div class="owns-row"><span class="owns-name">app/golfer/[id]/page.tsx</span><span class="owns-desc">Public profile page; links each result row back to its tournament page.</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">golferRouter</span><span class="owns-desc">Mounted as <code>golfer.*</code> in the app router.</span></div><div class="owns-row"><span class="owns-name">getSeasonStats</span><span class="owns-desc">Single-query season aggregates including the missed-cut heuristic.</span></div><div class="owns-row"><span class="owns-name">getSeasonResults</span><span class="owns-desc">Per-tournament result rows, newest first.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><a href="../domain-game/domain-game.html">game</a> — pick, bot-picks, and dashboard services import the golfer repo directly (e.g. <code>findNamesByIds</code>), and <a href="../domain-scoring/domain-scoring.html">scoring</a>'s leaderboard service does the same.</span></div></div></div><div class="subsection" id="c-display"><div class="subsection-header"><h3 class="subsection-title">Display helpers <span class="subsection-path">src/components</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">The small shared vocabulary every golf-facing surface uses. <code>GolferAvatar</code> renders an ESPN CDN headshot (<code>a.espncdn.com/i/headshots/golf/players/full/&lt;espnId&gt;.png</code> via <code>golferHeadshotUrl</code>) in five sizes, falling back on error or missing <code>espnId</code> to initials on a deterministic name-hashed <code>oklch</code> background.</p><p class="detail-p"><code>CountryFlag</code> maps ESPN's full English country names ("United States", "South Korea", and sub-national "England"/"Scotland" → <code>gb-eng</code>/<code>gb-sct</code>) to flag-icons CSS classes via the <code>CODE_MAP</code> lookup in <code>lib/country-flag.ts</code>; unknown countries render nothing rather than a broken flag.</p><p class="detail-p"><code>lib/season.ts</code> is deliberately trivial — <code>getCurrentSeason()</code> returns the calendar year — but it is the <em>single source of truth</em> for "current season" across golfer stats, schedules, and the scoring domain's rollups. When PPGL outlives the Jan–Aug PGA season assumption, this is the one place to fix.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">components/golfer/golfer-avatar.tsx</span><span class="owns-desc">Client component: ESPN headshot with initials fallback; sizes xs–lg.</span></div><div class="owns-row"><span class="owns-name">components/country-flag/country-flag.tsx</span><span class="owns-desc">Thin flag-icons span with <code>aria-label</code>; renders null for unmapped countries.</span></div><div class="owns-row"><span class="owns-name">lib/golfer-headshot.ts</span><span class="owns-desc">espnId → ESPN CDN headshot URL (null-safe).</span></div><div class="owns-row"><span class="owns-name">lib/country-flag.ts</span><span class="owns-desc">Country name → ISO / regional flag-icons class map (36 countries incl. UK home nations).</span></div><div class="owns-row"><span class="owns-name">lib/season.ts</span><span class="owns-desc"><code>getCurrentSeason()</code> — the one definition of "this season".</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">GolferAvatar</span><span class="owns-desc">Used on tournament, golfer, dashboard, planner, and standings surfaces.</span></div><div class="owns-row"><span class="owns-name">CountryFlag</span><span class="owns-desc">Flag chip next to golfer names.</span></div><div class="owns-row"><span class="owns-name">golferHeadshotUrl</span><span class="owns-desc">Also used directly where an <code>&lt;img&gt;</code> is built by hand.</span></div><div class="owns-row"><span class="owns-name">countryFlagClass</span><span class="owns-desc">The raw class lookup when the component wrapper isn't wanted.</span></div><div class="owns-row"><span class="owns-name">getCurrentSeason</span><span class="owns-desc">Imported by golfer/tournament services here and by scoring + game code.</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><a href="../domain-game/domain-game.html">game</a> (planner golfer-picker, remaining-pool, dashboard pick module), <a href="../domain-scoring/domain-scoring.html">scoring</a> (weekly standings), and <a href="../domain-leagues/domain-leagues.html">leagues</a> league pages — these components are this domain's widest-reaching exports.</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><code>a.espncdn.com</code> at render time in the browser — the only ESPN dependency outside the server-side provider, and it fails soft to initials.</span></div></div></div></section><section id="data" class="section"><div class="section-header"><h2 class="section-title">Data it owns</h2></div><p class="section-intro">The golf-world half of the schema — everything keyed to ESPN identity. Game-side models (<code>Pick</code>, <code>LeagueMemberSeason</code>) reference these but belong to their own domains.</p><div class="owns-list"><div class="owns-row"><span class="owns-name">Tournament</span><span class="owns-desc">One schedule row per event, <code>espnId</code> unique. Carries the <code>TournamentStatus</code> lifecycle (<code>UPCOMING → IN_PROGRESS → FINALIZING → COMPLETED</code>, plus <code>CANCELLED</code>), <code>purse</code> (confirmed from ESPN) vs <code>estimatedPurse</code> (manual fallback), <code>completedAt</code> (stamped once), and an admin <code>excluded</code> flag every read query filters on.</span></div><div class="owns-row"><span class="owns-name">Golfer</span><span class="owns-desc"><code>espnId</code> unique, name, country (ESPN's full English name), nullable <code>worldRanking</code>. Continuously refreshed by field/result upserts.</span></div><div class="owns-row"><span class="owns-name">TournamentField</span><span class="owns-desc">Who's playing: unique <code>(tournamentId, golferId)</code>, <code>FieldStatus</code> <code>CONFIRMED</code>/<code>WITHDRAWN</code>. Synced daily-ish for events starting within 7 days.</span></div><div class="owns-row"><span class="owns-name">TournamentResult</span><span class="owns-desc">Unique <code>(tournamentId, golferId)</code>: <code>finishPosition</code> (tied players share it), <code>earnings</code>, <code>scoreToPar</code>, <code>rounds</code>. The same row holds <em>projected</em> earnings while live and <em>actual</em> earnings after completion — consumers can't tell from the row alone; tournament status says which.</span></div><div class="owns-row"><span class="owns-name">CronLog</span><span class="owns-desc">One row per <code>runFullSync</code> execution: full JSON response blob, <code>success</code> flag, <code>durationMs</code>. Read by admin/health surfaces.</span></div></div><p class="diagram-caption">Missed cut is intentionally <strong>not stored</strong> — both the golfer stats query and the tournament page derive it ($0 earnings + no finish position on a completed event), which also silently absorbs WD/DQ.</p></section><section id="seams" class="section"><div class="section-header"><h2 class="section-title">Seams</h2></div><p class="section-intro">Six public tRPC procedures plus the secret-guarded cron route in; five neighbor domains leaned on out. This domain also has heavy <em>inbound</em> traffic that isn't a dependency: game, scoring, and admin import its repos and services directly.</p><div class="seam-cols"><div class="seam-col seam-exposes"><div class="seam-head"><span aria-hidden="true">&#8593;</span> Exposes</div><div class="seam-body"><ul class="seam-api"><li>tournament.current <span class="api-note">— Public. In-progress → recently-completed (24h window) → next-upcoming; anchors the dashboard.</span></li><li>tournament.byId <span class="api-note">— Public. Tournament + field count; used for page metadata.</span></li><li>tournament.detail <span class="api-note">— Protected. Field with results + league pick overlay (membership-validated, skipped for GLOBAL leagues).</span></li><li>tournament.schedule <span class="api-note">— Public. Season schedule, defaults to `getCurrentSeason()`; feeds the season planner.</span></li><li>golfer.byId <span class="api-note">— Public. Profile + season stats + season results.</span></li><li>golfer.listAll <span class="api-note">— Public. id + name by world ranking; feeds golfer pickers.</span></li><li>/api/cron/sync <span class="api-note">— GET, `Authorization: Bearer CRON_SECRET`. Vercel cron every 15 min (`vercel.json`); 200 ok / 207 partial; `maxDuration` 300s.</span></li></ul></div></div><div class="seam-col seam-depends"><div class="seam-head"><span aria-hidden="true">&#8595;</span> Depends on</div><div class="seam-body"><div class="seam-neighbors"><a class="neighbor-chip" href="../domain-game/domain-game.html">game <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-leagues/domain-leagues.html">leagues <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-scoring/domain-scoring.html">scoring <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-accounts/domain-accounts.html">accounts <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-web-shell/domain-web-shell.html">web-shell <span class="nc-path">src</span></a></div><p class="diagram-caption" style="margin-top:14px;">The dependencies are concrete calls, not just imports: <strong>game</strong> — <code>lockPlannedPicksForTournament</code> (inside the start transaction) + <code>autoPickForBots</code>; <strong>leagues</strong> — <code>cleanupAbandonedLeagues</code> + membership checks for the pick overlay; <strong>scoring</strong> — <code>rollupForTournament</code> after every results sync; <strong>accounts</strong> — <code>sendPickReminders</code> for events starting within 16 hours; <strong>web-shell</strong> — <code>serverTRPC</code>, <code>db</code>/<code>db-core</code>, <code>withTransaction</code>, formatters. In the other direction, <a href="../domain-admin/domain-admin.html">admin</a> re-exports <code>runFullSync</code> behind its <code>admin.runFullSync</code> mutation, and the <code>prisma/seed/*.ts</code> scripts reuse <code>upserts.ts</code> and the ESPN provider for backfills.</p></div></div></div></section></main></div><div id="zoom-overlay" class="zoom-overlay" aria-hidden="true"><div class="zoom-controls"><button id="zoom-out" type="button" aria-label="Zoom out">&#8722;</button><button id="zoom-reset" type="button">Reset</button><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-close" type="button" aria-label="Close">&#10006;</button></div><div id="zoom-stage" class="zoom-stage"></div></div><script>(function() {
+  'use strict';
+
+  // Sidebar toggle
+  var toggle = document.getElementById('sidebar-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+
+  function openSidebar() {
+    sidebar.classList.add('is-open');
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('is-open');
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function() {
+      if (sidebar.classList.contains('is-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  // Close sidebar on nav click (mobile)
+  var outlineLinks = document.querySelectorAll('.outline-item, .file-item');
+  outlineLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 900) {
+        closeSidebar();
+      }
+    });
+  });
+
+  // Scroll-spy for outline
+  var outlineItems = document.querySelectorAll('.outline-item[data-target]');
+  var sections = Array.prototype.map.call(outlineItems, function(it) {
+    var t = it.getAttribute('data-target');
+    return { id: t, target: t };
+  });
+
+  function updateActive(activeId) {
+    outlineItems.forEach(function(item) {
+      var t = item.getAttribute('data-target');
+      if (t === activeId) {
+        item.classList.add('is-active');
+      } else {
+        item.classList.remove('is-active');
+      }
+    });
+  }
+
+  var topbarH = 52;
+
+  function onScroll() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var winH = window.innerHeight;
+    var active = null;
+
+    for (var i = sections.length - 1; i >= 0; i--) {
+      var el = document.getElementById(sections[i].id);
+      if (el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.top <= topbarH + 32) {
+          active = sections[i].target;
+          break;
+        }
+      }
+    }
+
+    if (active) {
+      updateActive(active);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Progress rail: highlight chapter based on scroll
+  var progressSteps = document.querySelectorAll('.progress-step');
+  var chapters = Array.prototype.map.call(progressSteps, function(s) {
+    var h = s.getAttribute('href') || '';
+    return h.charAt(0) === '#' ? document.getElementById(h.slice(1)) : null;
+  });
+
+  function updateProgress() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = 0;
+    for (var i = chapters.length - 1; i >= 0; i--) {
+      if (chapters[i]) {
+        var rect = chapters[i].getBoundingClientRect();
+        if (rect.top <= topbarH + 48) {
+          active = i;
+          break;
+        }
+      }
+    }
+    progressSteps.forEach(function(step, idx) {
+      if (idx === active) {
+        step.classList.add('is-active');
+      } else {
+        step.classList.remove('is-active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+})();
+
+(function(){
+  'use strict';
+  var ov=document.getElementById('zoom-overlay'), stage=document.getElementById('zoom-stage');
+  var cur,scale=1,tx=0,ty=0,drag=false,moved=false,lx=0,ly=0;
+  function apply(){ if(cur) cur.style.transform='translate('+tx+'px,'+ty+'px) scale('+scale+')'; }
+  function openSvg(svg){ stage.innerHTML=''; cur=svg.cloneNode(true); cur.removeAttribute('width'); cur.removeAttribute('height'); stage.appendChild(cur); scale=1;tx=0;ty=0;apply(); ov.classList.add('is-open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+  function closeOv(){ ov.classList.remove('is-open'); ov.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  document.querySelectorAll('.diagram-box').forEach(function(box){
+    var svg=box.querySelector('svg.diagram-svg'); if(!svg) return;
+    box.addEventListener('click', function(){ openSvg(svg); });
+  });
+  document.getElementById('zoom-close').addEventListener('click', closeOv);
+  document.getElementById('zoom-reset').addEventListener('click', function(){ scale=1;tx=0;ty=0;apply(); });
+  document.getElementById('zoom-in').addEventListener('click', function(){ scale=Math.min(8,scale*1.25); apply(); });
+  document.getElementById('zoom-out').addEventListener('click', function(){ scale=Math.max(0.3,scale/1.25); apply(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeOv(); });
+  stage.addEventListener('wheel', function(e){ e.preventDefault(); scale=Math.min(8,Math.max(0.3, scale*(e.deltaY<0?1.12:0.89))); apply(); }, {passive:false});
+  stage.addEventListener('pointerdown', function(e){ drag=true; moved=false; lx=e.clientX; ly=e.clientY; try{stage.setPointerCapture(e.pointerId);}catch(_){} });
+  stage.addEventListener('pointermove', function(e){ if(!drag)return; moved=true; tx+=e.clientX-lx; ty+=e.clientY-ly; lx=e.clientX; ly=e.clientY; apply(); });
+  stage.addEventListener('pointerup', function(){ drag=false; });
+  stage.addEventListener('pointercancel', function(){ drag=false; });
+  stage.addEventListener('click', function(e){ if(!moved && e.target===stage) closeOv(); });
+})();
+
+(function(){
+  'use strict';
+  function openTo(hash){
+    if(!hash || hash.charAt(0) !== '#') return;
+    var el = document.getElementById(hash.slice(1));
+    if(!el) return;
+    var p = el;
+    while(p){ if(p.tagName && p.tagName.toLowerCase() === 'details') p.open = true; p = p.parentElement; }
+    if(el.tagName && el.tagName.toLowerCase() === 'details') el.open = true;
+    var d = el.querySelector && el.querySelector('details.file-diff');
+    if(d) d.open = true;
+  }
+  window.addEventListener('hashchange', function(){ openTo(location.hash); });
+  if(location.hash) openTo(location.hash);
+})();
+</script></body></html>

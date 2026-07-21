@@ -1,0 +1,714 @@
+{
+  "kind": "domain",
+  "slug": "leagues",
+  "title": "Leagues & commissioner",
+  "layer": "engine",
+  "layerLabel": "Core game",
+  "path": "src",
+  "count": "25 files",
+  "depends": "game · golf-data · scoring · payments · accounts · web-shell",
+  "date": "2026-07-20",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Engine"
+    },
+    {
+      "key": "API",
+      "value": "`leagueRouter` — 16 procedures"
+    },
+    {
+      "key": "Models",
+      "value": "League · LeagueMember · LeagueMemberSeason · CommissionerAction"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "heading": "Leagues & commissioner",
+      "rows": [
+        {
+          "key": "Path",
+          "value": "`src` — `server/{routers,services,repositories}/league.ts`, `app/league/**`, `app/leagues/`, `components/{league,commissioner}/`, `lib/league-context.ts`"
+        },
+        {
+          "key": "Files",
+          "value": "25"
+        },
+        {
+          "key": "Owns",
+          "value": "League lifecycle (create → pay → invite → join → approve), the league pages, the active-league cookie, and commissioner tools + audit log"
+        },
+        {
+          "key": "Entry points",
+          "value": "`/leagues`, `/league/create`, `/league/join?code=…`, `/league/[id]` (+ `/rules`, `/settings`)"
+        },
+        {
+          "key": "API",
+          "value": "`leagueRouter` (`league.*`, 16 procedures) plus directly-imported service guards (`resolveLeagueMemberId`, `assertLeagueActive`)"
+        }
+      ],
+      "bigIdea": {
+        "label": "Big idea",
+        "line": "Membership **is** the permission system — every other gameplay domain answers \"may this user act here?\" by calling into leagues.",
+        "sub": "`resolveLeagueMemberId` and `assertLeagueActive` (src/server/services/league.ts) are imported by the pick and dashboard services; the `leagueMemberId` they return is the identity key that picks, standings, and earnings all hang off. Everyone is lazily auto-enrolled in the global league (`ppgl-global`), so the guard doubles as onboarding."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "Components",
+      "intro": "Six units: one server trio holding all the business logic, four UI surfaces, and a tiny cookie-based context layer that the whole app reads.",
+      "cards": [
+        {
+          "name": "league service",
+          "purpose": "The router → service → repository trio. All lifecycle rules live in `services/league.ts`: create/join with race-safe transactions, the member state machine, payment gating (`PENDING` leagues block everything), promo redemption, audit-log assembly, and abandoned-league cleanup.",
+          "exports": [
+            {
+              "name": "leagueRouter",
+              "deputy": true
+            },
+            {
+              "name": "resolveLeagueMemberId"
+            },
+            {
+              "name": "assertLeagueActive"
+            },
+            {
+              "name": "joinLeague"
+            },
+            {
+              "name": "cleanupAbandonedLeagues"
+            }
+          ],
+          "href": "#c-service"
+        },
+        {
+          "name": "create & checkout",
+          "purpose": "`/league/create` — one client form that handles the $15 PayPal path (league born `PENDING`, activated on capture), the promo path (free → instantly `PAID`, partial → discounted checkout), and hands off to `/league/created` with the invite link.",
+          "exports": [
+            {
+              "name": "CreateLeagueForm"
+            },
+            {
+              "name": "LeagueCreatedClient"
+            }
+          ],
+          "href": "#c-create"
+        },
+        {
+          "name": "join & approval",
+          "purpose": "The invite funnel: `/league/join?code=…` previews the league (public, works signed-out), joins or requests to join, and the commissioner's inline approve/reject queue on the league page.",
+          "exports": [
+            {
+              "name": "JoinLeagueClient"
+            },
+            {
+              "name": "PendingMembers"
+            },
+            {
+              "name": "InviteLinkCopy"
+            }
+          ],
+          "href": "#c-join"
+        },
+        {
+          "name": "league pages",
+          "purpose": "`/leagues` index and the league home `/league/[id]` — a large server component that fans out to scoring, game, and golf-data for the weekly view + season standings — plus per-league `/rules` (settings-aware how-to-play) and `/settings`.",
+          "exportsLabel": "covers",
+          "exports": [
+            {
+              "name": "WeekSwipeWrapper"
+            },
+            {
+              "name": "AuditLogCollapsible"
+            },
+            {
+              "name": "LeagueSettingsForm"
+            },
+            {
+              "name": "LeagueMembers"
+            }
+          ],
+          "href": "#c-pages"
+        },
+        {
+          "name": "league context",
+          "purpose": "Which league am I looking at? A one-year `ppgl-active-league` cookie read by every league-scoped page via `getActiveLeagueId`, written only through server actions — by the nav `LeagueSwitcher` or silently by `SyncLeagueContext` when you visit `/league/[id]`.",
+          "exports": [
+            {
+              "name": "getActiveLeagueId"
+            },
+            {
+              "name": "setActiveLeague"
+            },
+            {
+              "name": "LeagueSwitcher"
+            },
+            {
+              "name": "SyncLeagueContext"
+            }
+          ],
+          "href": "#c-context"
+        },
+        {
+          "name": "commissioner tools",
+          "purpose": "The commissioner-mode overlay for acting on *other members'* picks: a CSS toggle plus add/edit/remove widgets that call the game domain's `pick.commissioner*` procedures — every action lands in this domain's `CommissionerAction` audit log.",
+          "exports": [
+            {
+              "name": "CommissionerToggle"
+            },
+            {
+              "name": "CommissionerPickActions"
+            },
+            {
+              "name": "CommissionerAddPick"
+            }
+          ],
+          "href": "#c-commish"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "Internal architecture",
+      "intro": "One thin tRPC router in front of one fat service. The service is also entered from the side — by the PayPal webhook, by the cron sync's cleanup, and by other domains' services importing its guards directly.",
+      "diagram": {
+        "id": "arch-diagram",
+        "kind": "architecture",
+        "d2": "direction: right\n\"member\": { class: actor }\n\"league pages\": \"app/league/*\"\n\"leagueRouter\": \"routers/league.ts\"\n\"league service\": { class: changed }\n\"league repository\": \"repositories/league.ts\"\n\"Postgres\": { class: store }\n\"PayPal\": { class: external }\n\"active-league cookie\": { class: store }\n\"member\" -> \"league pages\"\n\"league pages\" -> \"leagueRouter\": tRPC\n\"leagueRouter\" -> \"league service\"\n\"league service\" -> \"league repository\"\n\"league repository\" -> \"Postgres\"\n\"league service\" -> \"PayPal\": checkout + capture\n\"PayPal webhook\" -> \"league service\": handleWebhookPayment\n\"cron sync\" -> \"league service\": cleanupAbandonedLeagues\n\"pick + dashboard services\" -> \"league service\": resolveLeagueMemberId\n\"LeagueSwitcher\" -> \"active-league cookie\": server action\n\"league pages\" -> \"active-league cookie\": SyncLeagueContext\n\"commissioner tools\" -> \"pick router\": commissioner picks",
+        "mermaid": "flowchart LR\n  M[\"member\"] --> P[\"league pages\"]\n  P -->|tRPC| R[\"leagueRouter\"]\n  R --> S[\"league service\"]\n  S --> Q[\"league repository\"]\n  Q --> DB[(Postgres)]\n  S -->|checkout + capture| PP[\"PayPal\"]\n  W[\"PayPal webhook\"] -->|handleWebhookPayment| S\n  CR[\"cron sync\"] -->|cleanupAbandonedLeagues| S\n  G[\"pick + dashboard services\"] -->|resolveLeagueMemberId| S\n  SW[\"LeagueSwitcher\"] -->|server action| CK[(\"active-league cookie\")]\n  P -->|SyncLeagueContext| CK\n  T[\"commissioner tools\"] -->|commissioner picks| PR[\"pick router\"]\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class S changed;\n  class M actor;\n  class PP external;\n  class DB,CK store;",
+        "caption": "`league service` is the hub: fronted by the router, but also called directly by the payments webhook, the golf-data cron, and the game domain's services. The commissioner UI bypasses it entirely — those mutations belong to the pick router."
+      },
+      "callout": "Note the two side doors into the service: `handleWebhookPayment` (from `src/app/api/paypal/webhook/route.ts`) and `cleanupAbandonedLeagues` (from `src/server/services/cron-sync.ts`). Neither goes through tRPC."
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "In depth",
+      "components": [
+        {
+          "id": "c-service",
+          "name": "league service",
+          "path": "src/server/{routers,services,repositories}/league.ts",
+          "detail": [
+            "`routers/league.ts` is deliberately thin — 16 procedures that only zod-validate and delegate (league name 3–50 chars, `maxGolferUses` 1–3, everything else booleans and ids). All 16 are `protectedProcedure` except `league.preview`, which is public so an invite link can render a league preview to signed-out visitors.",
+            "`services/league.ts` holds the real rules. Creation inserts League + commissioner LeagueMember + LeagueMemberSeason atomically via `withTransaction` (shared helper `insertLeagueWithMember`). Joins are race-safe twice over: the 20-member cap (`MAX_LEAGUE_SIZE`) is re-counted *inside* the transaction to kill the TOCTOU window, and a concurrent double-join is caught by the `@@unique([userId, leagueId])` constraint then re-queried. The same catch-requery pattern makes `ensureGlobalLeagueMembership` idempotent — global-league membership is created lazily the first time any league-scoped call runs.",
+            "Member lifecycle: joining an open league → `ACTIVE`; with `requireApproval` on → `PENDING` (no season row until approved, so pending members never appear in standings). `approveMember` re-checks the cap, flips to `ACTIVE`, inserts the season row, and logs an `APPROVE_MEMBER` audit action. `rejectMember` hard-deletes the row — the code comments that no audit entry is possible because `CommissionerAction.targetMemberId` has an FK to the member being deleted. `removeMember` soft-removes (`REMOVED`) but scrubs the member's planned picks, season rows, and earnings adjustments; locked picks survive. Removed members can rejoin (back through approval if required).",
+            "Payment gating: privately created leagues are born `paymentStatus: PENDING` and inert — `assertLeagueActive` rejects picks and `joinLeague` rejects joins until PayPal capture (client `captureOrder` or webhook `handleWebhookPayment`) flips them to `PAID` via `confirmPayment`, which also redeems any deferred partial-discount promo. `cleanupAbandonedLeagues` deletes `PENDING` leagues older than 48h; the repo re-checks `paymentStatus` inside its delete transaction to avoid racing a late webhook."
+          ],
+          "diagrams": [
+            {
+              "id": "member-states",
+              "kind": "flowchart",
+              "d2": "direction: right\njoin -> ACTIVE: open league\njoin -> PENDING: requireApproval\nPENDING -> ACTIVE: approveMember\nPENDING -> deleted: rejectMember\nACTIVE -> REMOVED: removeMember\nREMOVED -> ACTIVE: rejoin open\nREMOVED -> PENDING: rejoin w. approval",
+              "mermaid": "flowchart LR\n  J[join via invite] -->|open league| A[ACTIVE]\n  J -->|requireApproval| P[PENDING]\n  P -->|approveMember| A\n  P -->|rejectMember| D[row deleted]\n  A -->|removeMember| R[REMOVED]\n  R -->|rejoin open| A\n  R -->|rejoin w. approval| P",
+              "caption": "`LeagueMemberStatus` transitions in `services/league.ts`. Only `ACTIVE` members get a `LeagueMemberSeason` row — which is why pending members are invisible to standings."
+            }
+          ],
+          "files": [
+            {
+              "name": "server/routers/league.ts",
+              "desc": "16 thin tRPC procedures — zod input validation, then one service call each. `preview` is the lone `publicProcedure`."
+            },
+            {
+              "name": "server/services/league.ts",
+              "desc": "All business logic: create/join/approve/remove, payment gating + PayPal orchestration, promo validation, audit-log assembly, cleanup. The only file other domains import guards from."
+            },
+            {
+              "name": "server/repositories/league.ts",
+              "desc": "Every league/member/audit query (Kysely). Functions take an optional `executor` so the service can pass a transaction. Also hosts cross-table cleanup deletes (`deletePlannedPicks`, `deleteEarningsAdjustments`) used by `removeMember`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "leagueRouter",
+              "desc": "Mounted as `league.*` in `_app.ts`; the domain's entire tRPC surface."
+            },
+            {
+              "name": "resolveLeagueMemberId",
+              "desc": "userId + leagueId → active `leagueMemberId`, or throws. The cross-domain authz primitive (imported by pick + dashboard services)."
+            },
+            {
+              "name": "assertLeagueActive",
+              "desc": "Rejects any mutation against a `PENDING` (unpaid) league; global league always passes."
+            },
+            {
+              "name": "ensureGlobalLeagueMembership",
+              "desc": "Lazy, idempotent, race-safe auto-enrollment in `ppgl-global`."
+            },
+            {
+              "name": "joinLeague",
+              "desc": "Invite-code join with size cap, approval flow, and removed-member reactivation."
+            },
+            {
+              "name": "getAuditLog",
+              "desc": "Reads `CommissionerAction` rows, parses the `details` JSON, and batch-resolves golfer/tournament names via golf-data repos."
+            },
+            {
+              "name": "handleWebhookPayment",
+              "desc": "Verifies the PayPal webhook signature then confirms payment — the server-to-server path when the client capture never lands."
+            },
+            {
+              "name": "cleanupAbandonedLeagues",
+              "desc": "Deletes 48h-old unpaid leagues; invoked from golf-data's `cron-sync.ts`."
+            },
+            {
+              "name": "createCommissionerAction",
+              "desc": "(repo) Audit-log insert — also called by game's pick service and admin's service when they act on members."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "guards",
+              "body": "[game](../domain-game/domain-game.html) — `services/pick.ts` and `services/dashboard.ts` import `resolveLeagueMemberId` / `assertLeagueActive`; the pick service also reads `getMaxGolferUses` and writes audit rows via `createCommissionerAction`."
+            },
+            {
+              "dir": "calls",
+              "body": "[payments](../domain-payments/domain-payments.html) — `paypalProvider` (`lib/paypal.ts`) for checkout/capture/webhook-verify, `LEAGUE_CREATION_PRICE` (`lib/payment.ts`), and `repositories/promo-code.ts` for promo lookup; redemption (`redeemPromoCode`) lives in this domain's repo."
+            },
+            {
+              "dir": "reads",
+              "body": "[golf-data](../domain-golf-data/domain-golf-data.html) — `golferRepo.findNamesByIds` / `tournamentRepo.findNamesByIds` to humanize audit entries, and `getCurrentSeason` (`lib/season.ts`) for season rows."
+            },
+            {
+              "dir": "consumed by",
+              "body": "[scoring](../domain-scoring/domain-scoring.html) and [admin](../domain-admin/domain-admin.html) — leaderboard/earnings-adjustment services verify membership via `leagueRepo` lookups; admin lists a user's commissioned leagues."
+            },
+            {
+              "dir": "invoked by",
+              "body": "`src/app/api/paypal/webhook/route.ts` ([payments](../domain-payments/domain-payments.html)) calls `handleWebhookPayment`; `src/server/services/cron-sync.ts` ([golf-data](../domain-golf-data/domain-golf-data.html)) calls `cleanupAbandonedLeagues`."
+            }
+          ]
+        },
+        {
+          "id": "c-create",
+          "name": "create & checkout",
+          "path": "src/app/league/{create,created}",
+          "detail": [
+            "`CreateLeagueForm` is a single client component handling three payment paths. No promo: `league.create` makes a `PENDING` league, then `league.createCheckoutSession` fetches a PayPal order id and the form swaps to an embedded `PayPalButtons` checkout (`@paypal/react-paypal-js`); on approval it calls `league.captureOrder` and routes to `/league/created`. Free promo: `league.createWithPromo` redeems the code inside the creation transaction and the league is born `PAID` — straight to the success page. Partial-discount promo: league is `PENDING` with `promoCodeId` set, checkout runs at the discounted price, and redemption is deferred to payment confirmation.",
+            "The form also collects the rule settings that the rest of the game reads back later: format (`maxGolferUses` — \"One and Done\" vs \"Double Use\"), `burnStalePicks`, `showPicksBeforeLock`, and `requireApproval`. `/league/created` reads `?id=&code=` and shows the copyable invite URL (`/league/join?code=…`) — the commissioner's first job is distribution."
+          ],
+          "diagrams": [
+            {
+              "id": "create-flow",
+              "kind": "flowchart",
+              "d2": "direction: right\n\"create form\" -> \"league.create\": no promo\n\"league.create\" -> \"PENDING league\"\n\"PENDING league\" -> \"PayPal checkout\": createCheckoutSession\n\"PayPal checkout\" -> \"league.captureOrder\"\n\"league.captureOrder\" -> \"PAID league\"\n\"create form\" -> \"league.createWithPromo\": promo code\n\"league.createWithPromo\" -> \"PAID league\": free promo\n\"league.createWithPromo\" -> \"PayPal checkout\": partial discount\n\"PENDING league\" -> \"deleted\": 48h cleanup",
+              "mermaid": "flowchart LR\n  F[\"create form\"] -->|no promo| C[\"league.create\"]\n  C --> PEND[\"PENDING league\"]\n  PEND -->|createCheckoutSession| PP[\"PayPal checkout\"]\n  PP --> CAP[\"league.captureOrder\"]\n  CAP --> PAID[\"PAID league\"]\n  F -->|promo code| WP[\"league.createWithPromo\"]\n  WP -->|free promo| PAID\n  WP -->|partial discount| PP\n  PEND -->|48h cleanup| DEL[\"deleted\"]",
+              "caption": "Three routes to a live league. A `PENDING` league is fully inert — no joins, no picks — until capture; abandon it and the cron deletes it after 48 hours."
+            }
+          ],
+          "files": [
+            {
+              "name": "app/league/create/page.tsx",
+              "desc": "Server shell: `auth.me` gate → renders the client form."
+            },
+            {
+              "name": "app/league/create/create-league-form.tsx",
+              "desc": "The three-path form: settings + promo validation (`league.validatePromoCode`) + embedded `PayPalButtons` checkout. Reads env var name `NEXT_PUBLIC_PAYPAL_CLIENT_ID`."
+            },
+            {
+              "name": "app/league/created/page.tsx",
+              "desc": "Success page; redirects home if `?id`/`?code` are missing."
+            },
+            {
+              "name": "app/league/created/league-created-client.tsx",
+              "desc": "Invite-link display + clipboard copy, CTA into the new league."
+            }
+          ],
+          "exports": [
+            {
+              "name": "CreateLeagueForm",
+              "desc": "Client component owning the whole create→pay state machine (`pendingLeague` state flips it into checkout mode)."
+            },
+            {
+              "name": "LeagueCreatedClient",
+              "desc": "Copyable invite URL built from `window.location.origin`."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "`league.create`, `league.createWithPromo`, `league.validatePromoCode`, `league.createCheckoutSession`, `league.captureOrder` — all on [league service](#c-service)."
+            },
+            {
+              "dir": "consumes",
+              "body": "[payments](../domain-payments/domain-payments.html) — the PayPal JS SDK (`PayPalScriptProvider`/`PayPalButtons`); server-side order handling goes through `paypalProvider`."
+            }
+          ]
+        },
+        {
+          "id": "c-join",
+          "name": "join & approval",
+          "path": "src/app/league/join + app/league/[id]",
+          "detail": [
+            "`/league/join?code=…` is the invite landing page and it works signed-out: the server page calls public `league.preview` for name + member count, then branches on auth and membership state. Signed-out visitors get sign-up/sign-in links that carry `?invite=<code>` through the auth flow; existing members get a \"Go to League\" shortcut; unpaid leagues show an \"awaiting payment\" notice instead of a join button.",
+            "`JoinLeagueClient` fires `league.join` and renders the outcome: `ACTIVE` → \"You're In!\" with a How-to-Play CTA; `PENDING` → \"Request Sent\" interstitial. On the approval side, `PendingMembers` (rendered on the league page only for the commissioner of a `requireApproval` league) polls `league.pendingMembers` and mutates `league.approveMember` / `league.rejectMember`, then invalidates the query *and* `router.refresh()`es so the server-rendered header badge and standings update together. Meanwhile a pending member visiting `/league/[id]` sees a blocked interstitial that points them at the global league while they wait."
+          ],
+          "files": [
+            {
+              "name": "app/league/join/page.tsx",
+              "desc": "Server page: `league.preview` by invite code, resolves the visitor's `memberStatus` via `league.myLeagues`, handles invalid/missing codes."
+            },
+            {
+              "name": "app/league/join/join-league-client.tsx",
+              "desc": "Join button + all outcome states (joined / pending / already member / unpaid league / signed-out)."
+            },
+            {
+              "name": "app/league/[id]/pending-members.tsx",
+              "desc": "Commissioner approval queue: approve/reject with shared disabled state and a combined query-invalidate + server refresh."
+            },
+            {
+              "name": "app/league/[id]/invite-link-copy.tsx",
+              "desc": "Read-only invite-URL input + clipboard copy, shown in the league page's Invite Link card."
+            }
+          ],
+          "exports": [
+            {
+              "name": "JoinLeagueClient",
+              "desc": "Client join flow around `league.join`."
+            },
+            {
+              "name": "PendingMembers",
+              "desc": "Approve/reject queue over `league.pendingMembers`."
+            },
+            {
+              "name": "InviteLinkCopy",
+              "desc": "Same copy pattern as the created page, reused on the league home."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "`league.preview` (public), `league.join`, `league.pendingMembers`, `league.approveMember`, `league.rejectMember` — see [league service](#c-service)."
+            },
+            {
+              "dir": "hands off",
+              "body": "[accounts](../domain-accounts/domain-accounts.html) — signed-out joiners route through `/sign-up?invite=<code>` / `/sign-in?invite=<code>` so the invite survives authentication."
+            }
+          ]
+        },
+        {
+          "id": "c-pages",
+          "name": "league pages",
+          "path": "src/app/leagues + src/app/league/[id]",
+          "detail": [
+            "`/league/[id]/page.tsx` is the biggest page in the app — a server component that fans out in `Promise.all` to five other-domain procedures: `leaderboard.byLeague` (season standings), `pick.leagueCurrentWeek` (this week's picks), `league.auditLog`, `tournament.schedule`, and `leaderboard.weeklyStandings` when a `?week=` param selects a past tournament. A local `leagueHref` helper threads `page`/`twPage`/`week` params through every pagination and navigation link, and `WeekSwipeWrapper` adds mobile swipe-to-navigate between weeks on top of the arrow links.",
+            "The page renders differently by viewer: pending members get an interstitial, commissioners get the pending-members queue and an unpaid-league banner with a \"Complete Payment\" link back into checkout, private-league members get the invite-link card and the commissioner-actions audit log. The inline pick table swaps between a \"planned\" view (before lock, only if `showPicksBeforeLock` or picks are the viewer's own — enforced server-side in game's service) and a live/final earnings view.",
+            "`/league/[id]/rules` is a settings-aware how-to-play: its withdrawal, visibility, and joining sections change copy based on the league's `burnStalePicks` / `showPicksBeforeLock` / `requireApproval` flags. `/league/[id]/settings` lets the commissioner edit those same flags via `league.updateSettings` (non-commissioners see a read-only form) and manage the roster — `LeagueMembers` confirms then fires `league.removeMember`, warning that planned picks will be deleted."
+          ],
+          "files": [
+            {
+              "name": "app/leagues/page.tsx",
+              "desc": "League index: global league pinned on top, private leagues below with Pending Payment badges, Create League CTA."
+            },
+            {
+              "name": "app/league/[id]/page.tsx",
+              "desc": "The league home: weekly view + standings orchestrator; branches for pending members, unpaid leagues, commissioners."
+            },
+            {
+              "name": "app/league/[id]/week-swipe-wrapper.tsx",
+              "desc": "Touch swipe → `router.push` between prev/next week URLs (50px threshold, ignores vertical scrolls)."
+            },
+            {
+              "name": "app/league/[id]/audit-log-collapsible.tsx",
+              "desc": "Renders audit entries as sentences (\"X changed a pick for Y\"), parsing the `details` JSON per action type; collapsed to 5."
+            },
+            {
+              "name": "app/league/[id]/rules/page.tsx",
+              "desc": "How-to-play with screenshots, glossary, and rule cards that mirror the league's actual settings."
+            },
+            {
+              "name": "app/league/[id]/settings/page.tsx",
+              "desc": "Server shell: fetches `league.details` + (commissioner-only) `league.members`."
+            },
+            {
+              "name": "app/league/[id]/settings/league-settings-form.tsx",
+              "desc": "Name/format/toggles form → `league.updateSettings`; inputs disabled unless commissioner."
+            },
+            {
+              "name": "app/league/[id]/settings/league-members.tsx",
+              "desc": "Roster with confirm-to-remove rows → `league.removeMember`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "WeekSwipeWrapper",
+              "desc": "Mobile week navigation wrapper around the weekly section."
+            },
+            {
+              "name": "AuditLogCollapsible",
+              "desc": "Human-readable commissioner-action feed."
+            },
+            {
+              "name": "LeagueSettingsForm",
+              "desc": "Commissioner settings editor (same fields as the create form)."
+            },
+            {
+              "name": "LeagueMembers",
+              "desc": "Commissioner roster management."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "reads",
+              "body": "[scoring](../domain-scoring/domain-scoring.html) — `leaderboard.byLeague` + `leaderboard.weeklyStandings`, and renders its `WeeklyStandingsTable` component for past weeks."
+            },
+            {
+              "dir": "reads",
+              "body": "[game](../domain-game/domain-game.html) — `pick.leagueCurrentWeek`, `pick.myPickForTournament`, `pick.remainingPool`, and embeds its `LeagueThisWeekPicker` for inline picking."
+            },
+            {
+              "dir": "reads",
+              "body": "[golf-data](../domain-golf-data/domain-golf-data.html) — `tournament.schedule` for week navigation, `GolferAvatar` headshots, golfer/tournament links."
+            },
+            {
+              "dir": "guards via",
+              "body": "[accounts](../domain-accounts/domain-accounts.html) — every page starts with `auth.me` and redirects to `/sign-in`."
+            }
+          ]
+        },
+        {
+          "id": "c-context",
+          "name": "league context",
+          "path": "src/lib/league-context.ts + src/components/league",
+          "detail": [
+            "The active league is a single httpOnly cookie (`ppgl-active-league`, 1-year max-age) managed by two server actions in `lib/league-context.ts`. `getActiveLeagueId` validates the cookie against the user's actual leagues (falling back to the first league) and honors a `searchParams` override for deep links — it deliberately never *writes* during render, because Next.js only allows cookie writes in server actions and route handlers.",
+            "Two writers exist: `LeagueSwitcher`, the nav-bar `<select>` (rendered by web-shell's `nav-bar.tsx` from `league.myLeagues`), which sets the cookie in a transition then either pushes to the new league's page or refreshes in place — it also smuggles a \"+ Create League\" option into the dropdown; and `SyncLeagueContext`, a render-nothing client component mounted on `/league/[id]` that syncs the cookie once on mount, so simply visiting a league makes it your active one. Dashboard, season, tournament, and member pages all read the same cookie to scope their queries."
+          ],
+          "files": [
+            {
+              "name": "lib/league-context.ts",
+              "desc": "`\"use server\"` cookie accessors; read validates against the caller's league list, write is server-action-only."
+            },
+            {
+              "name": "components/league/league-switcher.tsx",
+              "desc": "Nav dropdown: set cookie → navigate or refresh; hides itself when the user has ≤1 league."
+            },
+            {
+              "name": "components/league/sync-league-context.tsx",
+              "desc": "Mount-once effect that calls `setActiveLeague(leagueId)` from the client so it executes as a server action."
+            }
+          ],
+          "exports": [
+            {
+              "name": "getActiveLeagueId",
+              "desc": "Cookie → validated active league id, with searchParam override for invite/deep links."
+            },
+            {
+              "name": "setActiveLeague",
+              "desc": "Server action writing the httpOnly cookie."
+            },
+            {
+              "name": "LeagueSwitcher",
+              "desc": "The app-wide league selector."
+            },
+            {
+              "name": "SyncLeagueContext",
+              "desc": "Silent cookie sync on league-page visits."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "[web-shell](../domain-web-shell/domain-web-shell.html) — `components/layout/nav-bar.tsx` calls `getActiveLeagueId` and renders `LeagueSwitcher`."
+            },
+            {
+              "dir": "consumed by",
+              "body": "[game](../domain-game/domain-game.html) and [scoring](../domain-scoring/domain-scoring.html) — dashboard, season, tournament, and member pages read `getActiveLeagueId` to scope their data fetches."
+            }
+          ]
+        },
+        {
+          "id": "c-commish",
+          "name": "commissioner tools",
+          "path": "src/components/commissioner",
+          "detail": [
+            "These widgets let a commissioner fix *someone else's* pick — the escape hatch for \"my buddy forgot to pick before lock.\" `CommissionerToggle` is pure DOM: it flips a `data-commissioner-active` attribute on the nearest `[data-commissioner-container]`, and CSS reveals the per-row action buttons. No server state; commissioner-ness was already decided server-side by whichever page rendered the toggle.",
+            "`CommissionerPickActions` (edit/remove an existing pick) and `CommissionerAddPick` (add a missing one) share a pattern: local golfer typeahead over a pre-fetched list, a live `pick.commissionerValidate` query surfacing warnings (already used, exhausted uses — exhaustion hard-blocks the Add button), then `pick.commissionerUpdate` / `pick.commissionerRemove` / `pick.commissionerAdd`. Those mutations live in the game domain's pick service, which enforces commissioner authorization again server-side and writes the `CommissionerAction` rows this domain's audit log displays. The components are mounted from game-domain surfaces: the season page (`app/season/[userId]/page.tsx`) and the planner timeline."
+          ],
+          "files": [
+            {
+              "name": "components/commissioner/commissioner-toggle.tsx",
+              "desc": "CSS-only mode switch via a data attribute; `aria-pressed` button."
+            },
+            {
+              "name": "components/commissioner/commissioner-pick-actions.tsx",
+              "desc": "Edit/remove flow with typeahead, validation warnings, confirm step; full query invalidation on success."
+            },
+            {
+              "name": "components/commissioner/commissioner-add-pick.tsx",
+              "desc": "Add-pick flow; blocks submission when the golfer's uses are exhausted."
+            }
+          ],
+          "exports": [
+            {
+              "name": "CommissionerToggle",
+              "desc": "Enter/exit commissioner mode."
+            },
+            {
+              "name": "CommissionerPickActions",
+              "desc": "Edit or remove a member's pick."
+            },
+            {
+              "name": "CommissionerAddPick",
+              "desc": "Add a pick on a member's behalf."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[game](../domain-game/domain-game.html) — `pick.commissionerValidate`, `pick.commissionerAdd`, `pick.commissionerUpdate`, `pick.commissionerRemove`; the pick service writes the audit rows via this domain's `createCommissionerAction`."
+            },
+            {
+              "dir": "mounted by",
+              "body": "[game](../domain-game/domain-game.html) — `app/season/[userId]/page.tsx` and `components/planner/planner-timeline.tsx` render these widgets on commissioner-visible rows."
+            },
+            {
+              "dir": "produces",
+              "body": "Audit entries surfaced by [`AuditLogCollapsible`](#c-pages) on the league home."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "The membership graph and its paper trail. All writes go through `repositories/league.ts`.",
+      "rows": [
+        {
+          "name": "League",
+          "desc": "Name, unique `inviteCode`, season, `type` (`GLOBAL`/`PRIVATE`), `commissionerId`, the rule flags (`maxGolferUses`, `burnStalePicks`, `showPicksBeforeLock`, `requireApproval`), and payment state (`paymentStatus`, `paymentSessionId`, `promoCodeId`)."
+        },
+        {
+          "name": "LeagueMember",
+          "desc": "user ↔ league with `status` (`ACTIVE`/`PENDING`/`REMOVED`) and `@@unique([userId, leagueId])` — the constraint the join/global-enroll race handling leans on. Its `id` (`leagueMemberId`) is the key picks and earnings hang off."
+        },
+        {
+          "name": "LeagueMemberSeason",
+          "desc": "Per-member-per-season row created here on join/approval; the `totalEarnings`/`totalPicks`/`totalMissedCuts` rollups on it are *written* by scoring's earnings pipeline."
+        },
+        {
+          "name": "CommissionerAction",
+          "desc": "Append-only audit log: `action` string + `details` JSON (golfer/tournament ids resolved to names at read time). Written here (approve/remove) and by game's pick service + admin."
+        }
+      ],
+      "note": "`PromoCode` is referenced (`League.promoCodeId`) and *redeemed* here (`redeemPromoCode` guards uses/expiry in SQL), but the model and its CRUD belong to [payments](../domain-payments/domain-payments.html). `Pick` belongs to [game](../domain-game/domain-game.html) — this domain only deletes `PLANNED` picks when removing a member."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "One tRPC router out; two service functions that act as the app-wide membership guard; five domains leaned on.",
+      "exposes": [
+        {
+          "api": "league.myLeagues",
+          "note": "Leagues for the nav switcher and join-page membership check; auto-enrolls the caller in the global league first."
+        },
+        {
+          "api": "league.preview",
+          "note": "Public — invite-link landing preview (name, member count, paid state)."
+        },
+        {
+          "api": "league.create",
+          "note": "Creates a `PENDING` league awaiting payment."
+        },
+        {
+          "api": "league.validatePromoCode",
+          "note": "Checks active/uses/expiry, returns discount + final price."
+        },
+        {
+          "api": "league.createWithPromo",
+          "note": "Free promo → `PAID` immediately; partial → `PENDING` + discounted checkout."
+        },
+        {
+          "api": "league.createCheckoutSession",
+          "note": "Commissioner-only; PayPal order for an unpaid league."
+        },
+        {
+          "api": "league.captureOrder",
+          "note": "Client-side capture path; verifies the order belongs to the league."
+        },
+        {
+          "api": "league.join",
+          "note": "Invite-code join — cap-checked, approval-aware, reactivates `REMOVED` members."
+        },
+        {
+          "api": "league.details",
+          "note": "League + member count + caller's `memberStatus`; membership required."
+        },
+        {
+          "api": "league.updateSettings",
+          "note": "Commissioner-only edit of name and rule flags."
+        },
+        {
+          "api": "league.pendingMembers",
+          "note": "Commissioner-only approval queue."
+        },
+        {
+          "api": "league.approveMember",
+          "note": "Flips `PENDING`→`ACTIVE`, creates the season row, logs `APPROVE_MEMBER`."
+        },
+        {
+          "api": "league.rejectMember",
+          "note": "Hard-deletes the pending membership (no audit row possible — FK)."
+        },
+        {
+          "api": "league.members",
+          "note": "Active roster with usernames; any member may read."
+        },
+        {
+          "api": "league.removeMember",
+          "note": "Commissioner-only soft remove + scrub of planned picks/season/adjustments; logs `REMOVE_MEMBER`."
+        },
+        {
+          "api": "league.auditLog",
+          "note": "Commissioner-action feed with names resolved from golf-data."
+        }
+      ],
+      "depends": [
+        {
+          "name": "game",
+          "path": "src",
+          "href": "../domain-game/domain-game.html"
+        },
+        {
+          "name": "golf-data",
+          "path": "src",
+          "href": "../domain-golf-data/domain-golf-data.html"
+        },
+        {
+          "name": "scoring",
+          "path": "src",
+          "href": "../domain-scoring/domain-scoring.html"
+        },
+        {
+          "name": "payments",
+          "path": "src",
+          "href": "../domain-payments/domain-payments.html"
+        },
+        {
+          "name": "accounts",
+          "path": "src",
+          "href": "../domain-accounts/domain-accounts.html"
+        },
+        {
+          "name": "web-shell",
+          "path": "src",
+          "href": "../domain-web-shell/domain-web-shell.html"
+        }
+      ],
+      "note": "Beyond tRPC, the load-bearing seam is direct service imports: `resolveLeagueMemberId` / `assertLeagueActive` (used by [game](../domain-game/domain-game.html)'s pick + dashboard services), `handleWebhookPayment` (called from [payments](../domain-payments/domain-payments.html)' webhook route), `cleanupAbandonedLeagues` (called from [golf-data](../domain-golf-data/domain-golf-data.html)'s cron sync), and repo-level `createCommissionerAction` / `getMaxGolferUses` (game + [admin](../domain-admin/domain-admin.html)). The dependency arrows point both ways: leagues guards them, they call it."
+    }
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:65ff1da90da9b7b5147955ea408fcbd70743ddfd3c2486bc2babb75a97a299bc",
+    "date": "2026-07-21",
+    "commit": "662c5aea21d551822d864db988922e040298ecd4"
+  }
+}

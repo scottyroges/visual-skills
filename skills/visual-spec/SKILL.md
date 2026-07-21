@@ -193,4 +193,4 @@ See the catalog for the exact field shape of every block.
 
 The canonical reference build (what good looks like):
 
-    $VISUAL_SKILLS_DIR/example/spec-gm-planning-brain/  (spec.json → spec.html)
+    $VISUAL_SKILLS_DIR/example/spec-season-planner/  (spec.json → spec.html)

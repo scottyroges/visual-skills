@@ -1,0 +1,1731 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="visual-skills · visual-atlas"><title>Admin back-office</title><style>/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --panel: #f7f8fa;
+  --panel-deep: #f0f2f5;
+  --border: #e3e6ea;
+  --border-strong: #c8cdd5;
+  --ink: #1c2024;
+  --ink-muted: #5a626c;
+  --ink-faint: #646b75;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-subtle: #eff4ff;
+  --accent-border: #bfdbfe;
+  --add: #16a34a;
+  --add-bg: #f0fdf4;
+  --add-border: #bbf7d0;
+  --remove: #dc2626;
+  --remove-bg: #fef2f2;
+  --remove-border: #fecaca;
+  --change: #d97706;
+  --change-bg: #fffbeb;
+  --change-border: #fde68a;
+  --risk-low: #16a34a;
+  --risk-low-bg: #f0fdf4;
+  --risk-low-border: #bbf7d0;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+
+  --sidebar-w: 264px;
+  --topbar-h: 52px;
+  --radius: 6px;
+  --radius-sm: 4px;
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== TOP BAR ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--topbar-h);
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 16px;
+}
+
+.topbar-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.topbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  line-height: 1.5;
+}
+
+.chip-risk {
+  color: var(--risk-low);
+  background: var(--risk-low-bg);
+  border-color: var(--risk-low-border);
+}
+
+.chip-stat {
+  color: var(--ink-muted);
+  background: var(--panel-deep);
+  border-color: var(--border);
+  font-weight: 500;
+}
+
+.chip-pr {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+  font-weight: 600;
+}
+
+.diff-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.diff-add { color: var(--add); }
+.diff-rem { color: var(--remove); }
+
+.topbar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-strong);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+  color: var(--ink-muted);
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: background 150ms ease-out, border-color 150ms ease-out;
+}
+.sidebar-toggle:hover { background: var(--panel-deep); border-color: var(--border-strong); }
+.sidebar-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ===== LAYOUT ===== */
+.layout {
+  display: flex;
+  min-height: calc(100vh - var(--topbar-h));
+  position: relative;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.sidebar::-webkit-scrollbar { width: 6px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+.sidebar-section {
+  padding: 16px 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-section:last-child { border-bottom: none; }
+
+.sidebar-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 14px 8px;
+  display: block;
+}
+
+/* File tree */
+.file-list { list-style: none; }
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 100ms ease-out;
+  line-height: 1.4;
+}
+.file-item:hover { background: var(--panel-deep); color: var(--ink); }
+.file-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.file-status {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.file-status-M { color: var(--change); }
+.file-status-A { color: var(--add); }
+.file-status-D { color: var(--remove); }
+.file-status-R { color: var(--change); }
+
+.file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-stat {
+  font-size: var(--text-xs);
+  font-family: var(--font-sans);
+  color: var(--ink-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.file-stat .plus { color: var(--add); font-weight: 600; }
+.file-stat .minus { color: var(--remove); font-weight: 600; }
+
+/* Outline nav */
+.outline-list { list-style: none; }
+
+.outline-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.outline-item:hover { background: var(--panel-deep); color: var(--ink); border-left-color: var(--border-strong); }
+.outline-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-item.is-active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-subtle); font-weight: 500; }
+
+.outline-num {
+  font-size: var(--text-xs);
+  color: var(--ink-faint);
+  font-weight: 600;
+  width: 16px;
+  flex-shrink: 0;
+}
+.outline-item.is-active .outline-num { color: var(--accent); }
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 56px 80px;
+  max-width: 1480px;
+}
+
+/* ===== TLDR ===== */
+.tldr-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+}
+
+.tldr-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tldr-heading {
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.tldr-eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tldr-rows { display: flex; flex-direction: column; gap: 8px; }
+
+.tldr-row {
+  display: flex;
+  gap: 10px;
+  font-size: var(--text-base);
+  line-height: 1.5;
+}
+
+.tldr-key {
+  font-weight: 700;
+  color: var(--ink);
+  flex-shrink: 0;
+  min-width: 56px;
+}
+
+.tldr-val { color: var(--ink); flex: 1; }
+
+/* ===== SECTION HEADINGS ===== */
+.section {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 40px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.section-badge {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  background: var(--panel);
+}
+
+.subsection {
+  scroll-margin-top: calc(var(--topbar-h) + 20px);
+  margin-bottom: 32px;
+}
+
+.subsection-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.subsection-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 0;
+}
+
+.subsection-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  font-weight: 400;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ===== OVERVIEW LIST ===== */
+.overview-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.overview-item {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  transition: border-color 100ms ease-out;
+}
+.overview-item:hover { border-color: var(--border-strong); }
+
+.overview-num {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  width: 18px;
+}
+
+.overview-text { color: var(--ink); flex: 1; }
+.overview-text a { color: var(--accent); text-decoration: none; font-weight: 500; }
+.overview-text a:hover { text-decoration: underline; }
+.overview-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+
+/* ===== WALKTHROUGH PROGRESS ===== */
+.progress-rail {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;            /* scroll horizontally when there are many/long chapters */
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.progress-step {
+  flex: 1 0 auto;              /* grow to fill when few; never shrink below content -> overflow scrolls */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  transition: background 100ms ease-out;
+}
+.progress-step-label { white-space: nowrap; }
+.progress-step:last-child { border-right: none; }
+.progress-step.is-active { background: var(--accent-subtle); color: var(--accent); }
+.progress-step { text-decoration: none; cursor: pointer; }
+.progress-step:hover { background: var(--panel-deep); color: var(--ink); }
+.progress-step.is-active:hover { color: var(--accent); }
+.progress-step:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.progress-step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  background: var(--panel-deep);
+  color: var(--ink-faint);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+}
+.progress-step.is-active .progress-step-num {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.progress-step-label { font-weight: 500; white-space: nowrap; }
+
+/* ===== DESCRIPTION BULLETS ===== */
+.desc-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.desc-item {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--ink);
+}
+.desc-bullet {
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  margin-top: 2px;
+}
+.desc-item code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--ink);
+}
+.desc-item strong { font-weight: 600; }
+.desc-item em { font-style: italic; color: var(--ink-muted); }
+
+/* ===== CODE BLOCKS / DIFF ===== */
+.file-diff {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.file-diff-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: background 100ms ease-out;
+}
+.file-diff-header:hover { background: var(--panel-deep); }
+
+.file-diff-header summary { display: flex; align-items: center; gap: 8px; width: 100%; list-style: none; }
+.file-diff-header summary::-webkit-details-marker { display: none; }
+.file-diff-header summary::marker { display: none; }
+
+details.file-diff-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+details.file-diff-details > summary:hover { background: var(--panel-deep); }
+details.file-diff-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.file-diff-details > summary::-webkit-details-marker { display: none; }
+
+/* the actual collapsed file-diff summary: one tidy row, single chevron */
+.file-diff > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: var(--panel);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: background 100ms ease-out;
+}
+.file-diff > summary::-webkit-details-marker { display: none; }
+.file-diff > summary::marker { content: ""; }
+.file-diff > summary:hover { background: var(--panel-deep); }
+.file-diff > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.file-diff[open] > summary { border-bottom: 1px solid var(--border); }
+.diff-counts { margin-left: auto; }
+
+.diff-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  font-weight: 500;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diff-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.diff-badge-M { color: var(--change); background: var(--change-bg); border-color: var(--change-border); }
+.diff-badge-A { color: var(--add); background: var(--add-bg); border-color: var(--add-border); }
+
+.diff-counts {
+  display: flex;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.diff-counts .plus { color: var(--add); }
+.diff-counts .minus { color: var(--remove); }
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-faint);
+  transition: transform 150ms ease-out;
+  flex-shrink: 0;
+}
+details[open] .chevron { transform: rotate(90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
+  details[open] .chevron { transform: rotate(90deg); }
+}
+
+.code-block {
+  overflow-x: auto;
+  background: var(--bg);
+  margin: 0;
+}
+.code-block pre {
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 2;
+  min-width: 0;
+}
+
+/* Token coloring — span-based, semantic only */
+.kw { color: #7c3aed; font-weight: 600; }  /* keyword */
+.fn { color: #0369a1; }                      /* function/method */
+.str { color: #16a34a; }                     /* string */
+.cm { color: var(--ink-faint); font-style: italic; } /* comment */
+.ty { color: #b45309; }                      /* type */
+.pn { color: var(--ink); }                   /* punctuation */
+.nm { color: var(--ink); }                   /* number */
+
+/* ===== DIAGRAMS ===== */
+.diagram-wrap {
+  margin-bottom: 28px;
+}
+
+.diagram-title {
+  font-size: var(--text-base);
+  font-weight: 650;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.diagram-caption {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+  margin: 8px 2px 0;
+}
+
+.diagram-box {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: zoom-in;
+}
+
+/* Inline SVG for diagrams */
+.diagram-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.diagram-enlarge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 0.8rem/1 system-ui, sans-serif;
+  color: var(--ink-muted);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+.diagram-enlarge:hover { border-color: var(--accent); color: var(--accent); }
+.diagram-enlarge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* zoom overlay */
+.zoom-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(15,20,28,0.85); display: none; }
+.zoom-overlay.is-open { display: block; }
+.zoom-stage { position: absolute; inset: 0; overflow: hidden; cursor: grab;
+  display: flex; align-items: center; justify-content: center; touch-action: none; }
+.zoom-stage:active { cursor: grabbing; }
+.zoom-stage svg { max-width: 94vw; max-height: 84vh; transform-origin: center center;
+  background: #fff; border-radius: 12px; box-shadow: 0 24px 64px -20px rgba(0,0,0,0.5); }
+.zoom-controls { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 1; }
+.zoom-controls button { min-width: 40px; height: 40px; padding: 0 12px;
+  border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.96); color: #1c2024;
+  border-radius: 10px; font: 600 15px/1 system-ui, sans-serif; cursor: pointer; }
+.zoom-controls button:hover { background: #fff; }
+
+/* ===== FILES CHANGED TABLE ===== */
+.files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.files-table th {
+  background: var(--panel);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+
+.files-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--ink);
+}
+.files-table tr:last-child td { border-bottom: none; }
+.files-table tr:hover td { background: var(--panel); }
+
+.files-table .col-status { width: 32px; font-weight: 700; font-family: var(--font-mono); font-size: var(--text-sm); }
+.files-table .col-path { font-family: var(--font-mono); }
+.files-table .col-path a { color: var(--accent); text-decoration: none; }
+.files-table .col-path a:hover { text-decoration: underline; }
+.files-table .col-stat { width: 80px; white-space: nowrap; }
+.files-table .col-role { color: var(--ink-muted); font-size: var(--text-xs); }
+
+.files-group-row td {
+  background: var(--panel-deep);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 5px 12px;
+}
+
+/* ===== API SURFACE ===== */
+.api-surface {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.api-surface-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-deep);
+}
+
+.api-name {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.api-type {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--add);
+  background: var(--add-bg);
+  border: 1px solid var(--add-border);
+  border-radius: 20px;
+  padding: 1px 7px;
+}
+
+.api-surface .code-block pre {
+  padding: 14px 18px;
+}
+
+/* ===== CALLOUT ===== */
+.callout {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: var(--text-base);
+  margin-bottom: 14px;
+}
+.callout-icon { font-size: var(--text-md); flex-shrink: 0; line-height: 1.5; }
+.callout-text { color: var(--ink); line-height: 1.6; }
+.callout-text strong { font-weight: 600; }
+.callout-text code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--panel-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ===== TYPOGRAPHY UTILITIES ===== */
+.headline {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.subheadline {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 28px;
+}
+
+.section-intro {
+  font-size: var(--text-base);
+  color: var(--ink-muted);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* ===== CHAPTER MARKER ===== */
+.chapter-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+/* Bold rule separating walkthrough chapters (rendered between, never before the first). */
+.chapter-divider {
+  border: none;
+  border-top: 2px solid var(--border-strong);
+  margin: 48px 0;
+}
+.chapter-no {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.chapter-marker-num {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--panel-deep);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    height: calc(100vh - var(--topbar-h));
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 200ms ease-out;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.08);
+  }
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar { transition: none; }
+  }
+  .sidebar-toggle { display: flex; }
+  .main { padding: 24px 20px 60px; }
+}
+
+@media (max-width: 375px) {
+  .main { padding: 16px 14px 40px; }
+  .topbar-title { font-size: var(--text-base); }
+  .headline { font-size: var(--text-xl); }
+  .progress-step-label { display: none; }
+  .progress-step { padding: 8px 10px; }
+  .dataflow { min-width: 420px; }
+}
+
+/* Sidebar overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: var(--topbar-h);
+  background: rgba(28,32,36,0.3);
+  z-index: 40;
+}
+.sidebar-overlay.is-open { display: block; }
+
+/* Focus styles */
+a:focus-visible, button:focus-visible, details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* real code diffs inside file-diff details */
+.diff-code { background:#fff; border-top:1px solid var(--border); }
+.diff-pre { margin:0; overflow-x:auto; padding:4px 0;
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#3a4047;
+  font-variant-ligatures:none; }
+.diff-pre .dl { display:flex; align-items:baseline; min-width:max-content; }
+.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:#8b939e;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:#9aa1ab;
+  user-select:none; -webkit-user-select:none; }
+.diff-pre .dc { flex:0 0 auto; white-space:pre; padding-right:20px; }
+.diff-pre .dl-add { background:#e9f7ee; } .diff-pre .dl-add .dg { color:#1a7f37; } .diff-pre .dl-add .dc { color:#0f3a1d; }
+.diff-pre .dl-del { background:#fdecec; } .diff-pre .dl-del .dg { color:#c4332e; } .diff-pre .dl-del .dc { color:#5c1a18; }
+.diff-pre .dl-ctx .dc { color:#3a4047; }
+.diff-pre .dl-hunk { background:var(--panel); color:var(--ink-muted); }
+.diff-pre .dl-hunk .dc { color:var(--ink-muted); font-weight:600; }
+.diff-more { padding:8px 16px; font:12px/1.4 system-ui,sans-serif; color:var(--ink-muted);
+  background:var(--panel); border-top:1px solid var(--border); }
+
+/* ===== separation hierarchy: chapter breaks vs within-chapter breaks ===== */
+#ch1, #ch2, #ch3 { margin-bottom: 0; }
+/* CHAPTER break: stronger + darker line */
+#ch2, #ch3 { margin-top: 0; padding-top: 48px; border-top: 2px solid #8b939e; }
+/* WITHIN a chapter: lighter line between subsections (1a/1b/1c) ... */
+.subsection { margin-bottom: 0; }
+.subsection + .subsection { border-top: 1px solid var(--border); padding-top: 40px; }
+/* ... and between file groups (a new description directly after a diff) */
+.file-diff + .desc-list,
+.file-diff + .section-intro,
+.file-diff + ul,
+.file-diff + p {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+/* ===== craft pass: typography + motion polish ===== */
+html { scroll-behavior: smooth; }
+.section-title, .subsection-title, .tldr-heading { text-wrap: balance; }
+.tldr-val, .overview-text, .section-intro, .desc-item span { text-wrap: pretty; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* color pass: subtle hover lift on file rows + risk level system */
+.file-diff { transition: box-shadow 150ms ease-out, border-color 150ms ease-out; }
+.file-diff:hover { border-color: var(--accent); box-shadow: 0 6px 18px -12px rgba(37,99,235,0.35); }
+.chip-risk.risk-med { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+.chip-risk.risk-high { color: var(--remove); background: #fef2f2; border-color: #fecaca; }
+@media (prefers-reduced-motion: reduce) { .file-diff { transition: none; } }
+
+/* spec.css — reusable visual-spec components.
+   Layers ON TOP of review.css (same design tokens). Load review.css first, then this.
+   Source of truth for the spec-component catalog (skills/shared/spec-components.md).
+   The canonical example inlines a snapshot of these rules. */
+
+/* ============================================================= */
+/* ===== VISUAL-SPEC EXTENSIONS (on top of review.css) ========= */
+/* ============================================================= */
+
+/* A "spec" carries a couple of extra semantic roles the recap doesn't:
+   a 'perceived' role (GM-skill-noised judgment, gold) vs a 'factual' role
+   (computed from world state, neutral). They reuse the diagram palette so
+   the page reads as one system. */
+:root {
+  --perceived: #92600a;          /* readable gold ink for text on light */
+  --perceived-bg: #fff8e6;
+  --perceived-border: #f0c54a;
+  --reused: #6b7280;             /* preserved / untouched machinery */
+  --reused-bg: #f1f3f5;
+  --reused-border: #ced4da;
+  --store: #6d4ed8;              /* datastore ink */
+  --proc: #1971c2;              /* perception / process ink */
+}
+
+/* ---- topbar: phase + status + complexity chips ---- */
+.chip-phase { color: var(--accent); background: var(--accent-subtle); border-color: var(--accent-border); font-weight: 700; }
+.chip-status { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.chip-complexity { color: var(--change); background: var(--change-bg); border-color: var(--change-border); font-weight: 600; }
+
+/* ---- the big idea panel ---- */
+.bigidea {
+  margin: 0 0 36px;
+  padding: 22px 26px;
+  border: 1px solid var(--perceived-border);
+  background: var(--perceived-bg);
+  border-radius: var(--radius);
+}
+.bigidea-label {
+  font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--perceived); margin-bottom: 8px;
+}
+.bigidea-line {
+  font-size: var(--text-2xl); font-weight: 800; letter-spacing: -0.025em;
+  color: var(--ink); line-height: 1.2; text-wrap: balance;
+}
+.bigidea-sub {
+  margin-top: 10px; max-width: 70ch; color: var(--ink-muted);
+  font-size: var(--text-base); line-height: 1.6; text-wrap: pretty;
+}
+.bigidea-sub strong { color: var(--ink); font-weight: 650; }
+
+/* ---- diagram legend (color is a secondary signal; labels carry meaning) ---- */
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 2px 0; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-sm); color: var(--ink-muted); }
+.legend-swatch { width: 13px; height: 13px; border-radius: 3px; border: 1px solid; flex-shrink: 0; }
+
+/* svg text inherits the page sans */
+.flow-svg text { font-family: var(--font-sans); }
+
+/* ---- anatomy of a board (factual core vs perceived layer) ---- */
+.anatomy {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.anatomy-panel { padding: 16px 18px; }
+.anatomy-factual { background: var(--reused-bg); }
+.anatomy-perceived { background: var(--perceived-bg); }
+.anatomy-mid {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 0 16px; background: var(--bg);
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+}
+.anatomy-arrow { font-size: 22px; color: var(--ink-faint); line-height: 1; }
+.anatomy-fn { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); text-align: center; max-width: 130px; }
+.anatomy-h { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: var(--text-base); margin-bottom: 4px; }
+.anatomy-factual .anatomy-h { color: var(--reused); }
+.anatomy-perceived .anatomy-h { color: var(--perceived); }
+.anatomy-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-bottom: 10px; }
+.anatomy-eg { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.7; color: var(--ink); }
+.anatomy-caption { font-size: var(--text-sm); color: var(--ink-muted); margin: 0 2px 28px; line-height: 1.6; }
+@media (max-width: 720px) {
+  .anatomy { grid-template-columns: 1fr; }
+  .anatomy-mid { flex-direction: row; border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px 16px; }
+  .anatomy-arrow { transform: rotate(90deg); }
+}
+
+/* ---- 6 component (board) cards ---- */
+.board-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 8px; }
+.board-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 18px; background: var(--bg);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  display: flex; flex-direction: column;
+}
+.board-card:hover { border-color: var(--border-strong); box-shadow: 0 6px 18px -14px rgba(28,32,36,0.4); }
+.board-name { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-base); color: var(--ink); letter-spacing: -0.01em; }
+.board-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 7px 0 12px; }
+.board-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.board-row-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 2px; }
+.skill-chip { font-size: var(--text-xs); font-weight: 600; background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 20px; padding: 1px 8px; white-space: nowrap; }
+.skill-chip.is-deputy { background: var(--panel-deep); color: var(--ink-muted); border-color: var(--border); }
+.split-badge { display: inline-flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; font-size: var(--text-xs); font-weight: 600; align-self: flex-start; margin-bottom: 12px; }
+.split-badge .sb-fact { background: var(--reused-bg); color: var(--reused); padding: 2px 9px; }
+.split-badge .sb-perc { background: var(--perceived-bg); color: var(--perceived); padding: 2px 9px; border-left: 1px solid var(--border); }
+.board-fields { margin-top: auto; display: flex; flex-direction: column; gap: 5px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.field-line { font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.5; display: flex; gap: 7px; }
+.field-tag { flex-shrink: 0; width: 10px; font-weight: 700; }
+.field-fact .field-tag { color: var(--reused); }
+.field-perc .field-tag { color: var(--perceived); }
+.field-fact .field-names { color: var(--ink-muted); }
+.field-perc .field-names { color: var(--perceived); }
+
+/* ---- where it fits ---- */
+.fits-chain { display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; margin-bottom: 26px; }
+.fits-node { flex: 1 1 220px; min-width: 200px; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--panel); }
+.fits-node.is-this { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.fits-arrow { display: flex; align-items: center; justify-content: center; padding: 0 12px; color: var(--ink-faint); font-size: 22px; flex-shrink: 0; }
+.fits-role { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-weight: 600; }
+.fits-node.is-this .fits-role { color: var(--perceived); }
+.fits-title { font-weight: 700; color: var(--ink); margin: 3px 0 5px; }
+.fits-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; }
+.fits-desc em { color: var(--ink); font-style: normal; font-weight: 600; }
+@media (max-width: 720px) {
+  .fits-chain { flex-direction: column; }
+  .fits-arrow { padding: 8px 0; }
+  .fits-arrow span { transform: rotate(90deg); display: inline-block; }
+}
+
+/* ---- layer stack ---- */
+.layer-stack { display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.layer { display: flex; align-items: baseline; gap: 12px; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; background: var(--panel); }
+.layer.is-new { background: var(--perceived-bg); border-color: var(--perceived-border); }
+.layer.is-reused { background: var(--reused-bg); }
+.layer-label { font-weight: 700; color: var(--ink); flex-shrink: 0; }
+.layer.is-new .layer-label { color: var(--perceived); }
+.layer-note { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.45; }
+.layer-tag { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 1px 7px; border-radius: 20px; flex-shrink: 0; }
+.layer.is-new .layer-tag { color: #fff; background: var(--change); }
+.layer.is-reused .layer-tag { color: var(--reused); background: var(--bg); border: 1px solid var(--reused-border); }
+
+/* ---- key decisions ---- */
+.decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.decision-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--bg); display: flex; gap: 12px; }
+.decision-num { flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: var(--panel-deep); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: var(--text-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.decision-q { font-size: var(--text-sm); color: var(--ink-faint); font-weight: 600; line-height: 1.4; }
+.decision-a { font-weight: 650; color: var(--ink); margin-top: 4px; line-height: 1.45; }
+.decision-a code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- scope (in / out) ---- */
+.scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.scope-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.scope-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
+.scope-in .scope-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.scope-out .scope-head { background: var(--reused-bg); color: var(--ink-muted); }
+.scope-count { font-size: var(--text-xs); font-weight: 600; opacity: 0.8; }
+.scope-list { list-style: none; padding: 8px 0; }
+.scope-list li { display: flex; gap: 9px; padding: 6px 16px; font-size: var(--text-base); line-height: 1.5; }
+.scope-marker { flex-shrink: 0; font-weight: 700; }
+.scope-in .scope-marker { color: var(--add); }
+.scope-out .scope-marker { color: var(--ink-faint); }
+.scope-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.scope-list .defer { color: var(--ink-faint); font-size: var(--text-sm); }
+@media (max-width: 720px) { .scope-cols { grid-template-columns: 1fr; } }
+
+/* ---- rollout phases ---- */
+.phases { display: flex; flex-direction: column; gap: 14px; }
+.phase { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.phase-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.phase-tag { font-family: var(--font-mono); font-weight: 700; font-size: var(--text-sm); color: var(--accent); background: var(--accent-subtle); border: 1px solid var(--accent-border); border-radius: var(--radius-sm); padding: 2px 9px; }
+.phase-title { font-weight: 700; color: var(--ink); }
+.phase-body { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; padding: 16px; }
+.phase-sub { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin-bottom: 8px; }
+.phase-scope p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; }
+.phase-scope code, .gate-list code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.phase-gate { background: var(--panel); border-radius: var(--radius-sm); padding: 12px 14px; }
+.gate-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.gate-list li { display: flex; gap: 8px; font-size: var(--text-sm); line-height: 1.5; color: var(--ink); }
+.gate-check { color: var(--add); flex-shrink: 0; font-weight: 700; }
+@media (max-width: 720px) { .phase-body { grid-template-columns: 1fr; } }
+
+/* ---- definition of done: movers + table ---- */
+.movers { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.mover { border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; background: var(--bg); }
+.mover-name { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-muted); line-height: 1.4; }
+.mover-vals { display: flex; align-items: baseline; gap: 9px; margin: 9px 0 4px; }
+.mover-now { color: var(--ink-faint); font-weight: 600; font-size: var(--text-base); }
+.mover-now s { color: var(--remove); text-decoration-thickness: 1px; }
+.mover-arrow { color: var(--ink-faint); font-size: var(--text-base); }
+.mover-target { color: var(--add); font-weight: 800; font-size: var(--text-xl); letter-spacing: -0.02em; }
+.mover-label { font-size: var(--text-xs); color: var(--ink-faint); }
+
+.spec-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 6px 0 8px; }
+.spec-table th { text-align: left; background: var(--panel); padding: 8px 12px; font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); border-bottom: 1px solid var(--border); }
+.spec-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--ink); line-height: 1.5; }
+.spec-table tr:last-child td { border-bottom: none; }
+.spec-table tr:hover td { background: var(--panel); }
+.spec-table code { font-family: var(--font-mono); font-size: 0.86em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.spec-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.spec-table .good { color: #15803d; font-weight: 700; }
+.tbl-note { font-size: var(--text-sm); color: var(--ink-muted); margin: 2px 2px 0; }
+
+/* ---- risks ---- */
+.risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; }
+.risk-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.risk-r { display: flex; gap: 9px; padding: 12px 15px; background: var(--remove-bg); border-bottom: 1px solid var(--remove-border); font-weight: 650; color: #991b1b; font-size: var(--text-sm); line-height: 1.45; }
+.risk-icon { flex-shrink: 0; }
+.risk-m { padding: 12px 15px; font-size: var(--text-sm); color: var(--ink); line-height: 1.55; }
+.risk-m b { color: #15803d; font-weight: 700; }
+.risk-m code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- reference drill-downs ---- */
+.ref-intro { font-size: var(--text-base); color: var(--ink-muted); margin-bottom: 16px; line-height: 1.6; }
+details.ref { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; background: var(--bg); }
+details.ref > summary { display: flex; align-items: center; gap: 10px; padding: 13px 16px; background: var(--panel); cursor: pointer; user-select: none; list-style: none; font-weight: 650; color: var(--ink); transition: background 100ms ease-out; }
+details.ref > summary::-webkit-details-marker { display: none; }
+details.ref > summary::marker { content: ""; }
+details.ref > summary:hover { background: var(--panel-deep); }
+details.ref > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+details.ref[open] > summary { border-bottom: 1px solid var(--border); }
+.ref-chev { width: 15px; height: 15px; color: var(--ink-faint); transition: transform 150ms ease-out; flex-shrink: 0; }
+details.ref[open] .ref-chev { transform: rotate(90deg); }
+.ref-tally { margin-left: auto; font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.ref-body { padding: 16px; }
+.ref-body > p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.6; margin-bottom: 12px; }
+.ref-body > p:last-child { margin-bottom: 0; }
+.ref-body .code-block { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 12px; }
+.ref-body h4 { font-size: var(--text-base); font-weight: 700; color: var(--ink); margin: 16px 0 8px; }
+.ref-body h4:first-child { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .ref-chev { transition: none; } }
+
+/* meta list in sidebar */
+.meta-list { padding: 0 14px 8px; display: flex; flex-direction: column; gap: 9px; }
+.meta-row { font-size: var(--text-xs); line-height: 1.4; }
+.meta-row .mk { display: block; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 1px; }
+.meta-row .mv { color: var(--ink); }
+.related-list { list-style: none; padding: 0 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.related-list li { font-size: var(--text-xs); line-height: 1.4; }
+.related-list .rk { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+.related-list .rv { color: var(--ink); font-family: var(--font-mono); overflow-wrap: anywhere; }
+
+/* ---- decision rationale (approval layer) ---- */
+.decision-why { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); line-height: 1.5; }
+.decision-why::before { content: "Why "; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; font-size: 0.72em; letter-spacing: 0.06em; }
+.decision-why em { color: var(--ink); font-style: normal; font-weight: 650; }
+.decision-why code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.decision-alt { font-size: var(--text-sm); color: var(--ink-muted); margin-top: 7px; line-height: 1.5; }
+.decision-alt-tag { display: inline-block; font-size: 0.72em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--remove); background: var(--remove-bg); border: 1px solid var(--remove-border); border-radius: 4px; padding: 0 5px; margin-right: 6px; vertical-align: 1px; }
+.decision-alt em { color: var(--ink); font-style: italic; }
+.decision-alt code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- before you approve ---- */
+.approve-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; align-items: start; }
+.approve-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+.approve-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.approve-card.commit .approve-head { background: var(--accent-subtle); color: var(--accent); border-bottom-color: var(--accent-border); }
+.approve-card.scrutinize .approve-head { background: var(--change-bg); color: #92600a; border-bottom-color: var(--change-border); }
+.approve-card.open .approve-head { background: var(--panel-deep); color: var(--ink-muted); }
+.approve-body { padding: 13px 16px; font-size: var(--text-sm); color: var(--ink); line-height: 1.6; }
+.approve-body strong { font-weight: 700; }
+.approve-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.approve-body a:hover { text-decoration: underline; }
+.approve-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.approve-q { list-style: none; counter-reset: aq; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+.approve-q li { counter-increment: aq; display: flex; gap: 8px; font-size: var(--text-sm); color: var(--ink); line-height: 1.45; }
+.approve-q li::before { content: counter(aq); flex-shrink: 0; width: 17px; height: 17px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); color: var(--ink-faint); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.approve-q code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; }
+
+/* atlas.css — reusable visual-atlas components.
+   Layers ON TOP of review.css + spec.css (same design tokens). Load review.css, then
+   spec.css, then this. Source of truth for the atlas-component catalog
+   (skills/shared/atlas-components.md). The canonical example inlines a snapshot of these rules.
+
+   A visual-atlas is a STANDING MAP of a codebase: one narrative `atlas.html` (system
+   onboarding map) that links down to per-domain `domain-<slug>.html` deep-dive pages. It owns
+   its own surface so its styles can evolve independently of the recap/spec. */
+
+/* ============================================================= */
+/* ===== VISUAL-ATLAS EXTENSIONS (on top of review.css + spec.css) */
+/* ============================================================= */
+
+/* Tier accents — each architectural layer gets one role tint so the map, the tiles, and the
+   sidebar all read as one system. Reuses the shared diagram palette (foundation=store violet,
+   engine=actor blue, intelligence=changed gold, narrative=added green, surface=accent,
+   harness=external gray). Color is always secondary — every tier also carries its text label. */
+:root {
+  --tier-foundation: #6d4ed8; --tier-foundation-bg: #f1ecfd;
+  --tier-engine:     #1971c2; --tier-engine-bg:     #e7f1fb;
+  --tier-intelligence: #b3791a; --tier-intelligence-bg: #fff6e2;
+  --tier-narrative:  #2f9e44; --tier-narrative-bg:  #eafaef;
+  --tier-surface:    var(--accent); --tier-surface-bg: var(--accent-subtle);
+  --tier-harness:    #6b7280; --tier-harness-bg:    #f1f3f5;
+}
+
+/* ---- topbar: domain-count + stack chips, and the back-link on domain pages ---- */
+.chip-stack { color: var(--tier-engine); background: var(--tier-engine-bg); border-color: #bcdcf5; font-weight: 600; }
+.chip-count { color: var(--ink-muted); background: var(--panel-deep); border-color: var(--border); font-weight: 600; }
+.topbar-back {
+  display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; flex-shrink: 0;
+  font-size: var(--text-sm); font-weight: 600; color: var(--accent); text-decoration: none;
+  border: 1px solid var(--accent-border); background: var(--accent-subtle);
+  border-radius: 20px; padding: 3px 11px 3px 9px; transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+.topbar-back:hover { background: #e0ecff; border-color: var(--accent); }
+.topbar-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- primer: "the N things to hold in your head" (atlas lead, after the TL;DR) ---- */
+.primer { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); overflow: hidden; margin-bottom: 32px; }
+.primer-row { display: flex; gap: 14px; padding: 14px 18px; align-items: baseline; }
+.primer-row + .primer-row { border-top: 1px solid var(--border); }
+.primer-n {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; align-self: flex-start;
+  background: var(--accent-subtle); color: var(--accent); border: 1px solid var(--accent-border);
+  font-size: var(--text-sm); font-weight: 800; display: flex; align-items: center; justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+.primer-body { min-width: 0; }
+.primer-h { font-weight: 700; color: var(--ink); line-height: 1.4; letter-spacing: -0.01em; }
+.primer-p { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.55; margin-top: 3px; text-wrap: pretty; }
+.primer-h code, .primer-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* svg text inherits the page sans (the hand-authored domain map reuses .flow-svg from spec.css) */
+.map-svg text { font-family: var(--font-sans); }
+
+/* ---- component cards that jump to their deep-dive section ---- */
+a.board-card { text-decoration: none; color: inherit; }
+a.board-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-jump { margin-top: 10px; display: flex; align-items: center; gap: 5px; font-size: var(--text-xs); font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+.card-jump .cj-arrow { transition: transform 150ms ease-out; }
+a.board-card:hover .cj-arrow { transform: translateY(2px); }
+@media (prefers-reduced-motion: reduce) { .card-jump .cj-arrow { transition: none; } }
+
+/* ---- per-component deep-dive: detail + diagram + connections ---- */
+/* reuses review.css .subsection / .subsection-header / .subsection-title / .subsection-path */
+.subsection-back { font-size: var(--text-xs); font-weight: 600; color: var(--ink-faint); text-decoration: none; white-space: nowrap; }
+.subsection-back:hover { color: var(--accent); }
+.detail-p { font-size: var(--text-base); color: var(--ink); line-height: 1.65; margin-bottom: 14px; text-wrap: pretty; }
+.detail-p code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.detail-p strong { font-weight: 650; }
+.detail-p em { font-style: normal; font-weight: 600; color: var(--ink); }
+
+/* connections: how this component talks to its neighbors (calls / read by / produces) */
+.conns { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 4px; }
+.conn { display: flex; align-items: baseline; gap: 10px; font-size: var(--text-sm); line-height: 1.5; }
+.conn-dir { flex-shrink: 0; min-width: 78px; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-faint); text-align: right; }
+.conn-body { color: var(--ink); }
+.conn-body code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+.conn-body a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.conn-body a:hover { text-decoration: underline; }
+.conns-label { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint); margin: 14px 0 9px; }
+
+/* the load-bearing idea reads full-width on atlas pages (override spec.css's 70ch cap) */
+.bigidea-sub { max-width: none; }
+
+/* ---- domain index: a tile grid (the onboarding map AND the reference index) ---- */
+.domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
+.domain-tile {
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);
+  padding: 16px 18px; display: flex; flex-direction: column; text-decoration: none; color: inherit;
+  position: relative; transition: border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+a.domain-tile.is-linked:hover { border-color: var(--accent); box-shadow: 0 8px 22px -16px rgba(37,99,235,0.5); transform: translateY(-1px); }
+a.domain-tile.is-linked:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.domain-tile.is-pending { background: var(--panel); border-style: dashed; }
+.domain-tile-head { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.domain-tile-name { font-size: var(--text-md); font-weight: 700; color: var(--ink); letter-spacing: -0.015em; }
+.domain-tile-path { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--ink-faint); }
+.layer-chip {
+  margin-left: auto; font-size: var(--text-xs); font-weight: 700; padding: 1px 8px; border-radius: 20px;
+  border: 1px solid; white-space: nowrap; letter-spacing: 0.01em;
+}
+.layer-foundation   { color: var(--tier-foundation);   background: var(--tier-foundation-bg);   border-color: #d6c8f7; }
+.layer-engine       { color: var(--tier-engine);       background: var(--tier-engine-bg);       border-color: #bcdcf5; }
+.layer-intelligence { color: var(--tier-intelligence); background: var(--tier-intelligence-bg); border-color: var(--change-border); }
+.layer-narrative    { color: var(--tier-narrative);    background: var(--tier-narrative-bg);    border-color: #b6e6c4; }
+.layer-surface      { color: var(--tier-surface);      background: var(--tier-surface-bg);      border-color: var(--accent-border); }
+.layer-harness      { color: var(--tier-harness);      background: var(--tier-harness-bg);      border-color: var(--border-strong); }
+.domain-tile-purpose { color: var(--ink-muted); font-size: var(--text-sm); line-height: 1.55; margin: 9px 0 12px; text-wrap: pretty; }
+.domain-tile-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--text-xs); color: var(--ink-faint); margin-bottom: 11px; }
+.domain-tile-meta .dm-k { font-weight: 700; color: var(--ink-muted); }
+.domain-tile-meta code { font-family: var(--font-mono); font-size: 0.95em; color: var(--ink-muted); }
+.domain-tile-deps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--border); }
+.domain-tile-deps .dep-label { font-size: var(--text-xs); color: var(--ink-faint); font-weight: 600; margin-right: 2px; }
+.dep-chip { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 600; color: var(--ink-muted); background: var(--panel-deep); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+.domain-tile-foot { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: var(--text-sm); font-weight: 600; }
+.domain-tile.is-linked .domain-tile-foot { color: var(--accent); }
+.domain-tile.is-pending .domain-tile-foot { color: var(--ink-faint); font-weight: 600; }
+.domain-tile-foot .dtf-arrow { transition: transform 150ms ease-out; }
+a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
+
+/* ---- domain page: data it owns ---- */
+.owns-list { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.owns-row { display: grid; grid-template-columns: minmax(180px, 0.9fr) 1.6fr; gap: 14px; padding: 11px 16px; align-items: baseline; }
+.owns-row + .owns-row { border-top: 1px solid var(--border); }
+.owns-row:nth-child(even) { background: var(--panel); }
+.owns-name { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.owns-name .owns-store { color: var(--tier-foundation); }
+.owns-desc { font-size: var(--text-sm); color: var(--ink-muted); line-height: 1.5; text-wrap: pretty; }
+.owns-desc code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+
+/* ---- domain page: seams (exposes / depends on) ---- */
+.seam-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.seam-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.seam-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
+.seam-exposes .seam-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.seam-depends .seam-head { background: var(--panel-deep); color: var(--ink-muted); }
+.seam-body { padding: 12px 16px; }
+.seam-api { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.seam-api li { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--ink); line-height: 1.4; display: flex; gap: 8px; }
+.seam-api li::before { content: "›"; color: var(--add); font-weight: 700; flex-shrink: 0; }
+.seam-api .api-note { font-family: var(--font-sans); color: var(--ink-faint); font-size: var(--text-xs); }
+.seam-neighbors { display: flex; flex-wrap: wrap; gap: 8px; }
+.neighbor-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-sm); font-weight: 600;
+  color: var(--ink); background: var(--panel); border: 1px solid var(--border-strong);
+  border-radius: 20px; padding: 3px 11px; text-decoration: none; transition: border-color 120ms ease-out, background 120ms ease-out;
+}
+.neighbor-chip:hover { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent); }
+.neighbor-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.neighbor-chip .nc-path { font-family: var(--font-mono); font-size: 0.85em; color: var(--ink-faint); }
+.neighbor-chip:hover .nc-path { color: var(--accent); }
+.neighbor-chip.is-flat { background: var(--panel-deep); border-style: dashed; cursor: default; color: var(--ink-muted); }
+.neighbor-chip.is-flat:hover { border-color: var(--border-strong); background: var(--panel-deep); color: var(--ink-muted); }
+@media (max-width: 720px) { .seam-cols { grid-template-columns: 1fr; } }
+
+/* sidebar: nested sub-section links under a chapter in the CONTENTS outline.
+   Used on domain pages to list a chapter's deep-dive components without a bespoke
+   second sidebar block — one uniform outline per page. */
+.outline-sub { list-style: none; margin: 1px 0 5px; }
+.outline-subitem { display: flex; align-items: center; gap: 8px; padding: 3px 14px 3px 34px; font-size: var(--text-xs); color: var(--ink-muted); text-decoration: none; border-left: 2px solid transparent; transition: background 100ms ease-out, color 100ms ease-out; }
+.outline-subitem:hover { background: var(--panel-deep); color: var(--ink); }
+.outline-subitem:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.outline-subitem .os-dot { width: 8px; height: 8px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.14); flex-shrink: 0; }
+
+/* sidebar: a small "domains" jump-list block on the atlas */
+.nav-domains { list-style: none; }
+.nav-domain {
+  display: flex; align-items: center; gap: 8px; padding: 4px 14px; font-size: var(--text-sm);
+  color: var(--ink); text-decoration: none; transition: background 100ms ease-out;
+}
+.nav-domain:hover { background: var(--panel-deep); }
+.nav-domain:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
+.nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
+</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><a class="topbar-back" href="../atlas.html"><span aria-hidden="true">&larr;</span> Atlas</a><span class="topbar-title">Admin back-office</span><div class="topbar-meta"><span class="chip layer-chip layer-surface">Operations</span><span class="chip chip-stat">src</span><span class="chip chip-count">21 files</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">depends on accounts · game · golf-data · leagues · scoring · web-shell</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>What it owns</span></a></li><li><a href="#components" class="outline-item" data-target="components"><span class="outline-num" aria-hidden="true">1</span><span>Components</span></a></li><li><a href="#arch" class="outline-item" data-target="arch"><span class="outline-num" aria-hidden="true">2</span><span>Internal architecture</span></a></li><li><a href="#depth" class="outline-item" data-target="depth"><span class="outline-num" aria-hidden="true">3</span><span>In depth</span></a><ul class="outline-sub" role="list"><li><a href="#c-gate" class="outline-subitem"><span class="os-dot" style="background:#eff4ff;border-color:#2563eb;"></span>Admin gate &amp; layout</a></li><li><a href="#c-tournaments" class="outline-subitem"><span class="os-dot" style="background:#eff4ff;border-color:#2563eb;"></span>Tournament ops</a></li><li><a href="#c-users" class="outline-subitem"><span class="os-dot" style="background:#eff4ff;border-color:#2563eb;"></span>User ops</a></li><li><a href="#c-leagues-golfers" class="outline-subitem"><span class="os-dot" style="background:#eff4ff;border-color:#2563eb;"></span>League &amp; golfer ops</a></li><li><a href="#c-cron" class="outline-subitem"><span class="os-dot" style="background:#eff4ff;border-color:#2563eb;"></span>Cron console</a></li><li><a href="#c-api" class="outline-subitem"><span class="os-dot" style="background:#eff4ff;border-color:#2563eb;"></span>Admin API</a></li><li><a href="#c-health" class="outline-subitem"><span class="os-dot" style="background:#eff4ff;border-color:#2563eb;"></span>Health probes</a></li></ul></li><li><a href="#data" class="outline-item" data-target="data"><span class="outline-num" aria-hidden="true">4</span><span>Data it owns</span></a></li><li><a href="#seams" class="outline-item" data-target="seams"><span class="outline-num" aria-hidden="true">5</span><span>Seams</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Layer</span><span class="mv">Engine</span></div><div class="meta-row"><span class="mk">Surface</span><span class="mv">`/admin/*` pages + `admin.*` / `health.*` tRPC</span></div><div class="meta-row"><span class="mk">Auth</span><span class="mv">Better Auth `user.role === &quot;admin&quot;`</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Domain</span><h2 class="tldr-heading">Admin back-office</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">Path</span><span class="tldr-val"><code>src/app/admin/**</code> + <code>src/server/{routers,services,repositories}/admin.ts</code> + <code>src/server/routers/health.ts</code></span></div><div class="tldr-row"><span class="tldr-key">Files</span><span class="tldr-val">21</span></div><div class="tldr-row"><span class="tldr-key">What it is</span><span class="tldr-val">The operator surface: a sidebar-navigated <code>/admin</code> area for correcting tournaments, results, users, golfers, leagues, and picks — plus manual triggers for every sync and rollup the cron normally runs.</span></div><div class="tldr-row"><span class="tldr-key">Who sees it</span><span class="tldr-val">Only users whose Better Auth <code>role</code> is <code>admin</code>. Everyone else is redirected to <code>/dashboard</code> by the layout, and rejected with <code>FORBIDDEN</code> by the API.</span></div></div></div><div class="bigidea"><div class="bigidea-label">Big idea</div><div class="bigidea-line">Every admin capability is a tRPC procedure behind <code>adminProcedure</code> — the <code>/admin</code> layout redirect is UX, the middleware is the boundary.</div><p class="bigidea-sub"><code>src/app/admin/layout.tsx</code> redirects non-admins, but the real gate is the <code>adminProcedure</code> middleware in <code>src/server/trpc.ts</code> (web-shell), which throws <code>FORBIDDEN</code> unless the session role is <code>admin</code>. Destructive overrides carry service-layer guards — last-admin protection, commissioner reassignment, the GLOBAL league is undeletable, exclusion blocks on locked picks — and pick overrides are written to the commissioner audit log and trigger earnings recalculation.</p></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#components"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">Components</span></a><a class="progress-step" href="#arch"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Internal architecture</span></a><a class="progress-step" href="#depth"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">In depth</span></a><a class="progress-step" href="#data"><div class="progress-step-num" aria-hidden="true">4</div><span class="progress-step-label">Data it owns</span></a><a class="progress-step" href="#seams"><div class="progress-step-num" aria-hidden="true">5</div><span class="progress-step-label">Seams</span></a></nav><section id="components" class="section"><div class="section-header"><h2 class="section-title">Components</h2></div><p class="section-intro">Six operator consoles (server pages + client mutation forms) over one three-layer API, plus a public health router.</p><div class="board-grid"><a class="board-card" href="#c-gate"><div class="board-name">Admin gate &amp; layout</div><div class="board-purpose">The <code>/admin</code> shell: a server layout that checks <code>trpc.auth.me()</code> and redirects non-admins, a sidebar nav over all consoles, and an overview dashboard of platform stats.</div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-tournaments"><div class="board-name">Tournament ops</div><div class="board-purpose">List, edit, and exclude tournaments; hand-correct per-golfer results; fire field/results/live-standings syncs and the earnings rollup for one event.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">TournamentAdmin</span><span class="skill-chip">TournamentResults</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-users"><div class="board-name">User ops</div><div class="board-purpose">Search users, flip roles, delete accounts, send password resets and test pick-reminder emails, and yank a member's picks or league memberships.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">UserDetail</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-leagues-golfers"><div class="board-name">League &amp; golfer ops</div><div class="board-purpose">Override any league's settings, membership, and commissioner; delete non-global leagues; correct golfer name/country/world-ranking data.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">LeagueAdmin</span><span class="skill-chip">GolferAdmin</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-cron"><div class="board-name">Cron console</div><div class="board-purpose">The last 20 <code>CronLog</code> runs with their JSON payloads, plus a button that runs the same <code>runFullSync</code> the scheduled <code>/api/cron/sync</code> route runs.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">RunCronButton</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-api"><div class="board-name">Admin API</div><div class="board-purpose">The <code>admin.*</code> tRPC surface — 35 <code>adminProcedure</code> procedures, a service layer holding every override guard, and a repository of cross-table Kysely read models and cascade deletes.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">adminRouter</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-health"><div class="board-name">Health probes</div><div class="board-purpose">Three public liveness checks — process, database, and the ESPN upstream — for uptime monitoring.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">healthRouter</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a></div></section><section id="arch" class="section"><div class="section-header"><h2 class="section-title">Internal architecture</h2></div><p class="section-intro">Every console page talks tRPC (server pages via <code>serverTRPC</code>, client forms via <code>useTRPC</code> mutations). All <code>admin.*</code> calls pass the <code>adminProcedure</code> gate before the service fans out — to its own repository for reads and overrides, and to neighbor services for syncs, rollups, and password resets.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1815 494"><svg class="d2-1770527667 d2-svg" width="1815" height="494" viewBox="-25 -25 1815 494"><rect x="-25.000000" y="-25.000000" width="1815.000000" height="494.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-1770527667 .text-bold {
+	font-family: "d2-1770527667-font-bold";
+}
+@font-face {
+	font-family: d2-1770527667-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-1770527667 .text-italic {
+	font-family: "d2-1770527667-font-italic";
+}
+@font-face {
+	font-family: d2-1770527667-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-1770527667 .fill-N1{fill:#0A0F25;}
+		.d2-1770527667 .fill-N2{fill:#676C7E;}
+		.d2-1770527667 .fill-N3{fill:#9499AB;}
+		.d2-1770527667 .fill-N4{fill:#CFD2DD;}
+		.d2-1770527667 .fill-N5{fill:#DEE1EB;}
+		.d2-1770527667 .fill-N6{fill:#EEF1F8;}
+		.d2-1770527667 .fill-N7{fill:#FFFFFF;}
+		.d2-1770527667 .fill-B1{fill:#0D32B2;}
+		.d2-1770527667 .fill-B2{fill:#0D32B2;}
+		.d2-1770527667 .fill-B3{fill:#E3E9FD;}
+		.d2-1770527667 .fill-B4{fill:#E3E9FD;}
+		.d2-1770527667 .fill-B5{fill:#EDF0FD;}
+		.d2-1770527667 .fill-B6{fill:#F7F8FE;}
+		.d2-1770527667 .fill-AA2{fill:#4A6FF3;}
+		.d2-1770527667 .fill-AA4{fill:#EDF0FD;}
+		.d2-1770527667 .fill-AA5{fill:#F7F8FE;}
+		.d2-1770527667 .fill-AB4{fill:#EDF0FD;}
+		.d2-1770527667 .fill-AB5{fill:#F7F8FE;}
+		.d2-1770527667 .stroke-N1{stroke:#0A0F25;}
+		.d2-1770527667 .stroke-N2{stroke:#676C7E;}
+		.d2-1770527667 .stroke-N3{stroke:#9499AB;}
+		.d2-1770527667 .stroke-N4{stroke:#CFD2DD;}
+		.d2-1770527667 .stroke-N5{stroke:#DEE1EB;}
+		.d2-1770527667 .stroke-N6{stroke:#EEF1F8;}
+		.d2-1770527667 .stroke-N7{stroke:#FFFFFF;}
+		.d2-1770527667 .stroke-B1{stroke:#0D32B2;}
+		.d2-1770527667 .stroke-B2{stroke:#0D32B2;}
+		.d2-1770527667 .stroke-B3{stroke:#E3E9FD;}
+		.d2-1770527667 .stroke-B4{stroke:#E3E9FD;}
+		.d2-1770527667 .stroke-B5{stroke:#EDF0FD;}
+		.d2-1770527667 .stroke-B6{stroke:#F7F8FE;}
+		.d2-1770527667 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-1770527667 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-1770527667 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-1770527667 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-1770527667 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-1770527667 .background-color-N1{background-color:#0A0F25;}
+		.d2-1770527667 .background-color-N2{background-color:#676C7E;}
+		.d2-1770527667 .background-color-N3{background-color:#9499AB;}
+		.d2-1770527667 .background-color-N4{background-color:#CFD2DD;}
+		.d2-1770527667 .background-color-N5{background-color:#DEE1EB;}
+		.d2-1770527667 .background-color-N6{background-color:#EEF1F8;}
+		.d2-1770527667 .background-color-N7{background-color:#FFFFFF;}
+		.d2-1770527667 .background-color-B1{background-color:#0D32B2;}
+		.d2-1770527667 .background-color-B2{background-color:#0D32B2;}
+		.d2-1770527667 .background-color-B3{background-color:#E3E9FD;}
+		.d2-1770527667 .background-color-B4{background-color:#E3E9FD;}
+		.d2-1770527667 .background-color-B5{background-color:#EDF0FD;}
+		.d2-1770527667 .background-color-B6{background-color:#F7F8FE;}
+		.d2-1770527667 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-1770527667 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-1770527667 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-1770527667 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-1770527667 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-1770527667 .color-N1{color:#0A0F25;}
+		.d2-1770527667 .color-N2{color:#676C7E;}
+		.d2-1770527667 .color-N3{color:#9499AB;}
+		.d2-1770527667 .color-N4{color:#CFD2DD;}
+		.d2-1770527667 .color-N5{color:#DEE1EB;}
+		.d2-1770527667 .color-N6{color:#EEF1F8;}
+		.d2-1770527667 .color-N7{color:#FFFFFF;}
+		.d2-1770527667 .color-B1{color:#0D32B2;}
+		.d2-1770527667 .color-B2{color:#0D32B2;}
+		.d2-1770527667 .color-B3{color:#E3E9FD;}
+		.d2-1770527667 .color-B4{color:#E3E9FD;}
+		.d2-1770527667 .color-B5{color:#EDF0FD;}
+		.d2-1770527667 .color-B6{color:#F7F8FE;}
+		.d2-1770527667 .color-AA2{color:#4A6FF3;}
+		.d2-1770527667 .color-AA4{color:#EDF0FD;}
+		.d2-1770527667 .color-AA5{color:#F7F8FE;}
+		.d2-1770527667 .color-AB4{color:#EDF0FD;}
+		.d2-1770527667 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.light-code{display: block}.dark-code{display: none}]]></style><g class="b3BlcmF0b3I= actor"><g class="shape" ><rect x="0.000000" y="189.000000" width="109.000000" height="66.000000" stroke="#4dabf7" fill="#d0ebff" style="stroke-width:2;" /></g><text x="54.500000" y="227.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">operator</text></g><g class="L2FkbWluIHBhZ2Vz"><g class="shape" ><rect x="251.000000" y="189.000000" width="140.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="321.000000" y="227.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">/admin pages</text></g><g class="YWRtaW5Qcm9jZWR1cmUgZ2F0ZQ== changed"><g class="shape" ><rect x="621.000000" y="189.000000" width="198.000000" height="66.000000" stroke="#f08c00" fill="#ffd43b" style="stroke-width:2;" /></g><text x="720.000000" y="227.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">adminProcedure gate</text></g><g class="YWRtaW4gc2VydmljZQ=="><g class="shape" ><rect x="961.000000" y="189.000000" width="144.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1033.000000" y="227.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">admin service</text></g><g class="YWRtaW4gcmVwb3NpdG9yeQ=="><g class="shape" ><rect x="1349.000000" y="0.000000" width="168.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1433.000000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">admin repository</text></g><g class="UG9zdGdyZXM= store"><g class="shape" ><rect x="1659.000000" y="0.000000" width="106.000000" height="66.000000" stroke="#9775fa" fill="#e5dbff" style="stroke-width:2;" /></g><text x="1712.000000" y="38.500000" fill="#1b1b1b" class="text-bold" style="text-anchor:middle;font-size:16px">Postgres</text></g><g class="Z29sZi1kYXRhIHN5bmM="><g class="shape" ><rect x="1360.000000" y="126.000000" width="146.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1433.000000" y="164.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">golf-data sync</text></g><g class="ZWFybmluZ3MtY29yZQ=="><g class="shape" ><rect x="1362.000000" y="252.000000" width="143.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1433.500000" y="290.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">earnings-core</text></g><g class="QmV0dGVyIEF1dGg="><g class="shape" ><rect x="1370.000000" y="378.000000" width="126.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="1433.000000" y="416.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">Better Auth</text></g><g class="KG9wZXJhdG9yIC0mZ3Q7IC9hZG1pbiBwYWdlcylbMF0="><marker id="mk-d2-1770527667-3488378134" markerWidth="10.000000" markerHeight="12.000000" refX="7.000000" refY="6.000000" viewBox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerUnits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 111.000000 222.000000 C 165.800003 222.000000 194.199997 222.000000 247.000000 222.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1770527667-3488378134)" mask="url(#d2-1770527667)" /></g><g class="KC9hZG1pbiBwYWdlcyAtJmd0OyBhZG1pblByb2NlZHVyZSBnYXRlKVswXQ=="><path d="M 393.000000 222.000000 C 483.000000 222.000000 529.000000 222.000000 617.000000 222.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1770527667-3488378134)" mask="url(#d2-1770527667)" /><text x="506.000000" y="228.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">tRPC admin.*</text></g><g class="KGFkbWluUHJvY2VkdXJlIGdhdGUgLSZndDsgYWRtaW4gc2VydmljZSlbMF0="><path d="M 821.000000 222.000000 C 875.799988 222.000000 904.200012 222.000000 957.000000 222.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1770527667-3488378134)" mask="url(#d2-1770527667)" /></g><g class="KGFkbWluIHNlcnZpY2UgLSZndDsgYWRtaW4gcmVwb3NpdG9yeSlbMF0="><path d="M 1068.431995 187.603794 C 1195.000000 64.198997 1251.400024 33.000000 1345.000000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1770527667-3488378134)" mask="url(#d2-1770527667)" /></g><g class="KGFkbWluIHJlcG9zaXRvcnkgLSZndDsgUG9zdGdyZXMpWzBd"><path d="M 1519.000000 33.000000 C 1573.800049 33.000000 1602.199951 33.000000 1655.000000 33.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1770527667-3488378134)" mask="url(#d2-1770527667)" /></g><g class="KGFkbWluIHNlcnZpY2UgLSZndDsgZ29sZi1kYXRhIHN5bmMpWzBd"><path d="M 1106.900459 198.376899 C 1202.599976 167.000000 1253.599976 159.000000 1356.000000 159.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1770527667-3488378134)" mask="url(#d2-1770527667)" /><text x="1230.000000" y="168.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">manual syncs</text></g><g class="KGFkbWluIHNlcnZpY2UgLSZndDsgZWFybmluZ3MtY29yZSlbMF0="><path d="M 1106.900459 245.623101 C 1202.599976 277.000000 1253.900024 285.000000 1357.500000 285.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1770527667-3488378134)" mask="url(#d2-1770527667)" /><text x="1230.500000" y="287.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">rollup</text></g><g class="KGFkbWluIHNlcnZpY2UgLSZndDsgQmV0dGVyIEF1dGgpWzBd"><path d="M 1068.432000 256.396200 C 1195.000000 379.799988 1255.599976 411.000000 1366.000000 411.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1770527667-3488378134)" mask="url(#d2-1770527667)" /><text x="1197.000000" y="386.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">password reset</text></g><mask id="d2-1770527667" maskUnits="userSpaceOnUse" x="-25" y="-25" width="1815" height="494">
+<rect x="-25" y="-25" width="1815" height="494" fill="white"></rect>
+<rect x="460.000000" y="212.000000" width="92" height="21" fill="black"></rect>
+<rect x="1183.000000" y="152.000000" width="94" height="21" fill="black"></rect>
+<rect x="1209.000000" y="271.000000" width="43" height="21" fill="black"></rect>
+<rect x="1144.000000" y="370.000000" width="106" height="21" fill="black"></rect>
+</mask></svg></svg>
+</div><p class="diagram-caption"><code>health.*</code> sits outside this path — its three probes are <code>publicProcedure</code> and query the db / ESPN directly.</p></section><section id="depth" class="section"><div class="section-header"><h2 class="section-title">In depth</h2></div><div class="subsection" id="c-gate"><div class="subsection-header"><h3 class="subsection-title">Admin gate &amp; layout <span class="subsection-path">src/app/admin</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>layout.tsx</code> is a server component that calls <code>trpc.auth.me()</code> and does <code>if (!me || me.role !== "admin") redirect("/dashboard")</code> before rendering anything. It wraps every <code>/admin</code> route in a sidebar nav: Overview, Tournaments, Users, Golfers, Leagues, Promo Codes, Cron Logs. The Promo Codes link points at <code>/admin/promos</code>, whose pages live in the <a href="../domain-payments/domain-payments.html">payments</a> domain — the nav spans both.</p><p class="detail-p"><code>page.tsx</code> is the overview dashboard: one <code>admin.stats</code> call renders total users, leagues, picks this season, the currently-live tournament (linking into tournament ops), and the last cron run's success flag and duration — a one-glance health check before digging into any console.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/admin/layout.tsx</span><span class="owns-desc">Role-gated server layout + sidebar nav over all admin consoles</span></div><div class="owns-row"><span class="owns-name">app/admin/page.tsx</span><span class="owns-desc">Overview dashboard: platform counts, live tournament, last cron run</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>trpc.auth.me()</code> from the <a href="../domain-accounts/domain-accounts.html">accounts</a> auth router to read the session role.</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><code>admin.stats</code> — counts assembled by the <a href="#c-api">Admin API</a> repository plus the latest <code>CronLog</code> row.</span></div><div class="conn"><span class="conn-dir">consumes</span><span class="conn-body"><code>serverTRPC</code> from <a href="../domain-web-shell/domain-web-shell.html">web-shell</a> — all server pages in this domain fetch through it.</span></div></div></div><div class="subsection" id="c-tournaments"><div class="subsection-header"><h3 class="subsection-title">Tournament ops <span class="subsection-path">src/app/admin/tournaments</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">The list page filters by season, status, and name, with an <code>EXCLUDED</code> pseudo-status that maps to the <code>excluded</code> boolean filter, and derives a <code>LIVE</code> badge for <code>UPCOMING</code> tournaments whose start date has passed. The detail page loads via <code>admin.tournament</code> and hands off to the <code>TournamentAdmin</code> client component.</p><p class="detail-p"><code>TournamentAdmin</code> is the busiest console: an edit form (name, course, dates, purse, estimated purse, status) with a pair of timezone helpers — <code>toInputDateTime</code> / <code>fromInputDateTime</code> — that treat every <code>datetime-local</code> value as US Eastern regardless of the operator's browser timezone; an exclude toggle that surfaces the service's <code>PRECONDITION_FAILED</code> (locked picks exist) as a <strong>Force Exclude</strong> escalation button; and four sync buttons — Sync Field, Sync Results, Sync Live Standings, and Run Earnings Rollup (hardcoded to <code>GLOBAL_LEAGUE_ID</code>).</p><p class="detail-p"><code>TournamentResults</code> renders the per-golfer results table with inline row editing of finish position, earnings, score-to-par, and rounds — typing <code>MC</code> (missed cut) stores position <code>0</code>. This is the hand-correction path when ESPN's payout data is wrong, and its edits feed directly into what <a href="../domain-scoring/domain-scoring.html">scoring</a> rolls up.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/admin/tournaments/page.tsx</span><span class="owns-desc">Season/status/search list with EXCLUDED filter and LIVE derivation</span></div><div class="owns-row"><span class="owns-name">app/admin/tournaments/[id]/page.tsx</span><span class="owns-desc">Server loader — <code>admin.tournament</code>, <code>notFound()</code> on miss</span></div><div class="owns-row"><span class="owns-name">app/admin/tournaments/[id]/tournament-admin.tsx</span><span class="owns-desc">Edit form, ET datetime conversion, exclusion + force flow, sync controls, field table</span></div><div class="owns-row"><span class="owns-name">app/admin/tournaments/[id]/tournament-results.tsx</span><span class="owns-desc">Inline-editable results table (MC → position 0)</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">TournamentAdmin</span><span class="owns-desc">Client console for one tournament: edit, exclude, sync</span></div><div class="owns-row"><span class="owns-name">TournamentResults</span><span class="owns-desc">Inline results editor, invalidates its own query on save</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>admin.syncField</code> / <code>admin.syncResults</code> / <code>admin.syncLiveStandings</code>, which the service delegates to <a href="../domain-golf-data/domain-golf-data.html">golf-data</a>'s <code>syncFields</code> / <code>syncResults</code> / <code>syncLiveStandings</code>.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>admin.earningsRollup</code> → <a href="../domain-scoring/domain-scoring.html">scoring</a>'s <code>recalculateSeasonForLeague</code> for <code>GLOBAL_LEAGUE_ID</code> (from web-shell's <code>lib/constants.ts</code>).</span></div><div class="conn"><span class="conn-dir">produces</span><span class="conn-body">Corrected <code>tournamentResult</code> rows — the raw input for every leaderboard and season standings number.</span></div></div></div><div class="subsection" id="c-users"><div class="subsection-header"><h3 class="subsection-title">User ops <span class="subsection-path">src/app/admin/users</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">The list page searches name/email/username and shows each user's league count and picks this season (two aggregate queries stitched in the repository). The detail page loads the user plus their leagues and season picks, along with upcoming tournaments to power the test-reminder dropdown.</p><p class="detail-p"><code>UserDetail</code> is the account-surgery console: toggle role between <code>user</code> and <code>admin</code> (the service blocks self-demotion and demoting/deleting the last admin), send a password reset (routed through Better Auth's <code>requestPasswordReset</code>), send a test pick-reminder email for a chosen upcoming tournament, remove the user from any league, remove any individual pick (via the audited <code>admin.adminRemovePick</code>), and a confirm-gated delete that cascades picks, memberships, season rows, and auth records — refused while the user still commissions any league.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/admin/users/page.tsx</span><span class="owns-desc">Searchable user list with league/pick counts and role badges</span></div><div class="owns-row"><span class="owns-name">app/admin/users/[id]/page.tsx</span><span class="owns-desc">Server loader — user detail + upcoming tournaments for the test reminder</span></div><div class="owns-row"><span class="owns-name">app/admin/users/[id]/user-detail.tsx</span><span class="owns-desc">Role, password reset, test reminder, membership/pick removal, delete</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">UserDetail</span><span class="owns-desc">Client console wiring six admin mutations for one account</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>admin.sendPasswordResetEmail</code> → <code>auth.api.requestPasswordReset</code>, and <code>admin.testPickReminder</code> → <code>sendTestPickReminder</code> — both land in <a href="../domain-accounts/domain-accounts.html">accounts</a>.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>admin.adminRemovePick</code> — deletes via <a href="../domain-game/domain-game.html">game</a>'s pick repository and audit-logs via <a href="../domain-leagues/domain-leagues.html">leagues</a>' <code>createCommissionerAction</code>.</span></div></div></div><div class="subsection" id="c-leagues-golfers"><div class="subsection-header"><h3 class="subsection-title">League &amp; golfer ops <span class="subsection-path">src/app/admin/leagues</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p">League ops: the list filters by type (GLOBAL/PRIVATE), payment status, and name. <code>LeagueAdmin</code> edits any league's settings — name, <code>maxGolferUses</code>, <code>burnStalePicks</code>, <code>showPicksBeforeLock</code>, <code>requireApproval</code> — and reassigns the commissioner from a dropdown of current members. It adds members through a live <code>admin.users</code> search (existing members filtered out), removes any member except the commissioner, and offers a Danger Zone delete that is simply not rendered for the GLOBAL league (the service refuses it server-side too).</p><p class="detail-p">Golfer ops is the small sibling under <code>src/app/admin/golfers</code>: a searchable list showing world ranking and events played, and <code>GolferAdmin</code>, a three-field form correcting name, country, and world ranking — the fix-up path when ESPN data comes in wrong or incomplete.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/admin/leagues/page.tsx</span><span class="owns-desc">Type/payment/search league list with member counts</span></div><div class="owns-row"><span class="owns-name">app/admin/leagues/[id]/page.tsx</span><span class="owns-desc">Server loader — <code>admin.league</code> with members</span></div><div class="owns-row"><span class="owns-name">app/admin/leagues/[id]/league-admin.tsx</span><span class="owns-desc">Settings, commissioner reassignment, membership add/remove, delete</span></div><div class="owns-row"><span class="owns-name">app/admin/golfers/page.tsx</span><span class="owns-desc">Searchable golfer list (rank, events played)</span></div><div class="owns-row"><span class="owns-name">app/admin/golfers/[id]/page.tsx</span><span class="owns-desc">Server loader — <code>admin.golfer</code></span></div><div class="owns-row"><span class="owns-name">app/admin/golfers/[id]/golfer-admin.tsx</span><span class="owns-desc">Name/country/world-ranking correction form</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">LeagueAdmin</span><span class="owns-desc">Client console for one league: settings + membership + delete</span></div><div class="owns-row"><span class="owns-name">GolferAdmin</span><span class="owns-desc">Client form correcting one golfer's reference data</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">reads</span><span class="conn-body">League settings mirror what <a href="../domain-leagues/domain-leagues.html">leagues</a> commissioners self-serve — this console is the same knobs without the commissioner-only restriction.</span></div><div class="conn"><span class="conn-dir">consumes</span><span class="conn-body"><code>CountryFlag</code> from <a href="../domain-golf-data/domain-golf-data.html">golf-data</a> on the golfer list.</span></div></div></div><div class="subsection" id="c-cron"><div class="subsection-header"><h3 class="subsection-title">Cron console <span class="subsection-path">src/app/admin/cron</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>page.tsx</code> renders the last 20 cron runs from <code>admin.cronLogs</code>: success/error badge, US-Eastern timestamp, duration, and the stored JSON response pretty-printed per run — the primary debugging view when a nightly sync misbehaves.</p><p class="detail-p"><code>RunCronButton</code> fires <code>admin.runFullSync</code>, which the admin service re-exports verbatim from golf-data's <code>cron-sync</code> service — so the button runs <em>exactly</em> the code path the scheduled <code>/api/cron/sync</code> route runs, and its result lands in the same <code>CronLog</code> table the page displays.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">app/admin/cron/page.tsx</span><span class="owns-desc">Last 20 CronLog entries with parsed JSON payloads</span></div><div class="owns-row"><span class="owns-name">app/admin/cron/run-cron-button.tsx</span><span class="owns-desc">Manual <code>admin.runFullSync</code> trigger with inline status</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">RunCronButton</span><span class="owns-desc">Client button — same code path as the scheduled cron</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>runFullSync</code> from <a href="../domain-golf-data/domain-golf-data.html">golf-data</a>'s <code>cron-sync.ts</code> (re-exported by <code>services/admin.ts</code>).</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><code>CronLog</code> rows via golf-data's <code>cron-log.ts</code> repository (<code>findLatestRuns(20)</code>).</span></div></div></div><div class="subsection" id="c-api"><div class="subsection-header"><h3 class="subsection-title">Admin API <span class="subsection-path">src/server</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>routers/admin.ts</code> mounts 35 procedures on <code>adminProcedure</code>, spanning stats, tournaments (+results, field, exclusion, syncs), users, golfers, leagues, picks, promo codes, and cron. The router stays thin — zod input, service call — with one exception: <code>testPickReminder</code> calls accounts' <code>sendTestPickReminder</code> service directly instead of going through <code>services/admin.ts</code>.</p><p class="detail-p"><code>services/admin.ts</code> is where the override guards live: existence checks that turn into <code>NOT_FOUND</code>; <code>updateUserRole</code>/<code>deleteUser</code> refuse self-demotion, self-deletion, and touching the last admin (<code>countAdmins</code>); <code>deleteUser</code> also refuses while the user commissions any league (<code>findLeaguesByCommissioner</code>); <code>removeUserFromLeague</code> refuses to remove a commissioner; <code>deleteLeague</code> refuses the GLOBAL league; <code>toggleTournamentExclusion</code> throws <code>PRECONDITION_FAILED</code> when locked picks exist unless <code>force</code> is passed. <code>adminUpdatePick</code>/<code>adminRemovePick</code> wrap the pick change and a <code>commissionerAction</code> audit row (<code>ADMIN_UPDATE_PICK</code> / <code>ADMIN_REMOVE_PICK</code>) in <code>withTransaction</code>, then recalculate the member's season if the tournament is <code>COMPLETED</code>/<code>FINALIZING</code>.</p><p class="detail-p"><code>repositories/admin.ts</code> holds the read models — search lists with escaped <code>ilike</code>, aggregate counts (league members, picks this season, events played), and the platform stats query — plus the destructive writes. Its <code>deleteUser</code>, <code>removeUserFromLeague</code>, and <code>deleteLeague</code> run multi-table cascades (picks → season rows → audit rows → memberships → auth rows) inside <code>db.transaction()</code> directly, a deviation from the repo convention of accepting an <code>executor</code> param and letting services own transactions.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/routers/admin.ts</span><span class="owns-desc">35 <code>adminProcedure</code> procedures — the whole operator surface</span></div><div class="owns-row"><span class="owns-name">server/services/admin.ts</span><span class="owns-desc">Override guards, audited pick mutations, sync/rollup delegation</span></div><div class="owns-row"><span class="owns-name">server/repositories/admin.ts</span><span class="owns-desc">Cross-table Kysely read models + cascade deletes</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">adminRouter</span><span class="owns-desc">Mounted as <code>admin</code> in <code>routers/_app.ts</code></span></div><div class="owns-row"><span class="owns-name">adminUpdatePick</span><span class="owns-desc">Service: swap a pick's golfer, audit it, recalc earnings if finalized</span></div><div class="owns-row"><span class="owns-name">countAdmins</span><span class="owns-desc">Repo: powers the last-admin guard</span></div><div class="owns-row"><span class="owns-name">countLockedPicksForTournament</span><span class="owns-desc">Repo: powers the exclusion precondition</span></div><div class="owns-row"><span class="owns-name">findUsers</span><span class="owns-desc">Repo: searchable user list with league + pick aggregates</span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><a href="../domain-golf-data/domain-golf-data.html">golf-data</a>: <code>syncFields</code>/<code>syncResults</code>/<code>syncLiveStandings</code> (<code>services/sync.ts</code>), <code>runFullSync</code> (<code>cron-sync.ts</code>), <code>cron-log</code> and <code>tournament</code>/<code>golfer</code> repositories.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><a href="../domain-scoring/domain-scoring.html">scoring</a>: <code>recalculateSeasonForLeague</code> / <code>recalculateSeasonForMember</code> from <code>earnings-core.ts</code> after result edits and pick overrides.</span></div><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><a href="../domain-accounts/domain-accounts.html">accounts</a> (<code>auth.api.requestPasswordReset</code>, <code>sendTestPickReminder</code>), <a href="../domain-game/domain-game.html">game</a> (<code>pick.ts</code> repo), <a href="../domain-leagues/domain-leagues.html">leagues</a> (<code>createCommissionerAction</code>, <code>findLeaguesByCommissioner</code>).</span></div><div class="conn"><span class="conn-dir">consumed by</span><span class="conn-body"><a href="../domain-payments/domain-payments.html">payments</a>' <code>/admin/promos</code> pages — the promo-code procedures (<code>admin.promoCodes</code>, <code>admin.createPromoCode</code>, <code>admin.updatePromoCode</code>) live in this router even though the promo UI and model belong to payments.</span></div></div></div><div class="subsection" id="c-health"><div class="subsection-header"><h3 class="subsection-title">Health probes <span class="subsection-path">src/server/routers</span></h3><a href="#components" class="subsection-back">&uarr; back to cards</a></div><p class="detail-p"><code>healthRouter</code> exposes three <code>publicProcedure</code> queries: <code>ping</code> (process up), <code>dbCheck</code> (<code>SELECT NOW()</code> through Kysely), and <code>espnCheck</code> (fetches the current season's schedule via <code>espnProvider.getSchedule</code> and reports event count + first/last event names — a real exercise of the ESPN dependency, not a stub).</p><p class="detail-p">It's the one router in the codebase that imports <code>db</code> and queries it directly, skipping the service/repository layering — a deliberate pragmatism for probes that must not depend on the layers they're checking. It's also the only public surface in this domain: everything else requires the admin role.</p><div class="conns-label">Key files</div><div class="owns-list"><div class="owns-row"><span class="owns-name">server/routers/health.ts</span><span class="owns-desc"><code>ping</code> / <code>dbCheck</code> / <code>espnCheck</code> public probes</span></div></div><div class="conns-label">Key exports</div><div class="owns-list"><div class="owns-row"><span class="owns-name">healthRouter</span><span class="owns-desc">Mounted as <code>health</code> in <code>routers/_app.ts</code></span></div></div><div class="conns-label">Connections</div><div class="conns"><div class="conn"><span class="conn-dir">calls</span><span class="conn-body"><code>espnProvider</code> from <a href="../domain-golf-data/domain-golf-data.html">golf-data</a>'s ESPN client for the upstream check.</span></div><div class="conn"><span class="conn-dir">reads</span><span class="conn-body"><code>db</code> from <a href="../domain-web-shell/domain-web-shell.html">web-shell</a>'s <code>lib/db.ts</code> — directly, bypassing the repository layer by design.</span></div></div></div></section><section id="data" class="section"><div class="section-header"><h2 class="section-title">Data it owns</h2></div><p class="section-intro">Honestly: none. Admin owns no Prisma models — it is an operator lens over everyone else's tables.</p><div class="owns-list"><div class="owns-row"><span class="owns-name">(no owned models)</span><span class="owns-desc"><code>tournament</code>/<code>golfer</code>/<code>cronLog</code> belong to golf-data, <code>user</code> to accounts, <code>league</code>/<code>leagueMember</code>/<code>commissionerAction</code> to leagues, <code>pick</code> to game, <code>promoCode</code> to payments.</span></div></div><p class="diagram-caption">What makes this domain unusual is write reach, not ownership: <code>repositories/admin.ts</code> is the one repository that updates and cascade-deletes across nearly every table in the schema.</p></section><section id="seams" class="section"><div class="section-header"><h2 class="section-title">Seams</h2></div><p class="section-intro">The full <code>admin.*</code> surface is 35 procedures, every one behind <code>adminProcedure</code>; the representative ones below show its span. <code>health.*</code> is the domain's only public surface.</p><div class="seam-cols"><div class="seam-col seam-exposes"><div class="seam-head"><span aria-hidden="true">&#8593;</span> Exposes</div><div class="seam-body"><ul class="seam-api"><li>admin.stats <span class="api-note">— Overview counts + live tournament + last cron run</span></li><li>admin.updateTournament <span class="api-note">— Edit name/course/dates/purse/status</span></li><li>admin.updateTournamentResult <span class="api-note">— Hand-correct a golfer&#39;s finish/earnings</span></li><li>admin.toggleTournamentExclusion <span class="api-note">— `PRECONDITION_FAILED` on locked picks unless `force`</span></li><li>admin.runFullSync <span class="api-note">— Same code path as the scheduled cron</span></li><li>admin.cronLogs <span class="api-note">— Last 20 `CronLog` runs</span></li><li>admin.updateUserRole <span class="api-note">— Guards: no self-demotion, never the last admin</span></li><li>admin.deleteUser <span class="api-note">— Cascade delete; refused for commissioners</span></li><li>admin.adminUpdatePick <span class="api-note">— Audited golfer swap + conditional earnings recalc</span></li><li>admin.updateLeague <span class="api-note">— Any league&#39;s settings incl. commissioner</span></li><li>admin.updateGolfer <span class="api-note">— Correct golfer reference data</span></li><li>admin.createPromoCode <span class="api-note">— Consumed by payments&#39; `/admin/promos` UI</span></li><li>routers/health.ts</li></ul></div></div><div class="seam-col seam-depends"><div class="seam-head"><span aria-hidden="true">&#8595;</span> Depends on</div><div class="seam-body"><div class="seam-neighbors"><a class="neighbor-chip" href="../domain-accounts/domain-accounts.html">accounts <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-game/domain-game.html">game <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-golf-data/domain-golf-data.html">golf-data <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-leagues/domain-leagues.html">leagues <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-scoring/domain-scoring.html">scoring <span class="nc-path">src</span></a><a class="neighbor-chip" href="../domain-web-shell/domain-web-shell.html">web-shell <span class="nc-path">src</span></a></div><p class="diagram-caption" style="margin-top:14px;">One inbound seam worth knowing: <a href="../domain-payments/domain-payments.html">payments</a>' promo admin pages depend on this router (<code>admin.promoCodes</code> / <code>admin.promoCode</code> / <code>admin.createPromoCode</code> / <code>admin.updatePromoCode</code>) — the dependency arrow points <em>into</em> admin, not out.</p></div></div></div></section></main></div><div id="zoom-overlay" class="zoom-overlay" aria-hidden="true"><div class="zoom-controls"><button id="zoom-out" type="button" aria-label="Zoom out">&#8722;</button><button id="zoom-reset" type="button">Reset</button><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-close" type="button" aria-label="Close">&#10006;</button></div><div id="zoom-stage" class="zoom-stage"></div></div><script>(function() {
+  'use strict';
+
+  // Sidebar toggle
+  var toggle = document.getElementById('sidebar-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+
+  function openSidebar() {
+    sidebar.classList.add('is-open');
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove('is-open');
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function() {
+      if (sidebar.classList.contains('is-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  // Close sidebar on nav click (mobile)
+  var outlineLinks = document.querySelectorAll('.outline-item, .file-item');
+  outlineLinks.forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 900) {
+        closeSidebar();
+      }
+    });
+  });
+
+  // Scroll-spy for outline
+  var outlineItems = document.querySelectorAll('.outline-item[data-target]');
+  var sections = Array.prototype.map.call(outlineItems, function(it) {
+    var t = it.getAttribute('data-target');
+    return { id: t, target: t };
+  });
+
+  function updateActive(activeId) {
+    outlineItems.forEach(function(item) {
+      var t = item.getAttribute('data-target');
+      if (t === activeId) {
+        item.classList.add('is-active');
+      } else {
+        item.classList.remove('is-active');
+      }
+    });
+  }
+
+  var topbarH = 52;
+
+  function onScroll() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var winH = window.innerHeight;
+    var active = null;
+
+    for (var i = sections.length - 1; i >= 0; i--) {
+      var el = document.getElementById(sections[i].id);
+      if (el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.top <= topbarH + 32) {
+          active = sections[i].target;
+          break;
+        }
+      }
+    }
+
+    if (active) {
+      updateActive(active);
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Progress rail: highlight chapter based on scroll
+  var progressSteps = document.querySelectorAll('.progress-step');
+  var chapters = Array.prototype.map.call(progressSteps, function(s) {
+    var h = s.getAttribute('href') || '';
+    return h.charAt(0) === '#' ? document.getElementById(h.slice(1)) : null;
+  });
+
+  function updateProgress() {
+    var scrollY = window.scrollY || window.pageYOffset;
+    var active = 0;
+    for (var i = chapters.length - 1; i >= 0; i--) {
+      if (chapters[i]) {
+        var rect = chapters[i].getBoundingClientRect();
+        if (rect.top <= topbarH + 48) {
+          active = i;
+          break;
+        }
+      }
+    }
+    progressSteps.forEach(function(step, idx) {
+      if (idx === active) {
+        step.classList.add('is-active');
+      } else {
+        step.classList.remove('is-active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+})();
+
+(function(){
+  'use strict';
+  var ov=document.getElementById('zoom-overlay'), stage=document.getElementById('zoom-stage');
+  var cur,scale=1,tx=0,ty=0,drag=false,moved=false,lx=0,ly=0;
+  function apply(){ if(cur) cur.style.transform='translate('+tx+'px,'+ty+'px) scale('+scale+')'; }
+  function openSvg(svg){ stage.innerHTML=''; cur=svg.cloneNode(true); cur.removeAttribute('width'); cur.removeAttribute('height'); stage.appendChild(cur); scale=1;tx=0;ty=0;apply(); ov.classList.add('is-open'); ov.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+  function closeOv(){ ov.classList.remove('is-open'); ov.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  document.querySelectorAll('.diagram-box').forEach(function(box){
+    var svg=box.querySelector('svg.diagram-svg'); if(!svg) return;
+    box.addEventListener('click', function(){ openSvg(svg); });
+  });
+  document.getElementById('zoom-close').addEventListener('click', closeOv);
+  document.getElementById('zoom-reset').addEventListener('click', function(){ scale=1;tx=0;ty=0;apply(); });
+  document.getElementById('zoom-in').addEventListener('click', function(){ scale=Math.min(8,scale*1.25); apply(); });
+  document.getElementById('zoom-out').addEventListener('click', function(){ scale=Math.max(0.3,scale/1.25); apply(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeOv(); });
+  stage.addEventListener('wheel', function(e){ e.preventDefault(); scale=Math.min(8,Math.max(0.3, scale*(e.deltaY<0?1.12:0.89))); apply(); }, {passive:false});
+  stage.addEventListener('pointerdown', function(e){ drag=true; moved=false; lx=e.clientX; ly=e.clientY; try{stage.setPointerCapture(e.pointerId);}catch(_){} });
+  stage.addEventListener('pointermove', function(e){ if(!drag)return; moved=true; tx+=e.clientX-lx; ty+=e.clientY-ly; lx=e.clientX; ly=e.clientY; apply(); });
+  stage.addEventListener('pointerup', function(){ drag=false; });
+  stage.addEventListener('pointercancel', function(){ drag=false; });
+  stage.addEventListener('click', function(e){ if(!moved && e.target===stage) closeOv(); });
+})();
+
+(function(){
+  'use strict';
+  function openTo(hash){
+    if(!hash || hash.charAt(0) !== '#') return;
+    var el = document.getElementById(hash.slice(1));
+    if(!el) return;
+    var p = el;
+    while(p){ if(p.tagName && p.tagName.toLowerCase() === 'details') p.open = true; p = p.parentElement; }
+    if(el.tagName && el.tagName.toLowerCase() === 'details') el.open = true;
+    var d = el.querySelector && el.querySelector('details.file-diff');
+    if(d) d.open = true;
+  }
+  window.addEventListener('hashchange', function(){ openTo(location.hash); });
+  if(location.hash) openTo(location.hash);
+})();
+</script></body></html>

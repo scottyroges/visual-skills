@@ -1,0 +1,609 @@
+{
+  "kind": "domain",
+  "slug": "game",
+  "title": "Picks & planner",
+  "layer": "engine",
+  "layerLabel": "Core game",
+  "path": "src",
+  "count": "18 files",
+  "depends": "golf-data · leagues · scoring · web-shell",
+  "date": "2026-07-21",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Engine"
+    },
+    {
+      "key": "Owns",
+      "value": "Pick model + PLANNED/LOCKED lifecycle"
+    },
+    {
+      "key": "Surfaces",
+      "value": "/dashboard · /season · /season/[userId]"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "heading": "Picks & planner",
+      "rows": [
+        {
+          "key": "What it is",
+          "value": "The product core: one golfer per week, earn their real prize money, never reuse a golfer past the league's `maxGolferUses`. This domain owns the weekly pick, the season-long planner (prepicks), the auto-lock at tournament start, bot auto-picks, and the dashboard that fronts it all."
+        },
+        {
+          "key": "Path",
+          "value": "src (routers/services/repositories `pick*`, `dashboard*`, `bot-picks`, planner + dashboard UI)"
+        },
+        {
+          "key": "Files",
+          "value": "18"
+        },
+        {
+          "key": "Entry points",
+          "value": "tRPC `pick.*` and `dashboard.get`; two cron hooks called from golf-data's sync (`lockPlannedPicksForTournament`, `autoPickForBots`)"
+        },
+        {
+          "key": "Data",
+          "value": "`Pick` — one row per member × tournament, enforced by a DB unique constraint"
+        }
+      ],
+      "bigIdea": {
+        "label": "Big idea",
+        "line": "A pick is a **soft reservation** until its tournament tees off.",
+        "sub": "PLANNED picks are freely created, moved, and deleted all season — planning a golfer for a new week silently steals him from any other week he was planned for. Locking is *dual*: reads overlay LOCKED the instant `startDate` passes (`applyReadSideLocking`, no write needed), while the cron write-side pass (`lockPlannedPicksForTournament`) later promotes rows for real — validating field membership and exhaustion, and burning or returning stale plans per league policy."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "Components",
+      "intro": "Five units: the pick service (CRUD + reads + commissioner overrides), the write-side locker, bot auto-picks, the dashboard aggregate, and the planner/picker UI.",
+      "cards": [
+        {
+          "name": "pick service",
+          "purpose": "Thin `pick.*` router over the largest service in the repo: plan/move/remove PLANNED picks, season + league read models, the remaining-pool query, and commissioner override mutations with audit logging.",
+          "exports": [
+            {
+              "name": "pickRouter",
+              "deputy": true
+            },
+            {
+              "name": "planPick"
+            },
+            {
+              "name": "planPickMultiple"
+            },
+            {
+              "name": "getRemainingPool"
+            },
+            {
+              "name": "commissionerUpdatePick"
+            }
+          ],
+          "href": "#c-pick-service"
+        },
+        {
+          "name": "pick locking",
+          "purpose": "Write-side auto-lock: when golf-data's sync flips a tournament to IN_PROGRESS, every PLANNED pick is promoted to LOCKED — or burned / deleted / skipped depending on field membership, `burnStalePicks`, and exhaustion.",
+          "exports": [
+            {
+              "name": "lockPlannedPicksForTournament",
+              "deputy": true
+            }
+          ],
+          "href": "#c-pick-lock"
+        },
+        {
+          "name": "bot picks",
+          "purpose": "Cron step that gives every bot league member a random PLANNED pick from the tournament field before locking runs — so test/filler leagues always have full weeks.",
+          "exports": [
+            {
+              "name": "autoPickForBots",
+              "deputy": true
+            },
+            {
+              "name": "findAvailableGolferIds"
+            }
+          ],
+          "href": "#c-bot-picks"
+        },
+        {
+          "name": "dashboard",
+          "purpose": "`dashboard.get` aggregates one screen in parallel: current pick, standing vs the leader, live league picks (windowed around you) or last result, and upcoming tournaments overlaid with your pick status.",
+          "exports": [
+            {
+              "name": "dashboardRouter",
+              "deputy": true
+            },
+            {
+              "name": "getDashboard"
+            },
+            {
+              "name": "windowAround"
+            }
+          ],
+          "href": "#c-dashboard"
+        },
+        {
+          "name": "planner & picker UI",
+          "purpose": "The `/season` planner timeline, the shared `GolferPicker` drawer (used by dashboard, league page, and planner), the remaining-pool sidebar with per-golfer usage circles, and the read-only `/season/[userId]` member view.",
+          "exports": [
+            {
+              "name": "PlannerTimeline",
+              "deputy": true
+            },
+            {
+              "name": "GolferPicker"
+            },
+            {
+              "name": "RemainingPool"
+            }
+          ],
+          "href": "#c-planner-ui"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "Internal architecture",
+      "intro": "Two write paths into the `pick` table: the member path (pages → GolferPicker → `pick` router → service → repo) and the cron path from golf-data's sync (bot picks, then write-side locking inside the start-tournament transaction).",
+      "diagram": {
+        "id": "arch-diagram",
+        "kind": "architecture",
+        "d2": "direction: right\nmember: { class: actor }\n\"cron sync (golf-data)\"\n\"dashboard page\"\n\"season planner\"\nGolferPicker\n\"pick router\"\n\"dashboard router\"\n\"pick service\"\n\"dashboard service\"\n\"pick repo\"\n\"pick-lock repo\"\n\"bot-picks service\"\nPostgres: { class: store }\nmember -> \"dashboard page\"\nmember -> \"season planner\"\n\"dashboard page\" -> GolferPicker\n\"season planner\" -> GolferPicker\nGolferPicker -> \"pick router\": \"plan / updatePlan\"\n\"season planner\" -> \"pick router\": \"allSeasonPicks / remainingPool\"\n\"dashboard page\" -> \"dashboard router\": get\n\"pick router\" -> \"pick service\"\n\"dashboard router\" -> \"dashboard service\"\n\"dashboard service\" -> \"pick service\": leagueCurrentWeek\n\"pick service\" -> \"pick repo\"\n\"dashboard service\" -> \"pick repo\"\n\"pick repo\" -> Postgres\n\"cron sync (golf-data)\" -> \"bot-picks service\": \"1. auto-pick\"\n\"cron sync (golf-data)\" -> \"pick-lock repo\": \"2. lock PLANNED (tx)\"\n\"bot-picks service\" -> Postgres\n\"pick-lock repo\" -> Postgres",
+        "mermaid": "flowchart LR\n  M[member] --> DP[dashboard page]\n  M --> SP[season planner]\n  DP --> GP[GolferPicker]\n  SP --> GP\n  GP -->|plan / updatePlan| PR[pick router]\n  SP -->|allSeasonPicks / remainingPool| PR\n  DP -->|get| DR[dashboard router]\n  PR --> PS[pick service]\n  DR --> DS[dashboard service]\n  DS -->|leagueCurrentWeek| PS\n  PS --> REPO[pick repo]\n  DS --> REPO\n  REPO --> DB[(Postgres)]\n  CRON[cron sync golf-data] -->|1. auto-pick| BOT[bot-picks service]\n  CRON -->|2. lock PLANNED tx| LOCK[pick-lock repo]\n  BOT --> DB\n  LOCK --> DB\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class M actor;\n  class DB store;",
+        "caption": "The dashboard repo is drawn folded into \"pick repo\" for brevity — it is a separate file (`server/repositories/dashboard.ts`) hitting the same tables."
+      },
+      "callout": "The cron path deliberately avoids the `server-only` guard: `pick-lock.ts` and both `bot-picks` files import `@/lib/db-core` directly so golf-data's cron route and Vitest can call them outside a React server context."
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "In depth",
+      "components": [
+        {
+          "id": "c-pick-service",
+          "name": "pick service",
+          "path": "src/server",
+          "detail": [
+            "The router (`routers/pick.ts`) is 21 procedures of pure zod-validate-and-delegate; every rule lives in `services/pick.ts`. PLANNED mutations all share the same guardrails: league active, caller resolved to a `leagueMemberId` (via leagues), tournament exists and hasn't started, golfer exists. The signature move is in `planPick`/`updatePlannedPick`: if the chosen golfer is already PLANNED for a *different* week, that plan is deleted first — planning is a season-wide drag-and-drop, not per-week CRUD.",
+            "`planPickMultiple` fans one pick out across every eligible league the user is in (ACTIVE member, paid, current season), returning per-league `planned`/`skipped` results with reasons (`exhausted`, `already_picked`, `planned_elsewhere`). Unlike `planPick` it *never* auto-moves a conflicting plan, and it catches Postgres `23505` unique-violations to resolve concurrent-submit races as `already_picked`. It's feature-flagged in the UI by `NEXT_PUBLIC_ENABLE_MULTI_LEAGUE_PICK`.",
+            "Reads apply `applyReadSideLocking` — a pure overlay that reports any PLANNED pick whose tournament has started as LOCKED, so the UI is correct even before the cron write-side pass runs. `findRemainingPool` is the heaviest query: golfers not yet exhausted (LOCKED count ≥ league `maxGolferUses`, counting started-PLANNED picks), decorated with season earnings, missed cuts, per-golfer used/planned counts, and tri-state `inField` (true/false/null-when-field-unpublished).",
+            "Commissioner mutations (`commissionerUpdatePick`/`RemovePick`/`AddPick`) are the escape hatch: not-in-field and exhaustion are *soft warnings* rather than blocks (except add, which hard-blocks exhaustion), every change writes a `CommissionerAction` audit row in the same `withTransaction`, and if the tournament is already COMPLETED/FINALIZING the service calls scoring's `recalculateSeasonForMember` so standings update immediately."
+          ],
+          "files": [
+            {
+              "name": "server/routers/pick.ts",
+              "desc": "21 thin tRPC procedures — plan lifecycle, read models, by-user variants, commissioner ops"
+            },
+            {
+              "name": "server/services/pick.ts",
+              "desc": "All pick business logic (~900 lines): guards, plan-move semantics, multi-league fan-out, read-side locking, commissioner escape hatch"
+            },
+            {
+              "name": "server/repositories/pick.ts",
+              "desc": "Kysely queries: exhaustion subqueries, remaining pool, league week picks, season timeline with `inField` tri-state"
+            }
+          ],
+          "exports": [
+            {
+              "name": "planPick",
+              "desc": "Create PLANNED pick; auto-moves the golfer's conflicting plan from another week"
+            },
+            {
+              "name": "planPickMultiple",
+              "desc": "Fan-out across eligible leagues with per-league skip reasons; handles 23505 races"
+            },
+            {
+              "name": "updatePlannedPick",
+              "desc": "Swap golfer on an existing PLANNED pick (same auto-move rule)"
+            },
+            {
+              "name": "removePlannedPick",
+              "desc": "Delete a PLANNED pick before the tournament starts"
+            },
+            {
+              "name": "getAllSeasonPicks",
+              "desc": "Season timeline with results + `inField`, read-side locked"
+            },
+            {
+              "name": "getRemainingPool",
+              "desc": "Unexhausted golfers with usage counts and field status"
+            },
+            {
+              "name": "getLeagueCurrentWeek",
+              "desc": "League-wide picks for the current tournament; honors `showPicksBeforeLock` pre-lock"
+            },
+            {
+              "name": "commissionerAddPick",
+              "desc": "Backfill a pick (LOCKED if started), audit-logged, triggers earnings recalc"
+            },
+            {
+              "name": "findExhaustedGolferIds",
+              "desc": "Repo: golfers used ≥ maxUses this season (counts started-PLANNED)"
+            },
+            {
+              "name": "findRemainingPool",
+              "desc": "Repo: the pool query with earnings/MC aggregates"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[leagues](../domain-leagues/domain-leagues.html) — `resolveLeagueMemberId`, `assertLeagueActive`, `getMaxGolferUses`, and `createCommissionerAction` for the audit trail"
+            },
+            {
+              "dir": "reads",
+              "body": "[golf-data](../domain-golf-data/domain-golf-data.html) — `tournamentRepo.findById`/`findInProgress`, `golferRepo.findById`, and `getCurrentSeason` from `lib/season`; joins `tournamentResult`/`tournamentField` tables it does not own"
+            },
+            {
+              "dir": "calls",
+              "body": "[scoring](../domain-scoring/domain-scoring.html) — `recalculateSeasonForMember` after commissioner edits to completed tournaments"
+            },
+            {
+              "dir": "consumed by",
+              "body": "planner & picker UI (below), the dashboard service, and [leagues](../domain-leagues/domain-leagues.html)' league page via `pick.leagueCurrentWeek`"
+            }
+          ]
+        },
+        {
+          "id": "c-pick-lock",
+          "name": "pick locking",
+          "path": "src/server/repositories",
+          "detail": [
+            "`lockPlannedPicksForTournament(tournamentId, season, executor)` is the write-side half of the dual locking model. Golf-data's `sync.ts` calls it inside the same `withTransaction` that flips the tournament to IN_PROGRESS, so status change and lock promotion commit atomically.",
+            "For each PLANNED pick it checks two things: is the golfer a CONFIRMED entry in the tournament field, and is he not already exhausted (LOCKED count ≥ the league's `maxGolferUses`). Valid picks get `status: LOCKED` plus a `lockedAt` timestamp. A golfer *not in the field* forks on the league's `burnStalePicks` setting: burn mode locks the pick anyway (the week is spent on a golfer who never played), skip mode deletes it so the golfer returns to the pool. Exhausted golfers are skipped untouched.",
+            "After promotion there's a cleanup sweep: if locking made a golfer newly exhausted, his remaining PLANNED picks on *other* tournaments are deleted — the soft reservations collapse the moment the hard use is spent. Returns `{ locked, skipped, cleaned }` for the cron log."
+          ],
+          "diagrams": [
+            {
+              "id": "lock-flow",
+              "kind": "flowchart",
+              "d2": "direction: right\nPLANNED -> \"in field?\"\n\"in field?\" -> \"exhausted?\": yes\n\"in field?\" -> \"burnStalePicks?\": no\n\"exhausted?\" -> LOCKED: no\n\"exhausted?\" -> skipped: yes\n\"burnStalePicks?\" -> \"LOCKED (burned)\": yes\n\"burnStalePicks?\" -> \"deleted (back to pool)\": no\nLOCKED -> \"other PLANNED plans deleted\": \"golfer now exhausted\"",
+              "mermaid": "flowchart LR\n  P[PLANNED] --> F{in field?}\n  F -->|yes| E{exhausted?}\n  F -->|no| B{burnStalePicks?}\n  E -->|no| L[LOCKED]\n  E -->|yes| S[skipped]\n  B -->|yes| LB[LOCKED burned]\n  B -->|no| D[deleted back to pool]\n  L -->|golfer now exhausted| C[other PLANNED plans deleted]",
+              "caption": "Fate of each PLANNED pick when its tournament starts. Read-side locking has already made these picks *look* LOCKED; this pass makes it true — or unwinds invalid plans."
+            }
+          ],
+          "files": [
+            {
+              "name": "server/repositories/pick-lock.ts",
+              "desc": "The whole component: promotion loop, burn/skip fork, exhaustion cleanup. No `server-only` guard; takes a Kysely executor for transactional use"
+            }
+          ],
+          "exports": [
+            {
+              "name": "lockPlannedPicksForTournament",
+              "desc": "Promote/burn/delete PLANNED picks for a starting tournament; returns `{ locked, skipped, cleaned }`"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[golf-data](../domain-golf-data/domain-golf-data.html)'s `sync.ts` `startTournaments` step, inside the tournament-start transaction — the one place another domain writes this domain's rows"
+            },
+            {
+              "dir": "reads",
+              "body": "`league.maxGolferUses` and `league.burnStalePicks` ([leagues](../domain-leagues/domain-leagues.html)) and `tournamentField` ([golf-data](../domain-golf-data/domain-golf-data.html)) to validate each plan"
+            }
+          ]
+        },
+        {
+          "id": "c-bot-picks",
+          "name": "bot picks",
+          "path": "src/server",
+          "detail": [
+            "`autoPickForBots` runs as step 1.5 of golf-data's `runCronSync`, deliberately *before* `startTournaments` so the picks it creates get locked in the same cron run. For every UPCOMING tournament that has a synced field, it finds bot users (`user.isBot = true`) whose league membership has no pick yet, filters the CONFIRMED field down to non-exhausted golfers for that member, and inserts a random PLANNED pick.",
+            "The insert uses `onConflict (leagueMemberId, tournamentId) doNothing`, leaning on the same unique constraint that protects human picks — a concurrent cron run can't double-pick a bot. Like `pick-lock.ts`, both files skip the `server-only` guard and import `@/lib/db-core` directly so the cron API route can use them."
+          ],
+          "files": [
+            {
+              "name": "server/services/bot-picks.ts",
+              "desc": "Tournament loop + random selection from the available pool"
+            },
+            {
+              "name": "server/repositories/bot-picks.ts",
+              "desc": "Bot-member discovery, exhaustion-filtered field query, conflict-safe insert"
+            }
+          ],
+          "exports": [
+            {
+              "name": "autoPickForBots",
+              "desc": "Give every bot member a PLANNED pick for each field-synced UPCOMING tournament"
+            },
+            {
+              "name": "BotPickResult",
+              "desc": "Per-tournament `{ tournament, picksCreated }` summary for the cron log"
+            },
+            {
+              "name": "findBotMembersNeedingPicks",
+              "desc": "Bot league members without a pick for a tournament"
+            },
+            {
+              "name": "findAvailableGolferIds",
+              "desc": "CONFIRMED field entries minus exhausted golfers for one member"
+            },
+            {
+              "name": "insertBotPick",
+              "desc": "PLANNED insert with `onConflict doNothing` on the member×tournament key"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[golf-data](../domain-golf-data/domain-golf-data.html)'s `cron-sync.ts` (step 1.5, before tournament start/locking)"
+            },
+            {
+              "dir": "reads",
+              "body": "`user.isBot` ([accounts](../domain-accounts/domain-accounts.html) data), `league.maxGolferUses` ([leagues](../domain-leagues/domain-leagues.html)), and `tournamentField` ([golf-data](../domain-golf-data/domain-golf-data.html))"
+            }
+          ]
+        },
+        {
+          "id": "c-dashboard",
+          "name": "dashboard",
+          "path": "src/server",
+          "detail": [
+            "One procedure, `dashboard.get`, returns everything the home screen needs. `getDashboard` decides a single `isLive` flag (tournament IN_PROGRESS, recently completed/finalizing, or past `startDate`) and then fetches in parallel: the member's pick for the current tournament, their standing (rank, total earnings, gap to the leader via scoring's `findLeaderEarnings`), *either* live league picks or the last completed result, and the next three UPCOMING tournaments overlaid with the member's pick status.",
+            "Two small read-model tricks: the current pick gets the same read-side PLANNED→LOCKED overlay as the pick service, and the league-picks list is windowed to 4 rows centered on the calling user (`windowAround`, exported for tests) so the dashboard shows *your* neighborhood of the standings, not the top of the table.",
+            "The server component (`app/dashboard/page.tsx`) renders the tournament bar, standing, last-result and upcoming cards, and mounts `DashboardPickModule` — a client component that shows the pick card (empty / planned / locked / not-in-field warning variants) and opens the shared `GolferPicker` drawer, refreshing server data on close."
+          ],
+          "files": [
+            {
+              "name": "server/routers/dashboard.ts",
+              "desc": "Single `get` procedure → service"
+            },
+            {
+              "name": "server/services/dashboard.ts",
+              "desc": "`getDashboard` parallel aggregate + `windowAround` windowing helper"
+            },
+            {
+              "name": "server/repositories/dashboard.ts",
+              "desc": "Current-pick, member-standing (rank vs leader), last-result, upcoming-tournament queries"
+            },
+            {
+              "name": "app/dashboard/page.tsx",
+              "desc": "Server component: league resolution, PENDING-member interstitial, module grid"
+            },
+            {
+              "name": "components/dashboard/dashboard-pick-module.tsx",
+              "desc": "Client pick card with variant styling; opens `GolferPicker`, live-refreshes the pool"
+            }
+          ],
+          "exports": [
+            {
+              "name": "dashboardRouter",
+              "desc": "tRPC router exposing `dashboard.get`"
+            },
+            {
+              "name": "getDashboard",
+              "desc": "The parallel aggregate: pick, standing, live-or-last-result, upcoming"
+            },
+            {
+              "name": "windowAround",
+              "desc": "Clamp a window of N items centered on a target index"
+            },
+            {
+              "name": "findMemberStanding",
+              "desc": "Rank, member count, and earnings gap to the league leader"
+            },
+            {
+              "name": "findLastCompletedResult",
+              "desc": "Most recent completed tournament and how the member's pick fared"
+            },
+            {
+              "name": "DashboardPickModule",
+              "desc": "Client pick card + picker drawer entry point"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "pick service `getLeagueCurrentWeek` (live weeks) and [golf-data](../domain-golf-data/domain-golf-data.html)'s `tournamentService.getCurrent`"
+            },
+            {
+              "dir": "reads",
+              "body": "[scoring](../domain-scoring/domain-scoring.html) — `findLeaderEarnings` from the leaderboard repository, plus the `leagueMemberSeason` rollup rows scoring maintains"
+            },
+            {
+              "dir": "consumes",
+              "body": "[web-shell](../domain-web-shell/domain-web-shell.html) — `serverTRPC`, `lib/format` helpers; [leagues](../domain-leagues/domain-leagues.html) — `getActiveLeagueId` league context"
+            }
+          ]
+        },
+        {
+          "id": "c-planner-ui",
+          "name": "planner & picker UI",
+          "path": "src/components/planner",
+          "detail": [
+            "`/season` is the prepick surface: `PlannerTimeline` renders the full schedule as upcoming/completed tabs, each row tappable to open `GolferPicker` in `plan` or `updatePlan` mode, with stale-plan detection (PLANNED but tournament started) and inline commissioner actions when viewing as commissioner. Server data arrives as `initialData` and stays live via TanStack Query.",
+            "`GolferPicker` is the one drawer for every pick mutation in the app — dashboard, league page, and planner all mount it. It searches/sorts the remaining pool (out-of-field golfers sink), and routes to `pick.plan`, `pick.updatePlan`, or the feature-flagged `pick.planMultiple` multi-league fan-out (toggle persisted in `localStorage`, per-league result list rendered after submit).",
+            "`RemainingPool` + `UsageCircles` visualize the season budget: every unexhausted golfer with events/MC/earnings stats and one circle per allowed use — filled (used), half (planned), empty (available). `/season/[userId]` is the read-only member view: LOCKED-only history for peers (commissioners see true DB status plus MISSED weeks so they can backfill), with the pool's planned counts hidden unless the league opts into `showPicksBeforeLock`."
+          ],
+          "files": [
+            {
+              "name": "app/season/page.tsx",
+              "desc": "Planner page: stats card, `PlannerTimeline`, adjustments, `RemainingPool` rail"
+            },
+            {
+              "name": "app/season/[userId]/page.tsx",
+              "desc": "Member season view; commissioner sees all statuses + missed weeks with backfill actions"
+            },
+            {
+              "name": "components/planner/planner-timeline.tsx",
+              "desc": "Schedule timeline with pick rows, stale detection, picker launching"
+            },
+            {
+              "name": "components/planner/golfer-picker.tsx",
+              "desc": "The shared pick drawer: search, plan/update, multi-league toggle + results"
+            },
+            {
+              "name": "components/planner/remaining-pool.tsx",
+              "desc": "Searchable unexhausted-golfer rail with season stats"
+            },
+            {
+              "name": "components/planner/usage-circles.tsx",
+              "desc": "Per-golfer used/planned/available dots for multi-use leagues"
+            },
+            {
+              "name": "components/league/league-this-week-picker.tsx",
+              "desc": "Compact pick row embedded on the league page; same drawer underneath"
+            }
+          ],
+          "exports": [
+            {
+              "name": "PlannerTimeline",
+              "desc": "The season planner client component"
+            },
+            {
+              "name": "GolferPicker",
+              "desc": "Shared pick drawer (plan / updatePlan / planMultiple)"
+            },
+            {
+              "name": "RemainingPool",
+              "desc": "Pool rail; `showPlanned`/`hideIfSingleUse` variants"
+            },
+            {
+              "name": "UsageCircles",
+              "desc": "maxUses dots: used / planned / available"
+            },
+            {
+              "name": "LeagueThisWeekPicker",
+              "desc": "League-page pick row wrapping the drawer"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "`pick.allSeasonPicks`, `pick.remainingPool`, `pick.plan`, `pick.updatePlan`, `pick.deletePlan`, `pick.planMultiple` via the tRPC client from [web-shell](../domain-web-shell/domain-web-shell.html)"
+            },
+            {
+              "dir": "embeds",
+              "body": "[leagues](../domain-leagues/domain-leagues.html)' commissioner components (`CommissionerPickActions`, `CommissionerAddPick`, `CommissionerToggle`) and [scoring](../domain-scoring/domain-scoring.html)'s `EarningsAdjustments`"
+            },
+            {
+              "dir": "consumes",
+              "body": "[golf-data](../domain-golf-data/domain-golf-data.html)'s `GolferAvatar`/`CountryFlag` and `tournament.schedule` / `golfer.listAll` procedures"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "One Prisma model — but it is the table the whole game turns on.",
+      "rows": [
+        {
+          "name": "Pick",
+          "desc": "One row per league member × tournament. `@@unique([leagueMemberId, tournamentId])` is the *one pick per week* rule enforced at the database — both `planPickMultiple`'s race handling and the bot inserter's `onConflict doNothing` lean on it."
+        },
+        {
+          "name": "Pick.status (PickStatus)",
+          "desc": "`PLANNED | LOCKED`. There is deliberately no MISSED or BURNED status — missed weeks are the *absence* of a row (computed by `findStartedTournamentsWithoutPicks`), and burned picks are just LOCKED picks whose golfer never played."
+        },
+        {
+          "name": "Pick.lockedAt",
+          "desc": "Stamped only by the write-side lock (`pick-lock.ts`) or a commissioner backfill on a started tournament — read-side locking never writes it."
+        }
+      ],
+      "note": "Everything else it touches is borrowed: `Tournament`, `Golfer`, `TournamentField`, `TournamentResult` belong to [golf-data](../domain-golf-data/domain-golf-data.html); `League`, `LeagueMember`, `CommissionerAction` to [leagues](../domain-leagues/domain-leagues.html); `LeagueMemberSeason` rollups to [scoring](../domain-scoring/domain-scoring.html)."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "Exposed as the `pick` and `dashboard` tRPC routers, plus two guard-free functions that golf-data's cron calls directly.",
+      "exposes": [
+        {
+          "api": "pick.plan",
+          "note": "Create a PLANNED pick (auto-moves a conflicting plan)"
+        },
+        {
+          "api": "pick.planMultiple",
+          "note": "Fan one pick out to all eligible leagues; per-league results"
+        },
+        {
+          "api": "pick.updatePlan",
+          "note": "Swap golfer on a PLANNED pick"
+        },
+        {
+          "api": "pick.deletePlan",
+          "note": "Remove a PLANNED pick pre-start"
+        },
+        {
+          "api": "pick.myPicks",
+          "note": "Season picks, read-side locked"
+        },
+        {
+          "api": "pick.allSeasonPicks",
+          "note": "Planner timeline: picks + results + field status"
+        },
+        {
+          "api": "pick.remainingPool",
+          "note": "Unexhausted golfers with usage counts"
+        },
+        {
+          "api": "pick.leagueCurrentWeek",
+          "note": "League-wide week view; used by leagues' league page and the dashboard"
+        },
+        {
+          "api": "pick.missedTournaments",
+          "note": "Started weeks with no pick"
+        },
+        {
+          "api": "pick.memberPicksByUser",
+          "note": "Peer view (LOCKED only) for /season/[userId]"
+        },
+        {
+          "api": "pick.commissionerAdd",
+          "note": "Backfill with soft warnings + audit log + earnings recalc"
+        },
+        {
+          "api": "pick.commissionerUpdate",
+          "note": "Override a pick; same audit/recalc path"
+        },
+        {
+          "api": "pick.commissionerRemove",
+          "note": "Delete any pick; same audit/recalc path"
+        },
+        {
+          "api": "dashboard.get",
+          "note": "The whole home-screen aggregate in one call"
+        }
+      ],
+      "depends": [
+        {
+          "name": "golf-data",
+          "path": "src",
+          "href": "../domain-golf-data/domain-golf-data.html"
+        },
+        {
+          "name": "leagues",
+          "path": "src",
+          "href": "../domain-leagues/domain-leagues.html"
+        },
+        {
+          "name": "scoring",
+          "path": "src",
+          "href": "../domain-scoring/domain-scoring.html"
+        },
+        {
+          "name": "web-shell",
+          "path": "src",
+          "href": "../domain-web-shell/domain-web-shell.html"
+        }
+      ],
+      "note": "Non-tRPC seam: `lockPlannedPicksForTournament` and `autoPickForBots` are invoked by [golf-data](../domain-golf-data/domain-golf-data.html)'s cron sync (`sync.ts` inside the tournament-start transaction; `cron-sync.ts` step 1.5). Both are guard-free (`db-core`) by design. The dependency also runs the other way — this is the tightest two-way seam in the system."
+    }
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:487ff1250a52eca961c7f62e84f33778fe9de6143faadca85148b63a9b7a080c",
+    "date": "2026-07-21",
+    "commit": "662c5aea21d551822d864db988922e040298ecd4"
+  }
+}

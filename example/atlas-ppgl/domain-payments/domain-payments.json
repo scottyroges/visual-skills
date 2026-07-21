@@ -1,0 +1,395 @@
+{
+  "kind": "domain",
+  "slug": "payments",
+  "title": "Payments & promos",
+  "layer": "engine",
+  "layerLabel": "Platform",
+  "path": "src",
+  "count": "8 files",
+  "depends": "leagues · admin · web-shell",
+  "date": "2026-07-20",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Engine"
+    },
+    {
+      "key": "Surface",
+      "value": "1 HTTP route · lib exports · admin pages"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "heading": "Payments & promos",
+      "rows": [
+        {
+          "key": "Path",
+          "value": "src"
+        },
+        {
+          "key": "Files",
+          "value": "8"
+        },
+        {
+          "key": "Job",
+          "value": "Get a private league paid for — PayPal checkout, the webhook backstop, and promo codes that discount or bypass the price"
+        },
+        {
+          "key": "Entry points",
+          "value": "`POST /api/paypal/webhook` · `/admin/promos` pages · `paypalProvider` (called from the [leagues](../domain-leagues/domain-leagues.html) service)"
+        },
+        {
+          "key": "Depends on",
+          "value": "[leagues](../domain-leagues/domain-leagues.html) · [admin](../domain-admin/domain-admin.html) · [web-shell](../domain-web-shell/domain-web-shell.html)"
+        }
+      ],
+      "bigIdea": {
+        "label": "Big idea",
+        "line": "There is no payments table — the `League` row **is** the ledger.",
+        "sub": "The league's identity rides inside PayPal's `custom_id` order metadata, so capture and webhook can both recover *which* league was paid for statelessly. All payment state is `paymentStatus` (FREE → PENDING → PAID) on the League row plus a use counter on `PromoCode`, flipped by one idempotent `confirmPayment` reachable from two redundant paths."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "Components",
+      "intro": "Four small pieces: a provider-agnostic contract, the one concrete provider, the webhook backstop, and promo codes.",
+      "cards": [
+        {
+          "name": "Payment orchestration",
+          "purpose": "The provider seam: `PaymentProvider` interface (createCheckout / captureOrder / verifyWebhook), typed results, and the list-price constants. Zero PayPal in it — the leagues service programs against this.",
+          "exports": [
+            {
+              "name": "PaymentProvider"
+            },
+            {
+              "name": "WebhookResult"
+            },
+            {
+              "name": "LEAGUE_CREATION_PRICE"
+            }
+          ],
+          "href": "#c-orchestration"
+        },
+        {
+          "name": "PayPal integration",
+          "purpose": "The one implementation of the contract, against PayPal REST: cached OAuth token, order create/capture, webhook signature verification, and league identity smuggled through the order's `custom_id`.",
+          "exports": [
+            {
+              "name": "paypalProvider"
+            }
+          ],
+          "href": "#c-paypal"
+        },
+        {
+          "name": "Webhook route",
+          "purpose": "`POST /api/paypal/webhook` — the backstop confirmation path. Reads the raw body, delegates to the leagues service, 401s on bad signature, 200s everything else so PayPal stops retrying.",
+          "exports": [
+            {
+              "name": "POST"
+            }
+          ],
+          "href": "#c-webhook"
+        },
+        {
+          "name": "Promo codes",
+          "purpose": "A one-function repository (`findByCode`) the checkout validates against, plus admin CRUD pages for free codes and partial-dollar discounts.",
+          "exports": [
+            {
+              "name": "findByCode"
+            },
+            {
+              "name": "PromoForm"
+            }
+          ],
+          "href": "#c-promos"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "flow",
+      "title": "Checkout & webhook flow",
+      "intro": "The commissioner pays through PayPal Buttons rendered by the leagues create-form. Confirmation is deliberately redundant: the client calls `league.captureOrder` itself, and PayPal independently posts a `PAYMENT.CAPTURE.COMPLETED` webhook. Both funnel into the same idempotent `confirmPayment` in the leagues service.",
+      "diagram": {
+        "id": "flow-diagram",
+        "kind": "flowchart",
+        "d2": "direction: right\nCommissioner: { class: actor }\nPayPal: { class: external }\n\"league (Postgres)\": { class: store }\nCommissioner -> createCheckoutSession: pay\ncreateCheckoutSession -> PayPal: create order\nCommissioner -> captureOrder: on approve\ncaptureOrder -> PayPal: capture\ncaptureOrder -> confirmPayment\nPayPal -> \"POST /api/paypal/webhook\": capture completed\n\"POST /api/paypal/webhook\" -> confirmPayment: signature verified\nconfirmPayment -> \"league (Postgres)\": set PAID + redeem promo",
+        "mermaid": "flowchart LR\n  C[Commissioner] -->|pay| CS[createCheckoutSession]\n  CS -->|create order| PP[PayPal]\n  C -->|on approve| CO[captureOrder]\n  CO -->|capture| PP\n  CO --> CF[confirmPayment]\n  PP -->|capture completed| WH[\"POST /api/paypal/webhook\"]\n  WH -->|signature verified| CF\n  CF -->|set PAID + redeem promo| DB[(league Postgres)]\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class C actor;\n  class PP external;\n  class DB store;",
+        "caption": "Whichever path lands first wins: `confirmPayment` no-ops if the league is already `PAID`, so the client capture and the webhook can race safely. A user who closes the tab after approving still gets their league unlocked by the webhook."
+      }
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "In depth",
+      "components": [
+        {
+          "id": "c-orchestration",
+          "name": "Payment orchestration",
+          "path": "src/lib/payment.ts",
+          "detail": [
+            "One 35-line file that keeps PayPal out of the rest of the codebase. It defines the `PaymentProvider` interface — `createCheckout({ leagueId, userId, price? })`, `captureOrder(orderId)`, `verifyWebhook({ body, headers })` — plus the result shapes each returns. `WebhookResult` is a discriminated union (`invalid_signature` | `ignored` | `completed`), which is what lets the webhook route map outcomes to HTTP statuses without knowing anything about PayPal events.",
+            "It also owns the list price as code, not data: `LEAGUE_CREATION_PRICE` (a string, because that is PayPal's amount format) and `LEAGUE_CREATION_CURRENCY`. The leagues service derives everything else from it — promo discount math is `Math.max(0, FULL_PRICE - discount)` over `parseFloat(LEAGUE_CREATION_PRICE)`. `createCheckout` accepts an optional `price` override precisely so partially-discounted checkouts can charge less than list."
+          ],
+          "files": [
+            {
+              "name": "lib/payment.ts",
+              "desc": "The provider contract, result types, and price constants. Imports nothing."
+            }
+          ],
+          "exports": [
+            {
+              "name": "PaymentProvider",
+              "desc": "The interface every payment provider must implement: createCheckout / captureOrder / verifyWebhook."
+            },
+            {
+              "name": "CheckoutResult",
+              "desc": "`{ checkoutId }` — the order id the client hands to the PayPal JS SDK."
+            },
+            {
+              "name": "CaptureResult",
+              "desc": "`{ success, leagueId }` — leagueId recovered from order metadata so the service can verify the order matches the league."
+            },
+            {
+              "name": "WebhookResult",
+              "desc": "Discriminated union: `invalid_signature` | `ignored` | `completed` (with leagueId + sessionId)."
+            },
+            {
+              "name": "LEAGUE_CREATION_PRICE",
+              "desc": "List price for a private league, in PayPal's string format."
+            },
+            {
+              "name": "LEAGUE_CREATION_CURRENCY",
+              "desc": "Currency code for the checkout."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "the [leagues](../domain-leagues/domain-leagues.html) service — `createCheckoutSession`, `captureOrder`, `createWithPromo`, and `handleWebhookPayment` all program against this contract, never against PayPal directly."
+            },
+            {
+              "dir": "implemented by",
+              "body": "[`paypalProvider`](#c-paypal) — the only concrete provider today; a second provider would be another object satisfying `PaymentProvider`."
+            }
+          ]
+        },
+        {
+          "id": "c-paypal",
+          "name": "PayPal integration",
+          "path": "src/lib/paypal.ts",
+          "detail": [
+            "`paypalProvider` implements the contract against PayPal REST (v2 Checkout Orders + v1 webhook verification), switching between the sandbox and live base URL on `NODE_ENV`. It authenticates with client-credentials OAuth (`PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` env vars) and caches the access token at module level, expiring it 60 seconds early; `_clearTokenCache()` exists only so tests can reset that state. The file is `server-only` — it can never leak into a client bundle.",
+            "The load-bearing trick is metadata: `createCheckout` JSON-encodes `{ leagueId, userId }` into the purchase unit's `custom_id` (kept under PayPal's 127-char limit because both are UUIDs). `captureOrder` and `verifyWebhook` decode it back out, which is why the app needs no orders table — PayPal carries the correlation. `verifyWebhook` posts the transmission headers back to PayPal's verify-webhook-signature endpoint (using the `PAYPAL_WEBHOOK_ID` env var), rejects anything unverified, ignores every event type except `PAYMENT.CAPTURE.COMPLETED`, and returns the decoded leagueId plus the order id as `sessionId`."
+          ],
+          "files": [
+            {
+              "name": "lib/paypal.ts",
+              "desc": "The whole integration: OAuth token cache, `paypalFetch` helper, custom_id encode/decode, and the three provider methods."
+            }
+          ],
+          "exports": [
+            {
+              "name": "paypalProvider",
+              "desc": "The `PaymentProvider` implementation — the only value the rest of the app imports from this file."
+            },
+            {
+              "name": "_clearTokenCache",
+              "desc": "Test-only escape hatch for the module-level OAuth token cache."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "PayPal REST API (external) — order create, order capture, and webhook signature verification."
+            },
+            {
+              "dir": "used by",
+              "body": "the [leagues](../domain-leagues/domain-leagues.html) service for every checkout, capture, and webhook verification; nothing else imports it."
+            },
+            {
+              "dir": "reads",
+              "body": "env vars `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID` (names only — values live in the environment)."
+            }
+          ]
+        },
+        {
+          "id": "c-webhook",
+          "name": "Webhook route",
+          "path": "src/app/api/paypal/webhook/route.ts",
+          "detail": [
+            "A 19-line Next.js route handler, and deliberately so. It reads the request body as **raw text** (the signature is verified over the exact bytes, so no JSON middleware may touch it first), flattens the headers into a plain record, and hands both to `handleWebhookPayment` in the leagues service. `invalid_signature` maps to a 401; everything else — including events the app ignores — returns `200 { received: true }` so PayPal stops retrying.",
+            "This route is the safety net, not the primary path. Normally the create-league form calls `league.captureOrder` the moment the buyer approves, and that capture confirms payment synchronously (after checking the caller is the commissioner and that the captured order's embedded leagueId actually matches the league being paid for). The webhook covers the gap where the user approves in the PayPal popup and then closes the tab: PayPal's async event still reaches `confirmPayment`, which flips `paymentStatus` to `PAID` and redeems any attached promo — and no-ops if the client capture already won the race."
+          ],
+          "files": [
+            {
+              "name": "app/api/paypal/webhook/route.ts",
+              "desc": "Raw-body POST handler; delegates verification and state changes to the leagues service."
+            }
+          ],
+          "exports": [
+            {
+              "name": "POST",
+              "desc": "The route handler for `POST /api/paypal/webhook`."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "receives",
+              "body": "webhook events from PayPal (external); only `PAYMENT.CAPTURE.COMPLETED` has any effect."
+            },
+            {
+              "dir": "calls",
+              "body": "`handleWebhookPayment` in the [leagues](../domain-leagues/domain-leagues.html) service — the route itself contains no verification or business logic."
+            }
+          ]
+        },
+        {
+          "id": "c-promos",
+          "name": "Promo codes",
+          "path": "src/server/repositories/promo-code.ts",
+          "detail": [
+            "The repository is a single function: `findByCode` uppercases the input and returns the code row (uses, discount, expiry, active flag). The leagues service does the judging — `validatePromoCode` (behind `league.validatePromoCode`, called live from the create-league form) checks active / usage-limit / expiry and returns the computed discount, and `createWithPromo` re-checks at creation time.",
+            "A code's `discountAmount` drives two different flows. **Null means free**: the league is inserted already `PAID`, and the redemption counter is incremented in the *same transaction* via a guarded UPDATE (it re-checks active, max-uses, and expiry inside the WHERE clause, so two concurrent redemptions of a nearly-exhausted code can't both succeed). **A dollar value means partial discount**: the league is inserted `PENDING` with `promoCodeId` attached, a PayPal checkout is created at the reduced price, and redemption is deferred until `confirmPayment` — so an abandoned discounted checkout never burns a use.",
+            "Admin CRUD lives at `/admin/promos`: a list page, a create page, and a detail page that doubles as the edit form plus a redemption history (leagues created with that code, with commissioner and date). The pages are thin — they call `admin.*` tRPC procedures whose service and repository belong to the [admin](../domain-admin/domain-admin.html) domain; the shared `PromoForm` client component drives both create and update mutations, constraining partial discounts to whole dollars below the list price."
+          ],
+          "files": [
+            {
+              "name": "server/repositories/promo-code.ts",
+              "desc": "`findByCode` — the only promo query the checkout path needs."
+            },
+            {
+              "name": "app/admin/promos/page.tsx",
+              "desc": "Admin list: code, discount, uses, expiry, active status."
+            },
+            {
+              "name": "app/admin/promos/create/page.tsx",
+              "desc": "Create page — renders `PromoForm` in create mode."
+            },
+            {
+              "name": "app/admin/promos/[id]/page.tsx",
+              "desc": "Detail page — `PromoForm` in edit mode plus the redemption history list."
+            },
+            {
+              "name": "app/admin/promos/promo-form.tsx",
+              "desc": "Shared client form for create/edit; wires `admin.createPromoCode` / `admin.updatePromoCode` mutations."
+            }
+          ],
+          "exports": [
+            {
+              "name": "findByCode",
+              "desc": "Case-insensitive promo lookup (input is uppercased); used by the leagues service's validate/create paths."
+            },
+            {
+              "name": "PromoForm",
+              "desc": "Client component handling both create and edit, including the optional partial-discount amount."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "used by",
+              "body": "the [leagues](../domain-leagues/domain-leagues.html) service — `validatePromoCode` and `createWithPromo` both start from `findByCode`. The redemption increment itself (`redeemPromoCode`, an atomic guarded UPDATE) lives in the leagues *repository*, not here."
+            },
+            {
+              "dir": "calls",
+              "body": "`admin.promoCodes` / `admin.promoCode` / `admin.createPromoCode` / `admin.updatePromoCode` — procedures owned by the [admin](../domain-admin/domain-admin.html) domain's router/service/repo."
+            },
+            {
+              "dir": "reads",
+              "body": "the Kysely `db` from [web-shell](../domain-web-shell/domain-web-shell.html)'s `lib/db.ts` (repository layer only, per the layering convention)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "One model of its own, plus a three-column footprint on a model owned by leagues.",
+      "rows": [
+        {
+          "name": "PromoCode",
+          "desc": "Unique `code`, optional `maxUses` vs `currentUses` counter, optional `discountAmount` (null = free code, value = whole-dollar discount), optional `expiresAt`, `active` flag."
+        },
+        {
+          "name": "League.paymentStatus",
+          "desc": "The actual payment ledger — `FREE` | `PENDING` | `PAID` enum on the leagues-owned League model. `PENDING` leagues are blocked by `assertLeagueActive` until paid."
+        },
+        {
+          "name": "League.paymentSessionId",
+          "desc": "The PayPal order id recorded at confirmation — the only persisted trace of the transaction."
+        },
+        {
+          "name": "League.promoCodeId",
+          "desc": "Optional FK to `PromoCode`; also how the admin detail page reconstructs a code's redemption history (leagues that used it)."
+        }
+      ],
+      "note": "There is deliberately no Order/Payment table. Correlation between a PayPal order and a league travels inside the order's `custom_id` metadata, and the terminal state lands on the League row."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "The domain's public surface is one HTTP route, a handful of tRPC procedures served by neighboring routers, and the `paypalProvider` object the leagues service consumes in-process.",
+      "exposes": [
+        {
+          "api": "app/api/paypal/webhook/route.ts",
+          "note": "PayPal's async confirmation path; verifies signature, 401 on failure, 200 otherwise.",
+          "desc": "the PayPal webhook backstop (`POST /api/paypal/webhook`) — "
+        },
+        {
+          "api": "league.validatePromoCode",
+          "note": "Live promo validation for the create-league form (served by the leagues router, powered by this domain's repo + discount math)."
+        },
+        {
+          "api": "league.createWithPromo",
+          "note": "Create a league with a promo — free codes go straight to PAID; partial discounts fall through to a discounted checkout."
+        },
+        {
+          "api": "league.createCheckoutSession",
+          "note": "Commissioner-only: creates the PayPal order for a PENDING league."
+        },
+        {
+          "api": "league.captureOrder",
+          "note": "Client-side confirmation after PayPal approval; verifies the order belongs to the league before confirming."
+        },
+        {
+          "api": "admin.promoCodes",
+          "note": "Admin list of all codes (with `admin.promoCode` for detail + redemptions)."
+        },
+        {
+          "api": "admin.createPromoCode",
+          "note": "Admin create; `admin.updatePromoCode` edits code, limits, expiry, active flag."
+        }
+      ],
+      "depends": [
+        {
+          "name": "leagues",
+          "path": "src/server/services/league.ts",
+          "href": "../domain-leagues/domain-leagues.html"
+        },
+        {
+          "name": "admin",
+          "path": "src/server/routers/admin.ts",
+          "href": "../domain-admin/domain-admin.html"
+        },
+        {
+          "name": "web-shell",
+          "path": "src/lib",
+          "href": "../domain-web-shell/domain-web-shell.html"
+        }
+      ],
+      "note": "The dependency arrow is unusual: the *leagues* service is the orchestrator that imports this domain's `paypalProvider` and `findByCode`, while this domain's webhook route imports back into leagues (`handleWebhookPayment`). Payments supplies the tools; leagues owns the checkout state machine."
+    }
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:153c29e34c22556bf628074eaab548cd7f0fd7abd05eb8ca42934d00f22bd714",
+    "date": "2026-07-21",
+    "commit": "662c5aea21d551822d864db988922e040298ecd4"
+  }
+}

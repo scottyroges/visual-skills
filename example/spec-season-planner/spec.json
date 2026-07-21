@@ -1,0 +1,559 @@
+{
+  "title": "Spec · Season Planner (Phase 4)",
+  "phase": "Phase 4",
+  "status": "Completed · shipped",
+  "date": "2026-04-13",
+  "complexity": "Medium · 2 PRs · service + cron + page",
+  "related": [
+    {
+      "kind": "Predecessor",
+      "value": "Phase 3 · pick CRUD + read-side locking · shipped"
+    },
+    {
+      "kind": "Consumer",
+      "value": "Phase 10 · polish — drag-and-drop, picker warnings"
+    },
+    {
+      "kind": "Source",
+      "value": "docs/plans/completed/phase-4-season-planner.md"
+    }
+  ],
+  "meta": [
+    {
+      "key": "Status",
+      "value": "Complete — authored as the approval doc it would have been"
+    },
+    {
+      "key": "Created",
+      "value": "2026-04-13"
+    },
+    {
+      "key": "PRs",
+      "value": "2 · backend first, page second"
+    },
+    {
+      "key": "Grounded in",
+      "value": "src/server + src/components/planner + prisma/schema.prisma"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tldr",
+      "id": "tldr",
+      "heading": "Let players plan their whole season — and let a cron job, not the user, turn plans into real picks.",
+      "rows": [
+        {
+          "key": "What",
+          "value": "A **Season Planner**: slot golfers into any future tournament as `PLANNED` prepicks; the daily cron promotes valid plans to `LOCKED` in the database when the tournament starts."
+        },
+        {
+          "key": "Why",
+          "value": "PPGL's strategy game is season-long — allocate ~200 golfers across ~40 weeks, no reuse. But picks were week-at-a-time: no way to reserve Scheffler for the Masters in March, or see the whole board at once."
+        },
+        {
+          "key": "Closes",
+          "value": "Turns the app from a weekly chore into a **persistent strategic tool** — the full remaining schedule with prepick slots, results behind you, plans ahead of you."
+        },
+        {
+          "key": "Size",
+          "value": "2 PRs · 5 new service methods · 5 new tRPC endpoints · 1 cron auto-lock routine · 1 page + picker flow. **No schema migration** — `Pick` already carries `status` + `lockedAt`."
+        }
+      ],
+      "bigIdea": {
+        "label": "The big idea",
+        "line": "“A plan costs nothing until the cron makes it real.”",
+        "sub": "A `PLANNED` pick is a **soft reservation** — invisible to opponents, freely editable, and it does *not* consume the golfer. Only the unattended cron promotion to `LOCKED` burns the golfer, earns money, and shows the pick to the league. If a plan turns out invalid on start day, it goes **stale instead of burning the golfer**: the user gets a $0 week, never a lost asset."
+      }
+    },
+    {
+      "type": "diagram",
+      "id": "flow",
+      "sectionTitle": "How it works",
+      "badge": "two writers, one row",
+      "intro": "Two paths write the same `pick` row. The user path (top) creates and edits `PLANNED` rows through the planner page — cheap, reversible, private. The cron path (bottom) runs inside `/api/cron/sync`: when a tournament's start date passes, `startTournaments` flips it `UPCOMING → IN_PROGRESS` and — in the same transaction — `lockPlannedPicksForTournament` validates each plan (golfer in the published field, golfer not already used this season) and promotes the valid ones to `LOCKED`. Invalid plans are skipped, not burned. Everything downstream of `LOCKED` — earnings rollup, opponent visibility — is preserved machinery that never learns `PLANNED` exists.",
+      "title": "PLANNED → LOCKED lifecycle",
+      "kind": "architecture",
+      "d2": "direction: right\nplanner: \"Season Planner page\" { class: changed }\nrouter: \"pick router: plan / updatePlan / deletePlan\" { class: changed }\nsvc: \"pick service: PLANNED CRUD\" { class: changed }\npickrow: \"pick row — PLANNED\" { class: store }\ncron: \"Vercel cron\" { class: external }\nsync: \"/api/cron/sync (existing)\" { class: external }\nstart: \"startTournaments: UPCOMING → IN_PROGRESS\" { class: changed }\nlock: \"lockPlannedPicksForTournament\" { class: changed }\nlockedrow: \"pick row — LOCKED + lockedAt\" { class: store }\nstale: \"stale plan — skipped, golfer preserved\"\nearn: \"earnings rollup — LOCKED only\" { class: external }\nopp: \"league views / opponents\" { class: external }\nplanner -> router: tap-to-assign\nrouter -> svc\nsvc -> pickrow: \"insert / update / delete\"\ncron -> sync: daily\nsync -> start\nstart -> lock: \"per starting tournament, one tx\"\npickrow -> lock: \"PLANNED picks\"\nlock -> lockedrow: \"valid: in field AND not used\"\nlock -> stale: \"invalid: skipped\"\nlockedrow -> earn\nlockedrow -> opp: now visible",
+      "mermaid": "flowchart LR\n  P[Season Planner page] --> R[pick router · plan · updatePlan · deletePlan]\n  R --> S[pick service · PLANNED CRUD]\n  S -->|insert · update · delete| PR[(pick row — PLANNED)]\n  C[Vercel cron] -->|daily| CS[\"/api/cron/sync — existing\"]\n  CS --> ST[startTournaments · UPCOMING → IN_PROGRESS]\n  ST -->|per starting tournament in one tx| L[lockPlannedPicksForTournament]\n  PR -->|PLANNED picks| L\n  L -->|valid: in field and not used| LK[(pick row — LOCKED + lockedAt)]\n  L -->|invalid: skipped| SS[stale plan — golfer preserved]\n  LK --> E[earnings rollup — LOCKED only]\n  LK --> O[league views — now visible]\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  classDef external fill:#f1f3f5,stroke:#adb5bd,color:#1b1b1b;\n  class P,R,S,ST,L changed;\n  class PR,LK store;\n  class C,CS,E,O external;"
+    },
+    {
+      "type": "components",
+      "id": "pieces",
+      "title": "The pieces",
+      "badge": "6 components",
+      "intro": "One new page, one new cron routine, and a widened pick service — all writing the same `Pick` row. The signature shape of the whole phase is the **two lives of a pick**:",
+      "anatomy": {
+        "left": {
+          "title": "PLANNED — soft reservation",
+          "desc": "Invisible to opponents, freely editable, and it does **not** consume the golfer. Change it, delete it, or plan the golfer nowhere else — no cost.",
+          "eg": "status: PLANNED · lockedAt: null"
+        },
+        "mid": {
+          "fn": "cron: validate(inField, notUsed) → promote"
+        },
+        "right": {
+          "title": "LOCKED — committed pick",
+          "desc": "Burns the golfer for the season, earns real prize money via the rollup, and is **visible to the league**. Identical whether locked manually or by cron.",
+          "eg": "status: LOCKED · lockedAt: startDate"
+        },
+        "caption": "Every pick row is exactly one of these two states, and `@@unique([leagueMemberId, tournamentId])` guarantees one row per member per tournament — so the planner and the Make Pick page can never diverge."
+      },
+      "cards": [
+        {
+          "name": "pick service — PLANNED CRUD",
+          "purpose": "Create, swap, and remove plans with validation: tournament must be in the future, golfer must exist, one pick per tournament.",
+          "skills": [
+            {
+              "name": "planPick"
+            },
+            {
+              "name": "updatePlannedPick"
+            },
+            {
+              "name": "removePlannedPick"
+            }
+          ]
+        },
+        {
+          "name": "pick repository — season queries",
+          "purpose": "The planner's data spine: all picks (both statuses) with tournament, golfer, and result data, ordered by start date.",
+          "skills": [
+            {
+              "name": "findAllSeasonPicks"
+            },
+            {
+              "name": "findPlannedPicksForTournament"
+            },
+            {
+              "name": "findSeasonPlannedGolferIds",
+              "deputy": true
+            }
+          ]
+        },
+        {
+          "name": "pick-lock — auto-lock core",
+          "purpose": "The cron's promotion routine. Built on `db-core` (no `server-only` guard) so the API route and tests can call it; accepts a transaction executor.",
+          "skills": [
+            {
+              "name": "lockPlannedPicksForTournament"
+            }
+          ]
+        },
+        {
+          "name": "cron wiring — startTournaments",
+          "purpose": "On each sync run: find UPCOMING tournaments whose start date passed, flip to IN_PROGRESS and lock plans in one transaction per tournament.",
+          "skills": [
+            {
+              "name": "startTournaments"
+            },
+            {
+              "name": "runFullSync",
+              "deputy": true
+            }
+          ]
+        },
+        {
+          "name": "Season Planner page",
+          "purpose": "Full season timeline — completed weeks collapsed with results, upcoming weeks with prepick slots, stale plans flagged as missed. Tap a row to assign.",
+          "skills": [
+            {
+              "name": "PlannerTimeline"
+            },
+            {
+              "name": "GolferPicker"
+            },
+            {
+              "name": "RemainingPool",
+              "deputy": true
+            }
+          ]
+        },
+        {
+          "name": "earnings rollup fix",
+          "purpose": "Both rollup paths filter `pick.status = 'LOCKED'` so a speculative plan can never inflate standings.",
+          "skills": [
+            {
+              "name": "recalculateSeasonForMember"
+            },
+            {
+              "name": "rollupForTournament"
+            }
+          ]
+        }
+      ],
+      "note": "Deep detail — the auto-lock algorithm, the tRPC surface, and the `Pick` schema — is in the [reference drawers](#reference)."
+    },
+    {
+      "type": "fits",
+      "id": "fits",
+      "title": "Where it fits",
+      "intro": "Phase 3 built the pick machinery for the current week; Phase 4 extends it across the whole season without changing what a pick *is*. Everything downstream keeps consuming `LOCKED` picks, unaware that some of them were born as plans.",
+      "chain": [
+        {
+          "role": "Predecessor · Phase 3",
+          "title": "Pick CRUD + locking",
+          "desc": "One pick per week, `PLANNED`/`LOCKED` statuses, read-side locking, remaining-pool queries, the daily `/api/cron/sync` endpoint."
+        },
+        {
+          "role": "This phase",
+          "title": "Season Planner",
+          "desc": "Prepicks across the *whole* season + the cron promotion that makes them real — the strategic layer.",
+          "isThis": true
+        },
+        {
+          "role": "Consumers",
+          "title": "Earnings · league views · Phase 10",
+          "desc": "Rollups and opponent views consume `LOCKED` picks unchanged; Phase 10 polish adds drag-and-drop and picker warnings on top."
+        }
+      ],
+      "stack": [
+        {
+          "tag": "New",
+          "label": "Season Planner page + GolferPicker",
+          "note": "timeline UI, tap-to-assign, stale-plan indicators",
+          "kind": "new"
+        },
+        {
+          "tag": "New",
+          "label": "PLANNED CRUD · plan / updatePlan / deletePlan · allSeasonPicks",
+          "note": "service + router surface for prepicks",
+          "kind": "new"
+        },
+        {
+          "tag": "New",
+          "label": "lockPlannedPicksForTournament (in startTournaments)",
+          "note": "the write-side promotion inside the existing cron",
+          "kind": "new"
+        },
+        {
+          "tag": "Kept",
+          "label": "/api/cron/sync · tournament.schedule · resolveLeagueMemberId",
+          "note": "existing cron endpoint, schedule query, and member scoping — reused as-is",
+          "kind": "reused"
+        },
+        {
+          "tag": "Kept",
+          "label": "Pick schema + @@unique(leagueMemberId, tournamentId)",
+          "note": "no migration; the constraint is what makes update-in-place safe",
+          "kind": "reused"
+        },
+        {
+          "tag": "Kept",
+          "label": "earnings rollup machinery",
+          "note": "only gains a LOCKED filter — the calculation is untouched",
+          "kind": "reused"
+        }
+      ]
+    },
+    {
+      "type": "decisions",
+      "id": "decisions",
+      "title": "Key decisions",
+      "badge": "8 locked · 3 contested",
+      "intro": "The whole design hangs on the first two: what a plan *reserves*, and *who* turns it into a real pick.",
+      "decisions": [
+        {
+          "q": "What does a PLANNED pick reserve?",
+          "a": "Nothing — it's a soft reservation. Only `LOCKED` picks consume a golfer for the season.",
+          "why": "Planning three months out shouldn't cost options today. The exhausted-golfer query counts only `LOCKED` picks, so a golfer can be planned for week 10 *and* picked for week 8.",
+          "rejected": "Hard reservation (PLANNED blocks the remaining pool) — one speculative plan would lock away a golfer the user may never actually field, and stale plans would silently shrink the pool."
+        },
+        {
+          "q": "How does a plan become a real pick?",
+          "a": "Write-side: the daily cron promotes valid `PLANNED` → `LOCKED` in the database on tournament start day.",
+          "why": "After promotion the pick is *indistinguishable* from a manually submitted one — it burns the golfer, earns via the rollup, and is visible to opponents. One code path downstream, forever.",
+          "rejected": "Extending read-side locking (compute LOCKED at read time, never write). Earnings, opponent visibility, and pool queries would each need PLANNED-aware special cases — three subtle forks instead of one DB write."
+        },
+        {
+          "q": "When is field membership validated?",
+          "a": "At lock time (cron), never at plan time.",
+          "why": "Tournament fields aren't published until a few days before the event — plan-time validation is impossible for most of the season, so validation moves to the only moment the field is known.",
+          "rejected": "Per-tournament \"likely in field\" predictions in the picker — there's no historical field-entry data to predict from. Deferred; the picker shows the global remaining pool instead."
+        },
+        {
+          "q": "What happens to a plan that fails validation on start day?",
+          "a": "It goes stale — skipped by the cron and flagged \"missed\" on the timeline. The user gets $0 that week but keeps the golfer.",
+          "why": "Burning a golfer the user never actually fielded would punish twice for one mistake. Worst case is a lost week, never a lost asset."
+        },
+        {
+          "q": "What if Make Pick submits over an existing PLANNED pick?",
+          "a": "`submit` updates the existing pick's golfer in place; `LOCKED` picks are rejected with `PRECONDITION_FAILED`.",
+          "why": "`@@unique([leagueMemberId, tournamentId])` guarantees one row per member per tournament — both flows converge on that row instead of racing to create duplicates."
+        },
+        {
+          "q": "What does the planner's season query return?",
+          "a": "Raw DB status from `getAllSeasonPicks` — no read-side masking.",
+          "why": "The planner must distinguish `PLANNED` (editable), `LOCKED` (done), and stale `PLANNED` (missed). Read-side locking would erase exactly the distinction the page exists to show."
+        },
+        {
+          "q": "Where does the auto-lock code live?",
+          "a": "A `pick-lock` module built on `db-core` — no `server-only` guard — following the `earnings-core` pattern.",
+          "why": "The cron API route and tests both need to call it. Its two validation queries are inlined rather than spun into a new repo file — not worth the indirection."
+        },
+        {
+          "q": "How do users assign a golfer to a week?",
+          "a": "Tap-to-assign: tap a tournament row, pick from a searchable, world-ranking-sorted drawer.",
+          "why": "Simpler to build and works on mobile, where most picks happen.",
+          "rejected": "Drag-and-drop planning — deferred to Phase 10 polish. High interaction cost on touch screens for zero strategic benefit in v1."
+        }
+      ]
+    },
+    {
+      "type": "scope",
+      "id": "scope",
+      "title": "Scope",
+      "inTitle": "In scope",
+      "outTitle": "Out of scope",
+      "inList": [
+        "`PLANNED` pick CRUD across repository, service, and tRPC router (`plan`, `updatePlan`, `deletePlan`, `plannedPicks`, `allSeasonPicks`)",
+        "`submit` update-in-place semantics for existing `PLANNED` picks; hard reject on `LOCKED`",
+        "Cron auto-lock: `UPCOMING → IN_PROGRESS` flip + `PLANNED → LOCKED` promotion, atomic per tournament",
+        "Earnings rollup filtered to `status = 'LOCKED'` in both rollup paths",
+        "Season Planner page: full timeline, status indicators (planned / locked / missed / results), completed weeks collapsed",
+        "Golfer picker: remaining pool, name search, world-ranking sort",
+        "NavBar link + responsive layout with brand tokens"
+      ],
+      "outList": [
+        {
+          "text": "Drag-and-drop planning — tap-to-assign only in v1",
+          "defer": "→ Phase 10"
+        },
+        {
+          "text": "Per-tournament \"likely in field\" predictions — no historical field-entry data exists"
+        },
+        {
+          "text": "Warning when picking a golfer already LOCKED elsewhere",
+          "defer": "→ polish"
+        },
+        {
+          "text": "Remaining-golfers-per-ranking-tier counts (\"3 top-25 left\")",
+          "defer": "→ polish"
+        },
+        {
+          "text": "Manual PLANNED → LOCKED confirmation step — rejected outright; the cron is the confirmation"
+        },
+        {
+          "text": "Auto-deleting stale plans — they stay visible as \"missed\" so users see what slipped"
+        }
+      ]
+    },
+    {
+      "type": "rollout",
+      "id": "rollout",
+      "title": "Rollout",
+      "badge": "2 PRs · backend first",
+      "intro": "Backend lands first and is fully test-gated before any UI exists — the cron promotion is unattended, so its three validation outcomes are proven in PR 1, not discovered in production.",
+      "phases": [
+        {
+          "tag": "PR 1",
+          "title": "PLANNED service layer + cron auto-lock",
+          "scope": "Repository queries (`findAllSeasonPicks`, `findPlannedPicksForTournament`, `findSeasonPlannedGolferIds`), five service methods, `submit` update-in-place semantics, `lockPlannedPicksForTournament` wired into `startTournaments` inside `/api/cron/sync`, `LOCKED` filter on both earnings rollups, and the five router endpoints.",
+          "gate": [
+            "Plan CRUD tests: creation, duplicate-golfer validation, swap, delete, can't plan a started tournament",
+            "`submit` updates an existing PLANNED pick in place and rejects LOCKED with PRECONDITION_FAILED",
+            "Auto-lock: valid pick → LOCKED · golfer not in field → stays unburned · golfer already used → skipped",
+            "Earnings rollup excludes PLANNED picks in both paths"
+          ]
+        },
+        {
+          "tag": "PR 2",
+          "title": "Season Planner page",
+          "scope": "The `/planner` timeline built on `allSeasonPicks` + `tournament.schedule`: per-tournament name/dates/purse/status, pick status indicators, collapsed completed section with results, \"Add Plan\" → golfer picker (search + world ranking), Change/Remove on planned picks, NavBar link.",
+          "gate": [
+            "A user can plan picks across the full remaining season and see them auto-lock on start day",
+            "Stale plans render with a \"missed\" indicator and can be manually removed",
+            "Completed tournaments show results but stay de-emphasized",
+            "Responsive layout on mobile with brand tokens"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "done",
+      "id": "done",
+      "title": "Definition of done",
+      "badge": "shipped",
+      "intro": "Done is behavioral: the three auto-lock outcomes, the two `submit` outcomes, and a clean earnings ledger. The movers are what the phase changes about the product.",
+      "movers": [
+        {
+          "name": "planning horizon",
+          "now": "current week only",
+          "target": "full remaining season",
+          "label": "the strategic game becomes playable"
+        },
+        {
+          "name": "lock mechanism",
+          "now": "manual submit before start",
+          "target": "cron auto-promotes on start day",
+          "label": "plans become picks unattended"
+        },
+        {
+          "name": "earnings input",
+          "now": "every pick row",
+          "target": "LOCKED picks only",
+          "label": "plans can never inflate standings"
+        }
+      ],
+      "table": {
+        "headers": [
+          "Behavior",
+          "Outcome",
+          "Why it validates"
+        ],
+        "rows": [
+          {
+            "cells": [
+              "Auto-lock · golfer in field, not used",
+              "pick → `LOCKED` with `lockedAt`",
+              "the happy path pays out exactly like a manual pick"
+            ],
+            "goodCols": [
+              1
+            ]
+          },
+          {
+            "cells": [
+              "Auto-lock · golfer not in field",
+              "plan skipped — golfer **not** burned",
+              "worst case is a $0 week, never a lost asset"
+            ],
+            "goodCols": [
+              1
+            ]
+          },
+          {
+            "cells": [
+              "Auto-lock · golfer already used",
+              "plan skipped",
+              "the season-long no-reuse rule holds even for unattended writes"
+            ],
+            "goodCols": [
+              1
+            ]
+          },
+          {
+            "cells": [
+              "`submit` over a PLANNED pick",
+              "golfer swapped in place",
+              "Make Pick and Planner converge on one row"
+            ],
+            "goodCols": [
+              1
+            ]
+          },
+          {
+            "cells": [
+              "`submit` over a LOCKED pick",
+              "`PRECONDITION_FAILED`",
+              "locked means locked — no path rewrites history"
+            ],
+            "goodCols": [
+              1
+            ]
+          },
+          {
+            "cells": [
+              "Earnings rollup",
+              "`WHERE status = 'LOCKED'` in both paths",
+              "standings reflect only committed picks"
+            ],
+            "goodCols": [
+              1
+            ]
+          }
+        ]
+      },
+      "note": "All outcomes are covered by the PR 1 test gate; the phase shipped with every checklist item in the source plan checked."
+    },
+    {
+      "type": "risks",
+      "id": "risks",
+      "title": "Risks",
+      "intro": "The risk profile is concentrated in one place: an unattended cron writing money-bearing rows.",
+      "risks": [
+        {
+          "risk": "The cron misses or fails the start-day run — plans never lock, users silently get $0 weeks.",
+          "mitigation": "<b>Catch-up by construction:</b> `startTournaments` selects every `UPCOMING` tournament with `startDate <= now` on *every* run, so the next successful run promotes whatever the failed one missed. Promotion is idempotent — it only touches rows still `PLANNED`."
+        },
+        {
+          "risk": "Partial failure mid-promotion: tournament flipped to IN_PROGRESS but its picks left unlocked.",
+          "mitigation": "<b>One transaction per tournament:</b> the status flip and `lockPlannedPicksForTournament` share a `withTransaction` scope — either both commit or neither does."
+        },
+        {
+          "risk": "PLANNED rows leak into money or visibility paths and inflate standings or spoil picks.",
+          "mitigation": "<b>Explicit LOCKED filters</b> in both earnings rollup queries and the league current-week view, each covered by tests — `PLANNED` is invisible everywhere except the owner's planner."
+        },
+        {
+          "risk": "A user edits a plan at the same moment the cron locks it.",
+          "mitigation": "<b>Start-date guard on every mutation:</b> `updatePlan`/`deletePlan` re-check the tournament and reject with `PRECONDITION_FAILED` once it has started; the cron only touches rows still `PLANNED`. No cross-member race exists — golfer uniqueness is per-member."
+        },
+        {
+          "risk": "Stale plans confuse users — a week quietly earns nothing.",
+          "mitigation": "<b>Visible, not deleted:</b> stale plans stay on the timeline with a \"missed\" indicator so users see exactly what slipped, and can clear it themselves."
+        }
+      ]
+    },
+    {
+      "type": "approve",
+      "id": "approve",
+      "title": "Before you approve",
+      "badge": "sign-off",
+      "intro": "This page is the approval surface for the phase as designed; it shipped in exactly this shape (with a few post-ship evolutions logged in the reference).",
+      "commit": {
+        "title": "What you're approving",
+        "body": "A <strong>two-PR staged delivery</strong>: PR 1 lands the service layer + cron promotion behind a full test gate before any UI exists; PR 2 is additive UI. <strong>No schema migration</strong> — `Pick` already carries `status`, `lockedAt`, and the unique constraint. The only shared surfaces touched are `submit` and the earnings rollup, both test-gated, so rollback is a straight revert."
+      },
+      "scrutinize": {
+        "title": "Scrutinize hardest",
+        "body": "`lockPlannedPicksForTournament` — an <strong>unattended DB write that moves money</strong>. Too-strict validation hands out silent $0 weeks; too-loose burns golfers users never fielded or double-locks a golfer. Walk the promotion loop and its two checks before signing off. <a href=\"#ref-autolock\">See the algorithm walkthrough ›</a>"
+      },
+      "open": {
+        "title": "Still open — non-blocking",
+        "note": "Deferred to polish; none block PR 1 or PR 2.",
+        "questions": [
+          "Should the planner show remaining golfers per world-ranking tier (\"3 top-25 left\")?",
+          "Does the golfer picker need virtualization at 200+ golfers, or is search + ranking sort enough?",
+          "Should the picker warn when a golfer is already LOCKED for another week? (deferred)"
+        ]
+      }
+    },
+    {
+      "type": "reference",
+      "id": "reference",
+      "title": "Reference",
+      "intro": "Full depth for the careful reader — the auto-lock algorithm, the API surface, the schema, the open-question log, and how the shipped code evolved past this plan.",
+      "items": [
+        {
+          "id": "ref-autolock",
+          "summary": "Auto-lock algorithm — the promotion loop, both checks, and the transaction",
+          "tally": "pick-lock.ts · sync.ts",
+          "markdown": "The promotion runs inside `startTournaments` (`src/server/services/sync.ts`), which wraps each starting tournament in one transaction:\n\n```ts\nconst lockResult = await withTransaction(async (tx) => {\n  await syncRepo.updateTournamentStatus(tournament.id, TournamentStatus.IN_PROGRESS, tx);\n  return lockPlannedPicksForTournament(tournament.id, tournament.season, tx);\n});\n```\n\n`lockPlannedPicksForTournament` (`src/server/repositories/pick-lock.ts` — built on `db-core`, no `server-only` guard, executor-injectable for transactions and tests) then walks every `PLANNED` pick for the tournament:\n\n1. **Field check** — the golfer must have a `CONFIRMED` `tournamentField` entry for this tournament. Not in the field → the plan is *not* promoted (skip mode returns the golfer to the pool; leagues can opt into `burnStalePicks` to lock anyway).\n2. **Usage check** — count the member's `LOCKED` picks for this golfer this season; at or above the league's `maxGolferUses` (default 1) → skipped, stays unpromoted.\n3. **Promote** — passes both → `UPDATE pick SET status = 'LOCKED', lockedAt = now()`.\n4. **Cleanup** — after locking, any *other* `PLANNED` picks for golfers that just became exhausted are removed, so the planner never shows a plan that can no longer lock.\n\nReturns `{ locked, skipped, cleaned }`, which the cron logs per tournament. Each pick is processed independently — golfer uniqueness is per-member, so there is no cross-member race."
+        },
+        {
+          "id": "ref-api",
+          "summary": "tRPC surface — five new endpoints on the pick router",
+          "tally": "3 mutations · 2 queries",
+          "markdown": "All endpoints are `protectedProcedure`s scoped through `resolveLeagueMemberId(userId, leagueId)` — a user can only ever touch their own membership's picks.\n\n| Endpoint | Kind | Service | Semantics |\n|---|---|---|---|\n| `pick.plan` | mutation | `planPick` | Creates a `PLANNED` pick. Rejects: unknown tournament/golfer (`NOT_FOUND`), started tournament (`PRECONDITION_FAILED`), existing pick for the tournament (`CONFLICT`). |\n| `pick.updatePlan` | mutation | `updatePlannedPick` | Swaps the golfer on an existing `PLANNED` pick. `NOT_FOUND` unless the pick exists *and* is `PLANNED` — LOCKED picks are unreachable. |\n| `pick.deletePlan` | mutation | `removePlannedPick` | Deletes a `PLANNED` pick; same PLANNED-only guard, plus the tournament must not have started. |\n| `pick.plannedPicks` | query | `getPlannedPicks` | The member's `PLANNED` picks for the season. |\n| `pick.allSeasonPicks` | query | `getAllSeasonPicks` | Every pick (both statuses) with tournament, golfer, purse, and result data — the planner timeline's spine, ordered by start date. |\n\nThe Make Pick flow's guard is the same shape: an existing `PLANNED` pick is updated in place; a `LOCKED` pick rejects with `PRECONDITION_FAILED`."
+        },
+        {
+          "id": "ref-schema",
+          "summary": "Pick schema — no migration needed",
+          "tally": "prisma/schema.prisma",
+          "markdown": "The phase rides entirely on the existing model — `status` defaults to `PLANNED`, `lockedAt` records the promotion moment, and the unique constraint is what makes update-in-place safe:\n\n```prisma\nmodel Pick {\n  id             String     @id @default(uuid())\n  leagueMemberId String     @map(\"league_member_id\")\n  tournamentId   String     @map(\"tournament_id\")\n  golferId       String     @map(\"golfer_id\")\n  status         PickStatus @default(PLANNED)\n  createdAt      DateTime   @default(now()) @map(\"created_at\")\n  updatedAt      DateTime   @updatedAt @map(\"updated_at\")\n  lockedAt       DateTime?  @map(\"locked_at\")\n\n  @@unique([leagueMemberId, tournamentId])\n  @@map(\"pick\")\n}\n\nenum PickStatus {\n  PLANNED\n  LOCKED\n}\n```"
+        },
+        {
+          "id": "ref-questions",
+          "summary": "Open-question log — 11 raised, 8 resolved in-design",
+          "tally": "8 resolved · 3 deferred",
+          "markdown": "| # | Question | Resolution |\n|---|---|---|\n| 1 | Should PLANNED picks be visible to opponents? | **No** — only LOCKED picks are visible; auto-locked picks follow the same visibility rules as any other. |\n| 2 | Show remaining golfers per ranking tier? | *Deferred to polish.* |\n| 3 | How does the picker handle 200+ golfers? | Search + world-ranking sort; *virtualize only if slow.* |\n| 4 | Should PLANNED picks block golfer availability? | **No** — soft reservation; only LOCKED consumes. |\n| 5 | Validate field membership at plan time? | **No** — fields unknown for future tournaments; validate at auto-lock. |\n| 6 | Manual PLANNED → LOCKED confirmation step? | **No** — the daily cron is the confirmation. |\n| 7 | Make Pick conflicts with a PLANNED pick? | **`submit` updates the golfer in place; LOCKED rejected.** |\n| 8 | What happens to stale PLANNED picks? | **Left in place with a \"missed\" indicator; not auto-deleted.** |\n| 9 | Combined query for all pick statuses? | **Yes** — `getAllSeasonPicks` returns PLANNED + LOCKED. |\n| 10 | Does auto-lock need to write to the DB? | **Yes** — promotion burns the golfer, enables earnings, reveals the pick. |\n| 11 | Should earnings rollup filter by status? | **Yes** — `WHERE pick.status = 'LOCKED'` in both paths. |"
+        },
+        {
+          "id": "ref-evolution",
+          "summary": "As shipped — how the live code evolved past this plan",
+          "tally": "7 deltas, same model",
+          "markdown": "The phase shipped as designed, and the PLANNED/LOCKED model then absorbed every later feature **without a schema change** — the best evidence the core decisions held. Verified deltas between this plan and today's code:\n\n- **Cron cadence:** daily 10:00 UTC → **every 15 minutes** (`vercel.json`), so locks land within minutes of a start time rather than hours.\n- **Route:** the planner shipped at **`/season`** (NavBar \"Season\") rather than `/planner`, merged with the season history view.\n- **`maxGolferUses`:** the binary \"already used\" check generalized to a per-league use limit (`findExhaustedGolferIds`), letting leagues allow golfer reuse.\n- **Stale-plan handling hardened:** skip-mode now *deletes* a not-in-field plan at lock time (golfer returns to the pool immediately), leagues can opt into **`burnStalePicks`** to lock it anyway, and a post-lock cleanup removes other plans for golfers that just became exhausted.\n- **Duplicate-plan UX:** planning a golfer already planned elsewhere now **moves the plan** instead of rejecting it.\n- **Pre-lock visibility:** leagues can opt into **`showPicksBeforeLock`** to reveal PLANNED picks to the league early.\n- **`planMultiple`:** one tap can plan a golfer across all of a user's leagues, skipping ineligible ones per league.\n\nOne reversal worth noting: `getAllSeasonPicks` now *does* apply read-side locking (the plan chose raw status); stale plans are instead surfaced by the timeline's own start-date check and largely removed at lock time by the cron cleanup."
+        }
+      ]
+    }
+  ]
+}

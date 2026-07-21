@@ -1,0 +1,575 @@
+{
+  "kind": "domain",
+  "slug": "admin",
+  "title": "Admin back-office",
+  "layer": "surface",
+  "layerLabel": "Operations",
+  "path": "src",
+  "count": "21 files",
+  "depends": "accounts · game · golf-data · leagues · scoring · web-shell",
+  "date": "2026-07-21",
+  "generator": "visual-skills · visual-atlas",
+  "meta": [
+    {
+      "key": "Layer",
+      "value": "Engine"
+    },
+    {
+      "key": "Surface",
+      "value": "`/admin/*` pages + `admin.*` / `health.*` tRPC"
+    },
+    {
+      "key": "Auth",
+      "value": "Better Auth `user.role === \"admin\"`"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "domain-tldr",
+      "id": "tldr",
+      "heading": "Admin back-office",
+      "rows": [
+        {
+          "key": "Path",
+          "value": "`src/app/admin/**` + `src/server/{routers,services,repositories}/admin.ts` + `src/server/routers/health.ts`"
+        },
+        {
+          "key": "Files",
+          "value": "21"
+        },
+        {
+          "key": "What it is",
+          "value": "The operator surface: a sidebar-navigated `/admin` area for correcting tournaments, results, users, golfers, leagues, and picks — plus manual triggers for every sync and rollup the cron normally runs."
+        },
+        {
+          "key": "Who sees it",
+          "value": "Only users whose Better Auth `role` is `admin`. Everyone else is redirected to `/dashboard` by the layout, and rejected with `FORBIDDEN` by the API."
+        }
+      ],
+      "bigIdea": {
+        "label": "Big idea",
+        "line": "Every admin capability is a tRPC procedure behind `adminProcedure` — the `/admin` layout redirect is UX, the middleware is the boundary.",
+        "sub": "`src/app/admin/layout.tsx` redirects non-admins, but the real gate is the `adminProcedure` middleware in `src/server/trpc.ts` (web-shell), which throws `FORBIDDEN` unless the session role is `admin`. Destructive overrides carry service-layer guards — last-admin protection, commissioner reassignment, the GLOBAL league is undeletable, exclusion blocks on locked picks — and pick overrides are written to the commissioner audit log and trigger earnings recalculation."
+      }
+    },
+    {
+      "type": "components",
+      "id": "components",
+      "title": "Components",
+      "intro": "Six operator consoles (server pages + client mutation forms) over one three-layer API, plus a public health router.",
+      "cards": [
+        {
+          "name": "Admin gate & layout",
+          "purpose": "The `/admin` shell: a server layout that checks `trpc.auth.me()` and redirects non-admins, a sidebar nav over all consoles, and an overview dashboard of platform stats.",
+          "href": "#c-gate"
+        },
+        {
+          "name": "Tournament ops",
+          "purpose": "List, edit, and exclude tournaments; hand-correct per-golfer results; fire field/results/live-standings syncs and the earnings rollup for one event.",
+          "exports": [
+            {
+              "name": "TournamentAdmin"
+            },
+            {
+              "name": "TournamentResults"
+            }
+          ],
+          "href": "#c-tournaments"
+        },
+        {
+          "name": "User ops",
+          "purpose": "Search users, flip roles, delete accounts, send password resets and test pick-reminder emails, and yank a member's picks or league memberships.",
+          "exports": [
+            {
+              "name": "UserDetail"
+            }
+          ],
+          "href": "#c-users"
+        },
+        {
+          "name": "League & golfer ops",
+          "purpose": "Override any league's settings, membership, and commissioner; delete non-global leagues; correct golfer name/country/world-ranking data.",
+          "exports": [
+            {
+              "name": "LeagueAdmin"
+            },
+            {
+              "name": "GolferAdmin"
+            }
+          ],
+          "href": "#c-leagues-golfers"
+        },
+        {
+          "name": "Cron console",
+          "purpose": "The last 20 `CronLog` runs with their JSON payloads, plus a button that runs the same `runFullSync` the scheduled `/api/cron/sync` route runs.",
+          "exports": [
+            {
+              "name": "RunCronButton"
+            }
+          ],
+          "href": "#c-cron"
+        },
+        {
+          "name": "Admin API",
+          "purpose": "The `admin.*` tRPC surface — 35 `adminProcedure` procedures, a service layer holding every override guard, and a repository of cross-table Kysely read models and cascade deletes.",
+          "exports": [
+            {
+              "name": "adminRouter"
+            }
+          ],
+          "href": "#c-api"
+        },
+        {
+          "name": "Health probes",
+          "purpose": "Three public liveness checks — process, database, and the ESPN upstream — for uptime monitoring.",
+          "exports": [
+            {
+              "name": "healthRouter"
+            }
+          ],
+          "href": "#c-health"
+        }
+      ]
+    },
+    {
+      "type": "diagram-section",
+      "id": "arch",
+      "title": "Internal architecture",
+      "intro": "Every console page talks tRPC (server pages via `serverTRPC`, client forms via `useTRPC` mutations). All `admin.*` calls pass the `adminProcedure` gate before the service fans out — to its own repository for reads and overrides, and to neighbor services for syncs, rollups, and password resets.",
+      "diagram": {
+        "id": "arch-diagram",
+        "kind": "architecture",
+        "d2": "direction: right\noperator: { class: actor }\n\"/admin pages\"\n\"adminProcedure gate\": { class: changed }\n\"admin service\"\n\"admin repository\"\nPostgres: { class: store }\n\"golf-data sync\"\n\"earnings-core\"\n\"Better Auth\"\noperator -> \"/admin pages\"\n\"/admin pages\" -> \"adminProcedure gate\": \"tRPC admin.*\"\n\"adminProcedure gate\" -> \"admin service\"\n\"admin service\" -> \"admin repository\"\n\"admin repository\" -> Postgres\n\"admin service\" -> \"golf-data sync\": manual syncs\n\"admin service\" -> \"earnings-core\": rollup\n\"admin service\" -> \"Better Auth\": password reset",
+        "mermaid": "flowchart LR\n  OP[Operator] --> P[\"/admin pages\"]\n  P -->|tRPC admin.*| G[adminProcedure gate]\n  G --> S[admin service]\n  S --> R[admin repository]\n  R --> DB[(Postgres)]\n  S -->|manual syncs| SY[golf-data sync]\n  S -->|rollup| EC[earnings-core]\n  S -->|password reset| BA[Better Auth]\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class OP actor;\n  class G changed;\n  class DB store;",
+        "caption": "`health.*` sits outside this path — its three probes are `publicProcedure` and query the db / ESPN directly."
+      }
+    },
+    {
+      "type": "depth",
+      "id": "depth",
+      "title": "In depth",
+      "components": [
+        {
+          "id": "c-gate",
+          "name": "Admin gate & layout",
+          "path": "src/app/admin",
+          "detail": [
+            "`layout.tsx` is a server component that calls `trpc.auth.me()` and does `if (!me || me.role !== \"admin\") redirect(\"/dashboard\")` before rendering anything. It wraps every `/admin` route in a sidebar nav: Overview, Tournaments, Users, Golfers, Leagues, Promo Codes, Cron Logs. The Promo Codes link points at `/admin/promos`, whose pages live in the [payments](../domain-payments/domain-payments.html) domain — the nav spans both.",
+            "`page.tsx` is the overview dashboard: one `admin.stats` call renders total users, leagues, picks this season, the currently-live tournament (linking into tournament ops), and the last cron run's success flag and duration — a one-glance health check before digging into any console."
+          ],
+          "files": [
+            {
+              "name": "app/admin/layout.tsx",
+              "desc": "Role-gated server layout + sidebar nav over all admin consoles"
+            },
+            {
+              "name": "app/admin/page.tsx",
+              "desc": "Overview dashboard: platform counts, live tournament, last cron run"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "`trpc.auth.me()` from the [accounts](../domain-accounts/domain-accounts.html) auth router to read the session role."
+            },
+            {
+              "dir": "reads",
+              "body": "`admin.stats` — counts assembled by the [Admin API](#c-api) repository plus the latest `CronLog` row."
+            },
+            {
+              "dir": "consumes",
+              "body": "`serverTRPC` from [web-shell](../domain-web-shell/domain-web-shell.html) — all server pages in this domain fetch through it."
+            }
+          ]
+        },
+        {
+          "id": "c-tournaments",
+          "name": "Tournament ops",
+          "path": "src/app/admin/tournaments",
+          "detail": [
+            "The list page filters by season, status, and name, with an `EXCLUDED` pseudo-status that maps to the `excluded` boolean filter, and derives a `LIVE` badge for `UPCOMING` tournaments whose start date has passed. The detail page loads via `admin.tournament` and hands off to the `TournamentAdmin` client component.",
+            "`TournamentAdmin` is the busiest console: an edit form (name, course, dates, purse, estimated purse, status) with a pair of timezone helpers — `toInputDateTime` / `fromInputDateTime` — that treat every `datetime-local` value as US Eastern regardless of the operator's browser timezone; an exclude toggle that surfaces the service's `PRECONDITION_FAILED` (locked picks exist) as a **Force Exclude** escalation button; and four sync buttons — Sync Field, Sync Results, Sync Live Standings, and Run Earnings Rollup (hardcoded to `GLOBAL_LEAGUE_ID`).",
+            "`TournamentResults` renders the per-golfer results table with inline row editing of finish position, earnings, score-to-par, and rounds — typing `MC` (missed cut) stores position `0`. This is the hand-correction path when ESPN's payout data is wrong, and its edits feed directly into what [scoring](../domain-scoring/domain-scoring.html) rolls up."
+          ],
+          "files": [
+            {
+              "name": "app/admin/tournaments/page.tsx",
+              "desc": "Season/status/search list with EXCLUDED filter and LIVE derivation"
+            },
+            {
+              "name": "app/admin/tournaments/[id]/page.tsx",
+              "desc": "Server loader — `admin.tournament`, `notFound()` on miss"
+            },
+            {
+              "name": "app/admin/tournaments/[id]/tournament-admin.tsx",
+              "desc": "Edit form, ET datetime conversion, exclusion + force flow, sync controls, field table"
+            },
+            {
+              "name": "app/admin/tournaments/[id]/tournament-results.tsx",
+              "desc": "Inline-editable results table (MC → position 0)"
+            }
+          ],
+          "exports": [
+            {
+              "name": "TournamentAdmin",
+              "desc": "Client console for one tournament: edit, exclude, sync"
+            },
+            {
+              "name": "TournamentResults",
+              "desc": "Inline results editor, invalidates its own query on save"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "`admin.syncField` / `admin.syncResults` / `admin.syncLiveStandings`, which the service delegates to [golf-data](../domain-golf-data/domain-golf-data.html)'s `syncFields` / `syncResults` / `syncLiveStandings`."
+            },
+            {
+              "dir": "calls",
+              "body": "`admin.earningsRollup` → [scoring](../domain-scoring/domain-scoring.html)'s `recalculateSeasonForLeague` for `GLOBAL_LEAGUE_ID` (from web-shell's `lib/constants.ts`)."
+            },
+            {
+              "dir": "produces",
+              "body": "Corrected `tournamentResult` rows — the raw input for every leaderboard and season standings number."
+            }
+          ]
+        },
+        {
+          "id": "c-users",
+          "name": "User ops",
+          "path": "src/app/admin/users",
+          "detail": [
+            "The list page searches name/email/username and shows each user's league count and picks this season (two aggregate queries stitched in the repository). The detail page loads the user plus their leagues and season picks, along with upcoming tournaments to power the test-reminder dropdown.",
+            "`UserDetail` is the account-surgery console: toggle role between `user` and `admin` (the service blocks self-demotion and demoting/deleting the last admin), send a password reset (routed through Better Auth's `requestPasswordReset`), send a test pick-reminder email for a chosen upcoming tournament, remove the user from any league, remove any individual pick (via the audited `admin.adminRemovePick`), and a confirm-gated delete that cascades picks, memberships, season rows, and auth records — refused while the user still commissions any league."
+          ],
+          "files": [
+            {
+              "name": "app/admin/users/page.tsx",
+              "desc": "Searchable user list with league/pick counts and role badges"
+            },
+            {
+              "name": "app/admin/users/[id]/page.tsx",
+              "desc": "Server loader — user detail + upcoming tournaments for the test reminder"
+            },
+            {
+              "name": "app/admin/users/[id]/user-detail.tsx",
+              "desc": "Role, password reset, test reminder, membership/pick removal, delete"
+            }
+          ],
+          "exports": [
+            {
+              "name": "UserDetail",
+              "desc": "Client console wiring six admin mutations for one account"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "`admin.sendPasswordResetEmail` → `auth.api.requestPasswordReset`, and `admin.testPickReminder` → `sendTestPickReminder` — both land in [accounts](../domain-accounts/domain-accounts.html)."
+            },
+            {
+              "dir": "calls",
+              "body": "`admin.adminRemovePick` — deletes via [game](../domain-game/domain-game.html)'s pick repository and audit-logs via [leagues](../domain-leagues/domain-leagues.html)' `createCommissionerAction`."
+            }
+          ]
+        },
+        {
+          "id": "c-leagues-golfers",
+          "name": "League & golfer ops",
+          "path": "src/app/admin/leagues",
+          "detail": [
+            "League ops: the list filters by type (GLOBAL/PRIVATE), payment status, and name. `LeagueAdmin` edits any league's settings — name, `maxGolferUses`, `burnStalePicks`, `showPicksBeforeLock`, `requireApproval` — and reassigns the commissioner from a dropdown of current members. It adds members through a live `admin.users` search (existing members filtered out), removes any member except the commissioner, and offers a Danger Zone delete that is simply not rendered for the GLOBAL league (the service refuses it server-side too).",
+            "Golfer ops is the small sibling under `src/app/admin/golfers`: a searchable list showing world ranking and events played, and `GolferAdmin`, a three-field form correcting name, country, and world ranking — the fix-up path when ESPN data comes in wrong or incomplete."
+          ],
+          "files": [
+            {
+              "name": "app/admin/leagues/page.tsx",
+              "desc": "Type/payment/search league list with member counts"
+            },
+            {
+              "name": "app/admin/leagues/[id]/page.tsx",
+              "desc": "Server loader — `admin.league` with members"
+            },
+            {
+              "name": "app/admin/leagues/[id]/league-admin.tsx",
+              "desc": "Settings, commissioner reassignment, membership add/remove, delete"
+            },
+            {
+              "name": "app/admin/golfers/page.tsx",
+              "desc": "Searchable golfer list (rank, events played)"
+            },
+            {
+              "name": "app/admin/golfers/[id]/page.tsx",
+              "desc": "Server loader — `admin.golfer`"
+            },
+            {
+              "name": "app/admin/golfers/[id]/golfer-admin.tsx",
+              "desc": "Name/country/world-ranking correction form"
+            }
+          ],
+          "exports": [
+            {
+              "name": "LeagueAdmin",
+              "desc": "Client console for one league: settings + membership + delete"
+            },
+            {
+              "name": "GolferAdmin",
+              "desc": "Client form correcting one golfer's reference data"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "reads",
+              "body": "League settings mirror what [leagues](../domain-leagues/domain-leagues.html) commissioners self-serve — this console is the same knobs without the commissioner-only restriction."
+            },
+            {
+              "dir": "consumes",
+              "body": "`CountryFlag` from [golf-data](../domain-golf-data/domain-golf-data.html) on the golfer list."
+            }
+          ]
+        },
+        {
+          "id": "c-cron",
+          "name": "Cron console",
+          "path": "src/app/admin/cron",
+          "detail": [
+            "`page.tsx` renders the last 20 cron runs from `admin.cronLogs`: success/error badge, US-Eastern timestamp, duration, and the stored JSON response pretty-printed per run — the primary debugging view when a nightly sync misbehaves.",
+            "`RunCronButton` fires `admin.runFullSync`, which the admin service re-exports verbatim from golf-data's `cron-sync` service — so the button runs *exactly* the code path the scheduled `/api/cron/sync` route runs, and its result lands in the same `CronLog` table the page displays."
+          ],
+          "files": [
+            {
+              "name": "app/admin/cron/page.tsx",
+              "desc": "Last 20 CronLog entries with parsed JSON payloads"
+            },
+            {
+              "name": "app/admin/cron/run-cron-button.tsx",
+              "desc": "Manual `admin.runFullSync` trigger with inline status"
+            }
+          ],
+          "exports": [
+            {
+              "name": "RunCronButton",
+              "desc": "Client button — same code path as the scheduled cron"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "`runFullSync` from [golf-data](../domain-golf-data/domain-golf-data.html)'s `cron-sync.ts` (re-exported by `services/admin.ts`)."
+            },
+            {
+              "dir": "reads",
+              "body": "`CronLog` rows via golf-data's `cron-log.ts` repository (`findLatestRuns(20)`)."
+            }
+          ]
+        },
+        {
+          "id": "c-api",
+          "name": "Admin API",
+          "path": "src/server",
+          "detail": [
+            "`routers/admin.ts` mounts 35 procedures on `adminProcedure`, spanning stats, tournaments (+results, field, exclusion, syncs), users, golfers, leagues, picks, promo codes, and cron. The router stays thin — zod input, service call — with one exception: `testPickReminder` calls accounts' `sendTestPickReminder` service directly instead of going through `services/admin.ts`.",
+            "`services/admin.ts` is where the override guards live: existence checks that turn into `NOT_FOUND`; `updateUserRole`/`deleteUser` refuse self-demotion, self-deletion, and touching the last admin (`countAdmins`); `deleteUser` also refuses while the user commissions any league (`findLeaguesByCommissioner`); `removeUserFromLeague` refuses to remove a commissioner; `deleteLeague` refuses the GLOBAL league; `toggleTournamentExclusion` throws `PRECONDITION_FAILED` when locked picks exist unless `force` is passed. `adminUpdatePick`/`adminRemovePick` wrap the pick change and a `commissionerAction` audit row (`ADMIN_UPDATE_PICK` / `ADMIN_REMOVE_PICK`) in `withTransaction`, then recalculate the member's season if the tournament is `COMPLETED`/`FINALIZING`.",
+            "`repositories/admin.ts` holds the read models — search lists with escaped `ilike`, aggregate counts (league members, picks this season, events played), and the platform stats query — plus the destructive writes. Its `deleteUser`, `removeUserFromLeague`, and `deleteLeague` run multi-table cascades (picks → season rows → audit rows → memberships → auth rows) inside `db.transaction()` directly, a deviation from the repo convention of accepting an `executor` param and letting services own transactions."
+          ],
+          "files": [
+            {
+              "name": "server/routers/admin.ts",
+              "desc": "35 `adminProcedure` procedures — the whole operator surface"
+            },
+            {
+              "name": "server/services/admin.ts",
+              "desc": "Override guards, audited pick mutations, sync/rollup delegation"
+            },
+            {
+              "name": "server/repositories/admin.ts",
+              "desc": "Cross-table Kysely read models + cascade deletes"
+            }
+          ],
+          "exports": [
+            {
+              "name": "adminRouter",
+              "desc": "Mounted as `admin` in `routers/_app.ts`"
+            },
+            {
+              "name": "adminUpdatePick",
+              "desc": "Service: swap a pick's golfer, audit it, recalc earnings if finalized"
+            },
+            {
+              "name": "countAdmins",
+              "desc": "Repo: powers the last-admin guard"
+            },
+            {
+              "name": "countLockedPicksForTournament",
+              "desc": "Repo: powers the exclusion precondition"
+            },
+            {
+              "name": "findUsers",
+              "desc": "Repo: searchable user list with league + pick aggregates"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[golf-data](../domain-golf-data/domain-golf-data.html): `syncFields`/`syncResults`/`syncLiveStandings` (`services/sync.ts`), `runFullSync` (`cron-sync.ts`), `cron-log` and `tournament`/`golfer` repositories."
+            },
+            {
+              "dir": "calls",
+              "body": "[scoring](../domain-scoring/domain-scoring.html): `recalculateSeasonForLeague` / `recalculateSeasonForMember` from `earnings-core.ts` after result edits and pick overrides."
+            },
+            {
+              "dir": "calls",
+              "body": "[accounts](../domain-accounts/domain-accounts.html) (`auth.api.requestPasswordReset`, `sendTestPickReminder`), [game](../domain-game/domain-game.html) (`pick.ts` repo), [leagues](../domain-leagues/domain-leagues.html) (`createCommissionerAction`, `findLeaguesByCommissioner`)."
+            },
+            {
+              "dir": "consumed by",
+              "body": "[payments](../domain-payments/domain-payments.html)' `/admin/promos` pages — the promo-code procedures (`admin.promoCodes`, `admin.createPromoCode`, `admin.updatePromoCode`) live in this router even though the promo UI and model belong to payments."
+            }
+          ]
+        },
+        {
+          "id": "c-health",
+          "name": "Health probes",
+          "path": "src/server/routers",
+          "detail": [
+            "`healthRouter` exposes three `publicProcedure` queries: `ping` (process up), `dbCheck` (`SELECT NOW()` through Kysely), and `espnCheck` (fetches the current season's schedule via `espnProvider.getSchedule` and reports event count + first/last event names — a real exercise of the ESPN dependency, not a stub).",
+            "It's the one router in the codebase that imports `db` and queries it directly, skipping the service/repository layering — a deliberate pragmatism for probes that must not depend on the layers they're checking. It's also the only public surface in this domain: everything else requires the admin role."
+          ],
+          "files": [
+            {
+              "name": "server/routers/health.ts",
+              "desc": "`ping` / `dbCheck` / `espnCheck` public probes"
+            }
+          ],
+          "exports": [
+            {
+              "name": "healthRouter",
+              "desc": "Mounted as `health` in `routers/_app.ts`"
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "`espnProvider` from [golf-data](../domain-golf-data/domain-golf-data.html)'s ESPN client for the upstream check."
+            },
+            {
+              "dir": "reads",
+              "body": "`db` from [web-shell](../domain-web-shell/domain-web-shell.html)'s `lib/db.ts` — directly, bypassing the repository layer by design."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "owns",
+      "id": "data",
+      "title": "Data it owns",
+      "intro": "Honestly: none. Admin owns no Prisma models — it is an operator lens over everyone else's tables.",
+      "rows": [
+        {
+          "name": "(no owned models)",
+          "desc": "`tournament`/`golfer`/`cronLog` belong to golf-data, `user` to accounts, `league`/`leagueMember`/`commissionerAction` to leagues, `pick` to game, `promoCode` to payments."
+        }
+      ],
+      "note": "What makes this domain unusual is write reach, not ownership: `repositories/admin.ts` is the one repository that updates and cascade-deletes across nearly every table in the schema."
+    },
+    {
+      "type": "seams",
+      "id": "seams",
+      "title": "Seams",
+      "intro": "The full `admin.*` surface is 35 procedures, every one behind `adminProcedure`; the representative ones below show its span. `health.*` is the domain's only public surface.",
+      "exposes": [
+        {
+          "api": "admin.stats",
+          "note": "Overview counts + live tournament + last cron run"
+        },
+        {
+          "api": "admin.updateTournament",
+          "note": "Edit name/course/dates/purse/status"
+        },
+        {
+          "api": "admin.updateTournamentResult",
+          "note": "Hand-correct a golfer's finish/earnings"
+        },
+        {
+          "api": "admin.toggleTournamentExclusion",
+          "note": "`PRECONDITION_FAILED` on locked picks unless `force`"
+        },
+        {
+          "api": "admin.runFullSync",
+          "note": "Same code path as the scheduled cron"
+        },
+        {
+          "api": "admin.cronLogs",
+          "note": "Last 20 `CronLog` runs"
+        },
+        {
+          "api": "admin.updateUserRole",
+          "note": "Guards: no self-demotion, never the last admin"
+        },
+        {
+          "api": "admin.deleteUser",
+          "note": "Cascade delete; refused for commissioners"
+        },
+        {
+          "api": "admin.adminUpdatePick",
+          "note": "Audited golfer swap + conditional earnings recalc"
+        },
+        {
+          "api": "admin.updateLeague",
+          "note": "Any league's settings incl. commissioner"
+        },
+        {
+          "api": "admin.updateGolfer",
+          "note": "Correct golfer reference data"
+        },
+        {
+          "api": "admin.createPromoCode",
+          "note": "Consumed by payments' `/admin/promos` UI"
+        },
+        {
+          "api": "routers/health.ts",
+          "desc": "public health probes — `health.ping`, `health.dbCheck`, and `health.espnCheck` (the only public procedures in the domain; dbCheck queries `db` directly, a sanctioned layering exception)"
+        }
+      ],
+      "depends": [
+        {
+          "name": "accounts",
+          "path": "src",
+          "href": "../domain-accounts/domain-accounts.html"
+        },
+        {
+          "name": "game",
+          "path": "src",
+          "href": "../domain-game/domain-game.html"
+        },
+        {
+          "name": "golf-data",
+          "path": "src",
+          "href": "../domain-golf-data/domain-golf-data.html"
+        },
+        {
+          "name": "leagues",
+          "path": "src",
+          "href": "../domain-leagues/domain-leagues.html"
+        },
+        {
+          "name": "scoring",
+          "path": "src",
+          "href": "../domain-scoring/domain-scoring.html"
+        },
+        {
+          "name": "web-shell",
+          "path": "src",
+          "href": "../domain-web-shell/domain-web-shell.html"
+        }
+      ],
+      "note": "One inbound seam worth knowing: [payments](../domain-payments/domain-payments.html)' promo admin pages depend on this router (`admin.promoCodes` / `admin.promoCode` / `admin.createPromoCode` / `admin.updatePromoCode`) — the dependency arrow points *into* admin, not out."
+    }
+  ],
+  "verifiedAgainst": {
+    "hash": "sha256:cce91d3b5657ba89865e31214d7ff321d35bbb1d79cdaa14e52349b26e34d137",
+    "date": "2026-07-21",
+    "commit": "662c5aea21d551822d864db988922e040298ecd4"
+  }
+}

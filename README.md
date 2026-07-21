@@ -25,14 +25,19 @@ revealed sections, and rendered diagrams. Four example builds live in [`example/
 **click any screenshot below to open the live demo**, or open the `.html` files locally in a
 browser (they need no server).
 
+All examples are real builds from [PPGL](https://ppgl.app), a production fantasy-golf app
+(Next.js / tRPC / Postgres, ~150 modules): a feature PR, a bug-fix PR
+([pr-190](https://scottyroges.github.io/visual-skills/example/pr-190-season-stats/recap.html)),
+a completed phase plan, and the full 8-domain codebase atlas.
+
 <table>
   <tr>
-    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/pr-180-weekly-standings/recap.html"><img src="docs/images/recap.png" alt="visual-recap"></a><br><b>visual-recap</b> — a PR as a guided walkthrough</td>
-    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/spec-gm-planning-brain/spec.html"><img src="docs/images/spec.png" alt="visual-spec"></a><br><b>visual-spec</b> — a design spec for approval</td>
+    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/pr-194-estimated-purse/recap.html"><img src="docs/images/recap.png" alt="visual-recap"></a><br><b>visual-recap</b> — a PR as a guided walkthrough</td>
+    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/spec-season-planner/spec.html"><img src="docs/images/spec.png" alt="visual-spec"></a><br><b>visual-spec</b> — a design spec for approval</td>
   </tr>
   <tr>
-    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/atlas-sports-rpg/atlas.html"><img src="docs/images/atlas.png" alt="visual-atlas overview"></a><br><b>visual-atlas</b> — the system onboarding map</td>
-    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/atlas-sports-rpg/domain-sim/domain-sim.html"><img src="docs/images/atlas-domain.png" alt="visual-atlas domain page"></a><br><b>visual-atlas</b> — a per-domain deep-dive page</td>
+    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/atlas-ppgl/atlas.html"><img src="docs/images/atlas.png" alt="visual-atlas overview"></a><br><b>visual-atlas</b> — the system onboarding map</td>
+    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/atlas-ppgl/domain-golf-data/domain-golf-data.html"><img src="docs/images/atlas-domain.png" alt="visual-atlas domain page"></a><br><b>visual-atlas</b> — a per-domain deep-dive page</td>
   </tr>
 </table>
 
