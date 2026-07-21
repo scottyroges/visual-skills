@@ -407,7 +407,7 @@
           "name": "highlight",
           "path": "src/highlight.ts",
           "detail": [
-            "A thin wrapper over Shiki (`github-light` theme, a fixed set of loaded languages) behind a lazy promise singleton, so the highlighter is created at most once per process. `highlightCode` returns a complete Shiki `<pre>` for fenced markdown code; `highlightLines` returns the inner HTML of each source line so `diff` and `annotated-code` can interleave code with gutters and per-line notes. `langFromPath` maps a file extension to a Shiki language id.",
+            "A thin wrapper over Shiki (dual `github-light`/`github-dark` themes with `defaultColor: \"light\"` — inline `color:` stays light-only, the dark palette rides along in `--shiki-dark`/`--shiki-dark-bg` custom properties that `theme.css` flips on for the dark-mode toggle — plus a fixed set of loaded languages) behind a lazy promise singleton, so the highlighter is created at most once per process. `highlightCode` returns a complete Shiki `<pre>` for fenced markdown code; `highlightLines` returns the inner HTML of each source line so `diff` and `annotated-code` can interleave code with gutters and per-line notes. `langFromPath` maps a file extension to a Shiki language id.",
             "Every path is defensive: an unloaded language, a Shiki error, or a line-count mismatch degrades to escaped plaintext (and an `onWarn` note) rather than throwing — a highlighting failure must never break a document."
           ],
           "files": [
@@ -591,8 +591,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:3b41fb9201cede9812aa9e72527b4d390a62bc9779c5ef11e0275e9dc8c91ed8",
+    "hash": "sha256:aafe34eccfd50806e7b2304c7d2de0aa2245a9d022690dd313dc486fa5682aac",
     "date": "2026-07-21",
-    "commit": "7803a0e7a18940c215f255f1fb681c0a14ce3566"
+    "commit": "3da9de04ac619ab5f65b339c556ae2a76f5c15dd"
   }
 }
