@@ -1,15 +1,16 @@
 #!/usr/bin/env -S node --import tsx
 // visual-atlas CLI.
-//   atlas --repo <ABS> --out <ABS dir>              # full scan: config + drift + draft-when-absent + render
-//   atlas --repo <ABS> --domain <slug> --out <DIR>  # single domain: rescan + regenerate that page
-//   atlas --all <ABS dir> --out <ABS dir>           # render the atlas + every domain-<slug>/ folder
-//   atlas --blocks <ABS file.json> --out <ABS dir>  # render one committed page
+//   atlas --repo <dir> --out <dir>                  # full scan: config + drift + draft-when-absent + render
+//   atlas --repo <dir> --domain <slug> --out <dir>  # single domain: rescan + regenerate that page
+//   atlas --all <dir> --out <dir>                   # render the atlas + every domain-<slug>/ folder
+//   atlas --blocks <file.json> --out <dir>          # render one committed page
+// Paths may be relative; they resolve against the current working directory.
 // Add --force to overwrite existing draft JSON (default: never clobber authored prose).
 // Layout: atlas.{html,json} + atlas.domains.json at the top; each domain in its own
 // domain-<slug>/ folder (domain-<slug>.{html,json} + that domain's diagram sidecars).
 import { readFile, writeFile, mkdir, readdir, copyFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { join, isAbsolute, basename, dirname } from "node:path";
+import { join, resolve, basename, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { assembleAtlas, assembleDomain } from "../src/assemble-atlas.js";
@@ -126,11 +127,11 @@ async function main() {
     repo: { type: "string" }, domain: { type: "string" }, force: { type: "boolean" },
     "no-excalidraw": { type: "boolean" },
   } });
-  const outDir = values.out;
+  const outDir = values.out ? resolve(values.out) : undefined;   // relative paths resolve against cwd
   const noExcalidraw = !!values["no-excalidraw"];   // force the d2 floor, skip editable upgrade
-  if (!outDir || !isAbsolute(outDir)) { console.error("usage: atlas --repo <abs> [--domain <slug>] [--force] [--no-excalidraw] --out <abs> | --all <dir> --out <abs> | --blocks <file> --out <abs>"); process.exit(2); }
+  if (!outDir) { console.error("usage: atlas --repo <path> [--domain <slug>] [--force] [--no-excalidraw] --out <dir> | --all <dir> --out <dir> | --blocks <file> --out <dir>"); process.exit(2); }
   if (values.repo) {
-    if (!isAbsolute(values.repo)) { console.error("--repo must be an absolute path"); process.exit(2); }
+    const repo = resolve(values.repo);
     await mkdir(outDir, { recursive: true });
     if (values.domain) {
       const cfgPath = join(outDir, "atlas.domains.json");
@@ -138,7 +139,7 @@ async function main() {
       const config = parseConfig(cfgPath, await readFile(cfgPath, "utf8"));
       const domain = config.domains.find((d) => d.slug === values.domain);
       if (!domain) { console.error(`unknown domain "${values.domain}" — not in atlas.domains.json`); process.exit(2); }
-      const inv = await scanInventory(values.repo, config.srcRoots);
+      const inv = await scanInventory(repo, config.srcRoots);
       const { config: live, drift } = reconcile(config, inv.modules.map((m) => m.path));
       const liveDomain = live.domains.find((d) => d.slug === values.domain)!;
       const edges = aggregateDomainEdges(live, inv);
@@ -154,8 +155,8 @@ async function main() {
       await emitChecker(outDir);
       return; // end main()
     }
-    const config0 = await loadOrGuessConfig(values.repo, outDir);
-    const inv = await scanInventory(values.repo, config0.srcRoots);
+    const config0 = await loadOrGuessConfig(repo, outDir);
+    const inv = await scanInventory(repo, config0.srcRoots);
     const { config, drift } = reconcile(config0, inv.modules.map((m) => m.path));
     await writeFile(join(outDir, "atlas.domains.json"), JSON.stringify(config, null, 2));
 
@@ -182,18 +183,16 @@ async function main() {
     }
     await emitChecker(outDir);
   } else if (values.all) {
-    if (!isAbsolute(values.all)) { console.error("--all must be an absolute path"); process.exit(2); }
     await mkdir(outDir, { recursive: true });
-    for (const f of await listDocJsons(values.all)) {
+    for (const f of await listDocJsons(resolve(values.all))) {
       const { outName, warnings } = await renderFile(f, outDir, noExcalidraw);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
     }
     await emitChecker(outDir);
   } else if (values.blocks) {
-    if (!isAbsolute(values.blocks)) { console.error("--blocks must be an absolute path"); process.exit(2); }
     await mkdir(outDir, { recursive: true });
-    const { outName, warnings } = await renderFile(values.blocks, outDir, noExcalidraw);
+    const { outName, warnings } = await renderFile(resolve(values.blocks), outDir, noExcalidraw);
     console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
-  } else { console.error("usage: atlas --repo <abs> [--domain <slug>] [--force] [--no-excalidraw] --out <abs> | --all <dir> --out <abs> | --blocks <file> --out <abs>"); process.exit(2); }
+  } else { console.error("usage: atlas --repo <path> [--domain <slug>] [--force] [--no-excalidraw] --out <dir> | --all <dir> --out <dir> | --blocks <file> --out <dir>"); process.exit(2); }
 }
 main().catch((e) => { console.error(e); process.exit(1); });

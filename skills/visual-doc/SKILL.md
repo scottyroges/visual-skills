@@ -11,15 +11,16 @@ blocks — so ground every reference in the real repo.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=/home/srogener/visual-skills
+    VISUAL_SKILLS_DIR=/path/to/visual-skills
 
 ## Steps
 
 1. **Read the source** spec/plan (the file the user names, or the plan already in context).
 2. **Read the authoritative schema:** `$VISUAL_SKILLS_DIR/src/blocks.ts`. It defines the
    `Block` union — treat it as the source of truth for field names and shapes.
-3. **Ground it in the real repo:** use real file paths, Prisma model names, and tRPC
-   router/procedure names from the target codebase. Do not invent identifiers.
+3. **Ground it in the real repo:** use real file paths and real identifiers from the target
+   codebase (e.g. model names, route/procedure names, exported symbols). Do not invent
+   identifiers.
 4. **Author a `Block[]` JSON array** using the mapping below.
 5. **Render it** from the tool directory:
 

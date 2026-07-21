@@ -9,8 +9,8 @@ const exec = promisify(execFile);
 const BIN = new URL("../bin/atlas.ts", import.meta.url).pathname;
 
 /** Run bin/atlas.ts with the given args via tsx; throws on non-zero exit. */
-function runCli(args: string[]): void {
-  execFileSync("npx", ["tsx", BIN, ...args], { encoding: "utf8" });
+function runCli(args: string[], cwd?: string): void {
+  execFileSync("npx", ["tsx", BIN, ...args], { encoding: "utf8", cwd });
 }
 
 const atlasDoc = { kind: "atlas", title: "Atlas · demo", blocks: [
@@ -45,6 +45,20 @@ describe("atlas CLI (render-only)", () => {
     expect(dom).toContain('class="topbar-back"');
   });
 });
+
+it("resolves relative --blocks/--out/--repo against the cwd (README quick-start shape)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "atlas-rel-"));
+  try {
+    writeFileSync(join(dir, "atlas.json"), JSON.stringify(atlasDoc));
+    runCli(["--blocks", "atlas.json", "--out", "."], dir);          // both relative
+    expect(existsSync(join(dir, "atlas.html"))).toBe(true);
+
+    runCli(["--repo", "fixtures/atlas-repo", "--out", join(dir, "scan")], __dirname); // relative repo
+    expect(existsSync(join(dir, "scan", "atlas.domains.json"))).toBe(true);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}, 30_000);
 
 it("--repo full scan: creates config + drafts, renders, is idempotent (no clobber)", () => {
   const repo = join(__dirname, "fixtures", "atlas-repo");

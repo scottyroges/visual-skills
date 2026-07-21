@@ -1,6 +1,6 @@
 ---
 name: visual-spec
-description: Use when the user asks to visualize, render, or "make readable" a design spec / design doc / RFC / proposal as a self-contained HTML page — to get a reader up to speed fast and let them approve it. Covers superpowers specs (docs/superpowers/specs), design docs, and RFCs grounded in the real document.
+description: Use when the user asks to visualize, render, or "make readable" a design spec / design doc / RFC / proposal as a self-contained HTML page — to get a reader up to speed fast and let them approve it. Covers design docs, RFCs, and spec markdowns (e.g. anything under a docs/ specs folder) grounded in the real document.
 ---
 
 # Visual Spec
@@ -16,7 +16,7 @@ into the component ladder is.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=/home/srogener/visual-skills
+    VISUAL_SKILLS_DIR=/path/to/visual-skills
 
 You author a `spec.json` (page options + an ordered array of blocks) and render it. There is no
 mechanical gather step — the spec's prose is the raw material; your judgment turns it into blocks.

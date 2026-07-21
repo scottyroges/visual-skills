@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { resolve, dirname } from "node:path";
 
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 const blocks = read("../src/blocks.ts");
@@ -54,6 +56,19 @@ describe("skill docs stay in sync", () => {
   it("visual-atlas mandates the standard and the three modes", () => {
     for (const s of ["atlas-tldr", "domain-map", "domain-index", "seams", "--repo", "--domain", "--blocks", "atlas.domains.json"]) {
       expect(atlasSkill, `visual-atlas SKILL.md must mention "${s}"`).toContain(s);
+    }
+  });
+
+  it("VISUAL_SKILLS_DIR is the placeholder or this clone — never someone else's machine", () => {
+    // The committed value must be the documented placeholder; after `npm run skills:install`
+    // it may be stamped to THIS repo root. Anything else (e.g. a committed home dir from
+    // another machine) would break every fresh clone.
+    const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+    const allowed = ["/path/to/visual-skills", repoRoot];
+    for (const md of [docSkill, recapSkill, specSkill, atlasSkill, atlasReviewSkill]) {
+      for (const [, dir] of md.matchAll(/VISUAL_SKILLS_DIR=(\S+)/g)) {
+        expect(allowed, `VISUAL_SKILLS_DIR=${dir} must be the placeholder or this clone`).toContain(dir);
+      }
     }
   });
 

@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { resolveScope, fileAtRef } from "../src/git.js";
+import { hasCommit } from "./git-helpers.js";
 
 describe("git scope", () => {
-  it("resolves a commit target to base/head refs and a diff", async () => {
+  // Diffing HEAD needs its parent; a shallow clone (git clone --depth 1, CI checkout) lacks it.
+  it.skipIf(!hasCommit("HEAD^"))("resolves a commit target to base/head refs and a diff", async () => {
     const scope = await resolveScope({ kind: "commit", ref: "HEAD" }, { repoRoot: "." });
     expect(scope.headRef).toBe("HEAD");
     expect(scope.baseRef).toBe("HEAD^");

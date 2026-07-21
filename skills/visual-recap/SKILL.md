@@ -16,7 +16,7 @@ enriched and re-rendered.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=/home/srogener/visual-skills
+    VISUAL_SKILLS_DIR=/path/to/visual-skills
 
 ## The standard — definition of done
 

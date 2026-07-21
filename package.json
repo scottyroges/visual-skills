@@ -2,7 +2,15 @@
   "name": "visual-skills",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scottyroges/visual-skills.git"
+  },
   "bin": {
     "visual-doc": "bin/doc.ts",
     "visual-recap": "bin/recap.ts",

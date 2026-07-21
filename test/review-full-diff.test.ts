@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { gatherRecap } from "../src/gather-recap.js";
 import { assembleReview } from "../src/assemble-review.js";
+import { hasCommit } from "./git-helpers.js";
 
 // A fixed historical commit in THIS repo with substantial code diffs (the first task commit:
 // it adds assets/review.css + review-viewer.js + a test, ~1000+ changed lines). Pinned (not HEAD)
@@ -8,7 +9,8 @@ import { assembleReview } from "../src/assemble-review.js";
 const FIXED_COMMIT = "7cc0071a9d6a00edc2cb9cb03e54b6fc12b2ddf2";
 
 describe("review full-diff capture", () => {
-  it("renders every gathered +/- line for a real commit (no per-file truncation)", async () => {
+  // Needs the pinned commit AND its parent — absent on shallow clones (--depth 1, CI checkout).
+  it.skipIf(!hasCommit(`${FIXED_COMMIT}^`))("renders every gathered +/- line for a real commit (no per-file truncation)", async () => {
     const { blocks } = await gatherRecap({ kind: "commit", ref: FIXED_COMMIT }, ".");
     const html = await assembleReview(blocks, { title: "T", source: "x" });
 

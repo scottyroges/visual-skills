@@ -14,7 +14,7 @@ what drifted, re-render, and re-stamp.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=/home/srogener/visual-skills
+    VISUAL_SKILLS_DIR=/path/to/visual-skills
 
 **Preconditions.** An existing atlas (default `<repo>/.visual/atlas`) containing
 `atlas.domains.json`, `domain-<slug>/domain-<slug>.json` pages, and `atlas-check.mjs`. If any of

@@ -22,16 +22,17 @@ too ([further down](#direct-cli-usage-without-claude-code)).
 
 Every page uses the same app shell — a sticky sidebar + scrollspy, a TL;DR fold, progressively
 revealed sections, and rendered diagrams. Four example builds live in [`example/`](example/);
-open any `.html` in a browser (they need no server).
+**click any screenshot below to open the live demo**, or open the `.html` files locally in a
+browser (they need no server).
 
 <table>
   <tr>
-    <td width="50%"><a href="example/pr-180-weekly-standings/recap.html"><img src="docs/images/recap.png" alt="visual-recap"></a><br><b>visual-recap</b> — a PR as a guided walkthrough</td>
-    <td width="50%"><a href="example/spec-gm-planning-brain/spec.html"><img src="docs/images/spec.png" alt="visual-spec"></a><br><b>visual-spec</b> — a design spec for approval</td>
+    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/pr-180-weekly-standings/recap.html"><img src="docs/images/recap.png" alt="visual-recap"></a><br><b>visual-recap</b> — a PR as a guided walkthrough</td>
+    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/spec-gm-planning-brain/spec.html"><img src="docs/images/spec.png" alt="visual-spec"></a><br><b>visual-spec</b> — a design spec for approval</td>
   </tr>
   <tr>
-    <td width="50%"><a href="example/atlas-sports-rpg/atlas.html"><img src="docs/images/atlas.png" alt="visual-atlas overview"></a><br><b>visual-atlas</b> — the system onboarding map</td>
-    <td width="50%"><a href="example/atlas-sports-rpg/domain-sim/domain-sim.html"><img src="docs/images/atlas-domain.png" alt="visual-atlas domain page"></a><br><b>visual-atlas</b> — a per-domain deep-dive page</td>
+    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/atlas-sports-rpg/atlas.html"><img src="docs/images/atlas.png" alt="visual-atlas overview"></a><br><b>visual-atlas</b> — the system onboarding map</td>
+    <td width="50%"><a href="https://scottyroges.github.io/visual-skills/example/atlas-sports-rpg/domain-sim/domain-sim.html"><img src="docs/images/atlas-domain.png" alt="visual-atlas domain page"></a><br><b>visual-atlas</b> — a per-domain deep-dive page</td>
   </tr>
 </table>
 
@@ -69,6 +70,14 @@ npm run skills:install
 This **symlinks** the skill dirs into `~/.claude/skills/` and stamps each `SKILL.md`'s
 `VISUAL_SKILLS_DIR` to this clone — so the skills work from wherever you cloned the repo, with no
 hand-editing of paths. It's idempotent and never clobbers a real dir or a foreign symlink.
+
+> **Note:** the stamp edits the `SKILL.md` files in your clone, so `git status` will show them as
+> modified — that's expected; don't commit it. When you pull updates later, reset the stamp first
+> and re-apply it:
+>
+> ```sh
+> git checkout -- skills && git pull && npm run skills:install
+> ```
 
 Using a non-default Claude config root (a custom location, a sandbox, a per-project `.claude`)?
 Point it anywhere with `--dir`:
@@ -163,22 +172,23 @@ stamps a page nobody read.
 
 The skills drive these same CLIs; you can run them yourself. `--out` is a per-doc **folder**: the
 tool writes `*.html` plus any `.excalidraw` sidecars together inside it (a trailing `.html` is
-stripped for convenience). Run from this repo so deps resolve.
+stripped for convenience). Run from this repo so deps resolve — which means relative paths resolve
+against *this* repo's root, so point `--out` at the target repo explicitly.
 
 **Atlas** — a standing map of a codebase's domains & architecture:
 
 ```sh
-npx tsx bin/atlas.ts --repo /path/to/repo --out .visual/atlas   # scan -> draft JSON -> render
+npx tsx bin/atlas.ts --repo /path/to/repo --out /path/to/repo/.visual/atlas   # scan -> draft JSON -> render
 # enrich the draft JSON (domain purposes, connections, diagrams), then re-render:
-npx tsx bin/atlas.ts --all .visual/atlas --out .visual/atlas    # atlas.html + domain-<slug>/ folders
+npx tsx bin/atlas.ts --all /path/to/repo/.visual/atlas --out /path/to/repo/.visual/atlas
 ```
 
 **Recap** — from a git target (commit / branch / PR):
 
 ```sh
-npx tsx bin/recap.ts --repo /path/to/repo --commit <sha>  --out .visual/recaps/x
-npx tsx bin/recap.ts --repo /path/to/repo --branch <name> --out .visual/recaps/x
-npx tsx bin/recap.ts --repo /path/to/repo --pr <number>   --out .visual/recaps/x   # needs `gh` CLI
+npx tsx bin/recap.ts --repo /path/to/repo --commit <sha>  --out /path/to/repo/.visual/recaps/x
+npx tsx bin/recap.ts --repo /path/to/repo --branch <name> --out /path/to/repo/.visual/recaps/x
+npx tsx bin/recap.ts --repo /path/to/repo --pr <number>   --out /path/to/repo/.visual/recaps/x   # needs `gh` CLI
 ```
 
 Every recap includes a synthesized summary and a "where it fits" dependency graph. To enrich it with
@@ -220,3 +230,7 @@ codebase-map skill (a mechanical scanner + human-owned `atlas.domains.json` grou
 folders, and a demo-standard lint), and the atlas honesty loop (an emitted self-contained drift
 checker — coverage/grounding/stamps — plus the `atlas-review` maintenance skill). See
 [`docs/superpowers/specs/`](docs/superpowers/specs/).
+
+## License
+
+[MIT](LICENSE)
