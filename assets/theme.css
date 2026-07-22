@@ -38,6 +38,13 @@
   --tier-harness:#9aa2ad; --tier-harness-bg:rgba(107,114,128,0.2);
   --tier-intelligence:#d4a72c; --tier-intelligence-bg:rgba(179,121,26,0.2);
   --tier-narrative:#3fb950; --tier-narrative-bg:rgba(47,158,68,0.2);
+
+  /* review.css diff renderer + inline syntax colors (Task 4c) */
+  --diff-add-bg:rgba(63,185,80,0.15); --diff-add-gutter:#3fb950; --diff-add-fg:#b9f0c8;
+  --diff-del-bg:rgba(248,81,73,0.15); --diff-del-gutter:#f85149; --diff-del-fg:#f5b8b4;
+  --diff-ctx-fg:#c9cdd3; --diff-num:#7f8792; --diff-gutter:#8b939e;
+  --syntax-kw:#b39cf5; --syntax-fn:#6aa3ff; --syntax-ty:#d4a72c;
+  --risk-med:#d4a72c;
 }
 
 /* Shiki dual-theme flip (Task 3 emits the --shiki-dark vars) */

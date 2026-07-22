@@ -50,4 +50,20 @@ describe("dark-mode surface variables", () => {
       expect(dark).toContain(v);
     }
   });
+
+  it("review.css diff-renderer colors are themable (no baked light literals)", async () => {
+    const css = await readFile(asset("review.css"), "utf8");
+    // The hex still appears exactly once each as the light default inside :root{}
+    // (that default is what keeps light mode pixel-identical) — but every rule body
+    // that used to paint with the literal must now reference the variable instead.
+    expect(css).toMatch(/--diff-add-bg:\s*#e9f7ee/);
+    expect(css).toMatch(/--diff-del-bg:\s*#fdecec/);
+    expect(css).not.toMatch(/background:\s*#e9f7ee/);
+    expect(css).not.toMatch(/background:\s*#fdecec/);
+  });
+  it("theme.css defines dark diff-renderer values", async () => {
+    const css = await readFile(asset("theme.css"), "utf8");
+    const dark = css.slice(css.indexOf('[data-theme="dark"]'));
+    for (const v of ["--diff-add-bg", "--diff-del-fg", "--syntax-kw"]) expect(dark).toContain(v);
+  });
 });
