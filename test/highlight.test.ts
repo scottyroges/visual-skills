@@ -25,6 +25,11 @@ describe("highlightCode", () => {
     expect(html).toContain("a &lt; b &amp;&amp; c &gt; d");
     expect(html).not.toContain("<pre class=\"shiki ");
   });
+
+  it("emits dual-theme colors (light inline + --shiki-dark var)", async () => {
+    const html = await highlightCode("const x = 1;", "ts");
+    expect(html).toContain("--shiki-dark:");
+  });
 });
 
 describe("highlightLines", () => {

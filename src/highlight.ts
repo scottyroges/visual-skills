@@ -2,7 +2,7 @@ import type { Highlighter } from "shiki";
 import { createHighlighter } from "shiki";
 import { escapeHtml } from "./html.js";
 
-const THEME = "github-light";
+const THEMES = { light: "github-light", dark: "github-dark" } as const;
 const LANGS = [
   "ts", "tsx", "js", "jsx", "prisma", "sql",
   "json", "bash", "diff", "css", "html", "markdown",
@@ -12,7 +12,10 @@ let highlighterPromise: Promise<Highlighter> | null = null;
 
 function getHighlighter(): Promise<Highlighter> {
   if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({ themes: [THEME], langs: LANGS });
+    highlighterPromise = createHighlighter({
+      themes: [THEMES.light, THEMES.dark],
+      langs: LANGS,
+    });
   }
   return highlighterPromise;
 }
@@ -45,7 +48,7 @@ export async function highlightCode(
       if (lang !== "text") onWarn?.(`highlight: language "${lang}" not loaded; rendering plain`);
       return `<pre class="shiki-plain">${escapeHtml(code)}</pre>`;
     }
-    return hl.codeToHtml(code, { lang, theme: THEME });
+    return hl.codeToHtml(code, { lang, themes: THEMES, defaultColor: "light" });
   } catch (err) {
     onWarn?.(`highlight: failed (${(err as Error).message}); rendering plain`);
     return `<pre class="shiki-plain">${escapeHtml(code)}</pre>`;
@@ -70,7 +73,7 @@ export async function highlightLines(
       if (lang !== "text") onWarn?.(`highlight: language "${lang}" not loaded; falling back`);
       return null;
     }
-    const html = hl.codeToHtml(code, { lang, theme: THEME });
+    const html = hl.codeToHtml(code, { lang, themes: THEMES, defaultColor: "light" });
     const inner = html.match(/<code[^>]*>([\s\S]*)<\/code>/);
     if (!inner) return null;
     const spans = inner[1].split("\n");

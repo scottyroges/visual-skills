@@ -134,7 +134,7 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 .seam-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .seam-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .seam-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
-.seam-exposes .seam-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.seam-exposes .seam-head { background: var(--add-bg); color: var(--good); border-bottom-color: var(--add-border); }
 .seam-depends .seam-head { background: var(--panel-deep); color: var(--ink-muted); }
 .seam-body { padding: 12px 16px; }
 .seam-api { list-style: none; display: flex; flex-direction: column; gap: 7px; }

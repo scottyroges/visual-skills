@@ -121,6 +121,30 @@ describe("assembleSpec", () => {
     expect(warns.some((w) => /meta\[0\] should be \{ key, value \}/.test(w))).toBe(true);
   });
 
+  it("emits the dark-mode toggle and theme.css", async () => {
+    const html = await assembleSpec(blocks, opts);
+    expect(html).toContain('data-theme');
+    expect(html).toContain('class="vs-theme-toggle"');
+    expect(html).toContain('/* vs-theme */');
+  });
+
+  it("orders the inlined CSS/JS correctly: theme.css after base CSS, head-apply script before <body>", async () => {
+    const html = await assembleSpec(blocks, opts);
+    const baseCssIdx = html.indexOf(".topbar {");     // review.css rule, precedes spec.css/theme.css in the <style> concat
+    const specCssIdx = html.indexOf(".bigidea {");    // spec.css rule, precedes theme.css
+    const themeMarkerIdx = html.indexOf("/* vs-theme */");
+    const headScriptIdx = html.indexOf("data-theme"); // first occurrence: the head-apply <script>, before <body>
+    const bodyIdx = html.indexOf("<body");
+    expect(baseCssIdx).toBeGreaterThan(-1);
+    expect(specCssIdx).toBeGreaterThan(-1);
+    expect(themeMarkerIdx).toBeGreaterThan(-1);
+    expect(headScriptIdx).toBeGreaterThan(-1);
+    expect(bodyIdx).toBeGreaterThan(-1);
+    expect(baseCssIdx).toBeLessThan(specCssIdx);
+    expect(specCssIdx).toBeLessThan(themeMarkerIdx);
+    expect(headScriptIdx).toBeLessThan(bodyIdx);
+  });
+
   it("rejects duplicate ids (block or reference item)", () => {
     expect(() => assertUniqueSpecIds([
       { type: "scope", id: "dup", inList: [], outList: [] },

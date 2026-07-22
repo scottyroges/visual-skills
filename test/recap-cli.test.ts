@@ -20,8 +20,8 @@ describe("bin/recap.ts --blocks", () => {
       expect(html).toContain('class="topbar"');     // review shell, not plan layout
       expect(html).toContain('class="sidebar"');
       expect(html).toContain('class="main"');
-      expect((html.match(/<script>/g) || []).length).toBe(1);
       expect(html).not.toMatch(/<script[^>]*\ssrc=/i);
+      expect(html).toContain('class="vs-theme-toggle"'); // dark-mode toggle wired in
     } finally {
       await rm(out, { recursive: true, force: true });
     }

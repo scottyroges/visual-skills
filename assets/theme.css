@@ -1,0 +1,125 @@
+/* vs-theme */
+.vs-theme-toggle {
+  position: fixed; top: 14px; right: 14px; z-index: 1000;
+  width: 38px; height: 38px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--line); background: var(--paper); color: var(--ink);
+  cursor: pointer; box-shadow: 1px 2px 0 rgba(0,0,0,0.08);
+}
+.vs-theme-toggle:hover { border-color: var(--ctx); }
+@media print { .vs-theme-toggle { display: none; } }
+
+:root[data-theme="dark"] {
+  --ink:#e6e3dc; --paper:#16181d; --ctx:#9aa2ad; --line:#2c3038;
+  --add:#3fb950; --del:#f85149;
+  --card:#1c1f26; --code-bg:#1b1e24;
+  --add-bg:rgba(63,185,80,0.15); --del-bg:rgba(248,81,73,0.15); --warn-bg:rgba(210,167,44,0.12);
+  --pill-green-bg:rgba(63,185,80,0.2); --pill-yellow-bg:rgba(210,167,44,0.2); --pill-red-bg:rgba(248,81,73,0.2);
+  --link:#6aa3ff;
+  --good:#3fb950;
+
+  /* review.css / spec.css / atlas.css design-token namespace (Task 4b) */
+  --bg:#16181d; --panel:#1c1f26; --panel-deep:#22262e;
+  --border:#2c3038; --border-strong:#3a3f48;
+  --ink-muted:#9aa2ad; --ink-faint:#7f8792;
+  --accent:#6aa3ff; --accent-hover:#8bb8ff; --accent-subtle:rgba(106,163,255,0.12); --accent-border:rgba(106,163,255,0.35);
+  --add-border:rgba(63,185,80,0.4);
+  --remove:#f85149; --remove-bg:rgba(248,81,73,0.15); --remove-border:rgba(248,81,73,0.4);
+  --change:#d4a72c; --change-bg:rgba(210,167,44,0.12); --change-border:rgba(210,167,44,0.4);
+  --risk-low:#3fb950; --risk-low-bg:rgba(63,185,80,0.15); --risk-low-border:rgba(63,185,80,0.4);
+
+  --perceived:#d4a72c; --perceived-bg:rgba(210,167,44,0.12); --perceived-border:rgba(210,167,44,0.4);
+  --proc:#6aa3ff;
+  --reused:#9aa2ad; --reused-bg:#22262e; --reused-border:#3a3f48;
+  --store:#a78bfa;
+
+  --tier-engine:#6aa3ff; --tier-engine-bg:rgba(25,113,194,0.18);
+  --tier-foundation:#a78bfa; --tier-foundation-bg:rgba(109,78,216,0.2);
+  --tier-harness:#9aa2ad; --tier-harness-bg:rgba(107,114,128,0.2);
+  --tier-intelligence:#d4a72c; --tier-intelligence-bg:rgba(179,121,26,0.2);
+  --tier-narrative:#3fb950; --tier-narrative-bg:rgba(47,158,68,0.2);
+
+  /* review.css diff renderer + inline syntax colors (Task 4c) */
+  --diff-add-bg:rgba(63,185,80,0.15); --diff-add-gutter:#3fb950; --diff-add-fg:#b9f0c8;
+  --diff-del-bg:rgba(248,81,73,0.15); --diff-del-gutter:#f85149; --diff-del-fg:#f5b8b4;
+  --diff-ctx-fg:#c9cdd3; --diff-num:#7f8792; --diff-gutter:#8b939e;
+  --syntax-kw:#b39cf5; --syntax-fn:#6aa3ff; --syntax-ty:#d4a72c;
+  --risk-med:#d4a72c;
+}
+
+/* Diagrams (d2/Excalidraw inline SVGs) bake in light colors and are NOT re-themed dark —
+   instead each container gets a light "card" so the SVG reads as an intentional light panel
+   rather than a raw white block sitting on the dark page.
+   Recap/doc pages (template.css): .vs-diagram (top-level block), .vs-diff-diagram (per-diff
+   embed), .vs-overview-diagram (overview lead) — none of the latter two carry their own
+   background, so without this they'd inherit the surrounding .vs-block's dark --card.
+   Review/spec/atlas pages (review.css, via src/review/sections.ts renderDiagramCard and
+   src/assemble-atlas.ts): .diagram-box — already has a background, but it tracks --panel,
+   which theme.css sets dark above. */
+:root[data-theme="dark"] .vs-diagram,
+:root[data-theme="dark"] .vs-diff-diagram,
+:root[data-theme="dark"] .vs-overview-diagram,
+:root[data-theme="dark"] .diagram-box {
+  background: #faf9f6;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+/* Shiki dual-theme flip (Task 3 emits the --shiki-dark vars) */
+:root[data-theme="dark"] .shiki,
+:root[data-theme="dark"] .shiki span {
+  color: var(--shiki-dark, inherit) !important;
+  background-color: var(--shiki-dark-bg, transparent) !important;
+}
+
+/* ── Task 4d: one-off chrome overrides missed by Task 4's design-token pass ──
+   These rule bodies paint a hardcoded LIGHT background (or a light-mode-tuned
+   text color) while the surrounding page inherits themed --ink/--ctx, which
+   flip light in dark mode — producing light-text-on-light-background.
+   Fixed here (in theme.css only) rather than in template.css/spec.css so
+   light mode stays byte-identical: these are pure additions. */
+
+/* spec.css .risk-r: red-on-red-tinted-bg ink tuned for a light card */
+:root[data-theme="dark"] .risk-r { color: #f5b8b4; }
+
+/* template.css .vs-overview: light lavender card + its headline text */
+:root[data-theme="dark"] .vs-overview { background: #1e1b2e; border-left-color: #8b6cff; }
+
+/* template.css .vs-group: light group-card background */
+:root[data-theme="dark"] .vs-group { background: #1a1d23; }
+
+/* template.css .vs-group-desc: dark-on-light muted ink */
+:root[data-theme="dark"] .vs-group-desc { color: #b3ada4; }
+
+/* template.css tabs: light tablabel strip, inactive + active tab pills */
+:root[data-theme="dark"] .vs-tabs .vs-tablabels { border-bottom-color: #2c3038; }
+:root[data-theme="dark"] .vs-tabs .vs-tablabels label { background: #22262e; border-color: #2c3038; }
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(1):checked ~ .vs-tablabels label:nth-child(1),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(2):checked ~ .vs-tablabels label:nth-child(2),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(3):checked ~ .vs-tablabels label:nth-child(3),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(4):checked ~ .vs-tablabels label:nth-child(4),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(5):checked ~ .vs-tablabels label:nth-child(5),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(6):checked ~ .vs-tablabels label:nth-child(6) {
+  background: #1c1f26; border-bottom-color: #1c1f26;
+}
+
+/* template.css diagram-caption headings: light-mode stone gray */
+:root[data-theme="dark"] .vs-diff-diagram h2,
+:root[data-theme="dark"] .vs-diff-diagram h3,
+:root[data-theme="dark"] .vs-overview-diagram h2,
+:root[data-theme="dark"] .vs-overview-diagram h3 { color: var(--ctx); }
+
+/* template.css yellow "modified" ink (status pill + file-tree marker) */
+:root[data-theme="dark"] .vs-status.yellow,
+:root[data-theme="dark"] .vs-file[data-status="M"] .vs-marker { color: #d4a72c; }
+
+/* template.css zoom overlay controls (viewer.js): "Reset" / "✕" buttons keep an
+   intentionally opaque white pill (matching the light diagram card behind them),
+   but their text has no explicit color and was inheriting themed --ink — invisible
+   near-white-on-white in dark mode. Pin the text dark since the pill stays light. */
+:root[data-theme="dark"] .vs-zoom-reset,
+:root[data-theme="dark"] .vs-zoom-close { color: #1b1b1b; }
+
+/* atlas.css .topbar-back:hover: hardcoded light-blue hover fill collided with the
+   themed --accent text color (also light blue in dark mode) → illegible on hover. */
+:root[data-theme="dark"] .topbar-back:hover { background: rgba(106,163,255,0.22); }

@@ -27,6 +27,20 @@
   --risk-low-bg: #f0fdf4;
   --risk-low-border: #bbf7d0;
 
+  --diff-add-bg: #e9f7ee;
+  --diff-add-gutter: #1a7f37;
+  --diff-add-fg: #0f3a1d;
+  --diff-del-bg: #fdecec;
+  --diff-del-gutter: #c4332e;
+  --diff-del-fg: #5c1a18;
+  --diff-ctx-fg: #3a4047;
+  --diff-num: #8b939e;
+  --diff-gutter: #9aa1ab;
+  --syntax-kw: #7c3aed;
+  --syntax-fn: #0369a1;
+  --syntax-ty: #b45309;
+  --risk-med: #b45309;
+
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
@@ -656,11 +670,11 @@ details[open] .chevron { transform: rotate(90deg); }
 }
 
 /* Token coloring — span-based, semantic only */
-.kw { color: #7c3aed; font-weight: 600; }  /* keyword */
-.fn { color: #0369a1; }                      /* function/method */
-.str { color: #16a34a; }                     /* string */
+.kw { color: var(--syntax-kw); font-weight: 600; }  /* keyword */
+.fn { color: var(--syntax-fn); }             /* function/method */
+.str { color: var(--add); }                  /* string */
 .cm { color: var(--ink-faint); font-style: italic; } /* comment */
-.ty { color: #b45309; }                      /* type */
+.ty { color: var(--syntax-ty); }             /* type */
 .pn { color: var(--ink); }                   /* punctuation */
 .nm { color: var(--ink); }                   /* number */
 
@@ -960,19 +974,19 @@ a:focus-visible, button:focus-visible, details summary:focus-visible {
 }
 
 /* real code diffs inside file-diff details */
-.diff-code { background:#fff; border-top:1px solid var(--border); }
+.diff-code { background:var(--bg); border-top:1px solid var(--border); }
 .diff-pre { margin:0; overflow-x:auto; padding:4px 0;
-  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#3a4047;
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--diff-ctx-fg);
   font-variant-ligatures:none; }
 .diff-pre .dl { display:flex; align-items:baseline; min-width:max-content; }
-.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:#8b939e;
+.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:var(--diff-num);
   user-select:none; -webkit-user-select:none; }
-.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:#9aa1ab;
+.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:var(--diff-gutter);
   user-select:none; -webkit-user-select:none; }
 .diff-pre .dc { flex:0 0 auto; white-space:pre; padding-right:20px; }
-.diff-pre .dl-add { background:#e9f7ee; } .diff-pre .dl-add .dg { color:#1a7f37; } .diff-pre .dl-add .dc { color:#0f3a1d; }
-.diff-pre .dl-del { background:#fdecec; } .diff-pre .dl-del .dg { color:#c4332e; } .diff-pre .dl-del .dc { color:#5c1a18; }
-.diff-pre .dl-ctx .dc { color:#3a4047; }
+.diff-pre .dl-add { background:var(--diff-add-bg); } .diff-pre .dl-add .dg { color:var(--diff-add-gutter); } .diff-pre .dl-add .dc { color:var(--diff-add-fg); }
+.diff-pre .dl-del { background:var(--diff-del-bg); } .diff-pre .dl-del .dg { color:var(--diff-del-gutter); } .diff-pre .dl-del .dc { color:var(--diff-del-fg); }
+.diff-pre .dl-ctx .dc { color:var(--diff-ctx-fg); }
 .diff-pre .dl-hunk { background:var(--panel); color:var(--ink-muted); }
 .diff-pre .dl-hunk .dc { color:var(--ink-muted); font-weight:600; }
 .diff-more { padding:8px 16px; font:12px/1.4 system-ui,sans-serif; color:var(--ink-muted);
@@ -1007,6 +1021,6 @@ html { scroll-behavior: smooth; }
 /* color pass: subtle hover lift on file rows + risk level system */
 .file-diff { transition: box-shadow 150ms ease-out, border-color 150ms ease-out; }
 .file-diff:hover { border-color: var(--accent); box-shadow: 0 6px 18px -12px rgba(37,99,235,0.35); }
-.chip-risk.risk-med { color: #b45309; background: #fffbeb; border-color: #fde68a; }
-.chip-risk.risk-high { color: var(--remove); background: #fef2f2; border-color: #fecaca; }
+.chip-risk.risk-med { color: var(--risk-med); background: var(--change-bg); border-color: var(--change-border); }
+.chip-risk.risk-high { color: var(--remove); background: var(--remove-bg); border-color: var(--remove-border); }
 @media (prefers-reduced-motion: reduce) { .file-diff { transition: none; } }

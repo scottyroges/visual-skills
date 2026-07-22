@@ -1,5 +1,17 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="visual-skills · visual-atlas"><title>System Atlas · visual-skills</title><style>/* ===== RESET & BASE ===== */
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script>(function () {
+  try {
+    var saved = localStorage.getItem("vs-theme");
+    var mql = window.matchMedia("(prefers-color-scheme: dark)");
+    var theme = saved === "light" || saved === "dark"
+      ? saved
+      : (mql.matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script><meta name="generator" content="visual-skills · visual-atlas"><title>System Atlas · visual-skills</title><style>/* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -1461,6 +1473,29 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 .nav-domain:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
 .nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
+
+/* vs-theme */
+.vs-theme-toggle {
+  position: fixed; top: 14px; right: 14px; z-index: 1000;
+  width: 38px; height: 38px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--line); background: var(--paper); color: var(--ink);
+  cursor: pointer; box-shadow: 1px 2px 0 rgba(0,0,0,0.08);
+}
+.vs-theme-toggle:hover { border-color: var(--ctx); }
+@media print { .vs-theme-toggle { display: none; } }
+
+:root[data-theme="dark"] {
+  --ink:#e6e3dc; --paper:#16181d; --ctx:#9aa2ad; --line:#2c3038;
+  --add:#3fb950; --del:#f85149;
+}
+
+/* Shiki dual-theme flip (Task 3 emits the --shiki-dark vars) */
+:root[data-theme="dark"] .shiki,
+:root[data-theme="dark"] .shiki span {
+  color: var(--shiki-dark, inherit) !important;
+  background-color: var(--shiki-dark-bg, transparent) !important;
+}
 </style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><span class="topbar-title">System Atlas · visual-skills</span><div class="topbar-meta"><span class="chip chip-stack">TypeScript · Node CLI</span><span class="chip chip-count">6 domains</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">generated 2026-06-20</span><span class="chip chip-stat">static HTML output</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>Start here</span></a></li><li><a href="#map" class="outline-item" data-target="map"><span class="outline-num" aria-hidden="true">1</span><span>The domain map</span></a></li><li><a href="#spine" class="outline-item" data-target="spine"><span class="outline-num" aria-hidden="true">2</span><span>Spine</span></a></li><li><a href="#domains" class="outline-item" data-target="domains"><span class="outline-num" aria-hidden="true">3</span><span>The 6 domains</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Domains</span><ul class="nav-domains" role="list"><li><a href="domain-core/domain-core.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>core</span></a></li><li><a href="domain-diagrams/domain-diagrams.html" class="nav-domain"><span class="nd-dot" style="background:#e5dbff;border-color:#9775fa;"></span><span>diagrams</span></a></li><li><a href="domain-code-intel/domain-code-intel.html" class="nav-domain"><span class="nd-dot" style="background:#ffd43b;border-color:#f08c00;"></span><span>code-intel</span></a></li><li><a href="domain-recap/domain-recap.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>recap</span></a></li><li><a href="domain-atlas/domain-atlas.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>atlas</span></a></li><li><a href="domain-authoring/domain-authoring.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>authoring</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Root</span><span class="mv">`src/` &amp; `bin/`</span></div><div class="meta-row"><span class="mk">Domains</span><span class="mv">6 (all with pages)</span></div><div class="meta-row"><span class="mk">Read first</span><span class="mv">core → diagrams → a product</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Start here</span><h2 class="tldr-heading">A toolkit of four CLI generators that turn code, diffs, and specs into self-contained, visually-readable HTML — all built on one shared block→HTML rendering engine.</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">What</span><span class="tldr-val">Four generators ship as <code>bin/</code> CLIs: <strong>visual-recap</strong> (PR / commit / diff review), <strong>visual-atlas</strong> (this codebase-map), <strong>visual-spec</strong> (design-spec / RFC page), and <strong>visual-doc</strong> (general illustrated doc). Each emits one standalone <code>.html</code> that opens over <code>file://</code> — no server, no reader-side build.</span></div><div class="tldr-row"><span class="tldr-key">Shape</span><span class="tldr-val">Logic lives in <code>src/</code> and is consumed by thin entrypoints in <code>bin/</code>. A <strong>rendering core</strong> turns a typed <code>Block[]</code> into a page; <strong>diagrams</strong> and <strong>code-intelligence</strong> are shared services the products lean on. Two products <em>scan</em> a real repo (recap, atlas); two are <em>pure authoring</em> (spec, doc).</span></div><div class="tldr-row"><span class="tldr-key">Spine</span><span class="tldr-val">Every product is the same pipeline: build a typed <code>Block[]</code> → its assembler walks it, calling one renderer per block type → rendered diagrams and highlighted code get inlined → one self-contained HTML file.</span></div></div></div><div class="primer"><div class="primer-row"><span class="primer-n">1</span><div class="primer-body"><div class="primer-h">One pattern, four products.</div><div class="primer-p">Each product pairs a block vocabulary with a thin assembler built on core's shared primitives — the renderers, lint, and highlighting. Only the doc CLI calls core's <code>assemble()</code> directly; recap, spec, and atlas each have their own assembler over the same parts. Read <code>src/blocks.ts</code> then <code>src/assemble.ts</code> and you have the pattern the other three follow.</div></div></div><div class="primer-row"><span class="primer-n">2</span><div class="primer-body"><div class="primer-h">The output is a single self-contained file.</div><div class="primer-p">Every generator inlines its CSS, syntax-highlighted code, and rendered diagrams into one <code>.html</code> that works over <code>file://</code>. Self-containment is a hard product constraint, not a nicety — it shapes how diagrams and assets are handled.</div></div></div><div class="primer-row"><span class="primer-n">3</span><div class="primer-body"><div class="primer-h">Two products read code; two only author.</div><div class="primer-p"><code>recap</code> and <code>atlas</code> understand a real repo — git diffs, Prisma/tRPC parsing, import graphs — through the <strong>code-intel</strong> layer. <code>spec</code> and <code>doc</code> take hand-authored blocks JSON and never scan. That split explains why code-intel exists.</div></div></div><div class="primer-row"><span class="primer-n">4</span><div class="primer-body"><div class="primer-h">d2 is the diagram floor; the atlas is hybrid.</div><div class="primer-p">Diagrams compile through the <code>d2</code> CLI to static SVG (with an optional editable-Excalidraw upgrade), and one palette colors every diagram. The atlas itself is <em>hybrid</em>: a mechanical scan drafts JSON, humans enrich the prose, and the committed JSON re-renders with no scan.</div></div></div></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#map"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">The domain map</span></a><a class="progress-step" href="#spine"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Spine</span></a><a class="progress-step" href="#domains"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">The 6 domains</span></a></nav><section id="map" class="section"><div class="section-header"><h2 class="section-title">The domain map</h2><span class="section-badge">layered</span></div><p class="section-intro">Six domains in three tiers. A <strong>foundation</strong> (<code>diagrams</code>) and an <strong>engine</strong> (<code>core</code>) sit at the bottom; an <strong>intelligence</strong> layer (<code>code-intel</code>) reads real repos; three <strong>surface</strong> products stack on top. Arrows are <em>depends on</em> — and <code>atlas</code> and <code>authoring</code> share <code>recap</code>'s review shell (its css, viewer script, and section helpers).</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1432 426"><svg class="d2-546123180 d2-svg" width="1432" height="426" viewBox="-25 -35 1432 426"><rect x="-25.000000" y="-35.000000" width="1432.000000" height="426.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-546123180 .text-bold {
 	font-family: "d2-546123180-font-bold";
@@ -1830,5 +1865,40 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
   }
   window.addEventListener('hashchange', function(){ openTo(location.hash); });
   if(location.hash) openTo(location.hash);
+})();
+</script><script>(function () {
+  var root = document.documentElement;
+  var STORAGE = "vs-theme";
+  var SUN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  var MOON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    '<button class="vs-theme-toggle" type="button" aria-label="Toggle dark mode"></button>'
+  );
+  var btn = document.body.lastElementChild;
+
+  function render() {
+    var dark = root.getAttribute("data-theme") === "dark";
+    btn.innerHTML = dark ? SUN : MOON;
+    btn.setAttribute("aria-pressed", dark ? "true" : "false");
+  }
+  render();
+
+  btn.addEventListener("click", function () {
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem(STORAGE, next); } catch (e) {}
+    render();
+  });
+
+  var mql = window.matchMedia("(prefers-color-scheme: dark)");
+  mql.addEventListener("change", function (e) {
+    var hasChoice = false;
+    try { var s = localStorage.getItem(STORAGE); hasChoice = s === "light" || s === "dark"; } catch (x) {}
+    if (hasChoice) return;
+    root.setAttribute("data-theme", e.matches ? "dark" : "light");
+    render();
+  });
 })();
 </script></body></html>
