@@ -36,4 +36,18 @@ describe("assembleReview", () => {
     expect(html).toContain('class="vs-theme-toggle"');
     expect(html).toContain('/* vs-theme */');
   });
+
+  it("orders the inlined CSS/JS correctly: theme.css after base CSS, head-apply script before <body>", async () => {
+    const html = await assembleReview(blocks, { title: "Recap — x", source: "ppgl · base a → head b" });
+    const baseCssIdx = html.indexOf(".topbar {");     // review.css rule, precedes theme.css in the <style> concat
+    const themeMarkerIdx = html.indexOf("/* vs-theme */");
+    const headScriptIdx = html.indexOf("data-theme"); // first occurrence: the head-apply <script>, before <body>
+    const bodyIdx = html.indexOf("<body");
+    expect(baseCssIdx).toBeGreaterThan(-1);
+    expect(themeMarkerIdx).toBeGreaterThan(-1);
+    expect(headScriptIdx).toBeGreaterThan(-1);
+    expect(bodyIdx).toBeGreaterThan(-1);
+    expect(baseCssIdx).toBeLessThan(themeMarkerIdx);
+    expect(headScriptIdx).toBeLessThan(bodyIdx);
+  });
 });

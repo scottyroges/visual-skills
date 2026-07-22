@@ -11,7 +11,7 @@
     document.documentElement.setAttribute("data-theme", "light");
   }
 })();
-</script><meta name="generator" content="visual-skills@bb60ed4-dirty · 2026-07-22T00:20:25Z"><title>Recap — Exclude in-progress tournaments from season stats (PR #190)</title><style>/* ===== RESET & BASE ===== */
+</script><meta name="generator" content="visual-skills@de66cd2-dirty · 2026-07-22T00:39:59Z"><title>Recap — Exclude in-progress tournaments from season stats (PR #190)</title><style>/* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -1111,6 +1111,58 @@ html { scroll-behavior: smooth; }
   color: var(--shiki-dark, inherit) !important;
   background-color: var(--shiki-dark-bg, transparent) !important;
 }
+
+/* ── Task 4d: one-off chrome overrides missed by Task 4's design-token pass ──
+   These rule bodies paint a hardcoded LIGHT background (or a light-mode-tuned
+   text color) while the surrounding page inherits themed --ink/--ctx, which
+   flip light in dark mode — producing light-text-on-light-background.
+   Fixed here (in theme.css only) rather than in template.css/spec.css so
+   light mode stays byte-identical: these are pure additions. */
+
+/* spec.css .risk-r: red-on-red-tinted-bg ink tuned for a light card */
+:root[data-theme="dark"] .risk-r { color: #f5b8b4; }
+
+/* template.css .vs-overview: light lavender card + its headline text */
+:root[data-theme="dark"] .vs-overview { background: #1e1b2e; border-left-color: #8b6cff; }
+
+/* template.css .vs-group: light group-card background */
+:root[data-theme="dark"] .vs-group { background: #1a1d23; }
+
+/* template.css .vs-group-desc: dark-on-light muted ink */
+:root[data-theme="dark"] .vs-group-desc { color: #b3ada4; }
+
+/* template.css tabs: light tablabel strip, inactive + active tab pills */
+:root[data-theme="dark"] .vs-tabs .vs-tablabels { border-bottom-color: #2c3038; }
+:root[data-theme="dark"] .vs-tabs .vs-tablabels label { background: #22262e; border-color: #2c3038; }
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(1):checked ~ .vs-tablabels label:nth-child(1),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(2):checked ~ .vs-tablabels label:nth-child(2),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(3):checked ~ .vs-tablabels label:nth-child(3),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(4):checked ~ .vs-tablabels label:nth-child(4),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(5):checked ~ .vs-tablabels label:nth-child(5),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(6):checked ~ .vs-tablabels label:nth-child(6) {
+  background: #1c1f26; border-bottom-color: #1c1f26;
+}
+
+/* template.css diagram-caption headings: light-mode stone gray */
+:root[data-theme="dark"] .vs-diff-diagram h2,
+:root[data-theme="dark"] .vs-diff-diagram h3,
+:root[data-theme="dark"] .vs-overview-diagram h2,
+:root[data-theme="dark"] .vs-overview-diagram h3 { color: var(--ctx); }
+
+/* template.css yellow "modified" ink (status pill + file-tree marker) */
+:root[data-theme="dark"] .vs-status.yellow,
+:root[data-theme="dark"] .vs-file[data-status="M"] .vs-marker { color: #d4a72c; }
+
+/* template.css zoom overlay controls (viewer.js): "Reset" / "✕" buttons keep an
+   intentionally opaque white pill (matching the light diagram card behind them),
+   but their text has no explicit color and was inheriting themed --ink — invisible
+   near-white-on-white in dark mode. Pin the text dark since the pill stays light. */
+:root[data-theme="dark"] .vs-zoom-reset,
+:root[data-theme="dark"] .vs-zoom-close { color: #1b1b1b; }
+
+/* atlas.css .topbar-back:hover: hardcoded light-blue hover fill collided with the
+   themed --accent text color (also light blue in dark mode) → illegible on hover. */
+:root[data-theme="dark"] .topbar-back:hover { background: rgba(106,163,255,0.22); }
 </style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle file sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><span class="topbar-title">Recap — Exclude in-progress tournaments from season stats (PR #190)</span><div class="topbar-meta"><span class="chip chip-risk risk-low" role="status" aria-label="Risk level: LOW">&#10003; Risk: LOW</span><span class="topbar-sep" aria-hidden="true"></span><span class="diff-stat"><span class="diff-add">+102</span>&nbsp;<span class="diff-rem">-2</span></span><span class="chip chip-stat" aria-label="5 files changed">5 files</span><span class="topbar-sep" aria-hidden="true"></span><span style="font-size:var(--text-xs);color:var(--ink-faint);white-space:nowrap;"></span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Files changed (5)</span><ul class="file-list" role="list"><li><a href="#diff-0" class="file-item" title="docs/INDEX.md"><span class="file-status file-status-M" aria-label="Modified">M</span><span class="file-name">docs/INDEX.md</span><span class="file-stat"><span class="plus">+1</span></span></a></li><li><a href="#diff-1" class="file-item" title="docs/ideas/live-scorecard.md"><span class="file-status file-status-A" aria-label="Added">A</span><span class="file-name">ideas/live-scorecard.md</span><span class="file-stat"><span class="plus">+61</span></span></a></li><li><a href="#diff-2" class="file-item" title="src/app/golfer/[id]/golfer.module.css"><span class="file-status file-status-M" aria-label="Modified">M</span><span class="file-name">[id]/golfer.module.css</span><span class="file-stat"><span class="plus">+30</span></span></a></li><li><a href="#diff-3" class="file-item" title="src/app/golfer/[id]/page.tsx"><span class="file-status file-status-M" aria-label="Modified">M</span><span class="file-name">[id]/page.tsx</span><span class="file-stat"><span class="plus">+9</span><span class="minus">-2</span></span></a></li><li><a href="#diff-4" class="file-item" title="src/server/repositories/golfer.ts"><span class="file-status file-status-M" aria-label="Modified">M</span><span class="file-name">repositories/golfer.ts</span><span class="file-stat"><span class="plus">+1</span></span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Walkthrough</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>TL;DR</span></a></li><li><a href="#overview" class="outline-item" data-target="overview"><span class="outline-num" aria-hidden="true">&#8212;</span><span>Overview</span></a></li><li><a href="#grp-fix" class="outline-item" data-target="grp-fix"><span class="outline-num" aria-hidden="true">1</span><span>The root cause and the fix — one WHERE clause</span></a></li><li><a href="#diff-4" class="outline-item" data-target="diff-4" style="padding-left:28px;"><span class="outline-num" aria-hidden="true">1a</span><span>golfer.ts</span></a></li><li><a href="#grp-ui" class="outline-item" data-target="grp-ui"><span class="outline-num" aria-hidden="true">2</span><span>The UI half — make the live row honest</span></a></li><li><a href="#diff-3" class="outline-item" data-target="diff-3" style="padding-left:28px;"><span class="outline-num" aria-hidden="true">2a</span><span>page.tsx</span></a></li><li><a href="#diff-2" class="outline-item" data-target="diff-2" style="padding-left:28px;"><span class="outline-num" aria-hidden="true">2b</span><span>golfer.module.css</span></a></li><li><a href="#grp-docs" class="outline-item" data-target="grp-docs"><span class="outline-num" aria-hidden="true">3</span><span>Along for the ride — a live-scorecard idea doc</span></a></li><li><a href="#diff-1" class="outline-item" data-target="diff-1" style="padding-left:28px;"><span class="outline-num" aria-hidden="true">3a</span><span>live-scorecard.md</span></a></li><li><a href="#diff-0" class="outline-item" data-target="diff-0" style="padding-left:28px;"><span class="outline-num" aria-hidden="true">3b</span><span>INDEX.md</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div style="padding:0 14px 8px;font-size:var(--text-xs);color:var(--ink-faint);line-height:1.8;overflow-wrap:anywhere;"><div></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">TL;DR</span><h2 class="tldr-heading">Golfer season stats no longer count in-progress tournaments</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">What</span><span class="tldr-val">Filter golfer season stats to settled tournaments; visually flag the live row instead</span></div><div class="tldr-row"><span class="tldr-key">Why</span><span class="tldr-val">Projected mid-round data inflated stats — e.g. best finish "1st" after round 1, with millions in unearned money</span></div><div class="tldr-row"><span class="tldr-key">Risk</span><span class="tldr-val"><span class="chip chip-risk risk-low">&#10003; LOW</span> one additive WHERE clause with an existing rollup precedent; the rest is UI labeling; no schema changes</span></div><div class="tldr-row"><span class="tldr-key">Size</span><span class="tldr-val">5 files, +102/−2 (~40 runtime lines; 62 lines are a docs idea)</span></div></div></div></section><section id="overview" class="section"><div class="section-header"><h2 class="section-title">Overview</h2></div><ul class="overview-list"><li class="overview-item"><span class="overview-num" aria-hidden="true">1</span><span class="overview-text">root cause: <code>syncLiveStandings</code> writes <em>projected</em> earnings/positions into <code>tournamentResult</code> during play, and <a href="#diff-4"><code>getSeasonStats</code></a> aggregated those rows as if they were final</span></li><li class="overview-item"><span class="overview-num" aria-hidden="true">2</span><span class="overview-text">the fix is one <code>WHERE</code> clause — <code>tournament.status in (COMPLETED, FINALIZING)</code> — matching the filter the earnings rollup already used</span></li><li class="overview-item"><span class="overview-num" aria-hidden="true">3</span><span class="overview-text">the season-results table still lists the live tournament; <a href="#diff-3">the page</a> now marks that row with a green <strong>Live</strong> badge and an <code>est.</code> earnings label</span></li><li class="overview-item"><span class="overview-num" aria-hidden="true">4</span><span class="overview-text">no new tests: existing golfer-service tests mock the repo, so coverage is typecheck + the PR test plan's live-tournament verification</span></li><li class="overview-item"><span class="overview-num" aria-hidden="true">5</span><span class="overview-text">bundled along for the ride: a <a href="#diff-1">live-scorecard idea doc</a> with zero runtime impact</span></li></ul></section><section id="overview-diagram" class="section"><div class="diagram-wrap"><p class="diagram-title">How projected data leaked into season stats — and where the filter now sits</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#x2922; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2724 116"><svg class="d2-808440083 d2-svg" width="2724" height="116" viewBox="-25 -25 2724 116"><rect x="-25.000000" y="-25.000000" width="2724.000000" height="116.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-808440083 .text-bold {
 	font-family: "d2-808440083-font-bold";

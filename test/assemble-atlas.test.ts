@@ -34,6 +34,26 @@ describe("assemble shell", () => {
     expect(html).toContain('class="vs-theme-toggle"');
     expect(html).toContain('/* vs-theme */');
   });
+
+  it("orders the inlined CSS/JS correctly: theme.css after base CSS, head-apply script before <body>", async () => {
+    const html = await assembleAtlas([], { title: "System Atlas · demo" });
+    const baseCssIdx = html.indexOf(".topbar {");     // review.css rule, precedes spec.css/atlas.css/theme.css
+    const specCssIdx = html.indexOf(".bigidea {");    // spec.css rule
+    const atlasCssIdx = html.indexOf(".domain-grid {"); // atlas.css rule, precedes theme.css
+    const themeMarkerIdx = html.indexOf("/* vs-theme */");
+    const headScriptIdx = html.indexOf("data-theme"); // first occurrence: the head-apply <script>, before <body>
+    const bodyIdx = html.indexOf("<body");
+    expect(baseCssIdx).toBeGreaterThan(-1);
+    expect(specCssIdx).toBeGreaterThan(-1);
+    expect(atlasCssIdx).toBeGreaterThan(-1);
+    expect(themeMarkerIdx).toBeGreaterThan(-1);
+    expect(headScriptIdx).toBeGreaterThan(-1);
+    expect(bodyIdx).toBeGreaterThan(-1);
+    expect(baseCssIdx).toBeLessThan(specCssIdx);
+    expect(specCssIdx).toBeLessThan(atlasCssIdx);
+    expect(atlasCssIdx).toBeLessThan(themeMarkerIdx);
+    expect(headScriptIdx).toBeLessThan(bodyIdx);
+  });
   it("domain: back-link + layer/path/count/depends chips", async () => {
     const html = await assembleDomain([], { title: "brain", layer: "intelligence", layerLabel: "Intelligence", path: "lib/brain", count: "~76 files", depends: "sim · world" });
     expect(html).toContain('class="topbar-back" href="../atlas.html"');

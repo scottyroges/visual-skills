@@ -161,6 +161,20 @@ describe("assemble", () => {
     expect(html).toContain('class="vs-theme-toggle"');
     expect(html).toContain('/* vs-theme */'); // theme.css appended
   });
+
+  it("orders the inlined CSS/JS correctly: theme.css after base CSS, head-apply script before <body>", async () => {
+    const html = await assemble([{ type: "prose", id: "p", markdown: "hi" }], { title: "T", source: "s" });
+    const baseCssIdx = html.indexOf(".vs-block {");   // template.css rule, precedes theme.css in the <style> concat
+    const themeMarkerIdx = html.indexOf("/* vs-theme */");
+    const headScriptIdx = html.indexOf("data-theme"); // first occurrence: the head-apply <script>, before <body>
+    const bodyIdx = html.indexOf("<body");
+    expect(baseCssIdx).toBeGreaterThan(-1);
+    expect(themeMarkerIdx).toBeGreaterThan(-1);
+    expect(headScriptIdx).toBeGreaterThan(-1);
+    expect(bodyIdx).toBeGreaterThan(-1);
+    expect(baseCssIdx).toBeLessThan(themeMarkerIdx);
+    expect(headScriptIdx).toBeLessThan(bodyIdx);
+  });
 });
 
 describe("assemble — tabs block", () => {

@@ -67,6 +67,16 @@ describe("dark-mode surface variables", () => {
     for (const v of ["--diff-add-bg", "--diff-del-fg", "--syntax-kw"]) expect(dark).toContain(v);
   });
 
+  it("theme.css overrides the one-off light chrome constructs fixed in the final review pass", async () => {
+    const css = await readFile(asset("theme.css"), "utf8");
+    // Guards against a NEW unthemed light-background hex leaking back in for these
+    // specific selectors: each must carry an explicit dark override.
+    for (const selector of [".vs-overview", ".vs-group", ".risk-r"]) {
+      const re = new RegExp(`\\[data-theme="dark"\\][^{]*\\${selector}[^{]*\\{`);
+      expect(css).toMatch(re);
+    }
+  });
+
   it("theme.css gives every diagram container a light card in dark mode", async () => {
     const css = await readFile(asset("theme.css"), "utf8");
     // Recap/doc pages (template.css): .vs-diagram, .vs-diff-diagram, .vs-overview-diagram.
