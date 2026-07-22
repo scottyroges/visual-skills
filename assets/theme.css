@@ -47,6 +47,24 @@
   --risk-med:#d4a72c;
 }
 
+/* Diagrams (d2/Excalidraw inline SVGs) bake in light colors and are NOT re-themed dark —
+   instead each container gets a light "card" so the SVG reads as an intentional light panel
+   rather than a raw white block sitting on the dark page.
+   Recap/doc pages (template.css): .vs-diagram (top-level block), .vs-diff-diagram (per-diff
+   embed), .vs-overview-diagram (overview lead) — none of the latter two carry their own
+   background, so without this they'd inherit the surrounding .vs-block's dark --card.
+   Review/spec/atlas pages (review.css, via src/review/sections.ts renderDiagramCard and
+   src/assemble-atlas.ts): .diagram-box — already has a background, but it tracks --panel,
+   which theme.css sets dark above. */
+:root[data-theme="dark"] .vs-diagram,
+:root[data-theme="dark"] .vs-diff-diagram,
+:root[data-theme="dark"] .vs-overview-diagram,
+:root[data-theme="dark"] .diagram-box {
+  background: #faf9f6;
+  border-radius: 10px;
+  padding: 10px;
+}
+
 /* Shiki dual-theme flip (Task 3 emits the --shiki-dark vars) */
 :root[data-theme="dark"] .shiki,
 :root[data-theme="dark"] .shiki span {

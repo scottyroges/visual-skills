@@ -66,4 +66,16 @@ describe("dark-mode surface variables", () => {
     const dark = css.slice(css.indexOf('[data-theme="dark"]'));
     for (const v of ["--diff-add-bg", "--diff-del-fg", "--syntax-kw"]) expect(dark).toContain(v);
   });
+
+  it("theme.css gives every diagram container a light card in dark mode", async () => {
+    const css = await readFile(asset("theme.css"), "utf8");
+    // Recap/doc pages (template.css): .vs-diagram, .vs-diff-diagram, .vs-overview-diagram.
+    // Review/spec/atlas pages (review.css, via sections.ts renderDiagramCard / assemble-atlas.ts): .diagram-box.
+    for (const selector of [".vs-diagram", ".vs-diff-diagram", ".vs-overview-diagram", ".diagram-box"]) {
+      const re = new RegExp(
+        `\\[data-theme="dark"\\][^{]*\\${selector}[^{]*\\{[^}]*background:\\s*#faf9f6`,
+      );
+      expect(css).toMatch(re);
+    }
+  });
 });
