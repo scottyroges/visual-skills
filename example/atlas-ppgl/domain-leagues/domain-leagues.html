@@ -1,5 +1,17 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="visual-skills · visual-atlas"><title>Leagues &amp; commissioner</title><style>/* ===== RESET & BASE ===== */
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script>(function () {
+  try {
+    var saved = localStorage.getItem("vs-theme");
+    var mql = window.matchMedia("(prefers-color-scheme: dark)");
+    var theme = saved === "light" || saved === "dark"
+      ? saved
+      : (mql.matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script><meta name="generator" content="visual-skills · visual-atlas"><title>Leagues &amp; commissioner</title><style>/* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -27,6 +39,20 @@
   --risk-low: #16a34a;
   --risk-low-bg: #f0fdf4;
   --risk-low-border: #bbf7d0;
+
+  --diff-add-bg: #e9f7ee;
+  --diff-add-gutter: #1a7f37;
+  --diff-add-fg: #0f3a1d;
+  --diff-del-bg: #fdecec;
+  --diff-del-gutter: #c4332e;
+  --diff-del-fg: #5c1a18;
+  --diff-ctx-fg: #3a4047;
+  --diff-num: #8b939e;
+  --diff-gutter: #9aa1ab;
+  --syntax-kw: #7c3aed;
+  --syntax-fn: #0369a1;
+  --syntax-ty: #b45309;
+  --risk-med: #b45309;
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -657,11 +683,11 @@ details[open] .chevron { transform: rotate(90deg); }
 }
 
 /* Token coloring — span-based, semantic only */
-.kw { color: #7c3aed; font-weight: 600; }  /* keyword */
-.fn { color: #0369a1; }                      /* function/method */
-.str { color: #16a34a; }                     /* string */
+.kw { color: var(--syntax-kw); font-weight: 600; }  /* keyword */
+.fn { color: var(--syntax-fn); }             /* function/method */
+.str { color: var(--add); }                  /* string */
 .cm { color: var(--ink-faint); font-style: italic; } /* comment */
-.ty { color: #b45309; }                      /* type */
+.ty { color: var(--syntax-ty); }             /* type */
 .pn { color: var(--ink); }                   /* punctuation */
 .nm { color: var(--ink); }                   /* number */
 
@@ -961,19 +987,19 @@ a:focus-visible, button:focus-visible, details summary:focus-visible {
 }
 
 /* real code diffs inside file-diff details */
-.diff-code { background:#fff; border-top:1px solid var(--border); }
+.diff-code { background:var(--bg); border-top:1px solid var(--border); }
 .diff-pre { margin:0; overflow-x:auto; padding:4px 0;
-  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#3a4047;
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--diff-ctx-fg);
   font-variant-ligatures:none; }
 .diff-pre .dl { display:flex; align-items:baseline; min-width:max-content; }
-.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:#8b939e;
+.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:var(--diff-num);
   user-select:none; -webkit-user-select:none; }
-.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:#9aa1ab;
+.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:var(--diff-gutter);
   user-select:none; -webkit-user-select:none; }
 .diff-pre .dc { flex:0 0 auto; white-space:pre; padding-right:20px; }
-.diff-pre .dl-add { background:#e9f7ee; } .diff-pre .dl-add .dg { color:#1a7f37; } .diff-pre .dl-add .dc { color:#0f3a1d; }
-.diff-pre .dl-del { background:#fdecec; } .diff-pre .dl-del .dg { color:#c4332e; } .diff-pre .dl-del .dc { color:#5c1a18; }
-.diff-pre .dl-ctx .dc { color:#3a4047; }
+.diff-pre .dl-add { background:var(--diff-add-bg); } .diff-pre .dl-add .dg { color:var(--diff-add-gutter); } .diff-pre .dl-add .dc { color:var(--diff-add-fg); }
+.diff-pre .dl-del { background:var(--diff-del-bg); } .diff-pre .dl-del .dg { color:var(--diff-del-gutter); } .diff-pre .dl-del .dc { color:var(--diff-del-fg); }
+.diff-pre .dl-ctx .dc { color:var(--diff-ctx-fg); }
 .diff-pre .dl-hunk { background:var(--panel); color:var(--ink-muted); }
 .diff-pre .dl-hunk .dc { color:var(--ink-muted); font-weight:600; }
 .diff-more { padding:8px 16px; font:12px/1.4 system-ui,sans-serif; color:var(--ink-muted);
@@ -1008,8 +1034,8 @@ html { scroll-behavior: smooth; }
 /* color pass: subtle hover lift on file rows + risk level system */
 .file-diff { transition: box-shadow 150ms ease-out, border-color 150ms ease-out; }
 .file-diff:hover { border-color: var(--accent); box-shadow: 0 6px 18px -12px rgba(37,99,235,0.35); }
-.chip-risk.risk-med { color: #b45309; background: #fffbeb; border-color: #fde68a; }
-.chip-risk.risk-high { color: var(--remove); background: #fef2f2; border-color: #fecaca; }
+.chip-risk.risk-med { color: var(--risk-med); background: var(--change-bg); border-color: var(--change-border); }
+.chip-risk.risk-high { color: var(--remove); background: var(--remove-bg); border-color: var(--remove-border); }
 @media (prefers-reduced-motion: reduce) { .file-diff { transition: none; } }
 
 /* spec.css — reusable visual-spec components.
@@ -1034,6 +1060,7 @@ html { scroll-behavior: smooth; }
   --reused-border: #ced4da;
   --store: #6d4ed8;              /* datastore ink */
   --proc: #1971c2;              /* perception / process ink */
+  --good: #15803d;               /* "positive/success" ink, reused by atlas.css */
 }
 
 /* ---- topbar: phase + status + complexity chips ---- */
@@ -1170,7 +1197,7 @@ html { scroll-behavior: smooth; }
 .scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .scope-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .scope-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
-.scope-in .scope-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.scope-in .scope-head { background: var(--add-bg); color: var(--good); border-bottom-color: var(--add-border); }
 .scope-out .scope-head { background: var(--reused-bg); color: var(--ink-muted); }
 .scope-count { font-size: var(--text-xs); font-weight: 600; opacity: 0.8; }
 .scope-list { list-style: none; padding: 8px 0; }
@@ -1216,7 +1243,7 @@ html { scroll-behavior: smooth; }
 .spec-table tr:hover td { background: var(--panel); }
 .spec-table code { font-family: var(--font-mono); font-size: 0.86em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
 .spec-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
-.spec-table .good { color: #15803d; font-weight: 700; }
+.spec-table .good { color: var(--good); font-weight: 700; }
 .tbl-note { font-size: var(--text-sm); color: var(--ink-muted); margin: 2px 2px 0; }
 
 /* ---- risks ---- */
@@ -1225,7 +1252,7 @@ html { scroll-behavior: smooth; }
 .risk-r { display: flex; gap: 9px; padding: 12px 15px; background: var(--remove-bg); border-bottom: 1px solid var(--remove-border); font-weight: 650; color: #991b1b; font-size: var(--text-sm); line-height: 1.45; }
 .risk-icon { flex-shrink: 0; }
 .risk-m { padding: 12px 15px; font-size: var(--text-sm); color: var(--ink); line-height: 1.55; }
-.risk-m b { color: #15803d; font-weight: 700; }
+.risk-m b { color: var(--good); font-weight: 700; }
 .risk-m code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
 
 /* ---- reference drill-downs ---- */
@@ -1273,7 +1300,7 @@ details.ref[open] .ref-chev { transform: rotate(90deg); }
 .approve-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
 .approve-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
 .approve-card.commit .approve-head { background: var(--accent-subtle); color: var(--accent); border-bottom-color: var(--accent-border); }
-.approve-card.scrutinize .approve-head { background: var(--change-bg); color: #92600a; border-bottom-color: var(--change-border); }
+.approve-card.scrutinize .approve-head { background: var(--change-bg); color: var(--perceived); border-bottom-color: var(--change-border); }
 .approve-card.open .approve-head { background: var(--panel-deep); color: var(--ink-muted); }
 .approve-body { padding: 13px 16px; font-size: var(--text-sm); color: var(--ink); line-height: 1.6; }
 .approve-body strong { font-weight: 700; }
@@ -1421,7 +1448,7 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 .seam-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .seam-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .seam-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
-.seam-exposes .seam-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.seam-exposes .seam-head { background: var(--add-bg); color: var(--good); border-bottom-color: var(--add-border); }
 .seam-depends .seam-head { background: var(--panel-deep); color: var(--ink-muted); }
 .seam-body { padding: 12px 16px; }
 .seam-api { list-style: none; display: flex; flex-direction: column; gap: 7px; }
@@ -1461,6 +1488,80 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 .nav-domain:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
 .nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
+
+/* vs-theme */
+.vs-theme-toggle {
+  position: fixed; top: 14px; right: 14px; z-index: 1000;
+  width: 38px; height: 38px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--line); background: var(--paper); color: var(--ink);
+  cursor: pointer; box-shadow: 1px 2px 0 rgba(0,0,0,0.08);
+}
+.vs-theme-toggle:hover { border-color: var(--ctx); }
+@media print { .vs-theme-toggle { display: none; } }
+
+:root[data-theme="dark"] {
+  --ink:#e6e3dc; --paper:#16181d; --ctx:#9aa2ad; --line:#2c3038;
+  --add:#3fb950; --del:#f85149;
+  --card:#1c1f26; --code-bg:#1b1e24;
+  --add-bg:rgba(63,185,80,0.15); --del-bg:rgba(248,81,73,0.15); --warn-bg:rgba(210,167,44,0.12);
+  --pill-green-bg:rgba(63,185,80,0.2); --pill-yellow-bg:rgba(210,167,44,0.2); --pill-red-bg:rgba(248,81,73,0.2);
+  --link:#6aa3ff;
+  --good:#3fb950;
+
+  /* review.css / spec.css / atlas.css design-token namespace (Task 4b) */
+  --bg:#16181d; --panel:#1c1f26; --panel-deep:#22262e;
+  --border:#2c3038; --border-strong:#3a3f48;
+  --ink-muted:#9aa2ad; --ink-faint:#7f8792;
+  --accent:#6aa3ff; --accent-hover:#8bb8ff; --accent-subtle:rgba(106,163,255,0.12); --accent-border:rgba(106,163,255,0.35);
+  --add-border:rgba(63,185,80,0.4);
+  --remove:#f85149; --remove-bg:rgba(248,81,73,0.15); --remove-border:rgba(248,81,73,0.4);
+  --change:#d4a72c; --change-bg:rgba(210,167,44,0.12); --change-border:rgba(210,167,44,0.4);
+  --risk-low:#3fb950; --risk-low-bg:rgba(63,185,80,0.15); --risk-low-border:rgba(63,185,80,0.4);
+
+  --perceived:#d4a72c; --perceived-bg:rgba(210,167,44,0.12); --perceived-border:rgba(210,167,44,0.4);
+  --proc:#6aa3ff;
+  --reused:#9aa2ad; --reused-bg:#22262e; --reused-border:#3a3f48;
+  --store:#a78bfa;
+
+  --tier-engine:#6aa3ff; --tier-engine-bg:rgba(25,113,194,0.18);
+  --tier-foundation:#a78bfa; --tier-foundation-bg:rgba(109,78,216,0.2);
+  --tier-harness:#9aa2ad; --tier-harness-bg:rgba(107,114,128,0.2);
+  --tier-intelligence:#d4a72c; --tier-intelligence-bg:rgba(179,121,26,0.2);
+  --tier-narrative:#3fb950; --tier-narrative-bg:rgba(47,158,68,0.2);
+
+  /* review.css diff renderer + inline syntax colors (Task 4c) */
+  --diff-add-bg:rgba(63,185,80,0.15); --diff-add-gutter:#3fb950; --diff-add-fg:#b9f0c8;
+  --diff-del-bg:rgba(248,81,73,0.15); --diff-del-gutter:#f85149; --diff-del-fg:#f5b8b4;
+  --diff-ctx-fg:#c9cdd3; --diff-num:#7f8792; --diff-gutter:#8b939e;
+  --syntax-kw:#b39cf5; --syntax-fn:#6aa3ff; --syntax-ty:#d4a72c;
+  --risk-med:#d4a72c;
+}
+
+/* Diagrams (d2/Excalidraw inline SVGs) bake in light colors and are NOT re-themed dark —
+   instead each container gets a light "card" so the SVG reads as an intentional light panel
+   rather than a raw white block sitting on the dark page.
+   Recap/doc pages (template.css): .vs-diagram (top-level block), .vs-diff-diagram (per-diff
+   embed), .vs-overview-diagram (overview lead) — none of the latter two carry their own
+   background, so without this they'd inherit the surrounding .vs-block's dark --card.
+   Review/spec/atlas pages (review.css, via src/review/sections.ts renderDiagramCard and
+   src/assemble-atlas.ts): .diagram-box — already has a background, but it tracks --panel,
+   which theme.css sets dark above. */
+:root[data-theme="dark"] .vs-diagram,
+:root[data-theme="dark"] .vs-diff-diagram,
+:root[data-theme="dark"] .vs-overview-diagram,
+:root[data-theme="dark"] .diagram-box {
+  background: #faf9f6;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+/* Shiki dual-theme flip (Task 3 emits the --shiki-dark vars) */
+:root[data-theme="dark"] .shiki,
+:root[data-theme="dark"] .shiki span {
+  color: var(--shiki-dark, inherit) !important;
+  background-color: var(--shiki-dark-bg, transparent) !important;
+}
 </style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><a class="topbar-back" href="../atlas.html"><span aria-hidden="true">&larr;</span> Atlas</a><span class="topbar-title">Leagues &amp; commissioner</span><div class="topbar-meta"><span class="chip layer-chip layer-engine">Core game</span><span class="chip chip-stat">src</span><span class="chip chip-count">25 files</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">depends on game · golf-data · scoring · payments · accounts · web-shell</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>What it owns</span></a></li><li><a href="#components" class="outline-item" data-target="components"><span class="outline-num" aria-hidden="true">1</span><span>Components</span></a></li><li><a href="#arch" class="outline-item" data-target="arch"><span class="outline-num" aria-hidden="true">2</span><span>Internal architecture</span></a></li><li><a href="#depth" class="outline-item" data-target="depth"><span class="outline-num" aria-hidden="true">3</span><span>In depth</span></a><ul class="outline-sub" role="list"><li><a href="#c-service" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>league service</a></li><li><a href="#c-create" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>create &amp; checkout</a></li><li><a href="#c-join" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>join &amp; approval</a></li><li><a href="#c-pages" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>league pages</a></li><li><a href="#c-context" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>league context</a></li><li><a href="#c-commish" class="outline-subitem"><span class="os-dot" style="background:#d0ebff;border-color:#4dabf7;"></span>commissioner tools</a></li></ul></li><li><a href="#data" class="outline-item" data-target="data"><span class="outline-num" aria-hidden="true">4</span><span>Data it owns</span></a></li><li><a href="#seams" class="outline-item" data-target="seams"><span class="outline-num" aria-hidden="true">5</span><span>Seams</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Layer</span><span class="mv">Engine</span></div><div class="meta-row"><span class="mk">API</span><span class="mv">`leagueRouter` — 16 procedures</span></div><div class="meta-row"><span class="mk">Models</span><span class="mv">League · LeagueMember · LeagueMemberSeason · CommissionerAction</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Domain</span><h2 class="tldr-heading">Leagues &amp; commissioner</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">Path</span><span class="tldr-val"><code>src</code> — <code>server/{routers,services,repositories}/league.ts</code>, <code>app/league/**</code>, <code>app/leagues/</code>, <code>components/{league,commissioner}/</code>, <code>lib/league-context.ts</code></span></div><div class="tldr-row"><span class="tldr-key">Files</span><span class="tldr-val">25</span></div><div class="tldr-row"><span class="tldr-key">Owns</span><span class="tldr-val">League lifecycle (create → pay → invite → join → approve), the league pages, the active-league cookie, and commissioner tools + audit log</span></div><div class="tldr-row"><span class="tldr-key">Entry points</span><span class="tldr-val"><code>/leagues</code>, <code>/league/create</code>, <code>/league/join?code=…</code>, <code>/league/[id]</code> (+ <code>/rules</code>, <code>/settings</code>)</span></div><div class="tldr-row"><span class="tldr-key">API</span><span class="tldr-val"><code>leagueRouter</code> (<code>league.*</code>, 16 procedures) plus directly-imported service guards (<code>resolveLeagueMemberId</code>, <code>assertLeagueActive</code>)</span></div></div></div><div class="bigidea"><div class="bigidea-label">Big idea</div><div class="bigidea-line">Membership <strong>is</strong> the permission system — every other gameplay domain answers "may this user act here?" by calling into leagues.</div><p class="bigidea-sub"><code>resolveLeagueMemberId</code> and <code>assertLeagueActive</code> (src/server/services/league.ts) are imported by the pick and dashboard services; the <code>leagueMemberId</code> they return is the identity key that picks, standings, and earnings all hang off. Everyone is lazily auto-enrolled in the global league (<code>ppgl-global</code>), so the guard doubles as onboarding.</p></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#components"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">Components</span></a><a class="progress-step" href="#arch"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Internal architecture</span></a><a class="progress-step" href="#depth"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">In depth</span></a><a class="progress-step" href="#data"><div class="progress-step-num" aria-hidden="true">4</div><span class="progress-step-label">Data it owns</span></a><a class="progress-step" href="#seams"><div class="progress-step-num" aria-hidden="true">5</div><span class="progress-step-label">Seams</span></a></nav><section id="components" class="section"><div class="section-header"><h2 class="section-title">Components</h2></div><p class="section-intro">Six units: one server trio holding all the business logic, four UI surfaces, and a tiny cookie-based context layer that the whole app reads.</p><div class="board-grid"><a class="board-card" href="#c-service"><div class="board-name">league service</div><div class="board-purpose">The router → service → repository trio. All lifecycle rules live in <code>services/league.ts</code>: create/join with race-safe transactions, the member state machine, payment gating (<code>PENDING</code> leagues block everything), promo redemption, audit-log assembly, and abandoned-league cleanup.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip is-deputy">leagueRouter</span><span class="skill-chip">resolveLeagueMemberId</span><span class="skill-chip">assertLeagueActive</span><span class="skill-chip">joinLeague</span><span class="skill-chip">cleanupAbandonedLeagues</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-create"><div class="board-name">create &amp; checkout</div><div class="board-purpose"><code>/league/create</code> — one client form that handles the $15 PayPal path (league born <code>PENDING</code>, activated on capture), the promo path (free → instantly <code>PAID</code>, partial → discounted checkout), and hands off to <code>/league/created</code> with the invite link.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">CreateLeagueForm</span><span class="skill-chip">LeagueCreatedClient</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-join"><div class="board-name">join &amp; approval</div><div class="board-purpose">The invite funnel: <code>/league/join?code=…</code> previews the league (public, works signed-out), joins or requests to join, and the commissioner's inline approve/reject queue on the league page.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">JoinLeagueClient</span><span class="skill-chip">PendingMembers</span><span class="skill-chip">InviteLinkCopy</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-pages"><div class="board-name">league pages</div><div class="board-purpose"><code>/leagues</code> index and the league home <code>/league/[id]</code> — a large server component that fans out to scoring, game, and golf-data for the weekly view + season standings — plus per-league <code>/rules</code> (settings-aware how-to-play) and <code>/settings</code>.</div><div class="board-row"><span class="board-row-label">covers</span><span class="skill-chip">WeekSwipeWrapper</span><span class="skill-chip">AuditLogCollapsible</span><span class="skill-chip">LeagueSettingsForm</span><span class="skill-chip">LeagueMembers</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-context"><div class="board-name">league context</div><div class="board-purpose">Which league am I looking at? A one-year <code>ppgl-active-league</code> cookie read by every league-scoped page via <code>getActiveLeagueId</code>, written only through server actions — by the nav <code>LeagueSwitcher</code> or silently by <code>SyncLeagueContext</code> when you visit <code>/league/[id]</code>.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">getActiveLeagueId</span><span class="skill-chip">setActiveLeague</span><span class="skill-chip">LeagueSwitcher</span><span class="skill-chip">SyncLeagueContext</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a><a class="board-card" href="#c-commish"><div class="board-name">commissioner tools</div><div class="board-purpose">The commissioner-mode overlay for acting on <em>other members'</em> picks: a CSS toggle plus add/edit/remove widgets that call the game domain's <code>pick.commissioner*</code> procedures — every action lands in this domain's <code>CommissionerAction</code> audit log.</div><div class="board-row"><span class="board-row-label">exports</span><span class="skill-chip">CommissionerToggle</span><span class="skill-chip">CommissionerPickActions</span><span class="skill-chip">CommissionerAddPick</span></div><div class="card-jump">Full section <span class="cj-arrow" aria-hidden="true">&darr;</span></div></a></div></section><section id="arch" class="section"><div class="section-header"><h2 class="section-title">Internal architecture</h2></div><p class="section-intro">One thin tRPC router in front of one fat service. The service is also entered from the side — by the PayPal webhook, by the cron sync's cleanup, and by other domains' services importing its guards directly.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2759 641"><svg class="d2-3896108889 d2-svg" width="2759" height="641" viewBox="-25 -25 2759 641"><rect x="-25.000000" y="-25.000000" width="2759.000000" height="641.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-3896108889 .text-bold {
 	font-family: "d2-3896108889-font-bold";
@@ -1946,5 +2047,40 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
   }
   window.addEventListener('hashchange', function(){ openTo(location.hash); });
   if(location.hash) openTo(location.hash);
+})();
+</script><script>(function () {
+  var root = document.documentElement;
+  var STORAGE = "vs-theme";
+  var SUN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  var MOON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    '<button class="vs-theme-toggle" type="button" aria-label="Toggle dark mode"></button>'
+  );
+  var btn = document.body.lastElementChild;
+
+  function render() {
+    var dark = root.getAttribute("data-theme") === "dark";
+    btn.innerHTML = dark ? SUN : MOON;
+    btn.setAttribute("aria-pressed", dark ? "true" : "false");
+  }
+  render();
+
+  btn.addEventListener("click", function () {
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem(STORAGE, next); } catch (e) {}
+    render();
+  });
+
+  var mql = window.matchMedia("(prefers-color-scheme: dark)");
+  mql.addEventListener("change", function (e) {
+    var hasChoice = false;
+    try { var s = localStorage.getItem(STORAGE); hasChoice = s === "light" || s === "dark"; } catch (x) {}
+    if (hasChoice) return;
+    root.setAttribute("data-theme", e.matches ? "dark" : "light");
+    render();
+  });
 })();
 </script></body></html>
