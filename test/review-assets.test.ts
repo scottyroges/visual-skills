@@ -42,4 +42,12 @@ describe("dark-mode surface variables", () => {
     expect(css).not.toMatch(/background:\s*#e6ffec/);
     expect(css).not.toMatch(/background:\s*#ffebe9/);
   });
+
+  it("theme.css dark block overrides the review design-token chrome", async () => {
+    const css = await readFile(asset("theme.css"), "utf8");
+    const dark = css.slice(css.indexOf('[data-theme="dark"]'));
+    for (const v of ["--bg", "--panel", "--border", "--accent", "--remove", "--change", "--tier-engine", "--reused", "--good"]) {
+      expect(dark).toContain(v);
+    }
+  });
 });

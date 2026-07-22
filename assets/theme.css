@@ -17,6 +17,27 @@
   --pill-green-bg:rgba(63,185,80,0.2); --pill-yellow-bg:rgba(210,167,44,0.2); --pill-red-bg:rgba(248,81,73,0.2);
   --link:#6aa3ff;
   --good:#3fb950;
+
+  /* review.css / spec.css / atlas.css design-token namespace (Task 4b) */
+  --bg:#16181d; --panel:#1c1f26; --panel-deep:#22262e;
+  --border:#2c3038; --border-strong:#3a3f48;
+  --ink-muted:#9aa2ad; --ink-faint:#7f8792;
+  --accent:#6aa3ff; --accent-hover:#8bb8ff; --accent-subtle:rgba(106,163,255,0.12); --accent-border:rgba(106,163,255,0.35);
+  --add-border:rgba(63,185,80,0.4);
+  --remove:#f85149; --remove-bg:rgba(248,81,73,0.15); --remove-border:rgba(248,81,73,0.4);
+  --change:#d4a72c; --change-bg:rgba(210,167,44,0.12); --change-border:rgba(210,167,44,0.4);
+  --risk-low:#3fb950; --risk-low-bg:rgba(63,185,80,0.15); --risk-low-border:rgba(63,185,80,0.4);
+
+  --perceived:#d4a72c; --perceived-bg:rgba(210,167,44,0.12); --perceived-border:rgba(210,167,44,0.4);
+  --proc:#6aa3ff;
+  --reused:#9aa2ad; --reused-bg:#22262e; --reused-border:#3a3f48;
+  --store:#a78bfa;
+
+  --tier-engine:#6aa3ff; --tier-engine-bg:rgba(25,113,194,0.18);
+  --tier-foundation:#a78bfa; --tier-foundation-bg:rgba(109,78,216,0.2);
+  --tier-harness:#9aa2ad; --tier-harness-bg:rgba(107,114,128,0.2);
+  --tier-intelligence:#d4a72c; --tier-intelligence-bg:rgba(179,121,26,0.2);
+  --tier-narrative:#3fb950; --tier-narrative-bg:rgba(47,158,68,0.2);
 }
 
 /* Shiki dual-theme flip (Task 3 emits the --shiki-dark vars) */
