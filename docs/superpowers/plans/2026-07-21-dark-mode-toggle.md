@@ -359,6 +359,151 @@ git commit -m "feat(theme): dark values for card/pill/diff/code surfaces"
 
 ---
 
+### Task 4b: Dark palette for the review/spec/atlas design-token system
+
+**Added mid-execution.** Task 4 themed the `template.css` surfaces (recap/doc).
+But `review.css` — the base stylesheet for the review, spec, and atlas pages —
+defines its OWN token namespace (`--bg`, `--panel`, `--border`, `--accent`,
+`--remove`, `--change`, `--risk-*`, …) that the Task 1 dark block never
+overrode. Without this task, review/spec/atlas pages render dark text on a white
+`--bg` in dark mode. `spec.css` and `atlas.css` add further light-only tokens.
+This task adds dark overrides for all of them to the `:root[data-theme="dark"]`
+block in `assets/theme.css`. No `.css` file except `theme.css` changes (these
+tokens are already variables — only dark values are missing).
+
+**Files:**
+- Modify: `assets/theme.css` (extend the `:root[data-theme="dark"]{}` block)
+- Test: `test/review-assets.test.ts`
+
+**Dark values** (harmonized with the template-side dark block already in
+`theme.css`: paper `#16181d`, ink `#e6e3dc`, line `#2c3038`):
+
+review.css tokens:
+- `--bg:#16181d` · `--panel:#1c1f26` · `--panel-deep:#22262e`
+- `--border:#2c3038` · `--border-strong:#3a3f48`
+- `--ink-muted:#9aa2ad` · `--ink-faint:#7f8792`
+- `--accent:#6aa3ff` · `--accent-hover:#8bb8ff` · `--accent-subtle:rgba(106,163,255,0.12)` · `--accent-border:rgba(106,163,255,0.35)`
+- `--add-border:rgba(63,185,80,0.4)`
+- `--remove:#f85149` · `--remove-bg:rgba(248,81,73,0.15)` · `--remove-border:rgba(248,81,73,0.4)`
+- `--change:#d4a72c` · `--change-bg:rgba(210,167,44,0.12)` · `--change-border:rgba(210,167,44,0.4)`
+- `--risk-low:#3fb950` · `--risk-low-bg:rgba(63,185,80,0.15)` · `--risk-low-border:rgba(63,185,80,0.4)`
+- (also grep for `--risk-med*`/`--risk-high*` and any `--*-border` not listed; give each the same treatment — muted tinted bg + readable fg)
+
+spec.css tokens:
+- `--good:#3fb950`
+- `--perceived:#d4a72c` · `--perceived-bg:rgba(210,167,44,0.12)` · `--perceived-border:rgba(210,167,44,0.4)`
+- `--proc:#6aa3ff`
+- `--reused:#9aa2ad` · `--reused-bg:#22262e` · `--reused-border:#3a3f48`
+- `--store:#a78bfa`
+
+atlas.css tier tokens (text color stays vivid; the `-bg` becomes a low-alpha tint of the same hue):
+- `--tier-engine:#6aa3ff` · `--tier-engine-bg:rgba(25,113,194,0.18)`
+- `--tier-foundation:#a78bfa` · `--tier-foundation-bg:rgba(109,78,216,0.2)`
+- `--tier-harness:#9aa2ad` · `--tier-harness-bg:rgba(107,114,128,0.2)`
+- `--tier-intelligence:#d4a72c` · `--tier-intelligence-bg:rgba(179,121,26,0.2)`
+- `--tier-narrative:#3fb950` · `--tier-narrative-bg:rgba(47,158,68,0.2)`
+
+- [ ] **Step 1: Grep for the full token set** so nothing is missed:
+  `grep -oE '\-\-[a-z0-9-]+:\s*#[0-9a-fA-F]{3,6}' assets/review.css assets/spec.css assets/atlas.css | sort -u`
+  and cross-check against the lists above. Any token found that isn't listed gets a dark value in the same spirit (readable fg on `#16181d`; tints as low-alpha of the hue).
+
+- [ ] **Step 2: Write the failing test** in `test/review-assets.test.ts`
+
+```ts
+it("theme.css dark block overrides the review design-token chrome", async () => {
+  const css = await readFile(new URL("../assets/theme.css", import.meta.url), "utf8");
+  const dark = css.slice(css.indexOf('[data-theme="dark"]'));
+  for (const v of ["--bg", "--panel", "--border", "--accent", "--remove", "--change", "--tier-engine", "--reused", "--good"]) {
+    expect(dark).toContain(v);
+  }
+});
+```
+
+- [ ] **Step 3: Run to verify it fails** — `npx vitest run test/review-assets.test.ts -t "design-token chrome"` → FAIL.
+
+- [ ] **Step 4: Extend the `:root[data-theme="dark"]{}` block** in `assets/theme.css` with every token above. Do NOT touch `review.css`/`spec.css`/`atlas.css` (their light `:root` values stay; theme.css is appended last so its attribute-selector block wins in dark mode).
+
+- [ ] **Step 5: Run tests** — `npm test` → PASS.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add assets/theme.css test/review-assets.test.ts
+git commit -m "feat(theme): dark palette for review/spec/atlas design tokens"
+```
+
+---
+
+### Task 4c: Dark values for review.css diff-renderer & syntax literals
+
+**Added mid-execution.** Task 4b surfaced hardcoded light-only literals in
+`review.css` rule bodies (outside the token `:root`) that can't be themed from
+`theme.css` alone: the `.diff-pre` full-diff renderer (light tints + near-black
+text), inline `.kw/.fn/.ty` signature-syntax colors, and the `.chip-risk.risk-med`
+literal. On review/spec/atlas pages these render bright/illegible in dark mode.
+This task promotes them to variables (exact light values preserved) and adds dark
+values. **Deliberately left light:** the `.zoom-controls` diagram-zoom modal
+(`#fff`) — diagrams stay on light cards by design (Task 5), so a light zoom modal
+is consistent; and `color:#fff` on accent-colored buttons/badges.
+
+**Files:**
+- Modify: `assets/review.css` (replace rule-body literals with `var()`, add light defaults to its `:root`)
+- Modify: `assets/theme.css` (dark values in the `:root[data-theme="dark"]` block)
+- Test: `test/review-assets.test.ts`
+
+**Variables to introduce** (light value = the exact literal being replaced):
+- `--diff-add-bg` #e9f7ee → dark `rgba(63,185,80,0.15)`
+- `--diff-add-gutter` #1a7f37 → dark `#3fb950`
+- `--diff-add-fg` #0f3a1d → dark `#b9f0c8`
+- `--diff-del-bg` #fdecec → dark `rgba(248,81,73,0.15)`
+- `--diff-del-gutter` #c4332e → dark `#f85149`
+- `--diff-del-fg` #5c1a18 → dark `#f5b8b4`
+- `--diff-ctx-fg` #3a4047 → dark `#c9cdd3` (used by `.diff-pre` base color and `.dl-ctx .dc`)
+- `--diff-num` #8b939e → dark `#7f8792` (`.dn` line numbers)
+- `--diff-gutter` #9aa1ab → dark `#8b939e` (`.dg` default)
+- `--syntax-kw` #7c3aed → dark `#b39cf5`
+- `--syntax-fn` #0369a1 → dark `#6aa3ff`
+- `--syntax-ty` #b45309 → dark `#d4a72c`
+- `.diff-code { background:#fff }` → `var(--card)` (already themed; no new var)
+- `.chip-risk.risk-med` (and any `.chip-risk.risk-high`/`.risk-low` literal): grep the actual selectors and promote each literal color/bg to a var with its exact light value + a readable dark value (`risk-med` fg #b45309 → `#d4a72c`).
+
+- [ ] **Step 1: Grep the exact selectors/values** to confirm the list:
+  `grep -nE '\.(diff-pre|diff-code|kw|fn|ty|chip-risk)' assets/review.css` and
+  `grep -nE '#[0-9a-fA-F]{3,6}' assets/review.css | grep -vE '^[0-9]+:\s*--|:root|var\('`.
+  Do NOT touch `.zoom-controls`, the `color:#fff` on accent backgrounds (lines ~494/895), or the `#8b939e` section-divider border.
+
+- [ ] **Step 2: Write the failing test** in `test/review-assets.test.ts`
+
+```ts
+it("review.css diff-renderer colors are themable (no baked light literals)", async () => {
+  const css = await readFile(new URL("../assets/review.css", import.meta.url), "utf8");
+  expect(css).not.toContain("#e9f7ee"); // diff add-bg now a var
+  expect(css).not.toContain("#fdecec"); // diff del-bg now a var
+});
+it("theme.css defines dark diff-renderer values", async () => {
+  const css = await readFile(new URL("../assets/theme.css", import.meta.url), "utf8");
+  const dark = css.slice(css.indexOf('[data-theme="dark"]'));
+  for (const v of ["--diff-add-bg", "--diff-del-fg", "--syntax-kw"]) expect(dark).toContain(v);
+});
+```
+
+- [ ] **Step 3: Run to verify it fails** — `npx vitest run test/review-assets.test.ts -t "diff-renderer"` → FAIL.
+
+- [ ] **Step 4: Edit `review.css`** — replace each listed literal with `var(--name)`, adding the light default to review.css's `:root{}`. Light rendering must stay pixel-identical.
+
+- [ ] **Step 5: Edit `theme.css`** — add the dark values above to the `:root[data-theme="dark"]{}` block.
+
+- [ ] **Step 6: Run** `npm test` → PASS; `npm run typecheck` → clean.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add assets/review.css assets/theme.css test/review-assets.test.ts
+git commit -m "feat(theme): dark values for review.css diff renderer + syntax colors"
+```
+
+---
+
 ### Task 5: Light-card wrapper for diagrams in dark mode
 
 Diagrams keep baked light colors; give them an intentional light panel so they don't read as raw white blocks.
