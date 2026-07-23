@@ -81,9 +81,18 @@ export function assertUniqueQuizIds(blocks: QuizBlock[]): void {
     if (seen.has(id)) throw new Error(`duplicate block id "${id}" — ids must be unique`);
     seen.add(id);
   };
+  const addQuestionAssets = (q: QuizQuestionBlock) => {
+    if (q.diagram) add(q.diagram.id);
+    if (q.code) add(q.code.id);
+  };
   for (const b of blocks) {
     add(b.id);
-    if (b.type === "quiz-group") for (const c of b.blocks) add(c.id);
+    if (b.type === "quiz-question") addQuestionAssets(b);
+    if (b.type === "quiz-group")
+      for (const c of b.blocks) {
+        add(c.id);
+        if (c.type === "quiz-question") addQuestionAssets(c);
+      }
   }
 }
 

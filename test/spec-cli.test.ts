@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const BIN = new URL("../bin/spec.ts", import.meta.url).pathname;
+const TSX = new URL("../node_modules/.bin/tsx", import.meta.url).pathname;
 
 const specDoc = {
   title: "Spec · demo",
@@ -18,7 +19,7 @@ it("resolves relative --blocks/--out against the cwd (parity with the other CLIs
   const dir = mkdtempSync(join(tmpdir(), "spec-cli-"));
   try {
     writeFileSync(join(dir, "spec.json"), JSON.stringify(specDoc));
-    execFileSync("npx", ["tsx", BIN, "--blocks", "spec.json", "--out", "."], { encoding: "utf8", cwd: dir });
+    execFileSync(TSX, [BIN, "--blocks", "spec.json", "--out", "."], { encoding: "utf8", cwd: dir });
     expect(existsSync(join(dir, "spec.html"))).toBe(true);
   } finally {
     rmSync(dir, { recursive: true, force: true });

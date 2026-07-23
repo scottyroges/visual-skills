@@ -123,7 +123,12 @@ export async function assembleQuiz(blocks: QuizBlock[], opts: QuizOpts): Promise
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
   const specCss = await readFile(join(ASSETS, "spec.css"), "utf8");
   const quizCss = await readFile(join(ASSETS, "quiz.css"), "utf8");
+  const themeCss = await readFile(join(ASSETS, "theme.css"), "utf8");
+  const themeHead = await readFile(join(ASSETS, "theme-head.js"), "utf8");
+  const themeToggle = await readFile(join(ASSETS, "theme-toggle.js"), "utf8");
   const viewer = await readFile(join(ASSETS, "review-viewer.js"), "utf8");
+
+  if (opts.onWarn) for (const w of lintQuiz(blocks)) opts.onWarn(w);
 
   const rendered = await renderAll(collectQuizDiagrams(blocks), {
     outDir: opts.outDir, excalidraw: opts.excalidraw, onWarn: opts.onWarn,
@@ -131,7 +136,6 @@ export async function assembleQuiz(blocks: QuizBlock[], opts: QuizOpts): Promise
   const diagrams = new Map<string, DiagramResult>();
   for (const r of rendered) diagrams.set(r.id, r);
   if (opts.onWarn) {
-    for (const w of lintQuiz(blocks)) opts.onWarn(w);
     const failed = rendered.filter((r) => r.failed).map((r) => r.id);
     if (failed.length) opts.onWarn(`${failed.length} diagram(s) failed to compile: ${failed.join(", ")} — fix their d2 source`);
   }
@@ -162,10 +166,11 @@ export async function assembleQuiz(blocks: QuizBlock[], opts: QuizOpts): Promise
   return (
     `<!doctype html>\n<html lang="en"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
+    `<script>${themeHead}</script>` +
     `${opts.generator ? `<meta name="generator" content="${escapeHtml(opts.generator)}">` : ""}` +
-    `<title>${escapeHtml(opts.title)}</title><style>${css}\n${specCss}\n${quizCss}</style></head>` +
+    `<title>${escapeHtml(opts.title)}</title><style>${css}\n${specCss}\n${quizCss}\n${themeCss}</style></head>` +
     `<body>${renderTopbar(opts, qs.length)}<div class="sidebar-overlay" id="sidebar-overlay"></div>` +
     `<div class="layout">${renderSidebar(blocks)}${main}</div>${zoomOverlay}` +
-    `<script>${viewer}</script></body></html>\n`
+    `<script>${viewer}</script><script>${themeToggle}</script></body></html>\n`
   );
 }

@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const BIN = new URL("../bin/quiz.ts", import.meta.url).pathname;
+const TSX = new URL("../node_modules/.bin/tsx", import.meta.url).pathname;
 
 const quizDoc = {
   kind: "quiz",
@@ -22,7 +23,7 @@ it("resolves relative --blocks/--out against the cwd and writes quiz.html + quiz
   const dir = mkdtempSync(join(tmpdir(), "quiz-cli-"));
   try {
     writeFileSync(join(dir, "quiz.json"), JSON.stringify(quizDoc));
-    execFileSync("npx", ["tsx", BIN, "--blocks", "quiz.json", "--out", "."], { encoding: "utf8", cwd: dir });
+    execFileSync(TSX, [BIN, "--blocks", "quiz.json", "--out", "."], { encoding: "utf8", cwd: dir });
     expect(existsSync(join(dir, "quiz.html"))).toBe(true);
     const rewritten = JSON.parse(readFileSync(join(dir, "quiz.json"), "utf8"));
     expect(rewritten.blocks.length).toBe(2);
@@ -35,7 +36,7 @@ it("resolves relative --blocks/--out against the cwd and writes quiz.html + quiz
 
 it("exits 2 with usage when --blocks/--out are missing", () => {
   try {
-    execFileSync("npx", ["tsx", BIN], { encoding: "utf8", stdio: "pipe" });
+    execFileSync(TSX, [BIN], { encoding: "utf8", stdio: "pipe" });
     expect.unreachable("should have exited non-zero");
   } catch (e) {
     expect((e as { status?: number }).status).toBe(2);

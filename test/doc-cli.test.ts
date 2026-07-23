@@ -6,12 +6,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const exec = promisify(execFile);
+const TSX = new URL("../node_modules/.bin/tsx", import.meta.url).pathname;
 
 describe("bin/doc.ts", () => {
   it("writes doc.html and groups assets inside the --out folder", async () => {
     const out = await mkdtemp(join(tmpdir(), "plan-"));
     try {
-      await exec("npx", ["tsx", "bin/doc.ts",
+      await exec(TSX, ["bin/doc.ts",
         "--blocks", "test/fixtures/sample-plan.blocks.json",
         "--title", "Sample Plan", "--out", join(out, "doc")]);
       const html = await readFile(join(out, "doc", "doc.html"), "utf8");
@@ -27,7 +28,7 @@ describe("bin/doc.ts", () => {
   it("also writes blocks.json into the --out folder so the doc folder round-trips", async () => {
     const out = await mkdtemp(join(tmpdir(), "plan-"));
     try {
-      await exec("npx", ["tsx", "bin/doc.ts",
+      await exec(TSX, ["bin/doc.ts",
         "--blocks", "test/fixtures/sample-plan.blocks.json",
         "--title", "Sample Plan", "--out", join(out, "doc")]);
       const written = JSON.parse(await readFile(join(out, "doc", "blocks.json"), "utf8"));
@@ -41,7 +42,7 @@ describe("bin/doc.ts", () => {
   it("strips a trailing .html on --out to derive the folder", async () => {
     const out = await mkdtemp(join(tmpdir(), "plan-"));
     try {
-      await exec("npx", ["tsx", "bin/doc.ts",
+      await exec(TSX, ["bin/doc.ts",
         "--blocks", "test/fixtures/sample-plan.blocks.json",
         "--title", "Sample Plan", "--out", join(out, "doc.html")]);
       // ".html" stripped -> folder "doc", file inside named doc.html

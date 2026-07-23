@@ -40,6 +40,25 @@ describe("quiz-blocks helpers", () => {
     expect(() => assertUniqueQuizIds(dup)).toThrow(/duplicate block id "q1"/);
   });
 
+  it("assertUniqueQuizIds throws on duplicate diagram ids attached to different questions", () => {
+    const dupDiagram: QuizBlock[] = [
+      q("q1", { diagram: { type: "diagram", id: "shared-d", title: "A", kind: "flowchart", d2: "a -> b" } }),
+      q("q2", { diagram: { type: "diagram", id: "shared-d", title: "B", kind: "flowchart", d2: "c -> d" } }),
+    ];
+    expect(() => assertUniqueQuizIds(dupDiagram)).toThrow(/duplicate block id "shared-d"/);
+  });
+
+  it("assertUniqueQuizIds throws on duplicate code ids attached to different questions, including nested ones", () => {
+    const dupCode: QuizBlock[] = [
+      q("q1", { code: { type: "annotated-code", id: "shared-c", title: "A", lang: "ts", code: "a", annotations: [] } }),
+      {
+        type: "quiz-group", id: "g", title: "t",
+        blocks: [q("q2", { code: { type: "annotated-code", id: "shared-c", title: "B", lang: "ts", code: "b", annotations: [] } })],
+      } as QuizBlock,
+    ];
+    expect(() => assertUniqueQuizIds(dupCode)).toThrow(/duplicate block id "shared-c"/);
+  });
+
   it("collectQuizDiagrams pulls attached question diagrams for the d2 pipeline", () => {
     expect(collectQuizDiagrams(blocks).map((d) => d.id)).toEqual(["q2-d"]);
   });

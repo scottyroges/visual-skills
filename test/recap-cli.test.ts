@@ -6,12 +6,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const exec = promisify(execFile);
+const TSX = new URL("../node_modules/.bin/tsx", import.meta.url).pathname;
 
 describe("bin/recap.ts --blocks", () => {
   it("renders an existing blocks.json through the review shell (recap.html)", async () => {
     const out = await mkdtemp(join(tmpdir(), "recap-"));
     try {
-      await exec("npx", ["tsx", "bin/recap.ts",
+      await exec(TSX, ["bin/recap.ts",
         "--blocks", "test/fixtures/sample-plan.blocks.json",
         "--title", "Recap — Sample", "--out", join(out, "doc")]);
       const html = await readFile(join(out, "doc", "recap.html"), "utf8");
@@ -30,7 +31,7 @@ describe("bin/recap.ts --blocks", () => {
   it("also writes blocks.json back into the --out folder (round-trips)", async () => {
     const out = await mkdtemp(join(tmpdir(), "recap-"));
     try {
-      await exec("npx", ["tsx", "bin/recap.ts",
+      await exec(TSX, ["bin/recap.ts",
         "--blocks", "test/fixtures/sample-plan.blocks.json",
         "--title", "Recap — Sample", "--out", join(out, "doc")]);
       const written = JSON.parse(await readFile(join(out, "doc", "blocks.json"), "utf8"));

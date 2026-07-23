@@ -11,7 +11,7 @@ in this family present understanding; this one verifies it.
 
 **Tool location** (edit if the repo moves):
 
-    VISUAL_SKILLS_DIR=/home/srogener/visual-skills
+    VISUAL_SKILLS_DIR=/path/to/visual-skills
 
 ## The standard — what makes a question good
 

@@ -7,10 +7,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 const exec = promisify(execFile);
 const BIN = new URL("../bin/atlas.ts", import.meta.url).pathname;
+const TSX = new URL("../node_modules/.bin/tsx", import.meta.url).pathname;
 
 /** Run bin/atlas.ts with the given args via tsx; throws on non-zero exit. */
 function runCli(args: string[], cwd?: string): void {
-  execFileSync("npx", ["tsx", BIN, ...args], { encoding: "utf8", cwd });
+  execFileSync(TSX, [BIN, ...args], { encoding: "utf8", cwd });
 }
 
 const atlasDoc = { kind: "atlas", title: "Atlas · demo", blocks: [
@@ -27,7 +28,7 @@ describe("atlas CLI (render-only)", () => {
   it("renders one page from --blocks and re-writes its json", async () => {
     const dir = await mkdtemp(join(tmpdir(), "atlas-"));
     await writeFile(join(dir, "atlas.json"), JSON.stringify(atlasDoc));
-    await exec("npx", ["tsx", BIN, "--blocks", join(dir, "atlas.json"), "--out", dir]);
+    await exec(TSX, [BIN, "--blocks", join(dir, "atlas.json"), "--out", dir]);
     const html = await readFile(join(dir, "atlas.html"), "utf8");
     expect(html).toContain("Atlas · demo");
     expect(html).toContain(".domain-tile");
@@ -37,7 +38,7 @@ describe("atlas CLI (render-only)", () => {
     await writeFile(join(dir, "atlas.json"), JSON.stringify(atlasDoc));
     await mkdir(join(dir, "domain-sim"), { recursive: true });
     await writeFile(join(dir, "domain-sim", "domain-sim.json"), JSON.stringify(domainDoc));
-    await exec("npx", ["tsx", BIN, "--all", dir, "--out", dir]);
+    await exec(TSX, [BIN, "--all", dir, "--out", dir]);
     const files = await readdir(dir);
     expect(files).toContain("atlas.html");
     expect(files).toContain("domain-sim");            // each domain is now its own folder
