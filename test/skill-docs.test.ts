@@ -12,6 +12,8 @@ const specSkill = read("../skills/visual-spec/SKILL.md");
 const atlasBlocks = read("../src/atlas-blocks.ts");
 const atlasSkill = read("../skills/visual-atlas/SKILL.md");
 const atlasReviewSkill = read("../skills/atlas-review/SKILL.md");
+const quizBlocks = read("../src/quiz-blocks.ts");
+const quizSkill = read("../skills/quiz/SKILL.md");
 
 // Discriminant literals like `type: "diagram"` across the Block interfaces.
 const blockTypes = [...new Set([...blocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))];
@@ -20,6 +22,9 @@ const specBlockTypes = [...new Set([...specBlocks.matchAll(/\btype:\s*"([^"]+)"/
 // not a member of the AtlasBlock union (which is what the SKILL must document).
 const atlasBlockTypes = [...new Set([...atlasBlocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))]
   .filter((t) => t !== "diagram");
+// Exclude "diagram"/"annotated-code"/"prose": embedded shared primitives, not QuizBlock members.
+const quizBlockTypes = [...new Set([...quizBlocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))]
+  .filter((t) => t === "quiz-question" || t === "quiz-group");
 
 describe("skill docs stay in sync", () => {
   it("documents every Block type in the visual-doc skill", () => {
@@ -137,5 +142,12 @@ describe("skill docs stay in sync", () => {
 
   it("visual-recap documents leading with an overview block", () => {
     expect(recapSkill).toContain('"type": "overview"');
+  });
+
+  it("documents every quiz block type in the quiz skill", () => {
+    expect(quizBlockTypes.length).toBeGreaterThanOrEqual(2);
+    for (const t of quizBlockTypes) {
+      expect(quizSkill, `quiz SKILL.md must document quiz block type \`${t}\``).toContain(`\`${t}\``);
+    }
   });
 });

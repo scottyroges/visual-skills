@@ -27,6 +27,7 @@ describe("skillLinks", () => {
       { source: "/repo/skills/visual-spec", target: "/home/me/.claude/skills/visual-spec" },
       { source: "/repo/skills/visual-atlas", target: "/home/me/.claude/skills/visual-atlas" },
       { source: "/repo/skills/atlas-review", target: "/home/me/.claude/skills/atlas-review" },
+      { source: "/repo/skills/quiz", target: "/home/me/.claude/skills/quiz" },
     ]);
   });
 
@@ -38,6 +39,7 @@ describe("skillLinks", () => {
       "/custom/cc/skills/visual-spec",
       "/custom/cc/skills/visual-atlas",
       "/custom/cc/skills/atlas-review",
+      "/custom/cc/skills/quiz",
     ]);
   });
 });

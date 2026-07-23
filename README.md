@@ -4,7 +4,7 @@ Turn specs, code changes, and whole codebases into **self-contained, hand-drawn-
 documents** grounded in your real repo — diagrams, annotated code, file trees, and a guided
 narrative, all in one file that opens offline over `file://`.
 
-It ships as **five [Claude Code](https://claude.com/claude-code) skills** over one shared app
+It ships as **six [Claude Code](https://claude.com/claude-code) skills** over one shared app
 shell + diagram pipeline. Most people use it by talking to Claude Code; a direct CLI is available
 too ([further down](#direct-cli-usage-without-claude-code)).
 
@@ -15,6 +15,10 @@ too ([further down](#direct-cli-usage-without-claude-code)).
 | **visual-recap** | "make a visual recap of this PR / commit" | A reviewable walkthrough of a code change |
 | **visual-spec** | "make this design spec readable so I can approve it" | A design doc / RFC laid out for approval |
 | **visual-doc** | "turn this plan into a readable doc" | Any hand-authored markdown as an illustrated doc |
+| **quiz** | "quiz me on this PR / spec / doc" | A comprehension check that verifies you understood a change before acting on it |
+
+The first five skills present understanding; **quiz** is their verification counterpart — it
+tests it, with reveal-style questions on the page and optional live grading in the terminal.
 
 ![visual-atlas — system map](docs/images/atlas.png)
 
