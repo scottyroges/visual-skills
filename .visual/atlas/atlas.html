@@ -40,6 +40,20 @@
   --risk-low-bg: #f0fdf4;
   --risk-low-border: #bbf7d0;
 
+  --diff-add-bg: #e9f7ee;
+  --diff-add-gutter: #1a7f37;
+  --diff-add-fg: #0f3a1d;
+  --diff-del-bg: #fdecec;
+  --diff-del-gutter: #c4332e;
+  --diff-del-fg: #5c1a18;
+  --diff-ctx-fg: #3a4047;
+  --diff-num: #8b939e;
+  --diff-gutter: #9aa1ab;
+  --syntax-kw: #7c3aed;
+  --syntax-fn: #0369a1;
+  --syntax-ty: #b45309;
+  --risk-med: #b45309;
+
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
@@ -669,11 +683,11 @@ details[open] .chevron { transform: rotate(90deg); }
 }
 
 /* Token coloring — span-based, semantic only */
-.kw { color: #7c3aed; font-weight: 600; }  /* keyword */
-.fn { color: #0369a1; }                      /* function/method */
-.str { color: #16a34a; }                     /* string */
+.kw { color: var(--syntax-kw); font-weight: 600; }  /* keyword */
+.fn { color: var(--syntax-fn); }             /* function/method */
+.str { color: var(--add); }                  /* string */
 .cm { color: var(--ink-faint); font-style: italic; } /* comment */
-.ty { color: #b45309; }                      /* type */
+.ty { color: var(--syntax-ty); }             /* type */
 .pn { color: var(--ink); }                   /* punctuation */
 .nm { color: var(--ink); }                   /* number */
 
@@ -973,19 +987,19 @@ a:focus-visible, button:focus-visible, details summary:focus-visible {
 }
 
 /* real code diffs inside file-diff details */
-.diff-code { background:#fff; border-top:1px solid var(--border); }
+.diff-code { background:var(--bg); border-top:1px solid var(--border); }
 .diff-pre { margin:0; overflow-x:auto; padding:4px 0;
-  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#3a4047;
+  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--diff-ctx-fg);
   font-variant-ligatures:none; }
 .diff-pre .dl { display:flex; align-items:baseline; min-width:max-content; }
-.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:#8b939e;
+.diff-pre .dn { flex:0 0 3.4em; text-align:right; padding-right:10px; color:var(--diff-num);
   user-select:none; -webkit-user-select:none; }
-.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:#9aa1ab;
+.diff-pre .dg { flex:0 0 1.6em; text-align:center; color:var(--diff-gutter);
   user-select:none; -webkit-user-select:none; }
 .diff-pre .dc { flex:0 0 auto; white-space:pre; padding-right:20px; }
-.diff-pre .dl-add { background:#e9f7ee; } .diff-pre .dl-add .dg { color:#1a7f37; } .diff-pre .dl-add .dc { color:#0f3a1d; }
-.diff-pre .dl-del { background:#fdecec; } .diff-pre .dl-del .dg { color:#c4332e; } .diff-pre .dl-del .dc { color:#5c1a18; }
-.diff-pre .dl-ctx .dc { color:#3a4047; }
+.diff-pre .dl-add { background:var(--diff-add-bg); } .diff-pre .dl-add .dg { color:var(--diff-add-gutter); } .diff-pre .dl-add .dc { color:var(--diff-add-fg); }
+.diff-pre .dl-del { background:var(--diff-del-bg); } .diff-pre .dl-del .dg { color:var(--diff-del-gutter); } .diff-pre .dl-del .dc { color:var(--diff-del-fg); }
+.diff-pre .dl-ctx .dc { color:var(--diff-ctx-fg); }
 .diff-pre .dl-hunk { background:var(--panel); color:var(--ink-muted); }
 .diff-pre .dl-hunk .dc { color:var(--ink-muted); font-weight:600; }
 .diff-more { padding:8px 16px; font:12px/1.4 system-ui,sans-serif; color:var(--ink-muted);
@@ -1020,8 +1034,8 @@ html { scroll-behavior: smooth; }
 /* color pass: subtle hover lift on file rows + risk level system */
 .file-diff { transition: box-shadow 150ms ease-out, border-color 150ms ease-out; }
 .file-diff:hover { border-color: var(--accent); box-shadow: 0 6px 18px -12px rgba(37,99,235,0.35); }
-.chip-risk.risk-med { color: #b45309; background: #fffbeb; border-color: #fde68a; }
-.chip-risk.risk-high { color: var(--remove); background: #fef2f2; border-color: #fecaca; }
+.chip-risk.risk-med { color: var(--risk-med); background: var(--change-bg); border-color: var(--change-border); }
+.chip-risk.risk-high { color: var(--remove); background: var(--remove-bg); border-color: var(--remove-border); }
 @media (prefers-reduced-motion: reduce) { .file-diff { transition: none; } }
 
 /* spec.css — reusable visual-spec components.
@@ -1046,6 +1060,7 @@ html { scroll-behavior: smooth; }
   --reused-border: #ced4da;
   --store: #6d4ed8;              /* datastore ink */
   --proc: #1971c2;              /* perception / process ink */
+  --good: #15803d;               /* "positive/success" ink, reused by atlas.css */
 }
 
 /* ---- topbar: phase + status + complexity chips ---- */
@@ -1182,7 +1197,7 @@ html { scroll-behavior: smooth; }
 .scope-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .scope-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .scope-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; border-bottom: 1px solid var(--border); }
-.scope-in .scope-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.scope-in .scope-head { background: var(--add-bg); color: var(--good); border-bottom-color: var(--add-border); }
 .scope-out .scope-head { background: var(--reused-bg); color: var(--ink-muted); }
 .scope-count { font-size: var(--text-xs); font-weight: 600; opacity: 0.8; }
 .scope-list { list-style: none; padding: 8px 0; }
@@ -1228,7 +1243,7 @@ html { scroll-behavior: smooth; }
 .spec-table tr:hover td { background: var(--panel); }
 .spec-table code { font-family: var(--font-mono); font-size: 0.86em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
 .spec-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
-.spec-table .good { color: #15803d; font-weight: 700; }
+.spec-table .good { color: var(--good); font-weight: 700; }
 .tbl-note { font-size: var(--text-sm); color: var(--ink-muted); margin: 2px 2px 0; }
 
 /* ---- risks ---- */
@@ -1237,7 +1252,7 @@ html { scroll-behavior: smooth; }
 .risk-r { display: flex; gap: 9px; padding: 12px 15px; background: var(--remove-bg); border-bottom: 1px solid var(--remove-border); font-weight: 650; color: #991b1b; font-size: var(--text-sm); line-height: 1.45; }
 .risk-icon { flex-shrink: 0; }
 .risk-m { padding: 12px 15px; font-size: var(--text-sm); color: var(--ink); line-height: 1.55; }
-.risk-m b { color: #15803d; font-weight: 700; }
+.risk-m b { color: var(--good); font-weight: 700; }
 .risk-m code { font-family: var(--font-mono); font-size: 0.85em; background: var(--panel-deep); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
 
 /* ---- reference drill-downs ---- */
@@ -1285,7 +1300,7 @@ details.ref[open] .ref-chev { transform: rotate(90deg); }
 .approve-card { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
 .approve-head { display: flex; align-items: center; gap: 8px; padding: 11px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
 .approve-card.commit .approve-head { background: var(--accent-subtle); color: var(--accent); border-bottom-color: var(--accent-border); }
-.approve-card.scrutinize .approve-head { background: var(--change-bg); color: #92600a; border-bottom-color: var(--change-border); }
+.approve-card.scrutinize .approve-head { background: var(--change-bg); color: var(--perceived); border-bottom-color: var(--change-border); }
 .approve-card.open .approve-head { background: var(--panel-deep); color: var(--ink-muted); }
 .approve-body { padding: 13px 16px; font-size: var(--text-sm); color: var(--ink); line-height: 1.6; }
 .approve-body strong { font-weight: 700; }
@@ -1433,7 +1448,7 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 .seam-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .seam-col { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 .seam-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-weight: 700; font-size: var(--text-base); border-bottom: 1px solid var(--border); }
-.seam-exposes .seam-head { background: var(--add-bg); color: #15803d; border-bottom-color: var(--add-border); }
+.seam-exposes .seam-head { background: var(--add-bg); color: var(--good); border-bottom-color: var(--add-border); }
 .seam-depends .seam-head { background: var(--panel-deep); color: var(--ink-muted); }
 .seam-body { padding: 12px 16px; }
 .seam-api { list-style: none; display: flex; flex-direction: column; gap: 7px; }
@@ -1488,6 +1503,57 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 :root[data-theme="dark"] {
   --ink:#e6e3dc; --paper:#16181d; --ctx:#9aa2ad; --line:#2c3038;
   --add:#3fb950; --del:#f85149;
+  --card:#1c1f26; --code-bg:#1b1e24;
+  --add-bg:rgba(63,185,80,0.15); --del-bg:rgba(248,81,73,0.15); --warn-bg:rgba(210,167,44,0.12);
+  --pill-green-bg:rgba(63,185,80,0.2); --pill-yellow-bg:rgba(210,167,44,0.2); --pill-red-bg:rgba(248,81,73,0.2);
+  --link:#6aa3ff;
+  --good:#3fb950;
+
+  /* review.css / spec.css / atlas.css design-token namespace (Task 4b) */
+  --bg:#16181d; --panel:#1c1f26; --panel-deep:#22262e;
+  --border:#2c3038; --border-strong:#3a3f48;
+  --ink-muted:#9aa2ad; --ink-faint:#7f8792;
+  --accent:#6aa3ff; --accent-hover:#8bb8ff; --accent-subtle:rgba(106,163,255,0.12); --accent-border:rgba(106,163,255,0.35);
+  --add-border:rgba(63,185,80,0.4);
+  --remove:#f85149; --remove-bg:rgba(248,81,73,0.15); --remove-border:rgba(248,81,73,0.4);
+  --change:#d4a72c; --change-bg:rgba(210,167,44,0.12); --change-border:rgba(210,167,44,0.4);
+  --risk-low:#3fb950; --risk-low-bg:rgba(63,185,80,0.15); --risk-low-border:rgba(63,185,80,0.4);
+
+  --perceived:#d4a72c; --perceived-bg:rgba(210,167,44,0.12); --perceived-border:rgba(210,167,44,0.4);
+  --proc:#6aa3ff;
+  --reused:#9aa2ad; --reused-bg:#22262e; --reused-border:#3a3f48;
+  --store:#a78bfa;
+
+  --tier-engine:#6aa3ff; --tier-engine-bg:rgba(25,113,194,0.18);
+  --tier-foundation:#a78bfa; --tier-foundation-bg:rgba(109,78,216,0.2);
+  --tier-harness:#9aa2ad; --tier-harness-bg:rgba(107,114,128,0.2);
+  --tier-intelligence:#d4a72c; --tier-intelligence-bg:rgba(179,121,26,0.2);
+  --tier-narrative:#3fb950; --tier-narrative-bg:rgba(47,158,68,0.2);
+
+  /* review.css diff renderer + inline syntax colors (Task 4c) */
+  --diff-add-bg:rgba(63,185,80,0.15); --diff-add-gutter:#3fb950; --diff-add-fg:#b9f0c8;
+  --diff-del-bg:rgba(248,81,73,0.15); --diff-del-gutter:#f85149; --diff-del-fg:#f5b8b4;
+  --diff-ctx-fg:#c9cdd3; --diff-num:#7f8792; --diff-gutter:#8b939e;
+  --syntax-kw:#b39cf5; --syntax-fn:#6aa3ff; --syntax-ty:#d4a72c;
+  --risk-med:#d4a72c;
+}
+
+/* Diagrams (d2/Excalidraw inline SVGs) bake in light colors and are NOT re-themed dark —
+   instead each container gets a light "card" so the SVG reads as an intentional light panel
+   rather than a raw white block sitting on the dark page.
+   Recap/doc pages (template.css): .vs-diagram (top-level block), .vs-diff-diagram (per-diff
+   embed), .vs-overview-diagram (overview lead) — none of the latter two carry their own
+   background, so without this they'd inherit the surrounding .vs-block's dark --card.
+   Review/spec/atlas pages (review.css, via src/review/sections.ts renderDiagramCard and
+   src/assemble-atlas.ts): .diagram-box — already has a background, but it tracks --panel,
+   which theme.css sets dark above. */
+:root[data-theme="dark"] .vs-diagram,
+:root[data-theme="dark"] .vs-diff-diagram,
+:root[data-theme="dark"] .vs-overview-diagram,
+:root[data-theme="dark"] .diagram-box {
+  background: #faf9f6;
+  border-radius: 10px;
+  padding: 10px;
 }
 
 /* Shiki dual-theme flip (Task 3 emits the --shiki-dark vars) */
@@ -1496,6 +1562,58 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
   color: var(--shiki-dark, inherit) !important;
   background-color: var(--shiki-dark-bg, transparent) !important;
 }
+
+/* ── Task 4d: one-off chrome overrides missed by Task 4's design-token pass ──
+   These rule bodies paint a hardcoded LIGHT background (or a light-mode-tuned
+   text color) while the surrounding page inherits themed --ink/--ctx, which
+   flip light in dark mode — producing light-text-on-light-background.
+   Fixed here (in theme.css only) rather than in template.css/spec.css so
+   light mode stays byte-identical: these are pure additions. */
+
+/* spec.css .risk-r: red-on-red-tinted-bg ink tuned for a light card */
+:root[data-theme="dark"] .risk-r { color: #f5b8b4; }
+
+/* template.css .vs-overview: light lavender card + its headline text */
+:root[data-theme="dark"] .vs-overview { background: #1e1b2e; border-left-color: #8b6cff; }
+
+/* template.css .vs-group: light group-card background */
+:root[data-theme="dark"] .vs-group { background: #1a1d23; }
+
+/* template.css .vs-group-desc: dark-on-light muted ink */
+:root[data-theme="dark"] .vs-group-desc { color: #b3ada4; }
+
+/* template.css tabs: light tablabel strip, inactive + active tab pills */
+:root[data-theme="dark"] .vs-tabs .vs-tablabels { border-bottom-color: #2c3038; }
+:root[data-theme="dark"] .vs-tabs .vs-tablabels label { background: #22262e; border-color: #2c3038; }
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(1):checked ~ .vs-tablabels label:nth-child(1),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(2):checked ~ .vs-tablabels label:nth-child(2),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(3):checked ~ .vs-tablabels label:nth-child(3),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(4):checked ~ .vs-tablabels label:nth-child(4),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(5):checked ~ .vs-tablabels label:nth-child(5),
+:root[data-theme="dark"] .vs-tabs .vs-tabradio:nth-of-type(6):checked ~ .vs-tablabels label:nth-child(6) {
+  background: #1c1f26; border-bottom-color: #1c1f26;
+}
+
+/* template.css diagram-caption headings: light-mode stone gray */
+:root[data-theme="dark"] .vs-diff-diagram h2,
+:root[data-theme="dark"] .vs-diff-diagram h3,
+:root[data-theme="dark"] .vs-overview-diagram h2,
+:root[data-theme="dark"] .vs-overview-diagram h3 { color: var(--ctx); }
+
+/* template.css yellow "modified" ink (status pill + file-tree marker) */
+:root[data-theme="dark"] .vs-status.yellow,
+:root[data-theme="dark"] .vs-file[data-status="M"] .vs-marker { color: #d4a72c; }
+
+/* template.css zoom overlay controls (viewer.js): "Reset" / "✕" buttons keep an
+   intentionally opaque white pill (matching the light diagram card behind them),
+   but their text has no explicit color and was inheriting themed --ink — invisible
+   near-white-on-white in dark mode. Pin the text dark since the pill stays light. */
+:root[data-theme="dark"] .vs-zoom-reset,
+:root[data-theme="dark"] .vs-zoom-close { color: #1b1b1b; }
+
+/* atlas.css .topbar-back:hover: hardcoded light-blue hover fill collided with the
+   themed --accent text color (also light blue in dark mode) → illegible on hover. */
+:root[data-theme="dark"] .topbar-back:hover { background: rgba(106,163,255,0.22); }
 </style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><span class="topbar-title">System Atlas · visual-skills</span><div class="topbar-meta"><span class="chip chip-stack">TypeScript · Node CLI</span><span class="chip chip-count">6 domains</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">generated 2026-06-20</span><span class="chip chip-stat">static HTML output</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>Start here</span></a></li><li><a href="#map" class="outline-item" data-target="map"><span class="outline-num" aria-hidden="true">1</span><span>The domain map</span></a></li><li><a href="#spine" class="outline-item" data-target="spine"><span class="outline-num" aria-hidden="true">2</span><span>Spine</span></a></li><li><a href="#domains" class="outline-item" data-target="domains"><span class="outline-num" aria-hidden="true">3</span><span>The 6 domains</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Domains</span><ul class="nav-domains" role="list"><li><a href="domain-core/domain-core.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>core</span></a></li><li><a href="domain-diagrams/domain-diagrams.html" class="nav-domain"><span class="nd-dot" style="background:#e5dbff;border-color:#9775fa;"></span><span>diagrams</span></a></li><li><a href="domain-code-intel/domain-code-intel.html" class="nav-domain"><span class="nd-dot" style="background:#ffd43b;border-color:#f08c00;"></span><span>code-intel</span></a></li><li><a href="domain-recap/domain-recap.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>recap</span></a></li><li><a href="domain-atlas/domain-atlas.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>atlas</span></a></li><li><a href="domain-authoring/domain-authoring.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>authoring</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Root</span><span class="mv">`src/` &amp; `bin/`</span></div><div class="meta-row"><span class="mk">Domains</span><span class="mv">6 (all with pages)</span></div><div class="meta-row"><span class="mk">Read first</span><span class="mv">core → diagrams → a product</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Start here</span><h2 class="tldr-heading">A toolkit of four CLI generators that turn code, diffs, and specs into self-contained, visually-readable HTML — all built on one shared block→HTML rendering engine.</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">What</span><span class="tldr-val">Four generators ship as <code>bin/</code> CLIs: <strong>visual-recap</strong> (PR / commit / diff review), <strong>visual-atlas</strong> (this codebase-map), <strong>visual-spec</strong> (design-spec / RFC page), and <strong>visual-doc</strong> (general illustrated doc). Each emits one standalone <code>.html</code> that opens over <code>file://</code> — no server, no reader-side build.</span></div><div class="tldr-row"><span class="tldr-key">Shape</span><span class="tldr-val">Logic lives in <code>src/</code> and is consumed by thin entrypoints in <code>bin/</code>. A <strong>rendering core</strong> turns a typed <code>Block[]</code> into a page; <strong>diagrams</strong> and <strong>code-intelligence</strong> are shared services the products lean on. Two products <em>scan</em> a real repo (recap, atlas); two are <em>pure authoring</em> (spec, doc).</span></div><div class="tldr-row"><span class="tldr-key">Spine</span><span class="tldr-val">Every product is the same pipeline: build a typed <code>Block[]</code> → its assembler walks it, calling one renderer per block type → rendered diagrams and highlighted code get inlined → one self-contained HTML file.</span></div></div></div><div class="primer"><div class="primer-row"><span class="primer-n">1</span><div class="primer-body"><div class="primer-h">One pattern, four products.</div><div class="primer-p">Each product pairs a block vocabulary with a thin assembler built on core's shared primitives — the renderers, lint, and highlighting. Only the doc CLI calls core's <code>assemble()</code> directly; recap, spec, and atlas each have their own assembler over the same parts. Read <code>src/blocks.ts</code> then <code>src/assemble.ts</code> and you have the pattern the other three follow.</div></div></div><div class="primer-row"><span class="primer-n">2</span><div class="primer-body"><div class="primer-h">The output is a single self-contained file.</div><div class="primer-p">Every generator inlines its CSS, syntax-highlighted code, and rendered diagrams into one <code>.html</code> that works over <code>file://</code>. Self-containment is a hard product constraint, not a nicety — it shapes how diagrams and assets are handled.</div></div></div><div class="primer-row"><span class="primer-n">3</span><div class="primer-body"><div class="primer-h">Two products read code; two only author.</div><div class="primer-p"><code>recap</code> and <code>atlas</code> understand a real repo — git diffs, Prisma/tRPC parsing, import graphs — through the <strong>code-intel</strong> layer. <code>spec</code> and <code>doc</code> take hand-authored blocks JSON and never scan. That split explains why code-intel exists.</div></div></div><div class="primer-row"><span class="primer-n">4</span><div class="primer-body"><div class="primer-h">d2 is the diagram floor; the atlas is hybrid.</div><div class="primer-p">Diagrams compile through the <code>d2</code> CLI to static SVG (with an optional editable-Excalidraw upgrade), and one palette colors every diagram. The atlas itself is <em>hybrid</em>: a mechanical scan drafts JSON, humans enrich the prose, and the committed JSON re-renders with no scan.</div></div></div></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#map"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">The domain map</span></a><a class="progress-step" href="#spine"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Spine</span></a><a class="progress-step" href="#domains"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">The 6 domains</span></a></nav><section id="map" class="section"><div class="section-header"><h2 class="section-title">The domain map</h2><span class="section-badge">layered</span></div><p class="section-intro">Six domains in three tiers. A <strong>foundation</strong> (<code>diagrams</code>) and an <strong>engine</strong> (<code>core</code>) sit at the bottom; an <strong>intelligence</strong> layer (<code>code-intel</code>) reads real repos; three <strong>surface</strong> products stack on top. Arrows are <em>depends on</em> — and <code>atlas</code> and <code>authoring</code> share <code>recap</code>'s review shell (its css, viewer script, and section helpers).</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1432 426"><svg class="d2-546123180 d2-svg" width="1432" height="426" viewBox="-25 -35 1432 426"><rect x="-25.000000" y="-35.000000" width="1432.000000" height="426.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-546123180 .text-bold {
 	font-family: "d2-546123180-font-bold";

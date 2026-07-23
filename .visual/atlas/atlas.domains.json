@@ -137,6 +137,7 @@
       "globs": [
         "bin/spec.ts",
         "bin/doc.ts",
+        "bin/quiz.ts",
         "src/spec-blocks.ts",
         "src/quiz-blocks.ts",
         "src/lint-quiz.ts",
@@ -146,6 +147,7 @@
       ],
       "modules": [
         "bin/doc.ts",
+        "bin/quiz.ts",
         "bin/spec.ts",
         "src/assemble-spec.ts",
         "src/assemble-quiz.ts",
