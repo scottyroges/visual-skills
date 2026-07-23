@@ -1,7 +1,7 @@
 # Design: `quiz` skill — comprehension check for PRs, specs, and generated docs
 
 **Date:** 2026-07-22
-**Status:** Approved design, pre-implementation
+**Status:** Approved design, pre-implementation (revised after spec review)
 
 ## Problem
 
@@ -36,8 +36,6 @@ wanted. The stated test:
 
 ### Three question families
 
-A well-sized quiz mixes all three:
-
 1. **System fit** — where this change sits in the overall architecture, what it touches, what
    depends on it.
 2. **Rationale** — why this approach over the alternative, what tradeoff was accepted, why a
@@ -45,8 +43,13 @@ A well-sized quiz mixes all three:
 3. **Mechanism** — how the important code actually works: the algorithm, the ordering, the
    invariants. E.g. "walk through what happens when X arrives", "why must A run before B",
    "what breaks if these two steps run in the other order", "what state makes this branch fire".
-   Mechanism questions should quote the real code — the existing `annotated-code` block renders
+   Mechanism questions should quote the real code — an attached `annotated-code` block renders
    the question alongside the actual snippet it interrogates.
+
+A medium-or-larger quiz mixes all three families. **Small quizzes (2–3 questions) are exempt from
+the mix**: prioritize mechanism and rationale, and skip system fit when the change is small enough
+that its place in the system is self-evident. A question may not carry multiple family tags — pick
+the family the question primarily tests.
 
 ### Count scales with the material
 
@@ -59,53 +62,137 @@ size"):
 | Medium PR / short spec | 4–6 |
 | Large spec, multi-domain change | 8–12, grouped by theme in the sidebar |
 
+**Proportionality is an authoring rule enforced by the SKILL.md, not a renderer lint** (the
+render-only CLI has no source inventory to judge coverage against). The SKILL.md red-flags section
+states it: if the source has many sections/diffs/domains and the quiz has a handful of questions,
+the quiz under-covers the material — go back and add questions.
+
 ### Per-question requirements
 
 - A **model answer**: bold takeaway + bullets, the same idiom as recap's diff annotations.
-- **At least one grounding link** — to a section of the source doc, or a `file:line` in the repo.
+- **At least one grounding citation** (see "Citations" under the document model below).
 - Grounded the same way recaps are: Claude must read the actual change/spec/code, not just a
   summary of it.
+
+## Document model
+
+Defined in a new `src/quiz-blocks.ts` with its **own `QuizBlock` union**, like spec and atlas —
+NOT added to the global `Block` union in `src/blocks.ts` (which would drag `quiz-question` into
+visual-doc's documented surface via the skill-docs sync test).
+
+```ts
+/** Envelope — the file Claude authors (quiz.json). */
+export interface QuizDoc {
+  kind: "quiz";
+  title: string;               // "Quiz — <human label>"
+  source: string;              // human-readable description of what was quizzed (PR #, spec path, doc path)
+  intro?: string;              // markdown: what this quiz covers, how to use it (feeds the TL;DR fold)
+  generator?: string;          // default "visual-skills · quiz"
+  blocks: QuizBlock[];
+}
+
+export type QuizBlock = QuizQuestionBlock | QuizGroupBlock | ProseBlock;
+
+/** Optional theming for large quizzes; children are questions (and optional prose). */
+export interface QuizGroupBlock {
+  type: "quiz-group";
+  id: string;
+  title: string;               // theme, e.g. "The migration path"
+  description?: string;        // markdown
+  blocks: (QuizQuestionBlock | ProseBlock)[];
+}
+
+export interface QuizQuestionBlock {
+  type: "quiz-question";
+  id: string;
+  family: "system-fit" | "rationale" | "mechanism";  // exactly one
+  question: string;            // markdown; the prompt shown before the reveal
+  code?: AnnotatedCodeBlock;   // reused primitive: real snippet the question interrogates
+  diagram?: DiagramBlock;      // reused primitive: rendered above the question when present
+  answer: {
+    takeaway: string;          // bold one-line model answer
+    points?: string[];         // markdown bullets expanding it
+  };
+  citations: Citation[];       // ≥1 — where the answer is grounded
+}
+
+/** Structured citation — rendered as styled text, NEVER as an href (safe-link policy:
+ *  only #fragment and http(s) are linkable; relative/file links are stripped). */
+export interface Citation {
+  label: string;               // e.g. "src/git.ts:41–52" or "Recap §3 — The migration path"
+  file?: string;               // repo-relative path, when citing code
+  lines?: string;              // e.g. "41-52"
+  fragment?: string;           // in-page anchor within THIS quiz doc only (e.g. a prose block id) —
+                               // the only linkable form; validated against block ids at render time
+}
+```
+
+`ProseBlock`, `AnnotatedCodeBlock`, and `DiagramBlock` are the existing primitives, reused by
+composition (the way atlas embeds `DiagramBlock`), so the quiz union stays separate while sharing
+renderers.
 
 ## Inputs
 
 Any of, with no prerequisite step:
 
-- A git target — `--pr <n>`, `--commit <ref>`, `--branch <name>`, or working tree. Raw material
-  comes from the existing `bin/recap.ts --emit-blocks` gather; Claude then reads the changed code.
-- A spec / plan / design markdown file.
-- An **existing generated doc** (recap/spec/atlas/doc HTML). Its sibling `blocks.json` is the
-  primary source, since that narrative is what the user actually read.
+- **A git target** — `--pr <n>`, `--commit <ref>`, `--branch <name>`, or working tree. Raw
+  material comes from the existing `bin/recap.ts --emit-blocks` gather. **Grounding rule:** for
+  commit/branch targets the working directory is NOT the target snapshot — the SKILL.md requires
+  reading changed files at `scope.headRef` via the existing `fileAtRef` mechanism (`src/git.ts:71`),
+  never from the working tree. For PR targets, recap's gather runs `gh pr checkout`, which mutates
+  the user's checkout — the SKILL.md documents this side effect (inherited recap behavior) and
+  tells Claude to mention it to the user.
+- **A spec / plan / design markdown file** — read directly.
+- **An existing generated doc.** Sidecar discovery per artifact type — the sidecar is the primary
+  source since that narrative is what the user actually read:
+
+  | Doc | Sidecar | Shape |
+  |---|---|---|
+  | recap.html | `blocks.json` | `Block[]` |
+  | doc output | `blocks.json` | `Block[]` |
+  | spec.html | `spec.json` | `SpecDoc` (`{ blocks: [...] }` envelope) |
+  | atlas.html | `atlas.json` | `AtlasDoc` envelope |
+  | domain-\<slug\>.html | `domain-<slug>.json` | `DomainDoc` envelope |
+
+  Claude reads the sidecar (normalizing envelope vs. bare array) plus the underlying repo code it
+  references. **If no sidecar exists** next to the HTML, fall back to reading the HTML itself and
+  the repo — the quiz is still grounded, just without the structured narrative.
 
 ## Artifact — the HTML half of the hybrid
 
-- **New CLI `bin/quiz.ts`, render-only**: `--blocks <file> --title <t> --out <dir>` → `quiz.html`
-  (re-writing `blocks.json` into the folder, same self-contained-folder convention as the other
-  CLIs). No gather mode of its own — grounding is Claude's reading job, and git targets are
-  covered by recap's gather.
-- **New block type `quiz-question`** + renderer:
-  - Question text prominent; a "think before revealing" affordance; model answer inside a native
-    `<details>` — no-JS, `file://`-safe, per the repo's accessibility principles.
-  - Optional attached `annotated-code` / `diagram` content for mechanism questions.
-- Reuses the shared app shell: sidebar lists questions (grouped by theme when the quiz is large),
-  TL;DR fold states what the quiz covers and how to use it.
-- Existing `prose`, `diagram`, `annotated-code`, `group` blocks remain available inside quiz docs.
+- **New CLI `bin/quiz.ts`, render-only**: `--blocks <quiz.json> --out <dir>` (`--title` optional
+  override) → `quiz.html`, re-writing `quiz.json` into the folder — the same self-contained-folder
+  convention and cwd-relative path resolution as the other CLIs. No gather mode of its own.
+- **New assembler `src/assemble-quiz.ts` (`assembleQuiz`)** — the review shell cannot be reused
+  as-is: its walkthrough renders only `diff` children inside groups (`src/review/walkthrough.ts`)
+  and its sidebar lists only groups/diffs (`src/review/sidebar.ts`); the generic assembler has no
+  sidebar or TL;DR fold. `assembleQuiz` reuses the shared page chrome (styles, topbar, scrollspy
+  script, diagram pipeline, markdown renderer) but owns:
+  - a **sidebar** listing questions (numbered; nested under theme groups when present),
+  - a **TL;DR fold** built from `QuizDoc.intro` + `source` + question count by family,
+  - **group rendering** that renders quiz-question and prose children (not diff-filtered).
+- **`quiz-question` renderer** (`src/renderers/quiz-question.ts`): question text prominent, family
+  badge, optional attached code/diagram, then the model answer inside a native `<details>`
+  ("Reveal answer") — no-JS, `file://`-safe, per the repo's accessibility principles. Citations
+  render as styled text beneath the answer; a citation with a `fragment` renders as an in-page
+  link only after validating the target block id exists.
 - **Output convention:** `<target-repo>/.visual/quizzes/<short-label>/quiz.html`, alongside
   `.visual/recaps/`.
 
-### Lint floor (structural only — altitude is enforced by skill text)
+### Lint floor (structural only — altitude and proportionality are SKILL.md rules)
 
-Warnings, in the style of the existing lints:
+Warnings, in the style of the existing lints (`src/lint-*.ts` → new `src/lint-quiz.ts`):
 
 - Fewer than 2 questions.
-- **Proportionality**: question count clearly under-covers the material (e.g. many source
-  sections/diffs but only a couple of questions).
-- A question with no model answer or no grounding link.
+- A question with no `answer.takeaway` or empty `citations`.
 - Question text matching trivia patterns (`which file`, `how many`, `what line`, `did we test`…).
+- A `citation.fragment` that doesn't resolve to a block id in the doc.
+- A medium+ quiz (≥4 questions) with all questions from a single family.
 
 ## Live mode — the terminal half of the hybrid
 
 Pure SKILL.md instructions; no code. Entered when the user asks ("quiz me live"), or offered after
-the HTML render. Uses the **same authored `blocks.json`**:
+the HTML render. Uses the **same authored `quiz.json`**:
 
 - One question at a time, free-text answers in the terminal.
 - Claude evaluates each answer against the model answer and **pushes back on shallow or wrong
@@ -120,11 +207,16 @@ through the algorithm"), which is part of why they're a first-class family.
 
 ## Testing & integration
 
-- Vitest coverage matching existing patterns: renderer tests for `quiz-question`, lint tests for
-  the floor rules, CLI path-resolution parity with the other CLIs (relative `--blocks`/`--out`
-  resolved against cwd — the `ae2475a` convention).
-- README: add the `quiz` row to the skills table and the verification-counterpart framing.
-- Skill installer picks up the new `skills/quiz/` directory.
+- Vitest coverage matching existing patterns: renderer tests for `quiz-question` (reveal markup,
+  citation rendering, fragment validation), lint tests for the floor rules, assembler test
+  (sidebar/TL;DR/group rendering), CLI path-resolution parity with the other CLIs.
+- **Skill-docs sync test**: extend `test/skill-docs.test.ts` with a quiz case scraping
+  `src/quiz-blocks.ts` discriminants, requiring `skills/quiz/SKILL.md` to document each — same
+  pattern as spec/atlas.
+- **Registrations (all manual, none automatic):**
+  - `scripts/install-skills.ts`: add `"quiz"` to the hard-coded `SKILLS` array.
+  - `package.json`: add `"quiz": "tsx bin/quiz.ts"` to scripts.
+  - README: add the `quiz` row to the skills table and the verification-counterpart framing.
 
 ## Out of scope
 
@@ -132,3 +224,4 @@ through the algorithm"), which is part of why they're a first-class family.
 - Scoring persistence, streaks, or any gamification.
 - General-purpose "quiz me on anything" learning tool — scope is code changes, specs, and this
   repo's generated docs.
+- Source-unit coverage bookkeeping in the doc model (proportionality stays an authoring rule).
