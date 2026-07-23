@@ -1,11 +1,11 @@
 {
   "kind": "domain",
   "slug": "authoring",
-  "title": "Authoring (spec + doc)",
+  "title": "Authoring (spec + doc + quiz)",
   "layer": "surface",
   "layerLabel": "Surface",
   "path": "authoring",
-  "count": "5 files",
+  "count": "10 files",
   "depends": "core · diagrams · recap",
   "date": "2026-06-20",
   "generator": "visual-skills · visual-atlas",
@@ -20,7 +20,7 @@
     },
     {
       "key": "Files",
-      "value": "5 (2 CLIs + 3 src)"
+      "value": "10 (3 CLIs + 7 src)"
     },
     {
       "key": "Depends on",
@@ -32,33 +32,33 @@
       "type": "domain-tldr",
       "id": "tldr",
       "eyebrow": "Domain",
-      "heading": "The two pure-authoring products — render a hand-written spec or doc straight into self-contained HTML, with no codebase scan.",
+      "heading": "The three pure-authoring products — render a hand-written spec, doc, or quiz straight into self-contained HTML, with no codebase scan.",
       "rows": [
         {
           "key": "Path",
-          "value": "`bin/spec.ts` · `bin/doc.ts` · `src/spec-blocks.ts` · `src/assemble-spec.ts` · `src/lint-spec.ts`"
+          "value": "`bin/spec.ts` · `bin/doc.ts` · `bin/quiz.ts` + their `src/` models, renderers, and lints"
         },
         {
           "key": "Files",
-          "value": "5 — two thin CLIs over `src/` (one extra render path, one extra block model, one lint floor)"
+          "value": "10 — three thin CLIs over `src/` (two render paths, two block models, two lint floors, one question renderer)"
         },
         {
           "key": "Role",
-          "value": "Unlike `recap` / `atlas`, the input is **hand-authored blocks JSON**, not a scan. `spec` renders an approval-focused design spec; `doc` is the general illustrated-doc renderer."
+          "value": "Unlike `recap` / `atlas`, the input is **hand-authored blocks JSON**, not a scan. `spec` renders an approval-focused design spec; `doc` is the general illustrated-doc renderer; `quiz` renders a comprehension check that verifies a reader understood a change."
         }
       ],
       "bigIdea": {
         "label": "The load-bearing idea",
-        "line": "\"Two thin CLIs over the shared engine.\"",
-        "sub": "`doc` reuses **core's generic `Block` model** directly — `bin/doc.ts` just promotes mermaid fences and calls `assemble`, with almost no domain code of its own. `spec` adds its **own approval-focused block vocabulary** (`SpecBlock` — tldr, decisions, scope, rollout, approve) plus a dedicated `assembleSpec` renderer and a completeness `lintSpec` floor. Both ride the same diagram pipeline."
+        "line": "\"Three thin CLIs over the shared engine.\"",
+        "sub": "`doc` reuses **core's generic `Block` model** directly — `bin/doc.ts` just promotes mermaid fences and calls `assemble`, with almost no domain code of its own. `spec` adds its **own approval-focused block vocabulary** (`SpecBlock` — tldr, decisions, scope, rollout, approve) plus a dedicated `assembleSpec` renderer and a completeness `lintSpec` floor. `quiz` follows `spec`'s pattern exactly: its own vocabulary (`QuizBlock` — family-tagged questions, theme groups, structured citations), a dedicated `assembleQuiz` renderer (plus the `quiz-question` block renderer), and a structural `lintQuiz` floor. All three ride the same diagram pipeline."
       }
     },
     {
       "type": "components",
       "id": "components",
       "title": "The pieces",
-      "badge": "2 CLIs + 3 src",
-      "intro": "`doc` is the thin one — it leans on core + diagrams with no domain-specific model. `spec` is the substantial one: its own block model, its own renderer, and its own lint. Tap a card to jump to its full section.",
+      "badge": "3 CLIs + 7 src",
+      "intro": "`doc` is the thin one — it leans on core + diagrams with no domain-specific model. `spec` and `quiz` are the substantial ones: each has its own block model, its own renderer, and its own lint. Tap a card to jump to its full section.",
       "cards": [
         {
           "name": "spec CLI",
@@ -124,21 +124,79 @@
             }
           ],
           "href": "#c-spec-lint"
+        },
+        {
+          "name": "quiz CLI",
+          "purpose": "`bin/quiz.ts` — parses `--blocks <quiz.json> --out <dir>`, maps the `QuizDoc` envelope to `QuizOpts`, calls `assembleQuiz`, and writes `quiz.html` + re-writes `quiz.json`. Assembly runs in a try/catch that flushes buffered warnings before rethrowing.",
+          "exports": [
+            {
+              "name": "main()"
+            },
+            {
+              "name": "QuizDocFile",
+              "deputy": true
+            }
+          ],
+          "href": "#c-quiz-cli"
+        },
+        {
+          "name": "quiz block model",
+          "purpose": "`src/quiz-blocks.ts` — the `QuizBlock` union (`quiz-question`, `quiz-group`, prose) plus the `QuizDoc` envelope, structured `Citation`s, nested-id uniqueness (incl. attached diagram/code ids), and diagram collection.",
+          "exports": [
+            {
+              "name": "QuizBlock"
+            },
+            {
+              "name": "QuizDoc"
+            },
+            {
+              "name": "assertUniqueQuizIds",
+              "deputy": true
+            }
+          ],
+          "href": "#c-quiz-model"
+        },
+        {
+          "name": "quiz render",
+          "purpose": "`src/assemble-quiz.ts` + `src/renderers/quiz-question.ts` — `assembleQuiz` builds the quiz shell (questions sidebar, TL;DR fold, theme toggle); `renderQuizQuestion` draws each question with a family badge, optional code/diagram, a native `<details>` reveal, and text citations.",
+          "exports": [
+            {
+              "name": "assembleQuiz"
+            },
+            {
+              "name": "renderQuizQuestion"
+            },
+            {
+              "name": "QuizOpts",
+              "deputy": true
+            }
+          ],
+          "href": "#c-quiz-render"
+        },
+        {
+          "name": "quiz lint",
+          "purpose": "`src/lint-quiz.ts` — the structural floor: question count, model answers, citations, trivia patterns, family mix and unknown families, dangling citation fragments. Altitude and proportionality stay authoring rules in the skill.",
+          "exports": [
+            {
+              "name": "lintQuiz"
+            }
+          ],
+          "href": "#c-quiz-lint"
         }
       ],
-      "note": "`doc` has no card of its own in `src/` — it borrows core's `assemble` and the diagrams domain's `promoteMermaidFences` wholesale. The four spec pieces (`bin/spec.ts` + the three `src/` files) are what this domain actually owns."
+      "note": "`doc` has no card of its own in `src/` — it borrows core's `assemble` and the diagrams domain's `promoteMermaidFences` wholesale. The four spec pieces and the four quiz pieces (`bin/` CLI + model + renderer + lint each) are what this domain actually owns; `renderers/quiz-question.ts` sits in `src/renderers/` but is quiz-specific, so it lives here rather than in core."
     },
     {
       "type": "diagram-section",
       "id": "arch",
-      "title": "Two entrypoints, one core",
+      "title": "Three entrypoints, one core",
       "badge": "architecture",
-      "intro": "`spec.json` flows through `bin/spec.ts` → `assembleSpec` (using `spec-blocks` + `lintSpec`); `blocks.json` flows through `bin/doc.ts` → core's `assemble`. Both share the diagrams pipeline (`promote-mermaid` for doc, `renderAll` for both) and the core renderers.",
+      "intro": "`spec.json` flows through `bin/spec.ts` → `assembleSpec` (using `spec-blocks` + `lintSpec`); `quiz.json` flows through `bin/quiz.ts` → `assembleQuiz` (using `quiz-blocks` + `lintQuiz`); `blocks.json` flows through `bin/doc.ts` → core's `assemble`. All three share the diagrams pipeline and the core renderers.",
       "diagram": {
         "id": "arch-diagram",
         "kind": "architecture",
-        "d2": "direction: right\nspecjson: { label: \"spec.json\\n(authored blocks)\"; class: store }\nblocksjson: { label: \"blocks.json\\n(authored blocks)\"; class: store }\nspecbin: { label: \"bin/spec.ts\"; class: actor }\ndocbin: { label: \"bin/doc.ts\"; class: actor }\nspecmodel: { label: \"spec-blocks\\n+ lint-spec\" }\nasmspec: { label: \"assembleSpec\"; class: changed }\nasmcore: { label: \"core / assemble\" }\npromote: { label: \"promote-mermaid\\n(diagrams)\" }\nspechtml: { label: \"spec.html\" }\ndochtml: { label: \"doc.html\" }\nspecjson -> specbin\nspecbin -> asmspec\nasmspec -> specmodel: blocks + lint\nasmspec -> spechtml\nblocksjson -> docbin\ndocbin -> promote: promote fences\npromote -> asmcore\nasmcore -> dochtml\nasmspec -> asmcore: shares renderers\n",
-        "mermaid": "flowchart LR\n  specjson[\"spec.json (authored blocks)\"] --> specbin[\"bin/spec.ts\"]\n  specbin --> asmspec[\"assembleSpec\"]\n  asmspec -->|blocks + lint| specmodel[\"spec-blocks + lint-spec\"]\n  asmspec --> spechtml[\"spec.html\"]\n  blocksjson[\"blocks.json (authored blocks)\"] --> docbin[\"bin/doc.ts\"]\n  docbin -->|promote fences| promote[\"promote-mermaid (diagrams)\"]\n  promote --> asmcore[\"core / assemble\"]\n  asmcore --> dochtml[\"doc.html\"]\n  asmspec -->|shares renderers| asmcore\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class specjson,blocksjson store;\n  class specbin,docbin actor;\n  class asmspec changed;",
+        "d2": "direction: right\nspecjson: { label: \"spec.json\\n(authored blocks)\"; class: store }\nquizjson: { label: \"quiz.json\\n(authored blocks)\"; class: store }\nblocksjson: { label: \"blocks.json\\n(authored blocks)\"; class: store }\nspecbin: { label: \"bin/spec.ts\"; class: actor }\nquizbin: { label: \"bin/quiz.ts\"; class: actor }\ndocbin: { label: \"bin/doc.ts\"; class: actor }\nspecmodel: { label: \"spec-blocks\\n+ lint-spec\" }\nquizmodel: { label: \"quiz-blocks\\n+ lint-quiz\" }\nasmspec: { label: \"assembleSpec\"; class: changed }\nasmquiz: { label: \"assembleQuiz\"; class: changed }\nasmcore: { label: \"core / assemble\" }\npromote: { label: \"promote-mermaid\\n(diagrams)\" }\nspechtml: { label: \"spec.html\" }\nquizhtml: { label: \"quiz.html\" }\ndochtml: { label: \"doc.html\" }\nspecjson -> specbin\nspecbin -> asmspec\nasmspec -> specmodel: blocks + lint\nasmspec -> spechtml\nquizjson -> quizbin\nquizbin -> asmquiz\nasmquiz -> quizmodel: blocks + lint\nasmquiz -> quizhtml\nblocksjson -> docbin\ndocbin -> promote: promote fences\npromote -> asmcore\nasmcore -> dochtml\nasmspec -> asmcore: shares renderers\nasmquiz -> asmcore: shares renderers\n",
+        "mermaid": "flowchart LR\n  specjson[\"spec.json (authored blocks)\"] --> specbin[\"bin/spec.ts\"]\n  specbin --> asmspec[\"assembleSpec\"]\n  asmspec -->|blocks + lint| specmodel[\"spec-blocks + lint-spec\"]\n  asmspec --> spechtml[\"spec.html\"]\n  quizjson[\"quiz.json (authored blocks)\"] --> quizbin[\"bin/quiz.ts\"]\n  quizbin --> asmquiz[\"assembleQuiz\"]\n  asmquiz -->|blocks + lint| quizmodel[\"quiz-blocks + lint-quiz\"]\n  asmquiz --> quizhtml[\"quiz.html\"]\n  blocksjson[\"blocks.json (authored blocks)\"] --> docbin[\"bin/doc.ts\"]\n  docbin -->|promote fences| promote[\"promote-mermaid (diagrams)\"]\n  promote --> asmcore[\"core / assemble\"]\n  asmcore --> dochtml[\"doc.html\"]\n  asmspec -->|shares renderers| asmcore\n  asmquiz -->|shares renderers| asmcore\n  classDef changed fill:#ffd43b,stroke:#f08c00,color:#1b1b1b,stroke-width:2px;\n  classDef actor fill:#d0ebff,stroke:#4dabf7,color:#1b1b1b;\n  classDef store fill:#e5dbff,stroke:#9775fa,color:#1b1b1b;\n  class specjson,quizjson,blocksjson store;\n  class specbin,quizbin,docbin actor;\n  class asmspec,asmquiz changed;",
         "legend": [
           {
             "label": "CLI entrypoint",
@@ -146,7 +204,7 @@
             "stroke": "#4dabf7"
           },
           {
-            "label": "spec renderer (this domain)",
+            "label": "domain renderers (this domain)",
             "fill": "#ffd43b",
             "stroke": "#f08c00"
           },
@@ -157,13 +215,13 @@
           }
         ]
       },
-      "callout": "The lone amber box — `assembleSpec` — is the only substantial renderer authoring owns. Everything below it (`core / assemble`, the diagram pipeline) is borrowed; `bin/doc.ts` is just wiring."
+      "callout": "The amber boxes — `assembleSpec` and `assembleQuiz` — are the two substantial renderers authoring owns. Everything below them (`core / assemble`, the diagram pipeline) is borrowed; `bin/doc.ts` is just wiring."
     },
     {
       "type": "depth",
       "id": "depth",
       "title": "The pieces, in depth",
-      "badge": "5 pieces",
+      "badge": "9 pieces",
       "intro": "A full section per piece — what it does, its files and exports, and how it connects to core, diagrams, and recap.",
       "components": [
         {
@@ -383,6 +441,174 @@
               "body": "heuristics, not hard errors — the page still renders, the author is nudged"
             }
           ]
+        },
+        {
+          "id": "c-quiz-cli",
+          "name": "quiz CLI",
+          "path": "bin/quiz.ts",
+          "detail": [
+            "`bin/quiz.ts` is the quiz entrypoint, mirroring `bin/spec.ts`. It `parseArgs` for `--blocks <quiz.json>` and `--out <dir>` (relative paths resolve against the cwd), reads the `QuizDoc` envelope, maps its page fields onto `QuizOpts`, and calls [`assembleQuiz`](#c-quiz-render). It writes `<out>/quiz.html` and re-writes `<out>/quiz.json` so the folder re-renders in place. One deliberate difference from its siblings: assembly runs inside a try/catch that flushes the buffered warnings *before* rethrowing, so a malformed `quiz.json` still surfaces its structural lint warnings instead of dying silently."
+          ],
+          "files": [
+            {
+              "name": "bin/quiz.ts",
+              "desc": "Arg parsing, `QuizDoc` → `QuizOpts` mapping, warning flush on crash, and the write-back of `quiz.html` + `quiz.json`."
+            }
+          ],
+          "exports": [
+            {
+              "name": "main()",
+              "desc": "The CLI body — reads, assembles, writes; exits 2 on usage errors."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "calls",
+              "body": "[quiz render](#c-quiz-render) — `assembleQuiz(doc.blocks, opts)`"
+            },
+            {
+              "dir": "types from",
+              "body": "[quiz block model](#c-quiz-model) — `QuizBlock`"
+            },
+            {
+              "dir": "writes",
+              "body": "`quiz.html` + a re-written `quiz.json` into `--out`"
+            }
+          ]
+        },
+        {
+          "id": "c-quiz-model",
+          "name": "quiz block model",
+          "path": "src/quiz-blocks.ts",
+          "detail": [
+            "The `QuizBlock` discriminated union — a comprehension-check vocabulary kept deliberately separate from core's generic `Block` and spec's `SpecBlock`: `quiz-question` (a family-tagged question — system-fit / rationale / mechanism — with a markdown prompt, an optional attached `annotated-code` / `diagram` primitive, a model answer, and structured `Citation`s) and `quiz-group` (a theme wrapper for large quizzes), composing with core's `prose`. The `QuizDoc` envelope carries title / source / intro. Helpers: `allQuestions` and `allBlockIds` (the valid citation-fragment targets), `assertUniqueQuizIds` (including attached diagram/code ids — duplicates would silently collapse in the render map), and `collectQuizDiagrams` for the shared pipeline."
+          ],
+          "files": [
+            {
+              "name": "quiz-blocks.ts",
+              "desc": "The `QuizBlock` union, the `QuizDoc` envelope, `Citation`, and the question / id / diagram helpers."
+            }
+          ],
+          "exports": [
+            {
+              "name": "QuizBlock",
+              "desc": "The block union — `QuizQuestionBlock | QuizGroupBlock | ProseBlock`."
+            },
+            {
+              "name": "QuizDoc",
+              "desc": "The on-disk `quiz.json` envelope — title, source, intro, blocks."
+            },
+            {
+              "name": "allQuestions()",
+              "desc": "Questions in document order, descending into groups."
+            },
+            {
+              "name": "assertUniqueQuizIds()",
+              "desc": "Id-collision detection across blocks, group children, and attached diagram/code ids (throws)."
+            },
+            {
+              "name": "collectQuizDiagrams()",
+              "desc": "Gathers attached question diagrams for the shared pipeline."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "consumed by",
+              "body": "[quiz render](#c-quiz-render) and [quiz lint](#c-quiz-lint)"
+            },
+            {
+              "dir": "borrows",
+              "body": "[core](../domain-core/domain-core.html) `ProseBlock` / `AnnotatedCodeBlock` / `DiagramBlock`"
+            },
+            {
+              "dir": "distinct from",
+              "body": "[spec block model](#c-spec-model) and core's generic `Block`"
+            }
+          ]
+        },
+        {
+          "id": "c-quiz-render",
+          "name": "quiz render",
+          "path": "src/assemble-quiz.ts · src/renderers/quiz-question.ts",
+          "detail": [
+            "`assembleQuiz(blocks, opts)` builds the quiz page: it asserts unique ids, runs [`lintQuiz`](#c-quiz-lint) *before* diagram rendering (so structural warnings survive a diagram crash), renders attached diagrams via the diagrams domain's `renderAll`, and assembles the shell — topbar, a questions sidebar whose numbering is derived from the same traversal as the body, a TL;DR fold with per-family counts, group sections that render question *and* prose children, and the shared dark-mode theme assets. `renderQuizQuestion` — the one quiz renderer that lives in `src/renderers/` — draws each question: family badge, prompt, optional code/diagram, a native `<details>` \"Reveal answer\", and citations rendered as styled text. Only a `fragment` citation validated against the doc's own block ids becomes a link (the safe-link policy: no relative or file hrefs)."
+          ],
+          "files": [
+            {
+              "name": "assemble-quiz.ts",
+              "desc": "The quiz shell — topbar / sidebar / TL;DR fold, group rendering, lint-before-render ordering, theme assets."
+            },
+            {
+              "name": "renderers/quiz-question.ts",
+              "desc": "Per-question rendering: family badge, `<details>` reveal, citation text/links."
+            }
+          ],
+          "exports": [
+            {
+              "name": "assembleQuiz()",
+              "desc": "→ a full self-contained HTML string for the quiz page."
+            },
+            {
+              "name": "QuizOpts",
+              "desc": "Page options: title, source, intro, outDir, excalidraw, generator, onWarn."
+            },
+            {
+              "name": "renderQuizQuestion()",
+              "desc": "One question → HTML, with validated citation fragments."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "reuses",
+              "body": "[recap](../domain-recap/domain-recap.html) `renderDiagramCard` from `review/sections`"
+            },
+            {
+              "dir": "uses",
+              "body": "[diagrams](../domain-diagrams/domain-diagrams.html) `renderAll` / `DiagramResult`"
+            },
+            {
+              "dir": "uses",
+              "body": "[core](../domain-core/domain-core.html) `escapeHtml`, markdown renderers, `renderProse`, `renderAnnotatedCode`"
+            },
+            {
+              "dir": "runs",
+              "body": "[quiz lint](#c-quiz-lint) before diagram rendering (warnings, never fatal)"
+            }
+          ]
+        },
+        {
+          "id": "c-quiz-lint",
+          "name": "quiz lint",
+          "path": "src/lint-quiz.ts",
+          "detail": [
+            "`lintQuiz(blocks)` is the structural floor, mirroring `lintSpec`'s philosophy (warning strings, never throws): fewer than 2 questions, a question missing its model-answer takeaway or citations, trivia-pattern prompts (`which file` / `how many` / `what line` / `did we test`), an unknown `family` value, a citation `fragment` that resolves to no block id, and a medium-plus quiz (`MEDIUM_QUIZ = 4`) drawn entirely from a single family. Altitude and proportionality are deliberately *not* linted — they are authoring rules in the quiz skill, because the render-only CLI has no source inventory to judge coverage against."
+          ],
+          "files": [
+            {
+              "name": "lint-quiz.ts",
+              "desc": "The heuristic checks (count / answers / citations / trivia / family mix / fragments)."
+            }
+          ],
+          "exports": [
+            {
+              "name": "lintQuiz()",
+              "desc": "→ `string[]` of structural warnings."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "called by",
+              "body": "[quiz render](#c-quiz-render) — emitted via `opts.onWarn`, before diagram rendering"
+            },
+            {
+              "dir": "inspects",
+              "body": "[quiz block model](#c-quiz-model) — questions, families, citations, fragment targets"
+            },
+            {
+              "dir": "philosophy",
+              "body": "heuristics, not hard errors — the page still renders, the author is nudged"
+            }
+          ]
         }
       ]
     },
@@ -390,7 +616,7 @@
       "type": "owns",
       "id": "data",
       "title": "Data it owns",
-      "intro": "Authoring owns the **spec block model** — the approval-focused vocabulary in `spec-blocks.ts`. `doc` owns no model of its own; it borrows core's generic `Block`.",
+      "intro": "Authoring owns **two block models** — the approval vocabulary in `spec-blocks.ts` and the comprehension vocabulary in `quiz-blocks.ts`. `doc` owns no model of its own; it borrows core's generic `Block`.",
       "rows": [
         {
           "name": "TldrBlock",
@@ -431,15 +657,31 @@
         {
           "name": "ReferenceBlock · SpecProseBlock",
           "desc": "`type: \"reference\"` (collapsed drill-down drawers) and `type: \"spec-prose\"` (the unmodeled-content escape hatch)."
+        },
+        {
+          "name": "QuizDoc",
+          "desc": "the `quiz.json` envelope — title, source (what was quizzed), intro, and the `QuizBlock[]`."
+        },
+        {
+          "name": "QuizQuestionBlock",
+          "desc": "`type: \"quiz-question\"` — a family-tagged question (system-fit / rationale / mechanism): markdown prompt, optional attached code/diagram, model answer (takeaway + points), citations."
+        },
+        {
+          "name": "QuizGroupBlock",
+          "desc": "`type: \"quiz-group\"` — a theme wrapper for large quizzes; children are questions and prose."
+        },
+        {
+          "name": "Citation",
+          "desc": "structured grounding for a model answer — label, optional file/lines, optional in-page `fragment` (the only linkable form)."
         }
       ],
-      "note": "All of these compose into `SpecBlock`. Borrows (never owns): `DiagramBlock` / `DiagramKind` / `TabsBlock` from `core`; the generic `Block` model that `doc` renders."
+      "note": "The spec rows compose into `SpecBlock`; the quiz rows into `QuizBlock`. Borrows (never owns): `DiagramBlock` / `DiagramKind` / `TabsBlock` plus `ProseBlock` / `AnnotatedCodeBlock` from `core`; the generic `Block` model that `doc` renders."
     },
     {
       "type": "seams",
       "id": "seams",
       "title": "Seams",
-      "intro": "Two CLIs out; the shared engine, the diagram pipeline, and one recap shell piece in.",
+      "intro": "Three CLIs out; the shared engine, the diagram pipeline, and one recap shell piece in.",
       "exposes": [
         {
           "api": "spec --blocks <spec.json> --out <dir>",
@@ -456,6 +698,18 @@
         {
           "api": "lintSpec()",
           "note": "the completeness floor"
+        },
+        {
+          "api": "quiz --blocks <quiz.json> --out <dir>",
+          "note": "renders the comprehension-check quiz page"
+        },
+        {
+          "api": "assembleQuiz() · QuizOpts",
+          "note": "the quiz page builder, used by the CLI"
+        },
+        {
+          "api": "lintQuiz()",
+          "note": "the quiz structural floor"
         }
       ],
       "depends": [
@@ -475,12 +729,12 @@
           "href": "../domain-recap/domain-recap.html"
         }
       ],
-      "note": "`doc` leans entirely on `core` (`assemble`, `Block`) and `diagrams` (`promoteMermaidFences`). `spec` adds its own model + renderer + lint, and reuses exactly one review-shell piece: the recap's `renderDiagramCard` for its diagram sections."
+      "note": "`doc` leans entirely on `core` (`assemble`, `Block`) and `diagrams` (`promoteMermaidFences`). `spec` and `quiz` each add their own model + renderer + lint, and both reuse exactly one review-shell piece: the recap's `renderDiagramCard` for their diagram cards."
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:485ad4211c701a62f5e54b5d3e8e74d3e89d4e4026db20205a8de0a1c567455e",
+    "hash": "sha256:52478e5278b74ce6a8453d99a626d10b41695c45cd59700dbe6dc3448914890a",
     "date": "2026-07-23",
-    "commit": "0350c184e5b68ddec00d0d09ccbdff2fa4890fab"
+    "commit": "03557a365a13301e9637be1b70082054033b8b12"
   }
 }
