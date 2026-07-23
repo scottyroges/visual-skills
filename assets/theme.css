@@ -45,7 +45,14 @@
   --diff-ctx-fg:#c9cdd3; --diff-num:#7f8792; --diff-gutter:#8b939e;
   --syntax-kw:#b39cf5; --syntax-fn:#6aa3ff; --syntax-ty:#d4a72c;
   --risk-med:#d4a72c;
+
+  /* quiz.css family badges — light literals stay as fallbacks in quiz.css */
+  --quiz-fit:#a78bfa; --quiz-rationale:#d4a72c; --quiz-mechanism:#3fb950;
 }
+
+/* quiz.css: number chip sits on --accent, which is light blue in dark — white text drops
+   to ~2.4:1 there, so the chip text flips to the dark page ink instead. */
+:root[data-theme="dark"] .quiz-num { color:#16181d; }
 
 /* Diagrams (d2/Excalidraw inline SVGs) bake in light colors and are NOT re-themed dark —
    instead each container gets a light "card" so the SVG reads as an intentional light panel

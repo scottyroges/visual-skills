@@ -89,3 +89,21 @@ describe("dark-mode surface variables", () => {
     }
   });
 });
+
+describe("quiz assets", () => {
+  it("quiz.css uses only themed tokens — the dark-mode integration pass", async () => {
+    const css = await readFile(asset("quiz.css"), "utf8");
+    const theme = await readFile(asset("theme.css"), "utf8");
+    // --wash never existed in any stylesheet: in dark mode it left the answer panel
+    // light with near-white body text (unreadable). The panel must use a themed token.
+    expect(css).not.toContain("--wash");
+    expect(css).toMatch(/\.quiz-answer[^}]*var\(--panel/s);
+    // Family badges: light literals as fallbacks, dark overrides in theme.css.
+    for (const t of ["--quiz-fit", "--quiz-rationale", "--quiz-mechanism"]) {
+      expect(css, `quiz.css must reference ${t}`).toContain(`var(${t}`);
+      expect(theme, `theme.css dark block must override ${t}`).toContain(`${t}:`);
+    }
+    // Dark --accent is light blue; white number text drops to ~2.4:1 without an override.
+    expect(theme).toContain(".quiz-num");
+  });
+});
