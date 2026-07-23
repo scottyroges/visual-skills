@@ -22,6 +22,7 @@
     "recap": "tsx bin/recap.ts",
     "spec": "tsx bin/spec.ts",
     "atlas": "tsx bin/atlas.ts",
+    "quiz": "tsx bin/quiz.ts",
     "setup:excalidraw": "node scripts/setup-excalidraw.mjs",
     "skills:install": "tsx scripts/install-skills.ts",
     "atlas:check": "node .visual/atlas/atlas-check.mjs",
