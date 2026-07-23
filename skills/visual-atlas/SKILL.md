@@ -17,9 +17,9 @@ atlas, then drill into a domain page to actually understand it: what it owns, ho
 what it exposes, what it depends on. **Onboarding first** — when onboarding and reference conflict,
 favor the newcomer.
 
-**Tool location** (edit if the repo moves):
+**Tool location** (resolved through the installer's `~/.claude/visual-skills` symlink — re-run `npm run skills:install` if the repo moves):
 
-    VISUAL_SKILLS_DIR=/path/to/visual-skills
+    VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
 Unlike `visual-spec` (pure authoring), the atlas is **hybrid**: a mechanical scanner walks the repo
 and emits *draft* JSON; you **enrich** the drafts (write the meaning) and render. The scanner does

@@ -14,9 +14,9 @@ risk is* in ~10 seconds, then be walked through the change in a deliberate order
 the gather step is **raw material, not the deliverable** — you are not done until it has been
 enriched and re-rendered.
 
-**Tool location** (edit if the repo moves):
+**Tool location** (resolved through the installer's `~/.claude/visual-skills` symlink — re-run `npm run skills:install` if the repo moves):
 
-    VISUAL_SKILLS_DIR=/path/to/visual-skills
+    VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
 ## The standard — definition of done
 

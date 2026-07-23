@@ -9,9 +9,9 @@ Turn a spec/plan into a single self-contained, hand-drawn-styled HTML document b
 a typed block array and rendering it. Unlike the recap (which is automatic), you compose the
 blocks — so ground every reference in the real repo.
 
-**Tool location** (edit if the repo moves):
+**Tool location** (resolved through the installer's `~/.claude/visual-skills` symlink — re-run `npm run skills:install` if the repo moves):
 
-    VISUAL_SKILLS_DIR=/path/to/visual-skills
+    VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
 ## Steps
 

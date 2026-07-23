@@ -1,7 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { resolve, dirname } from "node:path";
 
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 const blocks = read("../src/blocks.ts");
@@ -66,15 +64,17 @@ describe("skill docs stay in sync", () => {
     }
   });
 
-  it("VISUAL_SKILLS_DIR is the placeholder or this clone — never someone else's machine", () => {
-    // The committed value must be the documented placeholder; after `npm run skills:install`
-    // it may be stamped to THIS repo root. Anything else (e.g. a committed home dir from
-    // another machine) would break every fresh clone.
-    const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-    const allowed = ["/path/to/visual-skills", repoRoot];
-    for (const md of [docSkill, recapSkill, specSkill, atlasSkill, atlasReviewSkill]) {
+  it("VISUAL_SKILLS_DIR is the stable indirection line — never a literal machine path", () => {
+    // The installer no longer stamps SKILL.md; every skill must carry the stable form that
+    // resolves through the <claudeRoot>/visual-skills symlink. A literal path (stamped or
+    // hand-edited) would dirty the repo and break other clones.
+    const STABLE = 'VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"';
+    const skills = { docSkill, recapSkill, specSkill, atlasSkill, atlasReviewSkill, quizSkill };
+    for (const [name, md] of Object.entries(skills)) {
+      expect(md, `${name} must carry the stable tool-location line`).toContain(STABLE);
       for (const [, dir] of md.matchAll(/VISUAL_SKILLS_DIR=(\S+)/g)) {
-        expect(allowed, `VISUAL_SKILLS_DIR=${dir} must be the placeholder or this clone`).toContain(dir);
+        expect(dir.startsWith('"${CLAUDE_CONFIG_DIR'),
+          `${name}: VISUAL_SKILLS_DIR=${dir} must be the stable line, not a literal path`).toBe(true);
       }
     }
   });

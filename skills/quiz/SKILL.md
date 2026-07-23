@@ -9,9 +9,9 @@ Turn a change, spec, or generated doc into an on-demand **comprehension check** 
 self-contained HTML quiz page — and optionally grade the user's answers live. The other skills
 in this family present understanding; this one verifies it.
 
-**Tool location** (edit if the repo moves):
+**Tool location** (resolved through the installer's `~/.claude/visual-skills` symlink — re-run `npm run skills:install` if the repo moves):
 
-    VISUAL_SKILLS_DIR=/path/to/visual-skills
+    VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
 ## The standard — what makes a question good
 

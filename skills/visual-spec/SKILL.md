@@ -14,9 +14,9 @@ off**: the load-bearing decisions (with their rationale), the scope, what "done"
 and what approval commits to. Re-typesetting the doc's headings is **not** the job — *reframing* it
 into the component ladder is.
 
-**Tool location** (edit if the repo moves):
+**Tool location** (resolved through the installer's `~/.claude/visual-skills` symlink — re-run `npm run skills:install` if the repo moves):
 
-    VISUAL_SKILLS_DIR=/path/to/visual-skills
+    VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
 You author a `spec.json` (page options + an ordered array of blocks) and render it. There is no
 mechanical gather step — the spec's prose is the raw material; your judgment turns it into blocks.

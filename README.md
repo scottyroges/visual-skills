@@ -57,8 +57,8 @@ cd ~/Projects/visual-skills
 npm install
 ```
 
-You can clone anywhere — the skill installer (step 3) records wherever this lives, so nothing is
-hard-coded to a fixed path.
+You can clone anywhere — the skill installer (step 3) creates a stable symlink to wherever this
+lives, so nothing is hard-coded to a fixed path.
 
 ### 2. Install `d2` (the diagram rendering floor — required)
 
@@ -76,20 +76,19 @@ brew install d2          # macOS / Linuxbrew
 npm run skills:install
 ```
 
-This **symlinks** the skill dirs into `~/.claude/skills/` and stamps each `SKILL.md`'s
-`VISUAL_SKILLS_DIR` to this clone — so the skills work from wherever you cloned the repo, with no
-hand-editing of paths. It's idempotent and never clobbers a real dir or a foreign symlink.
+This **symlinks** the skill dirs into `~/.claude/skills/` and creates one stable root symlink,
+`~/.claude/visual-skills` → this clone. The committed `SKILL.md` files resolve their tool
+location through that symlink, so the installer never edits anything in your clone and
+`git status` stays clean. It's idempotent: it re-points its own stale symlinks (e.g. after you
+move the clone — just re-run it) but never clobbers a real dir or file.
 
-> **Note:** the stamp edits the `SKILL.md` files in your clone, so `git status` will show them as
-> modified — that's expected; don't commit it. When you pull updates later, reset the stamp first
-> and re-apply it:
->
-> ```sh
-> git checkout -- skills && git pull && npm run skills:install
-> ```
+Pulling updates later needs nothing — the symlinks always serve the live checkout. Re-run
+`npm run skills:install` only when an update adds a *new* skill (to link it) or after moving
+the clone.
 
 Using a non-default Claude config root (a custom location, a sandbox, a per-project `.claude`)?
-Point it anywhere with `--dir`:
+Point it anywhere with `--dir` — and note the skills then resolve their tool location only when
+`CLAUDE_CONFIG_DIR` is set to that dir in the shell where they run:
 
 ```sh
 npm run skills:install -- --dir /path/to/.claude

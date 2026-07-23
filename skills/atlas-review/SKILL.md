@@ -12,9 +12,9 @@ reader can verify that the **prose** still tells the truth. This skill is that r
 domain whose code changed since its page was last verified, read the diff against the page, fix
 what drifted, re-render, and re-stamp.
 
-**Tool location** (edit if the repo moves):
+**Tool location** (resolved through the installer's `~/.claude/visual-skills` symlink — re-run `npm run skills:install` if the repo moves):
 
-    VISUAL_SKILLS_DIR=/path/to/visual-skills
+    VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
 **Preconditions.** An existing atlas (default `<repo>/.visual/atlas`) containing
 `atlas.domains.json`, `domain-<slug>/domain-<slug>.json` pages, and `atlas-check.mjs`. If any of

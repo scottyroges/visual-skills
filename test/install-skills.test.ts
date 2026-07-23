@@ -1,22 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { skillLinks, stampToolDir } from "../scripts/install-skills.js";
-
-describe("stampToolDir", () => {
-  it("rewrites VISUAL_SKILLS_DIR to the given clone path", () => {
-    const md = "Tool location:\n\n    VISUAL_SKILLS_DIR=/Users/orig/Projects/visual-skills\n\nrest";
-    expect(stampToolDir(md, "/home/friend/code/visual-skills")).toContain(
-      "VISUAL_SKILLS_DIR=/home/friend/code/visual-skills",
-    );
-    expect(stampToolDir(md, "/home/friend/code/visual-skills")).not.toContain("/Users/orig/");
-  });
-
-  it("is idempotent and leaves other content untouched", () => {
-    const md = "x\n    VISUAL_SKILLS_DIR=/a/b\n`$VISUAL_SKILLS_DIR/bin/atlas.ts`\n";
-    const once = stampToolDir(md, "/a/b");
-    expect(once).toBe(md);                                  // already correct → unchanged
-    expect(stampToolDir(md, "/a/b")).toContain("`$VISUAL_SKILLS_DIR/bin/atlas.ts`"); // usages untouched
-  });
-});
+import { skillLinks, rootLink, linkDecision, type LinkState } from "../scripts/install-skills.js";
 
 describe("skillLinks", () => {
   it("maps every skill dir from repo/skills into <claudeRoot>/skills", () => {
@@ -41,5 +24,38 @@ describe("skillLinks", () => {
       "/custom/cc/skills/atlas-review",
       "/custom/cc/skills/quiz",
     ]);
+  });
+});
+
+describe("rootLink", () => {
+  it("maps the repo root to the stable <claudeRoot>/visual-skills path", () => {
+    expect(rootLink("/home/me/.claude", "/repo")).toEqual({
+      source: "/repo",
+      target: "/home/me/.claude/visual-skills",
+    });
+  });
+});
+
+describe("linkDecision", () => {
+  const source = "/repo/skills/quiz";
+
+  it("creates when nothing exists at the target", () => {
+    const st: LinkState = { kind: "missing" };
+    expect(linkDecision(st, source)).toBe("create");
+  });
+
+  it("is a no-op when the symlink already points at the source", () => {
+    const st: LinkState = { kind: "symlink", current: source };
+    expect(linkDecision(st, source)).toBe("already");
+  });
+
+  it("repoints a symlink that points anywhere else (moved-clone recovery)", () => {
+    const st: LinkState = { kind: "symlink", current: "/old/clone/skills/quiz" };
+    expect(linkDecision(st, source)).toBe("repoint");
+  });
+
+  it("never touches a real file or directory", () => {
+    const st: LinkState = { kind: "real" };
+    expect(linkDecision(st, source)).toBe("skip");
   });
 });
