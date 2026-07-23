@@ -138,6 +138,7 @@
         "bin/spec.ts",
         "bin/doc.ts",
         "src/spec-blocks.ts",
+        "src/quiz-blocks.ts",
         "src/assemble-spec.ts",
         "src/lint-spec.ts"
       ],
@@ -146,6 +147,7 @@
         "bin/spec.ts",
         "src/assemble-spec.ts",
         "src/lint-spec.ts",
+        "src/quiz-blocks.ts",
         "src/spec-blocks.ts"
       ]
     }
