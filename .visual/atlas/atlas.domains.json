@@ -141,12 +141,14 @@
         "src/quiz-blocks.ts",
         "src/lint-quiz.ts",
         "src/assemble-spec.ts",
+        "src/assemble-quiz.ts",
         "src/lint-spec.ts"
       ],
       "modules": [
         "bin/doc.ts",
         "bin/spec.ts",
         "src/assemble-spec.ts",
+        "src/assemble-quiz.ts",
         "src/lint-quiz.ts",
         "src/lint-spec.ts",
         "src/quiz-blocks.ts",
