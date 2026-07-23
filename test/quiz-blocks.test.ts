@@ -1,16 +1,16 @@
 import { describe, it, expect } from "vitest";
 import {
   allQuestions, allBlockIds, assertUniqueQuizIds, collectQuizDiagrams,
-  type QuizBlock,
+  type QuizBlock, type QuizQuestionBlock,
 } from "../src/quiz-blocks.js";
 
-const q = (id: string, extra: Partial<Record<string, unknown>> = {}): QuizBlock => ({
+const q = (id: string, extra: Partial<Record<string, unknown>> = {}): QuizQuestionBlock => ({
   type: "quiz-question", id, family: "mechanism",
   question: "Why must A run before B?",
   answer: { takeaway: "Because B reads A's output." },
   citations: [{ label: "src/a.ts:10-20", file: "src/a.ts", lines: "10-20" }],
   ...extra,
-} as QuizBlock);
+} as QuizQuestionBlock);
 
 const blocks: QuizBlock[] = [
   { type: "prose", id: "how-to", markdown: "Answer before revealing." },

@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { assembleQuiz } from "../src/assemble-quiz.js";
-import type { QuizBlock } from "../src/quiz-blocks.js";
+import type { QuizBlock, QuizQuestionBlock } from "../src/quiz-blocks.js";
 
-const q = (id: string, family: "system-fit" | "rationale" | "mechanism", title?: string): QuizBlock => ({
+const q = (id: string, family: "system-fit" | "rationale" | "mechanism", title?: string): QuizQuestionBlock => ({
   type: "quiz-question", id, family, title,
   question: `Prompt for ${id}?`,
   answer: { takeaway: `**Takeaway ${id}**` },
