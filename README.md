@@ -76,11 +76,14 @@ brew install d2          # macOS / Linuxbrew
 npm run skills:install
 ```
 
-This **symlinks** the skill dirs into `~/.claude/skills/` and creates one stable root symlink,
-`~/.claude/visual-skills` → this clone. The committed `SKILL.md` files resolve their tool
-location through that symlink, so the installer never edits anything in your clone and
-`git status` stays clean. It's idempotent: it re-points its own stale symlinks (e.g. after you
-move the clone — just re-run it) but never clobbers a real dir or file.
+This creates one stable root symlink, `~/.claude/visual-skills` → this clone, and links each
+skill **relatively** through it (`~/.claude/skills/quiz` → `../visual-skills/skills/quiz`). The
+committed `SKILL.md` files resolve their tool location through the root symlink, so the
+installer never edits anything in your clone and `git status` stays clean. It's idempotent and
+conservative: moving the clone needs one re-run (only the root link is re-pointed), a skill
+symlink is replaced only when it provably points at this clone (or at nothing), foreign links
+and real files are never touched, and a real file squatting on `~/.claude/visual-skills` aborts
+the install rather than silently resolving skills through the wrong tree.
 
 Pulling updates later needs nothing — the symlinks always serve the live checkout. Re-run
 `npm run skills:install` only when an update adds a *new* skill (to link it) or after moving

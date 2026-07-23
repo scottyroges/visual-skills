@@ -22,20 +22,25 @@ Committed SKILL.md files reference the stable path and are never rewritten:
 Valid in bash and zsh; expanded at command time in the shell where the skill runs. All
 downstream `$VISUAL_SKILLS_DIR` usages in skill bodies are unchanged.
 
-### 2. Link semantics (all seven links — six skills + root)
+### 2. Link semantics (revised after review — relative skill links, ownership-proofed)
 
-Decided by a pure, testable function `linkDecision(state, source)`:
+Skill links are **relative through the root link** (`<claudeRoot>/skills/quiz →
+`../visual-skills/skills/quiz`), so they never go stale when the clone moves — only the root
+link is machine-specific. That lets skill links keep conservative never-touch-foreign
+semantics without losing one-command moved-clone recovery. Decided by a pure
+`linkDecision(state, source, mode)`:
 
-| Existing state at target path | Action |
-|---|---|
-| nothing | **create** |
-| symlink → already `source` | **already** (no-op) |
-| symlink → anything else | **repoint** (unlink + relink; log the old target) |
-| real file or directory | **skip** with warning (genuinely foreign) |
+| Existing state at target | `root` mode | `skill` mode |
+|---|---|---|
+| nothing | create | create |
+| symlink, already canonical | no-op | no-op |
+| symlink, resolves to our content (legacy absolute form) | — | **repoint** (normalize; migration) |
+| symlink, dangling | repoint | **repoint** (points at nothing; nothing to lose) |
+| symlink, resolves elsewhere | **repoint** (the name is ours; switching clones is the use case) | **skip** — foreign, proof of ownership required |
+| real file or directory | **FATAL, exit 1, before any linking** — continuing would resolve every skill through the wrong tree | skip with warning |
 
-Repointing symlinks unconditionally (not only dead ones) is deliberate: a moved clone leaves
-all seven links pointing at the old path, and one `skills:install` re-run must recover them.
-Real files/dirs are never touched.
+No `--force` that deletes a real path: a real directory at the root path could be an actual
+checkout with uncommitted work; the error tells the user to move it aside themselves.
 
 ### 3. Installer changes (`scripts/install-skills.ts`)
 
