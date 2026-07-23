@@ -5,7 +5,7 @@
   "layer": "intelligence",
   "layerLabel": "Intelligence",
   "path": "src",
-  "count": "8 files",
+  "count": "9 files",
   "depends": "diagrams",
   "date": "2026-06-20",
   "generator": "visual-skills · visual-atlas",
@@ -20,7 +20,7 @@
     },
     {
       "key": "Files",
-      "value": "8 (3 adapters + 5 parsers)"
+      "value": "9 (3 adapters + 6 parsers)"
     },
     {
       "key": "Depends on",
@@ -40,7 +40,7 @@
         },
         {
           "key": "Role",
-          "value": "Pure analysis. It takes source text (a `schema.prisma`, a router `.ts`, any TS/JS file) and a git scope, and returns structured facts — never opinions, never narrative. The TypeScript compiler is its parser of choice."
+          "value": "Pure analysis. It takes source text (a `schema.prisma`, a router `.ts`, any TS/JS file, any `.py` file) and a git scope, and returns structured facts — never opinions, never narrative. The TypeScript compiler is the parser of choice wherever the input is TS/JS; languages outside its reach (Prisma, Python) get a dedicated line-oriented scanner instead."
         },
         {
           "key": "Why",
@@ -57,7 +57,7 @@
       "type": "components",
       "id": "components",
       "title": "The pieces",
-      "badge": "3 adapters + 5 parsers",
+      "badge": "3 adapters + 6 parsers",
       "intro": "Two layers: thin **stack adapters** that detect a repo's stack and orchestrate, and the **parsers** they (and the atlas) call to turn source text into structured facts. Tap a card to jump to its full section.",
       "cards": [
         {
@@ -121,8 +121,21 @@
           "href": "#c-imports"
         },
         {
+          "name": "python-imports",
+          "purpose": "The Python counterpart to `imports` — module specifiers and public names from `.py`/`.pyi` source, scanned line-wise rather than through an AST.",
+          "exports": [
+            {
+              "name": "pythonImportsOf"
+            },
+            {
+              "name": "pythonExportsOf"
+            }
+          ],
+          "href": "#c-python-imports"
+        },
+        {
           "name": "dep-graph",
-          "purpose": "Resolves import specifiers through tsconfig path aliases and assembles a bounded 1-hop import neighborhood around a set of changed files — the mechanical `where-it-fits` diagram.",
+          "purpose": "Resolves import specifiers through tsconfig path aliases (TS/JS) or dotted `sys.path` roots (Python) and assembles a bounded 1-hop import neighborhood around a set of changed files — the mechanical `where-it-fits` diagram.",
           "exports": [
             {
               "name": "dependencyNeighborhood"
@@ -369,12 +382,49 @@
           ]
         },
         {
+          "id": "c-python-imports",
+          "name": "python-imports",
+          "path": "src/python-imports.ts",
+          "detail": [
+            "`pythonImportsOf(source)` collects module specifiers from `import a.b`, `import x as y`, comma lists, and `from a.b import c`, deduped. Leading dots on relative imports are preserved verbatim (`.mod`, `..pkg.deep`) because the dot count is what `resolvePythonModule` needs to walk up packages. Parenthesized and backslash-continued statements are joined into one logical line first.",
+            "`pythonExportsOf(source)` returns a module's public names. Python has no `export` keyword, so it follows the language's own conventions: an explicit `__all__` wins outright — that *is* the declared API — and otherwise it takes column-0 `def` / `async def` / `class` / constant assignments minus `_`-prefixed privates. The column-0 rule is what keeps a method from being mistaken for a module export.",
+            "Deliberately a line scanner, not an AST walk: there is no Python parser in the dependency tree, and the atlas needs module edges and public names rather than semantic precision — the same tradeoff [prisma-schema](#c-prisma-schema) already makes. Strings, comments and docstrings are blanked (preserving line structure) before scanning, so an `import` inside a docstring cannot become a phantom edge. Dynamic `importlib` calls are not followed."
+          ],
+          "files": [
+            {
+              "name": "python-imports.ts",
+              "desc": "`pythonImportsOf` (dotted + relative specifiers) and `pythonExportsOf` (`__all__` or convention)."
+            }
+          ],
+          "exports": [
+            {
+              "name": "pythonImportsOf()",
+              "desc": "→ `string[]` — deduped specifiers, leading dots preserved for the resolver."
+            },
+            {
+              "name": "pythonExportsOf()",
+              "desc": "→ `string[]` — `__all__` if declared, else top-level public names."
+            }
+          ],
+          "connections": [
+            {
+              "dir": "feeds",
+              "body": "[dep-graph](#c-dep-graph) — each specifier is resolved by `resolvePythonModule` against the known-module set"
+            },
+            {
+              "dir": "used by",
+              "body": "[atlas](../domain-atlas/domain-atlas.html) — `gather-atlas` routes every `.py` module through this parser"
+            }
+          ]
+        },
+        {
           "id": "c-dep-graph",
           "name": "dep-graph",
           "path": "src/dep-graph.ts",
           "detail": [
             "`dependencyNeighborhood(changedPaths, repoRoot)` builds the bounded 1-hop import neighborhood around the changed source files: their outgoing imports and the in-repo files that import them. It calls [importsOf](#c-imports) per file and `resolveModule` to turn each specifier into a `moduleKey` — relative specifiers join + normalize; bare packages resolve to `null` and are dropped as noise. `loadAliases` reads tsconfig `paths`/`baseUrl` so aliased imports (`@/...`) resolve too (a diagram-aid heuristic, not full module resolution).",
-            "Nodes are capped (default 15) by keeping all changed files plus the highest-degree neighbors, with a `+N more` placeholder for the rest. It emits both a D2 floor and an editable mermaid `graph LR` — the recap's mechanical **`where-it-fits`** diagram. `walkSource` (the recursive source lister, skipping `node_modules`/`dist`/…) backs the importer scan."
+            "Nodes are capped (default 15) by keeping all changed files plus the highest-degree neighbors, with a `+N more` placeholder for the rest. It emits both a D2 floor and an editable mermaid `graph LR` — the recap's mechanical **`where-it-fits`** diagram. `walkSource` (the recursive source lister, skipping `node_modules`/`dist`/…) backs the importer scan.",
+            "Python resolution is a separate path: `resolvePythonModule` takes a dotted specifier and the set of known in-repo module keys, walking up one package per extra leading dot for relative imports and trying each `sys.path`-ish root longest-first for absolute ones. Anything that doesn't land on a known module is stdlib or third-party and drops out — which is how the graph stays free of `os`/`pandas` noise without resolving a Python environment. `moduleKey` collapses a trailing `/__init__` the way it collapses `/index`, and `walkSource` skips Python's vendor and cache dirs (`__pycache__`, `venv`, `.tox`, …)."
           ],
           "files": [
             {
@@ -392,6 +442,10 @@
               "desc": "Specifier (relative or tsconfig-alias) → in-repo `moduleKey`, else null."
             },
             {
+              "name": "resolvePythonModule()",
+              "desc": "Dotted Python specifier + known-module set → in-repo `moduleKey`, else null."
+            },
+            {
               "name": "loadAliases()",
               "desc": "tsconfig `paths` / `baseUrl` → alias matchers."
             },
@@ -401,13 +455,17 @@
             },
             {
               "name": "moduleKey()",
-              "desc": "The path-normalizer: strips extension and trailing `/index`."
+              "desc": "The path-normalizer: strips extension and a trailing `/index` or `/__init__`."
             }
           ],
           "connections": [
             {
               "dir": "calls",
               "body": "[importsOf](#c-imports) per file to discover candidate edges"
+            },
+            {
+              "dir": "calls",
+              "body": "[pythonImportsOf](#c-python-imports) for `.py` modules, resolved via `resolvePythonModule`"
             },
             {
               "dir": "produces",
@@ -535,8 +593,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:b3db2ff35a84580f4d3e6e3e45726bfda03ede92494b4686df61059266c0f870",
-    "date": "2026-07-21",
-    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+    "hash": "sha256:6ee24c0f0b98f0a738ab88d9a87566d6d8a8c409e47c0de4ae5f880a548de456",
+    "date": "2026-07-23",
+    "commit": "3d1395bdd2e094dc999909df61a1aeb5dfe76c6e"
   }
 }

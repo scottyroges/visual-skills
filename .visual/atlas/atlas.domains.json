@@ -60,6 +60,7 @@
         "src/prisma-schema.ts",
         "src/trpc-parse.ts",
         "src/imports.ts",
+        "src/python-imports.ts",
         "src/dep-graph.ts",
         "src/api-diff.ts"
       ],
@@ -71,6 +72,7 @@
         "src/dep-graph.ts",
         "src/imports.ts",
         "src/prisma-schema.ts",
+        "src/python-imports.ts",
         "src/trpc-parse.ts"
       ]
     },

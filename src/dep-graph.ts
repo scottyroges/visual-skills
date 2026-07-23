@@ -6,16 +6,26 @@ import type { DiagramBlock } from "./blocks.js";
 import { importsOf } from "./imports.js";
 import { MERMAID_CLASSDEFS } from "./diagram-colors.js";
 
-const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
-const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", "coverage", ".turbo"]);
+const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs|py|pyi)$/;
+export const PYTHON_RE = /\.(py|pyi)$/;
+const SKIP_DIRS = new Set([
+  "node_modules", ".git", "dist", "build", ".next", "coverage", ".turbo",
+  // Python vendor/build/cache dirs — the equivalents of node_modules/dist.
+  "__pycache__", "venv", ".venv", "env", ".env", "site-packages", ".tox", ".mypy_cache",
+  ".pytest_cache", ".ruff_cache", "egg-info", ".eggs",
+]);
 
 function q(s: string): string {
   return `"${s.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 
-/** Strip a source extension and a trailing /index so two specifiers to the same module match. */
+/** Strip a source extension and a trailing /index (or Python's /__init__) so two specifiers to
+ *  the same module match. */
 export function moduleKey(repoRelPath: string): string {
-  return repoRelPath.replace(/\\/g, "/").replace(SOURCE_RE, "").replace(/\/index$/, "");
+  return repoRelPath
+    .replace(/\\/g, "/")
+    .replace(SOURCE_RE, "")
+    .replace(/\/(index|__init__)$/, "");
 }
 
 /** Resolve a relative import specifier (from a repo-relative file) to a module key; null for bare packages. */
@@ -73,6 +83,51 @@ function resolveAlias(spec: string, aliases: Aliases): string | null {
 /** Resolve any specifier (relative OR tsconfig-alias) to an in-repo module key; null for bare packages. */
 export function resolveModule(fromRepoRel: string, spec: string, aliases: Aliases): string | null {
   return spec.startsWith(".") ? resolveRel(fromRepoRel, spec) : resolveAlias(spec, aliases);
+}
+
+/**
+ * Resolve a Python import specifier to an in-repo module key; null for stdlib/third-party.
+ *
+ * Python has no tsconfig-paths equivalent — absolute imports resolve against `sys.path`, whose
+ * in-repo entries are effectively the repo root plus each source root (the layout produced by
+ * `pip install -e .`, a `src/` layout, or simply running from the repo root). So an absolute
+ * dotted name is tried against each candidate root and kept only if it lands on a real module
+ * in `known`; anything else is stdlib or a site-package and is correctly dropped.
+ *
+ * `known` is the set of module keys from the scan (see `walkSource`), which is what makes the
+ * stdlib/third-party rejection reliable without resolving the environment.
+ */
+export function resolvePythonModule(
+  fromRepoRel: string,
+  spec: string,
+  known: Set<string>,
+  srcRoots: string[] = [],
+): string | null {
+  const fromDir = dirname(fromRepoRel).replace(/\\/g, "/");
+
+  // Relative import: leading dots. One dot = current package, each extra dot = one level up.
+  const dots = /^\.+/.exec(spec);
+  if (dots) {
+    const up = dots[0].length - 1;
+    const tail = spec.slice(dots[0].length).replace(/\./g, "/");
+    let base = fromDir;
+    for (let i = 0; i < up; i++) base = dirname(base).replace(/\\/g, "/");
+    const joined = normalize(join(base, tail)).replace(/\\/g, "/");
+    const key = moduleKey(joined);
+    return known.has(key) ? key : null;
+  }
+
+  // Absolute import: try each in-repo sys.path root, longest-prefix first so a deeper
+  // root (e.g. "src") wins over the repo root when both would match.
+  const path = spec.replace(/\./g, "/");
+  const roots = [...new Set(["", ...srcRoots.map((r) => r.replace(/\/$/, ""))])].sort(
+    (a, b) => b.length - a.length,
+  );
+  for (const root of roots) {
+    const key = moduleKey(root ? `${root}/${path}` : path);
+    if (known.has(key)) return key;
+  }
+  return null;
 }
 
 /** Recursively list repo-relative source files, skipping vendor/build dirs. */
