@@ -35,7 +35,7 @@ semantics without losing one-command moved-clone recovery. Decided by a pure
 | nothing | create | create |
 | symlink, already canonical | no-op | no-op |
 | symlink, resolves to our content (legacy absolute form) | — | **repoint** (normalize; migration) |
-| symlink, dangling | repoint | **repoint** (points at nothing; nothing to lose) |
+| symlink, dangling | repoint | **skip** — "points at nothing" is not ownership proof (unmounted drive, absent checkout) |
 | symlink, resolves elsewhere | **repoint** (the name is ours; switching clones is the use case) | **skip** — foreign, proof of ownership required |
 | real file or directory | **FATAL, exit 1, before any linking** — continuing would resolve every skill through the wrong tree | skip with warning |
 

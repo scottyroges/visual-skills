@@ -66,9 +66,9 @@ describe("linkDecision — skill links (conservative: never touch foreign links)
     expect(linkDecision(st, source, "skill")).toBe("repoint");
   });
 
-  it("repoints a dangling symlink — it points at nothing, so replacing it loses nothing", () => {
+  it("skips a dangling symlink — 'points at nothing' is not ownership proof (unmounted drive, temporarily absent checkout)", () => {
     const st: LinkState = { kind: "symlink", current: "/deleted/clone/skills/quiz", resolvesToSource: "dangling" };
-    expect(linkDecision(st, source, "skill")).toBe("repoint");
+    expect(linkDecision(st, source, "skill")).toBe("skip");
   });
 
   it("skips a symlink that resolves somewhere else — proof of ownership required to replace", () => {

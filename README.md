@@ -81,9 +81,10 @@ skill **relatively** through it (`~/.claude/skills/quiz` → `../visual-skills/s
 committed `SKILL.md` files resolve their tool location through the root symlink, so the
 installer never edits anything in your clone and `git status` stays clean. It's idempotent and
 conservative: moving the clone needs one re-run (only the root link is re-pointed), a skill
-symlink is replaced only when it provably points at this clone (or at nothing), foreign links
-and real files are never touched, and a real file squatting on `~/.claude/visual-skills` aborts
-the install rather than silently resolving skills through the wrong tree.
+symlink is replaced only when it provably resolves to this clone, foreign or dangling links
+and real files are never touched (a warning tells you how to clear a stale one), and a real
+file squatting on `~/.claude/visual-skills` aborts the install rather than silently resolving
+skills through the wrong tree.
 
 Pulling updates later needs nothing — the symlinks always serve the live checkout. Re-run
 `npm run skills:install` only when an update adds a *new* skill (to link it) or after moving

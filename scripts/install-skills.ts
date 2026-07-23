@@ -8,9 +8,9 @@
 // (VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"), so the installer
 // NEVER writes into the repo. Because skill links are relative, moving the clone only requires
 // re-pointing the root link — which this installer does on re-run. Skill links are conservative:
-// a symlink is replaced only when it provably points at our content (legacy absolute form) or at
-// nothing (dangling); foreign links and real files are never touched. A real file squatting on
-// the root path aborts the install — continuing would resolve every skill through the wrong tree.
+// a symlink is replaced only when it provably resolves to our content (legacy absolute form);
+// foreign, dangling, and real paths are never touched. A real file squatting on the root path
+// aborts the install — continuing would resolve every skill through the wrong tree.
 // Run with: npm run skills:install            (default claude root: ~/.claude)
 //           npm run skills:install -- --dir /custom/.claude
 import { symlink, mkdir, lstat, readlink, unlink, realpath } from "node:fs/promises";
@@ -51,15 +51,16 @@ export type LinkAction = "create" | "already" | "repoint" | "skip" | "fatal";
  *  root: the <claudeRoot>/visual-skills name is unambiguously ours — re-point any symlink
  *  (moved clone / switching clones), but a real file/dir there is fatal: continuing would
  *  install skills that resolve through the wrong tree.
- *  skill: never touch a link without proof of ownership — replace only the canonical form's
- *  equivalents (a legacy absolute link resolving to the same real path) or a dangling link;
- *  anything else is foreign and skipped. Real files/dirs are always skipped. */
+ *  skill: never touch a link without proof of ownership — replace only a legacy absolute
+ *  link that provably resolves to the same real path as our canonical relative form.
+ *  Dangling counts as foreign too: "points at nothing" may be an unmounted drive or a
+ *  temporarily absent checkout, not ours to destroy. Real files/dirs are always skipped. */
 export function linkDecision(st: LinkState, source: string, mode: "root" | "skill"): LinkAction {
   if (st.kind === "missing") return "create";
   if (st.kind === "real") return mode === "root" ? "fatal" : "skip";
   if (st.current === source) return "already";
   if (mode === "root") return "repoint";
-  return st.resolvesToSource === true || st.resolvesToSource === "dangling" ? "repoint" : "skip";
+  return st.resolvesToSource === true ? "repoint" : "skip";
 }
 
 async function linkState(target: string, desiredReal: string | null): Promise<LinkState> {
@@ -101,7 +102,10 @@ async function applyLink(link: SkillLink, mode: "root" | "skill"): Promise<void>
       break;
     }
     case "skip":
-      console.warn(`skip (not ours — foreign link or real path): ${target}`);
+      console.warn(
+        `skip (not provably ours — foreign/dangling link or real path): ${target}` +
+        ` — if this stale entry is yours to discard, remove it and re-run.`,
+      );
       break;
     case "fatal":
       throw new Error(
