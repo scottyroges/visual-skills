@@ -144,7 +144,7 @@
           "name": "render-diagram",
           "path": "src/render-diagram.ts",
           "detail": [
-            "`renderDiagram(block, opts, deps)` is the heart of the domain. It first compiles the block's **d2 source** to an SVG by writing `D2_CLASS_PRELUDE` + the source to a temp file and shelling out to the `d2` binary (`d2 --theme 0 --pad 24`). This is the dependable floor: it renders every diagram kind with no browser. If `d2` is missing or the source is invalid, the call degrades to a visible placeholder SVG (a warning box) rather than throwing — so one bad diagram never breaks a whole document.",
+            "`renderDiagram(block, opts, deps)` is the heart of the domain. It first compiles the block's **d2 source** to an SVG by writing `D2_CLASS_PRELUDE` + the source to a temp file and shelling out to the `d2` binary (`d2 --theme 0 --pad 24`). This is the dependable floor: it renders every diagram kind with no browser. If `d2` is missing, the source is invalid, or the source declares **no shapes at all** (d2 exits 0 but writes nothing in that case, so the output file is checked explicitly rather than letting the read fail with a bare ENOENT), the call degrades to a visible placeholder SVG (a warning box) rather than throwing — so one bad diagram never breaks a whole document.",
             "The second stage is an **opt-in upgrade** — off by default: a missing or false `excalidraw` option stays on the d2 floor. Routing is by diagram *kind*, not by toolchain availability: only `flowchart`, `architecture`, `sequence`, and `class` kinds are eligible, because those are the ones `mermaid-to-excalidraw` converts to native *editable* elements (ERD and stateDiagram silently rasterize, which is worse than the d2 sketch). When the caller explicitly opts in (`excalidraw: true`), the kind is eligible, and the Excalidraw toolchain is present, it converts the mermaid source to an editable `.excalidraw` scene plus a display SVG, forcing all text to dark `INK` for legibility. Any failure falls back to the d2 SVG already in hand — same aesthetic, never broken. `renderAll` maps this over many blocks in order."
           ],
           "diagrams": [
@@ -390,8 +390,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:1fb1cd32409f8c0422e1f1f0614995d64b6afeaf750d50f0fae41446328bcb9d",
-    "date": "2026-07-21",
-    "commit": "0b7c5078f85748a630cfca0a19d10be06a21f4f4"
+    "hash": "sha256:ff9d3d9623e838b5b0b65cafea7d1ac137936e10da8639fd58e310576f7c821d",
+    "date": "2026-07-23",
+    "commit": "4bd6c440c8d53ed7927459da17ca567766e89441"
   }
 }

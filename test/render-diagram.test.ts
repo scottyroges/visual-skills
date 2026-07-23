@@ -123,3 +123,17 @@ describe("renderDiagram (D2 floor)", () => {
     expect(plain.svg).toMatch(/<svg/); // prelude is harmless when unused
   }, 30_000);
 });
+
+describe("renderDiagram — shapeless source", () => {
+  it("reports a shapeless diagram as such (d2 exits 0 but writes no SVG)", async () => {
+    const warnings: string[] = [];
+    const out = await renderDiagram(
+      { type: "diagram", id: "empty", title: "Empty", kind: "architecture", d2: "direction: right" },
+      { onWarn: (w) => warnings.push(w) },
+    );
+    expect(out.failed).toBe(true);
+    // The old behaviour surfaced a confusing ENOENT on a temp path instead.
+    expect(warnings.join(" ")).toContain("declares no shapes");
+    expect(warnings.join(" ")).not.toContain("ENOENT");
+  });
+});

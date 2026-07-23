@@ -99,7 +99,7 @@
         },
         {
           "name": "scan + draft",
-          "purpose": "`gather-atlas.ts` — walks srcRoots, parses imports/exports/routers per module, aggregates cross-domain edges, and emits the atlas + domain draft documents (with the mechanical domain-map diagram).",
+          "purpose": "`gather-atlas.ts` — walks srcRoots, routes each module to the TS/JS or Python parser, aggregates cross-domain edges, and emits the atlas + domain draft documents (with the mechanical domain-map diagram).",
           "exports": [
             {
               "name": "scanInventory"
@@ -260,7 +260,8 @@
           "path": "src/atlas-config.ts",
           "detail": [
             "`atlas.domains.json` is the human-owned source of truth: each `DomainConfig` carries a `slug`, `name`, and `globs` (the editable lever); the scanner fills the resolved `modules`. `firstGuessConfig` seeds a fresh config — one domain per immediate child directory of each srcRoot — so a new repo starts grouped, not blank. `reconcile` refills each domain's `modules` from its `globs` against the live inventory while **preserving every human-owned field**.",
-            "Crucially, `reconcile` reports **drift** but never applies it: `newModules` (in the repo, matched by no glob), `stalePaths` (config paths no longer present), and `emptyDomains` (globs resolving to nothing). The human resolves drift by editing globs. `matchGlob` is the tiny anchored matcher — `**` spans segments, `*` spans within one."
+            "Crucially, `reconcile` reports **drift** but never applies it: `newModules` (in the repo, matched by no glob), `stalePaths` (config paths no longer present), and `emptyDomains` (globs resolving to nothing). The human resolves drift by editing globs. `matchGlob` is the tiny anchored matcher — `**` spans segments, `*` spans within one.",
+            "`AtlasConfig.exclude` is an optional list of globs dropped from the scan entirely — the case that needs it is an atlas whose out-dir lives inside the repo it documents (`docs/atlas/**`), whose own generated `atlas-check.mjs` would otherwise be reported as an unassigned module. The standalone checker honours the same field, since the two must agree or an excluded file reads as unassigned in one and absent in the other."
           ],
           "files": [
             {
@@ -302,8 +303,10 @@
           "name": "scan + draft",
           "path": "src/gather-atlas.ts",
           "detail": [
-            "The hub of the [full-scan flow](#arch). `scanInventory` walks the srcRoots, and per module records resolved in-repo import keys, exported names, and whether it is a tRPC router — skipping generated/test trees and co-located `*.test`/`*.spec` files. It also collects Prisma model names. `aggregateDomainEdges` rolls module→module imports up to cross-domain slug→slug edges (intra-domain edges dropped).",
-            "`buildAtlasDraft` emits the atlas-page doc: a tile per domain (with file counts and dep edges) plus the mechanical `domainMapDiagram`. `buildDomainDraft` groups a domain's modules by subdirectory into component cards + deep sections, listing real files and exports — but leaves every `purpose`/`detail` field **blank** for the human. The scanner never writes prose."
+            "The hub of the [full-scan flow](#arch). `scanInventory` walks the srcRoots, and per module records resolved in-repo import keys, exported names, and whether it is a tRPC router — skipping generated/test trees and co-located test files (`*.test`/`*.spec` for TS/JS, and Python's inverse `test_*.py` / `conftest.py` / `_test.py` convention). It also collects Prisma model names. `aggregateDomainEdges` rolls module→module imports up to cross-domain slug→slug edges (intra-domain edges dropped).",
+            "Language routing happens here: a `.py`/`.pyi` module goes through [python-imports](../domain-code-intel/domain-code-intel.html#c-python-imports), everything else through the TS-compiler parsers. Python forces the scan into **two passes** — a Python absolute import can only be classified in-repo vs stdlib/third-party once every module key is known, so `.py` specifiers are stashed during the walk and resolved against the full known-module set afterwards. TS/JS edges still resolve inline in the first pass.",
+            "`buildAtlasDraft` emits the atlas-page doc: a tile per domain (with file counts and dep edges) plus the mechanical `domainMapDiagram`. `buildDomainDraft` groups a domain's modules by subdirectory into component cards + deep sections, listing real files and exports — but leaves every `purpose`/`detail` field **blank** for the human. The scanner never writes prose.",
+            "A `\".\"` srcRoot (a repo whose entry point sits at the top level) yields plain repo-relative paths rather than `./`-prefixed ones — the prefix would match neither the globs users write nor the paths `atlas-check.mjs` derives, splitting scanner and checker into silent disagreement."
           ],
           "files": [
             {
@@ -332,7 +335,7 @@
           "connections": [
             {
               "dir": "uses",
-              "body": "[code-intel](../domain-code-intel/domain-code-intel.html) — `importsOf`/`exportsOf`, `parseRouter`, `parsePrismaModels`, `dep-graph`"
+              "body": "[code-intel](../domain-code-intel/domain-code-intel.html) — `importsOf`/`exportsOf`, `pythonImportsOf`/`pythonExportsOf`, `parseRouter`, `parsePrismaModels`, `dep-graph`"
             },
             {
               "dir": "reads",
@@ -566,8 +569,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:8d5708532e34b43b3d331ce7b853cde97462c7a6d88c7ce6329f2e5c690188a1",
-    "date": "2026-07-21",
-    "commit": "913441f03aaf2b4ed8ad35f811bf8a02dd31e13d"
+    "hash": "sha256:64560e024ecc8be12b26b7519952d77f0f44ca951ab26c0052347f21310f7060",
+    "date": "2026-07-23",
+    "commit": "4bd6c440c8d53ed7927459da17ca567766e89441"
   }
 }

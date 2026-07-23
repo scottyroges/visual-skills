@@ -1,10 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { importsOf, exportsOf } from "./imports.js";
+import { pythonImportsOf, pythonExportsOf } from "./python-imports.js";
 import { parseRouter } from "./trpc-parse.js";
 import { parsePrismaModels } from "./prisma-schema.js";
-import { walkSource, moduleKey, loadAliases, resolveModule } from "./dep-graph.js";
+import {
+  walkSource, moduleKey, loadAliases, resolveModule, resolvePythonModule, PYTHON_RE,
+} from "./dep-graph.js";
 import type { AtlasConfig } from "./atlas-config.js";
+import { matchGlob } from "./atlas-config.js";
 import type { AtlasDiagram } from "./atlas-blocks.js";
 
 /** Path segments that are never their own domain in an architecture atlas — generated code and
@@ -12,8 +16,10 @@ import type { AtlasDiagram } from "./atlas-blocks.js";
  *  (Build/vendor dirs are already skipped by walkSource.) */
 const NON_DOMAIN_DIRS = new Set(["generated", "__generated__", "test", "tests", "__tests__", "__mocks__"]);
 
-/** Co-located test/spec files (e.g. `format.test.ts`, `pick-lock.spec.tsx`) aren't architecture. */
-const TEST_FILE_RE = /\.(test|spec)\.[cm]?[jt]sx?$/;
+/** Co-located test/spec files (e.g. `format.test.ts`, `pick-lock.spec.tsx`) aren't architecture.
+ *  Python's convention is the inverse — a `test_` prefix (pytest/unittest discovery) or the
+ *  `_test.py` suffix — plus `conftest.py`, which is pytest fixture wiring, not a module. */
+const TEST_FILE_RE = /\.(test|spec)\.[cm]?[jt]sx?$|(^|\/)(test_[^/]*|conftest)\.pyi?$|_test\.pyi?$/;
 
 /** One scanned source module: resolved in-repo import keys + exported names. */
 export interface ModuleInfo {
@@ -27,23 +33,45 @@ export interface Inventory {
   models: string[];      // Prisma model names
 }
 
-/** Walk srcRoots, parse imports/exports/routers per module, and collect Prisma models. */
-export async function scanInventory(repoRoot: string, srcRoots: string[]): Promise<Inventory> {
+/** Walk srcRoots, parse imports/exports/routers per module, and collect Prisma models.
+ *  `exclude` globs (see `AtlasConfig.exclude`) are dropped from the inventory entirely. */
+export async function scanInventory(
+  repoRoot: string,
+  srcRoots: string[],
+  exclude: string[] = [],
+): Promise<Inventory> {
   const aliases = loadAliases(repoRoot);
   const seen = new Set<string>();
   const modules: ModuleInfo[] = [];
+  /** Python modules awaiting the second resolution pass (see below). */
+  const pending: { path: string; specs: string[] }[] = [];
 
   for (const root of srcRoots) {
     for (const rel of await walkSource(join(repoRoot, root))) {
-      // walkSource returns paths relative to its argument; re-root to the repo.
-      const path = `${root.replace(/\/$/, "")}/${rel}`.replace(/\\/g, "/");
+      // walkSource returns paths relative to its argument; re-root to the repo. A "." srcRoot
+      // (a repo whose entry points sit at the top level) must still yield plain repo-relative
+      // paths — a "./" prefix here would not match the domain globs users write, nor the paths
+      // atlas-check.mjs derives, silently splitting the two into disagreement.
+      const prefix = root.replace(/\/$/, "").replace(/^\.$/, "");
+      const path = (prefix ? `${prefix}/${rel}` : rel).replace(/\\/g, "/");
       if (seen.has(path)) continue;
       seen.add(path);
       if (path.split("/").some((seg) => NON_DOMAIN_DIRS.has(seg))) continue; // codegen / test trees aren't domains
       if (TEST_FILE_RE.test(path)) continue;                                 // co-located test/spec files aren't either
+      if (exclude.some((g) => matchGlob(g, path))) continue;                 // explicitly excluded by the config
 
       const src = await readFile(join(repoRoot, path), "utf8").catch(() => null);
       if (src == null) continue;
+
+      if (PYTHON_RE.test(path)) {
+        // Python import specifiers are dotted and resolve against sys.path roots, which means
+        // they can only be classified in-repo vs third-party once every module is known. Defer
+        // resolution to the second pass below; stash the raw specifiers for now.
+        pending.push({ path, specs: pythonImportsOf(src) });
+        modules.push({ path, imports: [], exports: pythonExportsOf(src), isRouter: false });
+        continue;
+      }
+
       // valueOnly: a `import type { AppRouter }` (tRPC) or `import type { Foo }` (Prisma) is not a
       // runtime/architectural dependency, so it must not become a domain edge.
       const imports = [...new Set(
@@ -55,6 +83,22 @@ export async function scanInventory(repoRoot: string, srcRoots: string[]): Promi
       modules.push({ path, imports, exports: exportsOf(src), isRouter });
     }
   }
+
+  // Second pass: now that every module key is known, resolve the Python edges. Specifiers that
+  // don't land on an in-repo module are stdlib or third-party and drop out here.
+  if (pending.length) {
+    const known = new Set(modules.map((m) => moduleKey(m.path)));
+    const byPath = new Map(modules.map((m) => [m.path, m]));
+    for (const { path, specs } of pending) {
+      const self = moduleKey(path);
+      byPath.get(path)!.imports = [...new Set(
+        specs
+          .map((spec) => resolvePythonModule(path, spec, known, srcRoots))
+          .filter((k): k is string => k != null && k !== self),
+      )].sort();
+    }
+  }
+
   modules.sort((a, b) => a.path.localeCompare(b.path));
 
   const schema = await readFile(join(repoRoot, "prisma", "schema.prisma"), "utf8").catch(() => null);

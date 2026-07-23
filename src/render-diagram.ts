@@ -139,6 +139,13 @@ async function renderViaD2(source: string): Promise<string> {
     await writeFile(inFile, `${D2_CLASS_PRELUDE}\n${source}`);
     // Clean (non-sketch) rendering for the review aesthetic.
     await exec("d2", ["--theme", "0", "--pad", "24", inFile, outFile]);
+    // A source with no shapes (e.g. a bare `direction: right` stub from a single-module domain)
+    // makes d2 exit 0 while writing nothing at all. Report that as what it is, rather than
+    // letting the read below surface a confusing ENOENT on a temp path.
+    const wrote = await access(outFile).then(() => true, () => false);
+    if (!wrote) {
+      throw new Error("d2 produced no output — the diagram source declares no shapes");
+    }
     const svg = await readFile(outFile, "utf8");
     // d2 always embeds `.sketch-overlay-*` CSS rules in its stylesheet template, even without
     // --sketch. They reference sketch-only `#streaks-*` gradients and are never applied here, so

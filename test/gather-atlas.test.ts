@@ -134,3 +134,130 @@ describe("buildDomainDraft", () => {
     expect(() => buildDomainDraft("nope", CONFIG, inv, edges)).toThrow(/unknown domain/);
   });
 });
+
+describe("scanInventory — Python", () => {
+  async function pyRepo(files: Record<string, string>): Promise<string> {
+    const { mkdtemp, mkdir, writeFile } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const root = await mkdtemp(join(tmpdir(), "vs-atlas-py-"));
+    for (const [rel, content] of Object.entries(files)) {
+      const abs = join(root, rel);
+      await mkdir(join(abs, ".."), { recursive: true });
+      await writeFile(abs, content);
+    }
+    return root;
+  }
+
+  it("scans .py modules, resolving in-repo edges and dropping stdlib/third-party", async () => {
+    const { rm } = await import("node:fs/promises");
+    const root = await pyRepo({
+      "src/__init__.py": "",
+      "src/app/__init__.py": "",
+      "src/app/matcher.py": [
+        "import os",
+        "import requests",
+        "from src.services.db import connect",
+        "from .optimizer import Optimizer",
+        "class Widget:",
+        "    pass",
+      ].join("\n"),
+      "src/app/optimizer.py": "def optimize():\n    pass\n",
+      "src/services/__init__.py": "",
+      "src/services/db.py": "def connect():\n    pass\n",
+      "src/app/test_matcher.py": "def test_x():\n    pass\n",
+      "src/conftest.py": "import pytest\n",
+      "src/__pycache__/matcher.cpython-311.pyc": "binary",
+    });
+    try {
+      const inv = await scanInventory(root, ["src"]);
+      const paths = inv.modules.map((m) => m.path).sort();
+
+      // pytest files and __pycache__ are not architecture
+      expect(paths).not.toContain("src/app/test_matcher.py");
+      expect(paths).not.toContain("src/conftest.py");
+      expect(paths.some((p) => p.includes("__pycache__"))).toBe(false);
+      expect(paths).toContain("src/app/matcher.py");
+
+      const matcher = inv.modules.find((m) => m.path === "src/app/matcher.py")!;
+      // absolute in-repo + relative both resolve; os/requests dropped
+      expect(matcher.imports).toEqual(["src/app/optimizer", "src/services/db"]);
+      expect(matcher.exports).toEqual(["Widget"]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("aggregates Python module edges into cross-domain edges", async () => {
+    const { rm } = await import("node:fs/promises");
+    const root = await pyRepo({
+      "src/app/matcher.py": "from src.services.db import connect\n",
+      "src/services/db.py": "def connect():\n    pass\n",
+    });
+    try {
+      const inv = await scanInventory(root, ["src"]);
+      const config = {
+        repo: "py",
+        srcRoots: ["src"],
+        domains: [
+          { slug: "app", name: "App", globs: ["src/app/**"], modules: ["src/app/matcher.py"] },
+          { slug: "services", name: "Services", globs: ["src/services/**"], modules: ["src/services/db.py"] },
+        ],
+      } as unknown as AtlasConfig;
+      const edges = aggregateDomainEdges(config, inv);
+      expect([...edges.get("app")!]).toEqual(["services"]);
+      expect([...edges.get("services")!]).toEqual([]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("scanInventory — srcRoots and exclude", () => {
+  async function tmpRepo(files: Record<string, string>): Promise<string> {
+    const { mkdtemp, mkdir, writeFile } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const root = await mkdtemp(join(tmpdir(), "vs-atlas-roots-"));
+    for (const [rel, content] of Object.entries(files)) {
+      const abs = join(root, rel);
+      await mkdir(join(abs, ".."), { recursive: true });
+      await writeFile(abs, content);
+    }
+    return root;
+  }
+
+  it('a "." srcRoot yields plain repo-relative paths, not "./"-prefixed ones', async () => {
+    const { rm } = await import("node:fs/promises");
+    const root = await tmpRepo({
+      "main.py": "def run():\n    pass\n",
+      "src/lib.py": "def helper():\n    pass\n",
+    });
+    try {
+      const inv = await scanInventory(root, ["."]);
+      const paths = inv.modules.map((m) => m.path).sort();
+      // The "./" prefix would match neither user-written globs nor atlas-check.mjs's paths.
+      expect(paths).toEqual(["main.py", "src/lib.py"]);
+      expect(paths.some((p) => p.startsWith("./"))).toBe(false);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("exclude globs drop matching modules from the inventory entirely", async () => {
+    const { rm } = await import("node:fs/promises");
+    const root = await tmpRepo({
+      "main.py": "def run():\n    pass\n",
+      "docs/atlas/atlas-check.mjs": "// generated drift checker\n",
+      "vendor/thing.py": "def x():\n    pass\n",
+    });
+    try {
+      const all = await scanInventory(root, ["."]);
+      expect(all.modules.map((m) => m.path).sort())
+        .toEqual(["docs/atlas/atlas-check.mjs", "main.py", "vendor/thing.py"]);
+
+      const scoped = await scanInventory(root, ["."], ["docs/atlas/**", "vendor/**"]);
+      expect(scoped.modules.map((m) => m.path)).toEqual(["main.py"]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});

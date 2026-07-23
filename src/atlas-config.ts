@@ -8,6 +8,11 @@ export interface DomainConfig {
 export interface AtlasConfig {
   repo: string;
   srcRoots: string[];
+  /** Optional globs excluded from the scan entirely — they form no domain, no edges, and no
+   *  drift noise. The common case is an atlas whose own out-dir lives inside the repo it
+   *  documents (`docs/atlas/**`), whose generated `atlas-check.mjs` would otherwise be
+   *  reported as an unassigned module. Same minimal glob syntax as domain globs. */
+  exclude?: string[];
   domains: DomainConfig[];
 }
 

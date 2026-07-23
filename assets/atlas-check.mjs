@@ -53,7 +53,12 @@ if (!existsSync(configPath)) {
 const config = JSON.parse(readFileSync(configPath, "utf8"));
 
 // Same rules as the scanner (walkSource + scanInventory in visual-skills).
-const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", "coverage", ".turbo"]);
+const SKIP_DIRS = new Set([
+  "node_modules", ".git", "dist", "build", ".next", "coverage", ".turbo",
+  // Python vendor/build/cache dirs — the equivalents of node_modules/dist.
+  "__pycache__", "venv", ".venv", "env", ".env", "site-packages", ".tox", ".mypy_cache",
+  ".pytest_cache", ".ruff_cache", "egg-info", ".eggs",
+]);
 const NON_DOMAIN_DIRS = new Set([
   "generated",
   "__generated__",
@@ -62,8 +67,8 @@ const NON_DOMAIN_DIRS = new Set([
   "__tests__",
   "__mocks__",
 ]);
-const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
-const TEST_FILE_RE = /\.(test|spec)\.[cm]?[jt]sx?$/;
+const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs|py|pyi)$/;
+const TEST_FILE_RE = /\.(test|spec)\.[cm]?[jt]sx?$|(^|\/)(test_[^/]*|conftest)\.pyi?$|_test\.pyi?$/;
 
 function walk(dir, acc, sourceOnly) {
   let entries;
@@ -105,6 +110,8 @@ for (const root of config.srcRoots ?? []) {
     const r = rel(abs);
     if (r.split("/").some((seg) => NON_DOMAIN_DIRS.has(seg))) continue;
     if (TEST_FILE_RE.test(r)) continue;
+    // config.exclude — must mirror the scanner, or excluded files read as unassigned here.
+    if ((config.exclude ?? []).some((g) => matchGlob(g, r))) continue;
     live.push(r);
   }
 }
