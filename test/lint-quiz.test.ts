@@ -41,6 +41,14 @@ describe("lintQuiz", () => {
     expect(warns.some((w) => /unknown fragment "#missing-block"/.test(w))).toBe(true);
   });
 
+  it("flags a question with an unknown family", () => {
+    const blocks: QuizBlock[] = [
+      q("q1", { family: "trivia" as unknown as QuizFamily }), q("q2"),
+    ];
+    const warns = lintQuiz(blocks as unknown as QuizBlock[]);
+    expect(warns.some((w) => /"q1" has unknown family "trivia" — use system-fit \| rationale \| mechanism/.test(w))).toBe(true);
+  });
+
   it("flags a medium+ quiz drawn from a single family, descending into groups", () => {
     const blocks: QuizBlock[] = [
       q("q1"), q("q2"),

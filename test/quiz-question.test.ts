@@ -46,6 +46,19 @@ describe("renderQuizQuestion", () => {
     expect(html).not.toContain('href="src/router.ts');          // file citations are never links
   });
 
+  it("tolerates malformed input (missing citations/answer fields) without crashing", async () => {
+    const malformed = {
+      type: "quiz-question", id: "q2", family: "rationale",
+      question: "Why does this approach avoid the race?",
+      answer: {},
+    } as unknown as QuizQuestionBlock;
+    const html = await renderQuizQuestion(malformed, ctx);
+    expect(html).toContain("Why does this approach avoid the race?");
+    expect(html).toContain("<details");
+    expect(html).toContain("Reveal answer");
+    expect(html).not.toContain("quiz-citations");
+  });
+
   it("renders attached annotated code", async () => {
     const withCode: QuizQuestionBlock = {
       ...base,

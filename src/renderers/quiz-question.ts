@@ -32,14 +32,18 @@ export async function renderQuizQuestion(b: QuizQuestionBlock, ctx: QuizQuestion
   const dr = b.diagram ? ctx.diagrams.get(b.diagram.id) : undefined;
   const diagram = b.diagram && dr ? renderDiagramCard(b.diagram, dr) : "";
   const code = b.code ? await renderAnnotatedCode(b.code, ctx.onWarn) : "";
-  const points = b.answer.points?.length
+  // Runtime-safe access: quiz.json is hand-authored JSON, not guaranteed to match
+  // QuizQuestionBlock at runtime — lint-quiz.ts warns on the same missing fields with `?.`
+  // guards, but a crash here would drop those buffered warnings before they print.
+  const points = b.answer?.points?.length
     ? `<ul class="quiz-points">${(await Promise.all(
         b.answer.points.map(async (p) => `<li>${await renderInlineMarkdown(p)}</li>`),
       )).join("")}</ul>`
     : "";
-  const citations = b.citations.length
+  const citationList = b.citations ?? [];
+  const citations = citationList.length
     ? `<div class="quiz-citations"><span class="quiz-cite-label">Grounded in</span>` +
-      `${b.citations.map((c) => renderCitation(c, ctx.ids)).join("")}</div>`
+      `${citationList.map((c) => renderCitation(c, ctx.ids)).join("")}</div>`
     : "";
   return (
     `<article class="quiz-q" id="${escapeHtml(b.id)}">` +
@@ -48,7 +52,7 @@ export async function renderQuizQuestion(b: QuizQuestionBlock, ctx: QuizQuestion
     `<div class="quiz-prompt">${prompt}</div>` +
     diagram + code +
     `<details class="quiz-reveal"><summary>Reveal answer</summary>` +
-    `<div class="quiz-answer"><p class="quiz-takeaway">${await renderInlineMarkdown(b.answer.takeaway)}</p>` +
+    `<div class="quiz-answer"><p class="quiz-takeaway">${await renderInlineMarkdown(b.answer?.takeaway ?? "")}</p>` +
     `${points}${citations}</div></details></article>`
   );
 }

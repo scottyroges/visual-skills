@@ -22,9 +22,11 @@ const specBlockTypes = [...new Set([...specBlocks.matchAll(/\btype:\s*"([^"]+)"/
 // not a member of the AtlasBlock union (which is what the SKILL must document).
 const atlasBlockTypes = [...new Set([...atlasBlocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))]
   .filter((t) => t !== "diagram");
-// Exclude "diagram"/"annotated-code"/"prose": embedded shared primitives, not QuizBlock members.
-const quizBlockTypes = [...new Set([...quizBlocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))]
-  .filter((t) => t === "quiz-question" || t === "quiz-group");
+// No filter needed: quiz-blocks.ts only declares discriminant literals for its own union
+// members (quiz-question, quiz-group) — shared primitives (annotated-code, diagram, prose) are
+// type-imported from blocks.ts, so their `type: "…"` literals never appear in this file's text.
+// A future QuizBlock member's discriminant will show up here automatically.
+const quizBlockTypes = [...new Set([...quizBlocks.matchAll(/\btype:\s*"([^"]+)"/g)].map((m) => m[1]))];
 
 describe("skill docs stay in sync", () => {
   it("documents every Block type in the visual-doc skill", () => {

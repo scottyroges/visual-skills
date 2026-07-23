@@ -15,7 +15,8 @@
     "visual-doc": "bin/doc.ts",
     "visual-recap": "bin/recap.ts",
     "visual-spec": "bin/spec.ts",
-    "visual-atlas": "bin/atlas.ts"
+    "visual-atlas": "bin/atlas.ts",
+    "visual-quiz": "bin/quiz.ts"
   },
   "scripts": {
     "doc": "tsx bin/doc.ts",

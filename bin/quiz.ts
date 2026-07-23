@@ -50,7 +50,14 @@ async function main() {
     onWarn: (m) => warnings.push(m),
   };
 
-  const html = await assembleQuiz(doc.blocks, opts);
+  let html: string;
+  try {
+    html = await assembleQuiz(doc.blocks, opts);
+  } catch (e) {
+    // Don't lose buffered lint warnings if the render itself throws (e.g. malformed quiz.json).
+    for (const w of warnings) console.warn(`⚠ ${w}`);
+    throw e;
+  }
   const htmlPath = join(outDir, "quiz.html");
   await writeFile(htmlPath, html);
   await writeFile(join(outDir, "quiz.json"), JSON.stringify(doc, null, 2));

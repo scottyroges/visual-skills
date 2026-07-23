@@ -221,6 +221,12 @@ npx tsx bin/spec.ts --blocks spec.json --out .visual/specs/x
 npx tsx bin/doc.ts --blocks blocks.json --title "My Doc" --out .visual/docs/x
 ```
 
+**Quiz** — a comprehension check over a PR/spec/doc, authored blocks:
+
+```sh
+npx tsx bin/quiz.ts --blocks quiz.json --out .visual/quizzes/x
+```
+
 Diagrams use the static D2 floor by default. Add `--excalidraw` to any of these to opt into the
 editable Excalidraw upgrade (when the toolchain is installed); `--no-excalidraw` is the explicit off.
 
