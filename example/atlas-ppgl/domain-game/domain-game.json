@@ -175,7 +175,7 @@
           "body": "The promotion returns `{ locked, skipped, cleaned }` for the cron log. The `cleaned` count comes from the sweep that runs straight after: our member's golfer is now exhausted, so **his remaining `PLANNED` picks on other tournaments are deleted** — the soft reservations disappear the moment the hard use is spent.\n\nFrom here the row is ordinary: **scoring** rolls its earnings into the standings, `/season/[userId]` shows it to peers (`memberPicksByUser` returns `LOCKED` only), and only a commissioner override can change it — with an audit row and a recalc."
         }
       ],
-      "lesson": "The same row is locked twice — optimistically at read time so the UI is never stale, then for real by the cron, which is the only place field membership and exhaustion are actually enforced."
+      "lesson": "The same row is locked twice — optimistically at read time so the UI is never stale, then for real by the cron, the only unattended path that enforces field membership at all (a commissioner add treats not-in-field as a soft warning, though it does hard-block exhaustion)."
     },
     {
       "type": "diagram-section",
