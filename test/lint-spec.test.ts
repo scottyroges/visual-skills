@@ -28,7 +28,7 @@ describe("lintSpec", () => {
   it("passes a complete large spec with no warnings", () => {
     const blocks: SpecBlock[] = [
       tldr(true), diagram(), { type: "fits", id: "fits", chain: [{ role: "r", title: "t", desc: "d" }] },
-      decisions({ why: true, rejected: true, n: 5 }), scope(), rollout(), approve(),
+      decisions({ why: true, rejected: true, n: 5 }), scope(), rollout(), approve(), example(),
     ];
     expect(lintSpec(blocks)).toEqual([]);
   });
@@ -63,5 +63,30 @@ describe("lintSpec", () => {
     const blocks: SpecBlock[] = [tldr(false), decisions({ why: true, rejected: false, n: 2 }), scope()];
     const warns = lintSpec(blocks);
     expect(warns.some((w) => /hero diagram|Rollout|Before you approve|big-idea/.test(w))).toBe(false);
+  });
+});
+
+const example = (over: Partial<import("../src/blocks.js").ExampleBlock> = {}): SpecBlock => ({
+  type: "example", id: "ex", title: "Worked example", source: "test/x.json", lesson: "l",
+  stages: [{ label: "in", kind: "input", body: "x" }], ...over,
+});
+
+describe("lintSpec — examples", () => {
+  it("example blocks do not count toward the large-spec chapter threshold", () => {
+    // 4 real chapters + 1 example = still medium: no hero/rollout/approve demands.
+    const warns = lintSpec([tldr(true), decisions({ why: true, rejected: true, n: 2 }), scope(),
+      filler("r1"), filler("r2"), example()]);
+    expect(warns.filter((w) => w.includes("hero") || w.includes("Rollout") || w.includes("approve"))).toEqual([]);
+  });
+  it("nudges a large spec with zero examples, clears with one", () => {
+    const large = [tldr(true), diagram(), decisions({ why: true, rejected: true, n: 2 }), scope(),
+      rollout(), approve(), filler("r1")];
+    expect(lintSpec(large as SpecBlock[]).some((w) => w.includes("worked example"))).toBe(true);
+    expect(lintSpec([...large, example()] as SpecBlock[]).some((w) => w.includes("worked example"))).toBe(false);
+  });
+  it("pipes lintExamples judgment rules through", () => {
+    const warns = lintSpec([tldr(true), decisions({ why: true, rejected: true, n: 2 }), scope(),
+      example({ mode: "reveal" })]);
+    expect(warns.some((w) => w.includes("nothing is hidden"))).toBe(true);
   });
 });

@@ -5,6 +5,7 @@ import { escapeHtml } from "./html.js";
 import { renderInlineMarkdown, renderMarkdown } from "./renderers/markdown.js";
 import { renderAll, type DiagramResult } from "./render-diagram.js";
 import { renderDiagramCard } from "./review/sections.js";
+import { renderExample } from "./renderers/example.js";
 import { lintSpec } from "./lint-spec.js";
 import {
   assertUniqueSpecIds, collectSpecDiagrams, toDiagramBlock, isChapter, chapterLabel,
@@ -374,6 +375,8 @@ async function renderBlock(
       case "risks": return renderRisks(b);
       case "approve": return renderApprove(b);
       case "reference": return renderReference(b, opts.onWarn);
+      case "example":
+        return sectionHeader(b.title, b.badge) + (await renderExample(b, { ownHeader: false, onWarn: opts.onWarn }));
       case "spec-prose": return renderProse(b, opts.onWarn);
       default: {
         opts.onWarn?.(`spec: no renderer for block type "${(b as SpecBlock).type}"`);
@@ -388,6 +391,7 @@ export async function assembleSpec(blocks: SpecBlock[], opts: SpecOpts): Promise
   assertUniqueSpecIds(blocks);
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
   const specCss = await readFile(join(ASSETS, "spec.css"), "utf8");
+  const exampleCss = await readFile(join(ASSETS, "example.css"), "utf8");
   const themeCss = await readFile(join(ASSETS, "theme.css"), "utf8");
   const themeHead = await readFile(join(ASSETS, "theme-head.js"), "utf8");
   const themeToggle = await readFile(join(ASSETS, "theme-toggle.js"), "utf8");
@@ -434,7 +438,7 @@ export async function assembleSpec(blocks: SpecBlock[], opts: SpecOpts): Promise
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<script>${themeHead}</script>` +
     `${opts.generator ? `<meta name="generator" content="${escapeHtml(opts.generator)}">` : ""}` +
-    `<title>${escapeHtml(opts.title)}</title><style>${css}\n${specCss}\n${themeCss}</style></head>` +
+    `<title>${escapeHtml(opts.title)}</title><style>${css}\n${specCss}\n${exampleCss}\n${themeCss}</style></head>` +
     `<body>${topbar}<div class="sidebar-overlay" id="sidebar-overlay"></div>` +
     `<div class="layout">${sidebar}${main}</div>${zoomOverlay}` +
     `<script>${viewer}</script><script>${themeToggle}</script></body></html>\n`

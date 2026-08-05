@@ -151,4 +151,19 @@ describe("assembleSpec", () => {
       { type: "risks", id: "dup", title: "R", risks: [] },
     ])).toThrow(/duplicate/);
   });
+
+  it("renders an example block as a chapter and guards malformed hand-authored JSON", async () => {
+    const warns: string[] = [];
+    const blocks = [
+      { type: "tldr", id: "tldr", heading: "h", rows: [{ key: "What", value: "x" }] },
+      { type: "example", id: "ex-bad", title: "Broken", stages: [null, {}] },  // no source/lesson; hostile stages
+    ] as unknown as SpecBlock[];
+    const html = await assembleSpec(blocks, { title: "T", onWarn: (m) => warns.push(m) });
+    expect(html).toContain("no source given");
+    expect(html).toContain("no lesson written");
+    expect(html).toContain("vs-example");
+    expect(html).toContain('class="outline-num"');                 // it's in the sidebar outline
+    expect(warns.some((w) => w.includes("no source"))).toBe(true);
+    expect(warns.some((w) => w.includes("dropped"))).toBe(true);   // [null, …] entry
+  });
 });
