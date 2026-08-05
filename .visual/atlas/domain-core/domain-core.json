@@ -194,12 +194,12 @@
           "path": "src/blocks.ts",
           "detail": [
             "`Block` is a discriminated union keyed on `type` — `diagram`, `schema`, `api`, `file-tree`, `diff`, `prose`, `annotated-code`, `questions`, `group`, `tabs`, `overview`, `example`. This is the entire contract between a product and the engine: a generator never touches HTML, it only constructs typed blocks. `assemble`'s exhaustive `switch (b.type)` is checked against this union, so adding a variant is a compile error until a renderer handles it.",
-            "Two variants are containers that nest **one level deep**: `group` (a labelled `<details>` of child blocks) and `tabs` (a CSS-only switcher, max 6 tabs). `diff` and `overview` may each carry an optional embedded `diagram`. The only logic here is `isDiagramBlock`, the type guard `assemble` uses to find every `diagram`/`schema` block — including those nested inside groups, tabs, diffs, and overviews — so they can be rendered through the diagrams domain up front."
+            "Two variants are containers that nest **one level deep**: `group` (a labelled `<details>` of child blocks) and `tabs` (a CSS-only switcher, max 6 tabs). `diff` and `overview` may each carry an optional embedded `diagram`. The logic here is small and structural: `isDiagramBlock`, the type guard `assemble` uses to find every `diagram`/`schema` block — including those nested inside groups, tabs, diffs, and overviews — so they can be rendered through the diagrams domain up front; and the two example normalizers. `normalizeExample` turns one hand-authored (possibly hostile) example into a safe block plus a list of problems — it never throws. `normalizeExampleBlocks` is the assembler-boundary sweep: every assembler runs it over its incoming blocks **first**, replacing each example — top level, group child, or tab payload — with its normalized form and handing back the problems for the assembler to warn. Both containers have to be walked, because the raw `b.id`/`b.title` of a tab-nested example is read by `assemble`'s anchor step exactly like a top-level one's."
           ],
           "files": [
             {
               "name": "blocks.ts",
-              "desc": "The `Block` union, every variant interface, and the `isDiagramBlock` guard."
+              "desc": "The `Block` union, every variant interface, the `isDiagramBlock` guard, and the example normalizers."
             }
           ],
           "exports": [
@@ -226,6 +226,10 @@
             {
               "name": "isDiagramBlock()",
               "desc": "Type guard — is this block rendered through the d2/mermaid diagram path?"
+            },
+            {
+              "name": "normalizeExampleBlocks()",
+              "desc": "Assembler-boundary sweep — normalizes every example (incl. group children and tab payloads), returns { blocks, problems }."
             }
           ],
           "connections": [
@@ -623,8 +627,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:aa148b740d7bae22e07257766fa0177fb069d8644bd21be6f2f854f3fab7fbfb",
+    "hash": "sha256:5cc2909db4ba2b48808920a52068fcb5fcebae35698c35345246bf2e1a29354b",
     "date": "2026-08-05",
-    "commit": "9d4167c972e7aeaae865653a4bfa12116535ddcb"
+    "commit": "5d3cae1112f50c7b73695ff1bd2d16923b10ab6c"
   }
 }

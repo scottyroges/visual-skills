@@ -1,6 +1,9 @@
 // Judgment lints for example blocks, shared by every surface (spec/recap/doc/atlas call this from
-// their existing lint). Warnings only. Operates on NORMALIZED blocks; normalizeExample's problem
-// messages are surfaced by the renderer, not re-emitted here, so both can run without duplicates.
+// their existing lint). Warnings only. Normalizes internally but is CALLED with the author's raw
+// blocks — it needs the raw `mode` (see below). normalizeExample's problem messages are surfaced
+// once at the assembler boundary (normalizeExampleBlocks), or by renderExample when it is handed a
+// block nobody pre-normalized; either way they are not re-emitted here, so both can run without
+// duplicates.
 import { normalizeExample, type ExampleBlock } from "./blocks.js";
 
 /** A stage body longer than this is a log dump, not a teaching instance. */

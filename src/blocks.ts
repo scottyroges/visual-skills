@@ -223,7 +223,9 @@ export function normalizeExample(raw: ExampleBlock): NormalizedExample {
  * emits these, and passes preNormalized:true to renderExample so nothing is warned twice.
  *
  * Generic over the per-surface block unions (Block / SpecBlock / AtlasBlock), which all carry
- * ExampleBlock; the "group" branch is a no-op for the surfaces that have no group type.
+ * ExampleBlock; the "group"/"tabs" branches are no-ops for the surfaces that have no such type.
+ * Both containers must recurse: a tab holds any non-container Block, so an example can live there
+ * too, and a tabs-nested one is read raw by assemble's withAnchor just like a top-level one.
  */
 export function normalizeExampleBlocks<T>(blocks: T[]): { blocks: T[]; problems: string[] } {
   const problems: string[] = [];
@@ -239,6 +241,12 @@ export function normalizeExampleBlocks<T>(blocks: T[]): { blocks: T[]; problems:
       const inner = normalizeExampleBlocks(g.blocks);
       problems.push(...inner.problems);
       return { ...g, blocks: inner.blocks } as unknown as T;
+    }
+    if (type === "tabs") {
+      const t = b as unknown as TabsBlock;
+      const inner = normalizeExampleBlocks(t.tabs.map((x) => x.block));
+      problems.push(...inner.problems);
+      return { ...t, tabs: t.tabs.map((x, i) => ({ ...x, block: inner.blocks[i] })) } as unknown as T;
     }
     return b;
   });

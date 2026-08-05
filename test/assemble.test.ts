@@ -343,4 +343,22 @@ describe("assemble example hardening", () => {
     expect(html).toContain("vs-example");
     expect(html).toContain('id="example"');
   });
+
+  // A tab holds any non-container block (assemble only rejects group/tabs there), so an example can
+  // live in one — and withAnchor reads its id raw exactly like a top-level block's.
+  it("normalizes a tabs-nested example: renders it, and its problems reach onWarn exactly once", async () => {
+    const warns: string[] = [];
+    const bad = [
+      { type: "tabs", id: "t", title: "Cases", tabs: [
+        { label: "one", block: { type: "example", stages: [null, {}] } },
+      ] },
+    ] as unknown as Block[];
+    const html = await assemble(bad, { title: "T", source: "s", onWarn: (m) => warns.push(m) });
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');           // id coerced to the default, no crash
+    // Warned once — by the boundary normalizer, not also by the renderer (preNormalized).
+    expect(warns.filter((w) => w.includes("no source"))).toHaveLength(1);
+    expect(warns.filter((w) => w.includes("no lesson"))).toHaveLength(1);
+    expect(warns.filter((w) => w.includes("dropped"))).toHaveLength(1);   // the [null, …] stage
+  });
 });
