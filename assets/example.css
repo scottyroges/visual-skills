@@ -50,6 +50,9 @@
 .vs-ex-stage[data-kind="counter"] .vs-ex-kind { color: var(--ex-counter); border-color: var(--ex-counter-line); }
 .vs-ex-stage-body > :first-child { margin-top: 0; }
 .vs-ex-stage-body > :last-child { margin-bottom: 0; }
+/* A fenced block's min-content width is its longest line; left visible it drags the stage — and,
+   in contrast mode, the whole grid track — wider than the page. Scroll it inside the card. */
+.vs-ex-stage-body pre { overflow-x: auto; max-width: 100%; }
 .vs-ex-arrow { text-align: center; color: var(--ex-muted); padding: 2px 0; line-height: 1; }
 .vs-ex-note { margin: 6px 0 0; font-size: 0.85em; color: var(--ex-muted); }
 
@@ -60,7 +63,10 @@
   color: var(--ex-accent); margin-right: 9px; }
 
 /* contrast columns */
-.vs-ex-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+/* minmax(0,…) not 1fr: a track's default min is min-content, so one long code line in a column
+   would widen the grid past the page instead of scrolling inside its own card. */
+.vs-ex-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 10px; }
+.vs-ex-col { min-width: 0; }
 .vs-ex-col-h { font-size: 0.78em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--ex-muted); margin-bottom: 6px; }
 .vs-ex-col[data-side="b"] .vs-ex-col-h { color: var(--ex-out); }
