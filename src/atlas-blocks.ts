@@ -1,4 +1,6 @@
-import type { DiagramBlock, DiagramKind } from "./blocks.js";
+import type { DiagramBlock, DiagramKind, ExampleBlock } from "./blocks.js";
+
+export type { ExampleBlock } from "./blocks.js";
 
 /** A hand-authored legend row (color is a secondary signal; the label carries meaning). */
 export interface LegendItem { label: string; fill: string; stroke: string; }
@@ -96,7 +98,7 @@ export interface DiagramSectionBlock {
 export type AtlasBlock =
   | AtlasTldrBlock | DomainMapBlock | DomainIndexBlock
   | DomainTldrBlock | ComponentsBlock | DepthBlock | OwnsBlock | SeamsBlock
-  | DiagramSectionBlock;
+  | DiagramSectionBlock | ExampleBlock;
 
 /** layer → "fill;stroke" for the small dots used in tiles + the nested sidebar. */
 export const LAYER_DOTS: Record<DomainTile["layer"], string> = {
@@ -176,6 +178,7 @@ export function atlasChapterLabel(b: AtlasBlock): string {
     case "depth": return b.title;
     case "owns": return b.title;
     case "seams": return b.title;
+    case "example": return b.title;
     case "atlas-tldr":
     case "domain-tldr": return b.id;
     default: { const _exhaustive: never = b; return (_exhaustive as AtlasBlock).id; }

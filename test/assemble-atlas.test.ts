@@ -272,3 +272,21 @@ it("emits no completeness warnings for the canonical atlas blocks", async () => 
   expect(lintAtlas(blocks)).toEqual([]);
   expect(warns.filter((w) => /no atlas-tldr|no domain map|no domain-index|no purpose/i.test(w))).toEqual([]);
 });
+
+it("renders an example block on a domain page", async () => {
+  const warns: string[] = [];
+  const blocks = [
+    { type: "domain-tldr", id: "tldr", heading: "h", rows: [{ key: "Owns", value: "x" }] },
+    { type: "example", id: "ex-trace", title: "One request through this stack",
+      source: "src/game/engine.ts (traced by hand)", lesson: "the engine never touches the store directly",
+      stages: [
+        { label: "request", kind: "input", body: "POST /score" },
+        { label: "resolution", body: "engine applies handicap" },
+        { label: "persisted row", kind: "output", body: "scores table" },
+      ] },
+  ] as unknown as AtlasBlock[];
+  const html = await assembleDomain(blocks, { title: "game", layer: "engine", layerLabel: "Engine", onWarn: (m) => warns.push(m) });
+  expect(html).toContain("vs-example");
+  expect(html).toContain("One request through this stack");
+  expect(warns.filter((w) => w.includes("no renderer"))).toEqual([]);
+});

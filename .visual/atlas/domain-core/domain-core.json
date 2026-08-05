@@ -492,7 +492,7 @@
             },
             {
               "dir": "exported for",
-              "body": "[authoring](../domain-authoring/domain-authoring.html)'s spec (`lint-spec.ts` calls `lintExamples` directly) and doc/[recap](../domain-recap/domain-recap.html) (get it for free — `lintBlocks` now collects example blocks, incl. group children, and calls `lintExamples` itself); atlas wiring is still pending"
+              "body": "[authoring](../domain-authoring/domain-authoring.html)'s spec (`lint-spec.ts` calls `lintExamples` directly), doc/[recap](../domain-recap/domain-recap.html) (get it for free — `lintBlocks` now collects example blocks, incl. group children, and calls `lintExamples` itself), and [atlas](../domain-atlas/domain-atlas.html) (`assembleAtlas`/`assembleDomain` call it directly, same pattern as spec)"
             },
             {
               "dir": "inspects",
@@ -625,6 +625,6 @@
   "verifiedAgainst": {
     "hash": "sha256:6fd7c7ce07a913399954dbc649fb3c3a3dbfb8cffbb08b786b7ac2a5d47b06ed",
     "date": "2026-08-05",
-    "commit": "5e0d09bca70aa3fc1cc9bc7d189286473b4e6a07"
+    "commit": "2249edd490bed378a12276d4771767baf093e491"
   }
 }

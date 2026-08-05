@@ -5,12 +5,14 @@ import { escapeHtml } from "./html.js";
 import {
   assertUniqueAtlasIds, isAtlasChapter, atlasChapterLabel, LAYER_DOTS, collectAtlasDiagrams,
   type AtlasBlock, type AtlasOpts, type DomainOpts, type AtlasDiagram,
-  type KV, type ComponentDeep,
+  type KV, type ComponentDeep, type ExampleBlock,
 } from "./atlas-blocks.js";
 import { renderInlineMarkdown } from "./renderers/markdown.js";
+import { renderExample } from "./renderers/example.js";
 import { renderAll, type DiagramResult } from "./render-diagram.js";
 import { withDiagramSvgClass } from "./review/sections.js";
 import { lintAtlas, lintDomain } from "./lint-atlas.js";
+import { lintExamples } from "./lint-examples.js";
 
 const mi = (s: string) => renderInlineMarkdown(s);
 
@@ -59,6 +61,7 @@ async function doc(title: string, generator: string | undefined, topbar: string,
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
   const specCss = await readFile(join(ASSETS, "spec.css"), "utf8");
   const atlasCss = await readFile(join(ASSETS, "atlas.css"), "utf8");
+  const exampleCss = await readFile(join(ASSETS, "example.css"), "utf8");
   const themeCss = await readFile(join(ASSETS, "theme.css"), "utf8");
   const themeHead = await readFile(join(ASSETS, "theme-head.js"), "utf8");
   const themeToggle = await readFile(join(ASSETS, "theme-toggle.js"), "utf8");
@@ -67,7 +70,7 @@ async function doc(title: string, generator: string | undefined, topbar: string,
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<script>${themeHead}</script>` +
     `${generator ? `<meta name="generator" content="${escapeHtml(generator)}">` : ""}` +
-    `<title>${escapeHtml(title)}</title><style>${css}\n${specCss}\n${atlasCss}\n${themeCss}</style></head>` +
+    `<title>${escapeHtml(title)}</title><style>${css}\n${specCss}\n${atlasCss}\n${exampleCss}\n${themeCss}</style></head>` +
     `<body>${topbar}<div class="sidebar-overlay" id="sidebar-overlay"></div>` +
     `<div class="layout">${sidebar}${main}</div>${ZOOM}<script>${viewer}</script><script>${themeToggle}</script></body></html>\n`;
 }
@@ -310,6 +313,7 @@ export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, Diag
       case "depth": return renderDepth(b, diagrams);
       case "owns": return renderOwns(b);
       case "seams": return renderSeams(b);
+      case "example": return sectionHeader(b.title, b.badge) + (await renderExample(b, { ownHeader: false, onWarn }));
       default: onWarn?.(`atlas: no renderer for block type "${(b as AtlasBlock).type}"`); return "";
     }
   })();
@@ -338,6 +342,7 @@ async function renderMain(blocks: AtlasBlock[], opts: { outDir?: string; excalid
 export async function assembleAtlas(blocks: AtlasBlock[], opts: AtlasOpts): Promise<string> {
   assertUniqueAtlasIds(blocks);
   if (opts.onWarn) for (const w of lintAtlas(blocks)) opts.onWarn(w); // demo-standard floor: lead / map / index
+  if (opts.onWarn) for (const w of lintExamples(blocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(w);
   const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, atlasTopbar(opts), sidebar(blocks, opts, null, true), main);
 }
@@ -345,6 +350,7 @@ export async function assembleAtlas(blocks: AtlasBlock[], opts: AtlasOpts): Prom
 export async function assembleDomain(blocks: AtlasBlock[], opts: DomainOpts): Promise<string> {
   assertUniqueAtlasIds(blocks);
   if (opts.onWarn) for (const w of lintDomain(blocks)) opts.onWarn(w); // demo-standard floor: lead / components / arch / seams
+  if (opts.onWarn) for (const w of lintExamples(blocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(w);
   const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, domainTopbar(opts), sidebar(blocks, opts, opts.layer, false), main);
 }
