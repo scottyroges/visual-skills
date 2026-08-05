@@ -351,7 +351,7 @@
           "name": "spec render",
           "path": "src/assemble-spec.ts",
           "detail": [
-            "`assembleSpec(blocks, opts)` is the spec page builder. It asserts unique ids, loads `review.css` + `spec.css` + `example.css` + the shared viewer JS + the dark-mode toggle assets (`theme-head.js`, `theme-toggle.js`, `theme.css`), collects the spec diagrams and renders them via the diagrams domain's `renderAll`, then runs the page through `validateSpecOpts` and [`lintSpec`](#c-spec-lint) (warnings only). Each block becomes a `<section>` via a per-type renderer; the sidebar outline and the progress rail are derived from the chapters (the rail is injected right after the TL;DR). Per-block renderers (`renderDecisions`, `renderRisks`, `renderRollout`, `renderScope`) use a shared `inlineEg` helper to render inline e.g. one-liners from optional `example` fields on items. For diagram blocks it reuses the **recap's** `renderDiagramCard`; for `example` blocks it prints its own `sectionHeader` and calls core's `renderExample(b, { ownHeader: false })` for the body — the two borrowed renderers authoring's spec page leans on."
+            "`assembleSpec(blocks, opts)` is the spec page builder. It first normalizes every `example` block through core's `normalizeExampleBlocks` (the id assertion, the sidebar/rail labels and `sectionHeader` all read `b.id`/`b.title` raw) and emits that normalizer's problems itself, asserts unique ids, loads `review.css` + `spec.css` + `example.css` + the shared viewer JS + the dark-mode toggle assets (`theme-head.js`, `theme-toggle.js`, `theme.css`), collects the spec diagrams and renders them via the diagrams domain's `renderAll`, then runs the page through `validateSpecOpts` and [`lintSpec`](#c-spec-lint) on the *original* blocks (warnings only — `lintExamples` needs the author's raw `mode`). Each block becomes a `<section>` via a per-type renderer; the sidebar outline and the progress rail are derived from the chapters (the rail is injected right after the TL;DR). Per-block renderers (`renderDecisions`, `renderRisks`, `renderRollout`, `renderScope`) use a shared `inlineEg` helper to render inline e.g. one-liners from optional `example` fields on items. For diagram blocks it reuses the **recap's** `renderDiagramCard`; for `example` blocks it prints its own `sectionHeader` and calls core's `renderExample(b, { ownHeader: false, preNormalized: true })` for the body — the two borrowed renderers authoring's spec page leans on."
           ],
           "diagrams": [
             {
@@ -737,8 +737,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:59eef8079a654167a78e4b61a2c019ae1024417e99fef98d6962574143adb9de",
+    "hash": "sha256:cb268805effd721f6694a654eb34cbfe986b21fda806ca9557f85342a32e3c45",
     "date": "2026-08-05",
-    "commit": "9aee48310b63eb16fb63c63140b981315819a572"
+    "commit": "9d4167c972e7aeaae865653a4bfa12116535ddcb"
   }
 }

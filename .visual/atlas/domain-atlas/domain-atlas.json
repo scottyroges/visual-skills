@@ -409,7 +409,7 @@
           "name": "render",
           "path": "src/assemble-atlas.ts",
           "detail": [
-            "Turns a block list into a self-contained HTML page. `assembleAtlas` renders the map page (lead, domain-map, tile index); `assembleDomain` renders a domain page (lead, components, internal-arch, depth, owns, seams). `renderAtlasBlock` dispatches per block type, `renderAtlasDiagram` emits each diagram's d2/mermaid render with its authored legend, and `atlasLegend` builds the legend rows. An `example` block renders through core's `renderExample(b, { ownHeader: false })` behind the same `sectionHeader` every other chapter gets — a worked-example chapter reads like any other section.",
+            "Turns a block list into a self-contained HTML page. `assembleAtlas` renders the map page (lead, domain-map, tile index); `assembleDomain` renders a domain page (lead, components, internal-arch, depth, owns, seams). `renderAtlasBlock` dispatches per block type, `renderAtlasDiagram` emits each diagram's d2/mermaid render with its authored legend, and `atlasLegend` builds the legend rows. An `example` block renders through core's `renderExample(b, { ownHeader: false, preNormalized: true })` behind the same `sectionHeader` every other chapter gets — a worked-example chapter reads like any other section. Both entry points run core's `normalizeExampleBlocks` first (the id assertion, sidebar labels and `sectionHeader` all read `b.id`/`b.title` raw) and emit its problems themselves, while the lints keep reading the original blocks.",
             "Every diagram is rendered through the diagrams domain up front (collected via `collectAtlasDiagrams`), then looked up by id while rendering. The output reuses the review app-shell/CSS from the recap domain — including the same inlined dark-mode toggle (`theme-head.js` head-apply script, `theme-toggle.js` button, `theme.css` appended last in `<style>`) — plus `example.css` for worked-example stage/rail/contrast styles, so atlas pages share the toolkit's look and theme. Both `assembleAtlas`/`assembleDomain` also run core's `lintExamples` over any `example` blocks present, piping the judgment warnings through `onWarn` alongside `lintAtlas`/`lintDomain`. The CLI calls these two functions and writes the HTML next to the page JSON."
           ],
           "files": [
@@ -570,8 +570,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:b405a7ba6338272bac5100909f77bb12ba381fe09a950a5f261858100592ff2b",
+    "hash": "sha256:d54eacdb3a7327c69f637ba783267c8bd6cbde89e191f7e0f1bad430f8bff445",
     "date": "2026-08-05",
-    "commit": "2249edd490bed378a12276d4771767baf093e491"
+    "commit": "9d4167c972e7aeaae865653a4bfa12116535ddcb"
   }
 }

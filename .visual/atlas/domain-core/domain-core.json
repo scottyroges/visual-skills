@@ -307,7 +307,7 @@
           "name": "renderers",
           "path": "src/renderers/*.ts",
           "detail": [
-            "Ten modules: eight per-block-type functions — `renderProse`, `renderDiff`, `renderApi`, `renderFileTree`, `renderAnnotatedCode`, `renderOverview`, `renderQuestions`, `renderExample` — plus `renderLegend` (the diagram color key) and the shared `renderMarkdown`. Each block renderer takes its block (some plus an `onWarn` or a pre-rendered extra) and returns an HTML fragment wrapped in a `vs-block` section; `assemble` adds the anchor and stitches them together. There is no shared base class — the union + the dispatch switch are the only structure. `renderExample` is the odd one out: it takes an `{ ownHeader, onWarn? }` opts object (not a bare `onWarn`) because its own-title-or-not choice differs by call site — a top-level doc/walkthrough section prints its own `<h2>`, a recap top-level section reuses the surrounding `section-header` instead.",
+            "Ten modules: eight per-block-type functions — `renderProse`, `renderDiff`, `renderApi`, `renderFileTree`, `renderAnnotatedCode`, `renderOverview`, `renderQuestions`, `renderExample` — plus `renderLegend` (the diagram color key) and the shared `renderMarkdown`. Each block renderer takes its block (some plus an `onWarn` or a pre-rendered extra) and returns an HTML fragment wrapped in a `vs-block` section; `assemble` adds the anchor and stitches them together. There is no shared base class — the union + the dispatch switch are the only structure. `renderExample` is the odd one out: it takes an `{ ownHeader, onWarn? }` opts object (not a bare `onWarn`) because its own-title-or-not choice differs by call site — a top-level doc section prints its own `<h2>`, while a recap section (top-level or nested in a walkthrough chapter) reuses the surrounding `section-header` instead. The same opts carry `preNormalized`, which every assembler sets: the block already went through `normalizeExampleBlocks` at the page boundary, which emitted its problems against the author's raw JSON, so the renderer's own (defensive, idempotent) re-normalize stays silent rather than duplicating and renumbering them.",
             "`markdown.ts` is the substrate: `renderMarkdown` parses GitHub-flavored markdown, highlights fenced code via the highlight module, and runs the result through `sanitize-html` with a strict tag/attribute allowlist; `renderInlineMarkdown` does the one-line variant for headlines and bullets. `prose`, `diff`, and `overview` all build on it. `diff` and `annotated-code` use `highlightLines` to align highlighted code to a gutter; `file-tree` collapses single-child directory chains and links filenames back to their diff blocks; `legend` paints the auto-derived diagram color key."
           ],
           "files": [
@@ -462,7 +462,7 @@
           "path": "src/lint-blocks.ts · src/lint-examples.ts",
           "detail": [
             "`lintBlocks(blocks)` returns authoring warnings in document order — it never throws and never blocks rendering. `assemble` pipes them to `opts.onWarn`. The guards nudge quality: a `group` with no description, a `diff` description that is a long single paragraph (a wall of text), a `diagram` that applies no semantic color, an editable-eligible diagram kind that dropped its mermaid source (silently losing the Excalidraw upgrade), and too-many / oversize-edge diagrams overall. It also recurses the block tree (incl. group children) to collect every `example` block and folds `lintExamples`'s findings into its own return, so `assemble` and `assembleReview` get example warnings for free just by calling `lintBlocks` — no separate call needed.",
-            "`lintExamples(examples)` inspects example blocks for quality nudges: checking for undersized step modes, long static walkthroughs (skipped when the *raw* block already asked for `mode: \"step\"` and normalization coerced it — that case gets the cap warning's \"split it\" instead), oversized stage bodies, dead reveals, unbalanced contrast sides, synthetic sources, and multiple reveal blocks on one page. Warnings only — normalization problems are surfaced by the renderer, not re-emitted here, so assemblers can call both without duplicates.",
+            "`lintExamples(examples)` inspects example blocks for quality nudges: checking for undersized step modes, long static walkthroughs (skipped when the *raw* block already asked for `mode: \"step\"` and normalization coerced it — that case gets the cap warning's \"split it\" instead), oversized stage bodies, dead reveals, unbalanced contrast sides, synthetic sources, and multiple reveal blocks on one page. Warnings only — normalization problems are surfaced once at the assembler boundary (`normalizeExampleBlocks`), not re-emitted here, so assemblers can call both without duplicates. Note it reads the blocks as the author wrote them, which is why every assembler lints `rawBlocks` and renders the normalized copy.",
             "Both walk their respective block structures using judgment heuristics rather than hard constraints. The intent is to catch the mistakes that make a document read worse without making the build fail."
           ],
           "files": [
@@ -623,8 +623,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:e89bbb66c0d26b4de91ef2b2d26ee1850963a0743eb3892d5e5e0c33465648c6",
+    "hash": "sha256:aa148b740d7bae22e07257766fa0177fb069d8644bd21be6f2f854f3fab7fbfb",
     "date": "2026-08-05",
-    "commit": "9aee48310b63eb16fb63c63140b981315819a572"
+    "commit": "9d4167c972e7aeaae865653a4bfa12116535ddcb"
   }
 }
