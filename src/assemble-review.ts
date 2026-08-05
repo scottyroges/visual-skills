@@ -13,6 +13,7 @@ import { renderSidebar, renderProgressRail } from "./review/sidebar.js";
 import { groupLooseDiffs } from "./review/normalize.js";
 import { lintBlocks } from "./lint-blocks.js";
 import { lintCompleteness } from "./lint-completeness.js";
+import { renderExample } from "./renderers/example.js";
 
 function collectDiffPaths(bs: Block[], map = new Map<string, string>()): Map<string, string> {
   for (const b of bs) {
@@ -39,6 +40,7 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
   assertUniqueIds(blocks);
   const view = groupLooseDiffs(blocks);
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
+  const exampleCss = await readFile(join(ASSETS, "example.css"), "utf8");
   const themeCss = await readFile(join(ASSETS, "theme.css"), "utf8");
   const themeHead = await readFile(join(ASSETS, "theme-head.js"), "utf8");
   const themeToggle = await readFile(join(ASSETS, "theme-toggle.js"), "utf8");
@@ -103,6 +105,13 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
         `${renderApiSurface(b)}</section>`
       );
     }
+    if (b.type === "example") {
+      return (
+        `<section id="${escapeHtml(b.id)}" class="section">` +
+        `<div class="section-header"><h2 class="section-title">${escapeHtml(b.title)}</h2></div>` +
+        `${await renderExample(b, { ownHeader: false, onWarn: opts.onWarn })}</section>`
+      );
+    }
     if (b.type === "prose" || b.type === "questions" || b.type === "annotated-code") {
       return `<section id="${escapeHtml(b.id)}" class="section">${await renderReusedBlock(b, opts.onWarn)}</section>`;
     }
@@ -124,7 +133,7 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<script>${themeHead}</script>` +
     `${opts.generator ? `<meta name="generator" content="${escapeHtml(opts.generator)}">` : ""}` +
-    `<title>${escapeHtml(opts.title)}</title><style>${css}\n${themeCss}</style></head>` +
+    `<title>${escapeHtml(opts.title)}</title><style>${css}\n${exampleCss}\n${themeCss}</style></head>` +
     `<body>${topbar}<div class="sidebar-overlay" id="sidebar-overlay"></div>` +
     `<div class="layout">${sidebar}${main}</div>${zoomOverlay}` +
     `<script>${viewer}</script><script>${themeToggle}</script></body></html>\n`

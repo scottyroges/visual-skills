@@ -26,6 +26,8 @@ const SAMPLES: Record<Block["type"], Block> = {
   tabs: { type: "tabs", id: "s-tabs", title: "T", tabs: [
     { label: "One", block: { type: "diagram", id: "s-tab-diagram", title: "TD", kind: "flowchart", d2: "c -> d" } }] },
   overview: { type: "overview", id: "s-overview", headline: "H", points: [{ text: "a point" }] },
+  example: { type: "example", id: "s-example", title: "E", source: "test/x.json", lesson: "l",
+    stages: [{ label: "in", kind: "input", body: "x" }] },
 };
 
 describe("assembleReview block coverage", () => {

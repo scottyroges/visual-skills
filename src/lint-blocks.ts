@@ -1,5 +1,6 @@
-import type { Block, DiagramBlock, SchemaBlock } from "./blocks.js";
+import type { Block, DiagramBlock, SchemaBlock, ExampleBlock } from "./blocks.js";
 import { rolesInSource } from "./diagram-colors.js";
+import { lintExamples } from "./lint-examples.js";
 
 // A diff description longer than this with no scannable structure (no bullets, no paragraph
 // breaks) reads as a wall of text — the authoring lint flags it.
@@ -83,6 +84,17 @@ export function lintBlocks(blocks: Block[]): string[] {
       `${diagrams.length} diagrams — prefer the fewest that explain the change (one strong diagram beats several weak ones)`,
     );
   }
+
+  // ── Example authoring guards (judgment lints, incl. group children) ────────
+  const examples: ExampleBlock[] = [];
+  const collectEx = (bs: Block[]): void => {
+    for (const b of bs) {
+      if (b.type === "example") examples.push(b);
+      else if (b.type === "group") collectEx(b.blocks);
+    }
+  };
+  collectEx(blocks);
+  warnings.push(...lintExamples(examples));
 
   return warnings;
 }

@@ -29,6 +29,7 @@
         "src/renderers/annotated-code.ts",
         "src/renderers/api.ts",
         "src/renderers/diff.ts",
+        "src/renderers/example.ts",
         "src/renderers/file-tree.ts",
         "src/renderers/legend.ts",
         "src/renderers/markdown.ts",

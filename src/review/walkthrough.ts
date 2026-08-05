@@ -3,6 +3,7 @@ import { renderMarkdown } from "../renderers/markdown.js";
 import { renderDiffBody } from "./diff.js";
 import { renderDiagramLike } from "./sections.js";
 import { stripChapterOrdinal } from "./normalize.js";
+import { renderExample } from "../renderers/example.js";
 import type { Block, DiffBlock, DiffHunk, GroupBlock } from "../blocks.js";
 import type { DiagramResult } from "../render-diagram.js";
 
@@ -103,16 +104,22 @@ async function renderChapter(
     intro = `<p class="section-intro">${inner}</p>`;
   }
 
-  const diffs = g.blocks.filter((b): b is DiffBlock => b.type === "diff");
-  const subsections = await Promise.all(
-    diffs.map((d, idx) => renderSubsection(d, `${n}${String.fromCharCode(97 + idx)}`, onWarn, diagrams)),
-  );
+  let diffIdx = 0;
+  const parts: string[] = [];
+  for (const child of g.blocks) {
+    if (child.type === "diff") {
+      parts.push(await renderSubsection(child, `${n}${String.fromCharCode(97 + diffIdx++)}`, onWarn, diagrams));
+    } else if (child.type === "example") {
+      parts.push(`<div id="${escapeHtml(child.id)}" class="subsection">${await renderExample(child, { ownHeader: true, onWarn })}</div>`);
+    }
+    // other child types: unchanged behavior (not rendered here)
+  }
 
   return (
     `<div id="${escapeHtml(g.id)}" class="section">` +
     `<h3 class="subsection-title" style="font-size:var(--text-xl);font-weight:700;letter-spacing:-0.02em;margin-bottom:4px;display:flex;align-items:center;gap:12px;"><span class="chapter-no">${n}</span>${escapeHtml(stripChapterOrdinal(g.title))}</h3>` +
     intro +
-    subsections.join("") +
+    parts.join("") +
     `</div>`
   );
 }

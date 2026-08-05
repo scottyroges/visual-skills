@@ -222,7 +222,8 @@ export type Block =
   | QuestionsBlock
   | GroupBlock
   | TabsBlock
-  | OverviewBlock;
+  | OverviewBlock
+  | ExampleBlock;
 
 /** Blocks rendered through the D2 diagram renderer. */
 export function isDiagramBlock(b: Block): b is DiagramBlock | SchemaBlock {

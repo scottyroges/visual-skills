@@ -54,4 +54,24 @@ describe("renderWalkthrough", () => {
     expect(html).toContain("Trailing note.");
     expect(html).not.toMatch(/<li>(?!<span)/); // no un-transformed list items
   });
+
+  it("renders an example nested in a group, in document order beside its diff", async () => {
+    const blocks: Block[] = [{
+      type: "group", id: "g1", title: "1. Core change", description: "d",
+      blocks: [
+        { type: "diff", id: "d1", title: "x.ts", path: "src/x.ts", hunks: [{ header: "@@ -1 +1 @@", lines: ["+a"] }] },
+        { type: "example", id: "ex1", title: "Same input, old vs new", source: "test/x.test.ts", lesson: "l",
+          variant: "contrast",
+          stages: [
+            { label: "input", kind: "input", body: "payload" },
+            { label: "old", kind: "output", body: "merged", side: "a" },
+            { label: "new", kind: "output", body: "split", side: "b" },
+          ] },
+      ],
+    }];
+    const html = await renderWalkthrough(blocks, undefined, new Map());
+    expect(html).toContain("vs-example");
+    expect(html).toContain("Same input, old vs new");
+    expect(html.indexOf("src/x.ts")).toBeLessThan(html.indexOf("vs-example"));  // document order
+  });
 });

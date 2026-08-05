@@ -81,6 +81,8 @@ describe("lintCompleteness", () => {
         bigDiff("d1", "src/a.ts", "**a.**\n\n- x"),
         bigDiff("d2", "src/b.ts", "**b.**\n\n- x"),
         bigDiff("d3", "src/c.ts", "**c.**\n\n- x"),
+        { type: "example", id: "ex", title: "E", source: "t", lesson: "l",
+          stages: [{ label: "i", body: "x" }] } as Block,
       ] },
     ];
     expect(lintCompleteness(blocks)).toEqual([]);
@@ -100,5 +102,24 @@ describe("lintCompleteness", () => {
   it("is clean for a fully-enriched small recap (one annotated diff, no group needed)", () => {
     const blocks: Block[] = [fullOverview, bigDiff("d1", "src/x.ts", "**Fix.**\n\n- sorts the list")];
     expect(lintCompleteness(blocks)).toEqual([]);
+  });
+
+  it("nudges 3+ non-trivial-diff recaps with zero examples; a grouped example clears it", () => {
+    const groupOf = (id: string, blocks: Block[]): Block => ({ type: "group", id, title: id, description: "d", blocks });
+
+    const noEx = [
+      fullOverview,
+      groupOf("g", [bigDiff("a", "src/a.ts"), bigDiff("b", "src/b.ts"), bigDiff("c", "src/c.ts")]),
+    ];
+    expect(lintCompleteness(noEx).some((w) => w.includes("contrast example"))).toBe(true);
+    const withEx = [
+      fullOverview,
+      groupOf("g", [
+        bigDiff("a", "src/a.ts"), bigDiff("b", "src/b.ts"), bigDiff("c", "src/c.ts"),
+        { type: "example", id: "ex", title: "E", source: "t", lesson: "l",
+          stages: [{ label: "i", body: "x" }] } as Block,
+      ]),
+    ];
+    expect(lintCompleteness(withEx).some((w) => w.includes("contrast example"))).toBe(false);
   });
 });
