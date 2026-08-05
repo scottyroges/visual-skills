@@ -127,8 +127,8 @@ link objects**. Every block object's fields are in `src/spec-blocks.ts`.
 ## Scaling by size
 
 The floor is the same for everyone; only the ceiling moves. **"Large" is measured by section count,
-not the `complexity` chip:** once a spec carries **5+ chapter sections** (everything except `tldr`
-and `reference`), the completeness lint expects the fuller treatment — a hero `diagram`, a `rollout`,
+not the `complexity` chip:** once a spec carries **5+ chapter sections** (everything except `tldr`,
+`reference`, and `example`), the completeness lint expects the fuller treatment — a hero `diagram`, a `rollout`,
 and an `approve` band — and a big-idea line on the TL;DR. A genuinely small spec stays under that and
 those surfaces are optional. If you find yourself with 5+ sections, add them for real (grounded in
 the doc), don't pad — a 5-section design almost always *has* a build order and warrants an approval

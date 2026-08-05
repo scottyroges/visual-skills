@@ -74,8 +74,9 @@ export function lintCompleteness(blocks: Block[]): string[] {
     );
   }
 
-  // 4. Example — a behavior-changing recap should show one concrete before/after (counted
-  // recursively into groups: that's where examples are SUPPOSED to live).
+  // 4. Example — a size-based nudge, NOT behavior detection: this lint counts non-trivial diffs, it
+  // cannot tell a refactor from a behavior change, so the message has to read as a prompt for author
+  // judgment. Examples are counted recursively into groups: that's where they're SUPPOSED to live.
   const examples: Block[] = [];
   const collectEx = (bs: Block[]): void => {
     for (const b of bs) {
@@ -87,7 +88,7 @@ export function lintCompleteness(blocks: Block[]): string[] {
   const nonTrivial = diffs.filter((d) => changedLines(d) > TRIVIAL_DIFF_LINES);
   if (nonTrivial.length >= 3 && examples.length === 0) {
     warnings.push(
-      "no example block — behavior-changing recaps land harder with one contrast example (same input, old vs new output); mine the PR's tests for a ready-made pair",
+      "no example block — a recap with this many non-trivial diffs usually lands harder with one contrast example (same input, old vs new output) when the PR changes behavior; mine the PR's tests for a ready-made pair",
     );
   }
 
