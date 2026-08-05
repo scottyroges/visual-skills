@@ -1489,6 +1489,140 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 .nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
 .nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
 
+/* example.css — the shared worked-example block (spec/recap/doc/atlas all inline this).
+   The two page families define nearly disjoint light-mode tokens (review.css: --panel/--border/
+   --ink-muted…; template.css: --card/--line/--ctx…). Every value resolves through a local --ex-*
+   layer whose fallback chain covers both, then a literal. theme.css's dark block defines a
+   superset of both, so dark mode needs no special casing. */
+.vs-example {
+  --ex-line:       var(--border, var(--line, #d8d4c8));
+  --ex-panel:      var(--panel, var(--card, #ffffff));
+  --ex-muted:      var(--ink-muted, var(--ctx, #57606a));
+  --ex-radius:     var(--radius, 8px);
+  --ex-mono:       var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  --ex-accent:     var(--accent, var(--link, #2563eb));
+  --ex-input:      var(--accent, var(--link, #2563eb));
+  --ex-input-bg:   var(--accent-subtle, #eff4ff);
+  --ex-input-line: var(--accent-border, #bfdbfe);
+  --ex-out:        var(--change, #b45309);
+  --ex-out-bg:     var(--change-bg, var(--warn-bg, #fffdf3));
+  --ex-out-line:   var(--change-border, #fde68a);
+  --ex-counter:    var(--remove, var(--del, #cf222e));
+  --ex-counter-bg: var(--remove-bg, var(--del-bg, #ffebe9));
+  --ex-counter-line: var(--remove-border, #fecaca);
+  margin: 18px 0;
+}
+
+.vs-ex-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.vs-ex-title { margin: 0; font-size: 1.1em; }
+.vs-ex-badge { font-size: 0.72em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ex-muted); border: 1px solid var(--ex-line); border-radius: 999px; padding: 2px 10px; }
+.vs-ex-intro { margin: 0 0 8px; color: var(--ex-muted); }
+
+/* provenance: always visible, above the stages — the reader knows what they're looking at first */
+.vs-ex-src { margin: 0 0 12px; font-family: var(--ex-mono); font-size: 0.8em; color: var(--ex-muted); }
+.vs-ex-src-tag { font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-right: 8px; }
+.vs-ex-src.is-missing, .vs-ex-lesson.is-missing, .vs-ex-missing { color: var(--ex-counter); font-weight: 600; }
+.vs-ex-missing { border: 1px dashed var(--ex-counter); border-radius: var(--ex-radius); padding: 10px 14px; }
+
+/* stage cards */
+.vs-ex-rail { display: flex; flex-direction: column; gap: 0; }
+.vs-ex-stage { border: 1px solid var(--ex-line); border-radius: var(--ex-radius);
+  background: var(--ex-panel); padding: 12px 16px; }
+.vs-ex-stage-h { font-weight: 600; margin-bottom: 6px; }
+.vs-ex-kind { font-size: 0.68em; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  border: 1px solid var(--ex-line); border-radius: 4px; padding: 1px 7px; margin-right: 9px;
+  color: var(--ex-muted); vertical-align: 1px; }
+.vs-ex-stage[data-kind="input"]   { border-color: var(--ex-input-line); background: var(--ex-input-bg); }
+.vs-ex-stage[data-kind="input"] .vs-ex-kind   { color: var(--ex-input); border-color: var(--ex-input-line); }
+.vs-ex-stage[data-kind="output"]  { border-color: var(--ex-out-line); background: var(--ex-out-bg); }
+.vs-ex-stage[data-kind="output"] .vs-ex-kind  { color: var(--ex-out); border-color: var(--ex-out-line); }
+.vs-ex-stage[data-kind="counter"] { border-color: var(--ex-counter-line); background: var(--ex-counter-bg); }
+.vs-ex-stage[data-kind="counter"] .vs-ex-kind { color: var(--ex-counter); border-color: var(--ex-counter-line); }
+.vs-ex-stage-body > :first-child { margin-top: 0; }
+.vs-ex-stage-body > :last-child { margin-bottom: 0; }
+/* A fenced block's min-content width is its longest line; left visible it drags the stage — and,
+   in contrast mode, the whole grid track — wider than the page. Scroll it inside the card. */
+.vs-ex-stage-body pre { overflow-x: auto; max-width: 100%; }
+.vs-ex-arrow { text-align: center; color: var(--ex-muted); padding: 2px 0; line-height: 1; }
+.vs-ex-note { margin: 6px 0 0; font-size: 0.85em; color: var(--ex-muted); }
+
+/* lesson band — the block always ends on one sentence */
+.vs-ex-lesson { margin-top: 12px; padding: 10px 16px; border-left: 3px solid var(--ex-accent);
+  background: var(--ex-panel); border-radius: 0 var(--ex-radius) var(--ex-radius) 0; }
+.vs-ex-lesson-tag { font-size: 0.7em; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--ex-accent); margin-right: 9px; }
+
+/* contrast columns */
+/* minmax(0,…) not 1fr: a track's default min is min-content, so one long code line in a column
+   would widen the grid past the page instead of scrolling inside its own card. */
+.vs-ex-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 10px; }
+.vs-ex-col { min-width: 0; }
+.vs-ex-col-h { font-size: 0.78em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ex-muted); margin-bottom: 6px; }
+.vs-ex-col[data-side="b"] .vs-ex-col-h { color: var(--ex-out); }
+.vs-ex-col .vs-ex-stage { margin-bottom: 8px; }
+@media (max-width: 700px) { .vs-ex-cols { grid-template-columns: 1fr; } }
+
+/* reveal */
+.vs-ex-reveal { border: 1px dashed var(--ex-line); border-radius: var(--ex-radius); }
+.vs-ex-reveal > summary { cursor: pointer; padding: 10px 16px; font-weight: 600; color: var(--ex-accent); }
+.vs-ex-reveal > summary:focus-visible { outline: 2px solid var(--ex-accent); outline-offset: -2px; }
+.vs-ex-reveal[open] > summary { border-bottom: 1px dashed var(--ex-line); }
+.vs-ex-reveal .vs-ex-stage { border: none; }
+
+/* ── step mode: pure-CSS radio stepper (same mechanism as template.css .vs-tabs, but the radios
+   stay FOCUSABLE — visually hidden without pointer-events:none — and pair :focus-visible to their
+   label via the same written-out nth-of-type pattern as :checked. Cap: 8 stages. ── */
+.vs-ex-stepper { border: 0; margin: 0; padding: 0; min-width: 0; }
+.vs-ex-srlegend { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.vs-ex-radio { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.vs-ex-steps { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.vs-ex-steps label { cursor: pointer; padding: 5px 13px; border: 1px solid var(--ex-line);
+  border-radius: 999px; font-size: 0.85em; font-weight: 600; color: var(--ex-muted); }
+.vs-example.is-step .vs-ex-stage { display: none; }
+/* checked → show nth stage / highlight nth label (n = 1..8; the All radio is .is-all) */
+.vs-ex-radio:nth-of-type(1):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(1),
+.vs-ex-radio:nth-of-type(2):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(2),
+.vs-ex-radio:nth-of-type(3):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(3),
+.vs-ex-radio:nth-of-type(4):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(4),
+.vs-ex-radio:nth-of-type(5):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(5),
+.vs-ex-radio:nth-of-type(6):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(6),
+.vs-ex-radio:nth-of-type(7):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(7),
+.vs-ex-radio:nth-of-type(8):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(8),
+.vs-ex-radio.is-all:checked ~ .vs-ex-rail .vs-ex-stage { display: block; }
+.vs-ex-radio:nth-of-type(1):checked ~ .vs-ex-steps label:nth-child(1),
+.vs-ex-radio:nth-of-type(2):checked ~ .vs-ex-steps label:nth-child(2),
+.vs-ex-radio:nth-of-type(3):checked ~ .vs-ex-steps label:nth-child(3),
+.vs-ex-radio:nth-of-type(4):checked ~ .vs-ex-steps label:nth-child(4),
+.vs-ex-radio:nth-of-type(5):checked ~ .vs-ex-steps label:nth-child(5),
+.vs-ex-radio:nth-of-type(6):checked ~ .vs-ex-steps label:nth-child(6),
+.vs-ex-radio:nth-of-type(7):checked ~ .vs-ex-steps label:nth-child(7),
+.vs-ex-radio:nth-of-type(8):checked ~ .vs-ex-steps label:nth-child(8),
+.vs-ex-radio.is-all:checked ~ .vs-ex-steps label:last-child {
+  color: var(--ex-accent); border-color: var(--ex-accent); background: var(--ex-input-bg); }
+.vs-ex-radio:nth-of-type(1):focus-visible ~ .vs-ex-steps label:nth-child(1),
+.vs-ex-radio:nth-of-type(2):focus-visible ~ .vs-ex-steps label:nth-child(2),
+.vs-ex-radio:nth-of-type(3):focus-visible ~ .vs-ex-steps label:nth-child(3),
+.vs-ex-radio:nth-of-type(4):focus-visible ~ .vs-ex-steps label:nth-child(4),
+.vs-ex-radio:nth-of-type(5):focus-visible ~ .vs-ex-steps label:nth-child(5),
+.vs-ex-radio:nth-of-type(6):focus-visible ~ .vs-ex-steps label:nth-child(6),
+.vs-ex-radio:nth-of-type(7):focus-visible ~ .vs-ex-steps label:nth-child(7),
+.vs-ex-radio:nth-of-type(8):focus-visible ~ .vs-ex-steps label:nth-child(8),
+.vs-ex-radio.is-all:focus-visible ~ .vs-ex-steps label:last-child {
+  outline: 2px solid var(--ex-accent); outline-offset: 2px; }
+
+/* print: hidden stages are unacceptable on paper; reveal is accepted-collapsed per spec */
+@media print {
+  .vs-example.is-step .vs-ex-stage { display: block !important; }
+  .vs-ex-steps { display: none; }
+}
+
+/* inline one-liner on decisions / risks / phases / scope-out */
+.vs-ex-inline { margin-top: 6px; font-size: 0.85em; color: var(--ex-muted); }
+.vs-ex-inline-tag { font-weight: 700; font-style: italic; margin-right: 7px; color: var(--ex-muted); }
+
 /* vs-theme */
 .vs-theme-toggle {
   position: fixed; top: 14px; right: 14px; z-index: 1000;
@@ -1536,7 +1670,14 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
   --diff-ctx-fg:#c9cdd3; --diff-num:#7f8792; --diff-gutter:#8b939e;
   --syntax-kw:#b39cf5; --syntax-fn:#6aa3ff; --syntax-ty:#d4a72c;
   --risk-med:#d4a72c;
+
+  /* quiz.css family badges — light literals stay as fallbacks in quiz.css */
+  --quiz-fit:#a78bfa; --quiz-rationale:#d4a72c; --quiz-mechanism:#3fb950;
 }
+
+/* quiz.css: number chip sits on --accent, which is light blue in dark — white text drops
+   to ~2.4:1 there, so the chip text flips to the dark page ink instead. */
+:root[data-theme="dark"] .quiz-num { color:#16181d; }
 
 /* Diagrams (d2/Excalidraw inline SVGs) bake in light colors and are NOT re-themed dark —
    instead each container gets a light "card" so the SVG reads as an intentional light panel
@@ -1614,7 +1755,7 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 /* atlas.css .topbar-back:hover: hardcoded light-blue hover fill collided with the
    themed --accent text color (also light blue in dark mode) → illegible on hover. */
 :root[data-theme="dark"] .topbar-back:hover { background: rgba(106,163,255,0.22); }
-</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><span class="topbar-title">System Atlas · ppgl</span><div class="topbar-meta"><span class="chip chip-stack">Next.js · tRPC · Postgres</span><span class="chip chip-count">8 domains</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">generated 2026-07-21</span><span class="chip chip-stat">static HTML output</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>Start here</span></a></li><li><a href="#map" class="outline-item" data-target="map"><span class="outline-num" aria-hidden="true">1</span><span>The domain map</span></a></li><li><a href="#spine" class="outline-item" data-target="spine"><span class="outline-num" aria-hidden="true">2</span><span>The weekly loop</span></a></li><li><a href="#domains" class="outline-item" data-target="domains"><span class="outline-num" aria-hidden="true">3</span><span>The 8 domains</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Domains</span><ul class="nav-domains" role="list"><li><a href="domain-game/domain-game.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>game</span></a></li><li><a href="domain-golf-data/domain-golf-data.html" class="nav-domain"><span class="nd-dot" style="background:#ffd43b;border-color:#f08c00;"></span><span>golf-data</span></a></li><li><a href="domain-leagues/domain-leagues.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>leagues</span></a></li><li><a href="domain-scoring/domain-scoring.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>scoring</span></a></li><li><a href="domain-accounts/domain-accounts.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>accounts</span></a></li><li><a href="domain-payments/domain-payments.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>payments</span></a></li><li><a href="domain-admin/domain-admin.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>admin</span></a></li><li><a href="domain-web-shell/domain-web-shell.html" class="nav-domain"><span class="nd-dot" style="background:#e5dbff;border-color:#9775fa;"></span><span>web-shell</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Root</span><span class="mv">`src/` (app · components · lib · server)</span></div><div class="meta-row"><span class="mk">Domains</span><span class="mv">8 (all with pages)</span></div><div class="meta-row"><span class="mk">Read first</span><span class="mv">web-shell → game → golf-data</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Start here</span><h2 class="tldr-heading">A season-long fantasy golf game — pick one PGA Tour golfer a week, earn his real prize money, never reuse a golfer — built as a Next.js + tRPC monolith whose heartbeat is a 15-minute ESPN sync cron.</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">What</span><span class="tldr-val">PPGL (Perfect Pick Golf League, <a href="https://ppgl.app">ppgl.app</a>): private leagues with PayPal checkout, a season planner for future-week prepicks, live projected earnings during tournaments, and commissioner + admin override surfaces. One Vercel deployment, one Postgres (Neon).</span></div><div class="tldr-row"><span class="tldr-key">Shape</span><span class="tldr-val">A strict three-layer server — <strong>routers</strong> (thin, validate → service) → <strong>services</strong> (business logic, <code>withTransaction</code>) → <strong>repositories</strong> (the only layer that touches <code>db</code>) — under a Next.js App Router front. Eight domains: five product slices, a data layer, an ops surface, and the shared shell.</span></div><div class="tldr-row"><span class="tldr-key">Spine</span><span class="tldr-val">The weekly loop: a user plans a PLANNED pick → the cron locks it when the tournament starts (field + not-yet-used validation) → live sync writes projected earnings all weekend → completion promotes real money and triggers the earnings rollup → standings re-rank.</span></div></div></div><div class="primer"><div class="primer-row"><span class="primer-n">1</span><div class="primer-body"><div class="primer-h">The cron is the heartbeat.</div><div class="primer-p"><code>GET /api/cron/sync</code> runs every 15 minutes and drives <em>every</em> game-state transition: it locks PLANNED picks at tee-off, projects live earnings, promotes final results, kicks the earnings rollup, runs bot auto-picks, sends pick reminders, and cleans up abandoned leagues. Nothing else moves the game clock.</div></div></div><div class="primer-row"><span class="primer-n">2</span><div class="primer-body"><div class="primer-h">Picks are soft until they're hard.</div><div class="primer-p">A PLANNED pick is a free-floating intention — movable, deletable, not consuming the golfer. Only the LOCKED status burns a golfer for the season. Reads <em>overlay</em> the lock the moment <code>startDate</code> passes; the cron makes it real in the database shortly after.</div></div></div><div class="primer-row"><span class="primer-n">3</span><div class="primer-body"><div class="primer-h">Membership is the permission system.</div><div class="primer-p"><code>resolveLeagueMemberId</code> + <code>assertLeagueActive</code> gate every gameplay mutation, and the <code>leagueMemberId</code> they return is the key picks, standings, and earnings all hang off. Everyone is lazily auto-enrolled in the global league on first contact, so the guard doubles as onboarding.</div></div></div><div class="primer-row"><span class="primer-n">4</span><div class="primer-body"><div class="primer-h">Money is recomputed, never incremented.</div><div class="primer-p"><code>LeagueMemberSeason</code> is a materialized rollup: every trigger recomputes a member's whole season from one SQL aggregate over LOCKED picks (plus commissioner adjustments) and overwrites the row. There is no ledger to drift.</div></div></div><div class="primer-row"><span class="primer-n">5</span><div class="primer-body"><div class="primer-h">Auth checks live in exactly one place.</div><div class="primer-p">The three-rung procedure ladder in <code>src/server/trpc.ts</code> — <code>publicProcedure</code> → <code>protectedProcedure</code> → <code>adminProcedure</code> — is the only authorization boundary; page-level redirects are UX, not security.</div></div></div></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#map"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">The domain map</span></a><a class="progress-step" href="#spine"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">The weekly loop</span></a><a class="progress-step" href="#domains"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">The 8 domains</span></a></nav><section id="map" class="section"><div class="section-header"><h2 class="section-title">The domain map</h2><span class="section-badge">8 domains</span></div><p class="section-intro">Five product slices (<code>game</code>, <code>leagues</code>, <code>scoring</code>, <code>accounts</code>, <code>payments</code>) over a data layer (<code>golf-data</code>) and the shared shell (<code>web-shell</code>), with <code>admin</code> as an operator lens that writes into all of them. Arrows are the load-bearing runtime edges — every domain additionally rides web-shell's tRPC/db plumbing (those edges are omitted for legibility), and <code>admin</code> reaches into every slice.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 855 1313"><svg class="d2-2765156213 d2-svg" width="855" height="1313" viewBox="-25 -25 855 1313"><rect x="-25.000000" y="-25.000000" width="855.000000" height="1313.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><span class="topbar-title">System Atlas · ppgl</span><div class="topbar-meta"><span class="chip chip-stack">Next.js · tRPC · Postgres</span><span class="chip chip-count">8 domains</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">generated 2026-07-21</span><span class="chip chip-stat">static HTML output</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>Start here</span></a></li><li><a href="#map" class="outline-item" data-target="map"><span class="outline-num" aria-hidden="true">1</span><span>The domain map</span></a></li><li><a href="#spine" class="outline-item" data-target="spine"><span class="outline-num" aria-hidden="true">2</span><span>The weekly loop</span></a></li><li><a href="#domains" class="outline-item" data-target="domains"><span class="outline-num" aria-hidden="true">3</span><span>The 8 domains</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Domains</span><ul class="nav-domains" role="list"><li><a href="domain-game/domain-game.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>game</span></a></li><li><a href="domain-golf-data/domain-golf-data.html" class="nav-domain"><span class="nd-dot" style="background:#ffd43b;border-color:#f08c00;"></span><span>golf-data</span></a></li><li><a href="domain-leagues/domain-leagues.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>leagues</span></a></li><li><a href="domain-scoring/domain-scoring.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>scoring</span></a></li><li><a href="domain-accounts/domain-accounts.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>accounts</span></a></li><li><a href="domain-payments/domain-payments.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>payments</span></a></li><li><a href="domain-admin/domain-admin.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>admin</span></a></li><li><a href="domain-web-shell/domain-web-shell.html" class="nav-domain"><span class="nd-dot" style="background:#e5dbff;border-color:#9775fa;"></span><span>web-shell</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Root</span><span class="mv">`src/` (app · components · lib · server)</span></div><div class="meta-row"><span class="mk">Domains</span><span class="mv">8 (all with pages)</span></div><div class="meta-row"><span class="mk">Read first</span><span class="mv">web-shell → game → golf-data</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Start here</span><h2 class="tldr-heading">A season-long fantasy golf game — pick one PGA Tour golfer a week, earn his real prize money, never reuse a golfer — built as a Next.js + tRPC monolith whose heartbeat is a 15-minute ESPN sync cron.</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">What</span><span class="tldr-val">PPGL (Perfect Pick Golf League, <a href="https://ppgl.app">ppgl.app</a>): private leagues with PayPal checkout, a season planner for future-week prepicks, live projected earnings during tournaments, and commissioner + admin override surfaces. One Vercel deployment, one Postgres (Neon).</span></div><div class="tldr-row"><span class="tldr-key">Shape</span><span class="tldr-val">A strict three-layer server — <strong>routers</strong> (thin, validate → service) → <strong>services</strong> (business logic, <code>withTransaction</code>) → <strong>repositories</strong> (the only layer that touches <code>db</code>) — under a Next.js App Router front. Eight domains: five product slices, a data layer, an ops surface, and the shared shell.</span></div><div class="tldr-row"><span class="tldr-key">Spine</span><span class="tldr-val">The weekly loop: a user plans a PLANNED pick → the cron locks it when the tournament starts (field + not-yet-used validation) → live sync writes projected earnings all weekend → completion promotes real money and triggers the earnings rollup → standings re-rank.</span></div></div></div><div class="primer"><div class="primer-row"><span class="primer-n">1</span><div class="primer-body"><div class="primer-h">The cron is the heartbeat.</div><div class="primer-p"><code>GET /api/cron/sync</code> runs every 15 minutes and drives <em>every</em> game-state transition: it locks PLANNED picks at tee-off, projects live earnings, promotes final results, kicks the earnings rollup, runs bot auto-picks, sends pick reminders, and cleans up abandoned leagues. Nothing else moves the game clock.</div></div></div><div class="primer-row"><span class="primer-n">2</span><div class="primer-body"><div class="primer-h">Picks are soft until they're hard.</div><div class="primer-p">A PLANNED pick is a free-floating intention — movable, deletable, not consuming the golfer. Only the LOCKED status burns a golfer for the season. Reads <em>overlay</em> the lock the moment <code>startDate</code> passes; the cron makes it real in the database shortly after.</div></div></div><div class="primer-row"><span class="primer-n">3</span><div class="primer-body"><div class="primer-h">Membership is the permission system.</div><div class="primer-p"><code>resolveLeagueMemberId</code> + <code>assertLeagueActive</code> gate every gameplay mutation, and the <code>leagueMemberId</code> they return is the key picks, standings, and earnings all hang off. Everyone is lazily auto-enrolled in the global league on first contact, so the guard doubles as onboarding.</div></div></div><div class="primer-row"><span class="primer-n">4</span><div class="primer-body"><div class="primer-h">Money is recomputed, never incremented.</div><div class="primer-p"><code>LeagueMemberSeason</code> is a materialized rollup: every trigger recomputes a member's whole season from one SQL aggregate over LOCKED picks (plus commissioner adjustments) and overwrites the row. There is no ledger to drift.</div></div></div><div class="primer-row"><span class="primer-n">5</span><div class="primer-body"><div class="primer-h">Auth checks live in exactly one place.</div><div class="primer-p">The three-rung procedure ladder in <code>src/server/trpc.ts</code> — <code>publicProcedure</code> → <code>protectedProcedure</code> → <code>adminProcedure</code> — is the only authorization boundary; page-level redirects are UX, not security.</div></div></div></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#map"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">The domain map</span></a><a class="progress-step" href="#spine"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">The weekly loop</span></a><a class="progress-step" href="#domains"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">The 8 domains</span></a></nav><section id="map" class="section"><div class="section-header"><h2 class="section-title">The domain map</h2><span class="section-badge">8 domains</span></div><p class="section-intro">Five product slices (<code>game</code>, <code>leagues</code>, <code>scoring</code>, <code>accounts</code>, <code>payments</code>) over a data layer (<code>golf-data</code>) and the shared shell (<code>web-shell</code>), with <code>admin</code> as an operator lens that writes into all of them. Arrows are the load-bearing runtime edges — every domain additionally rides web-shell's tRPC/db plumbing (those edges are omitted for legibility), and <code>admin</code> reaches into every slice.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 855 1313"><svg class="d2-2765156213 d2-svg" width="855" height="1313" viewBox="-25 -25 855 1313"><rect x="-25.000000" y="-25.000000" width="855.000000" height="1313.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-2765156213 .text-bold {
 	font-family: "d2-2765156213-font-bold";
 }
@@ -1728,7 +1869,7 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 <rect x="324.000000" y="110.000000" width="61" height="21" fill="black"></rect>
 <rect x="726.000000" y="271.000000" width="70" height="21" fill="black"></rect>
 </mask></svg></svg>
-</div><div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>The heartbeat — its cron drives every game-state transition</span><span class="legend-item"><span class="legend-swatch" style="background:#e9ecef;border-color:#868e96;"></span>External world (ESPN, PayPal)</span><span class="legend-item"><span class="legend-swatch" style="background:#e5dbff;border-color:#9775fa;"></span>Shared plumbing every domain rides</span></div><p class="diagram-caption"><code>golf-data</code> is highlighted because its 15-minute cron is the game clock: pick locking, live money, finals, rollups, reminders, and league cleanup all fire from it. <code>payments</code> is the one domain not mounted on the tRPC root router — PayPal runs over plain API routes.</p></section><section id="spine" class="section"><div class="section-header"><h2 class="section-title">The weekly loop</h2><span class="section-badge">runtime</span></div><p class="section-intro">The one flow worth memorizing — what happens to a single pick across a tournament week. Everything left of the lock is user intent; everything right of it is machine-driven by the sync cron.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2787 132"><svg class="d2-1968878124 d2-svg" width="2787" height="132" viewBox="-25 -25 2787 132"><rect x="-25.000000" y="-25.000000" width="2787.000000" height="132.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+</div><div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>The heartbeat — its cron drives every game-state transition</span><span class="legend-item"><span class="legend-swatch" style="background:#e9ecef;border-color:#868e96;"></span>External world (ESPN, PayPal)</span><span class="legend-item"><span class="legend-swatch" style="background:#e5dbff;border-color:#9775fa;"></span>Shared plumbing every domain rides</span></div><p class="diagram-caption"><code>golf-data</code> is highlighted because its 15-minute cron is the game clock: pick locking, live money, finals, rollups, reminders, and league cleanup all fire from it. <code>payments</code> is the one domain not mounted on the tRPC root router — PayPal runs over plain API routes.</p></section><section id="spine" class="section"><div class="section-header"><h2 class="section-title">The weekly loop</h2><span class="section-badge">runtime</span></div><p class="section-intro">The one flow worth memorizing — what happens to a single pick across a tournament week. Everything left of the lock is user intent; everything right of it is machine-driven by the sync cron.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 2787 132"><svg class="d2-1968878124 d2-svg" width="2787" height="132" viewBox="-25 -25 2787 132"><rect x="-25.000000" y="-25.000000" width="2787.000000" height="132.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-1968878124 .text-bold {
 	font-family: "d2-1968878124-font-bold";
 }

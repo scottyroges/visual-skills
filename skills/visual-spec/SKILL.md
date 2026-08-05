@@ -30,6 +30,9 @@ A finished visual spec **always** has, regardless of spec size:
   a tiny spec, also the **big-idea line**: the single load-bearing insight pulled out as a headline.
 - **Key `decisions`** — the load-bearing choices, each with a one-line **`why`** (the rationale an
   approver scrutinizes), and a **`rejected`** alternative on the 2–3 most contested ones.
+- **A worked `example`** of the core mechanism for any algorithm/contract spec — real input →
+  stages → output, with a `source` and a `lesson`. Contrast form when the spec changes existing
+  behavior.
 - **A `scope` block** — in / out (anti-goals). Boundaries are approval-critical.
 - For a **larger** spec, also: a **hero `diagram`** (one architecture/flow picture — *new vs
   preserved*), a gated **`rollout`**, a **definition of done** (`done`: targets, before→after), and
@@ -48,6 +51,7 @@ If any of these is true, the page is **not done** — keep going:
 - `spec.json` has no `tldr`, or the TL;DR has no big-idea line on a non-trivial spec.
 - There is no `decisions` block, or decisions list choices with **no `why`**.
 - No decision names a **rejected** alternative on a large/contested spec.
+- An algorithm/contract spec has no `example` block — the mechanism is asserted, never shown.
 - There is no `scope` block.
 - A large spec has no hero diagram, no `rollout`, or no `approve` band.
 - The reference depth (type defs, big tables) is dumped into the orientation flow instead of
@@ -123,8 +127,8 @@ link objects**. Every block object's fields are in `src/spec-blocks.ts`.
 ## Scaling by size
 
 The floor is the same for everyone; only the ceiling moves. **"Large" is measured by section count,
-not the `complexity` chip:** once a spec carries **5+ chapter sections** (everything except `tldr`
-and `reference`), the completeness lint expects the fuller treatment — a hero `diagram`, a `rollout`,
+not the `complexity` chip:** once a spec carries **5+ chapter sections** (everything except `tldr`,
+`reference`, and `example`), the completeness lint expects the fuller treatment — a hero `diagram`, a `rollout`,
 and an `approve` band — and a big-idea line on the TL;DR. A genuinely small spec stays under that and
 those surfaces are optional. If you find yourself with 5+ sections, add them for real (grounded in
 the doc), don't pad — a 5-section design almost always *has* a build order and warrants an approval
@@ -138,6 +142,7 @@ band.
 | `rejected` on contested decisions | optional | 1–2 | **2–3** |
 | `scope` (in/out) | **required** | **required** | **required** |
 | hero `diagram` | optional | usually | **yes** |
+| `example` (worked instance) | optional | usually | **yes** |
 | `components` (+ anatomy) | if it has peer pieces | **yes** | **yes** |
 | `fits` (predecessor → this → consumer) | optional | usually | **yes** |
 | `rollout` (gated phases) | if phased | if phased | **yes** |
@@ -158,12 +163,14 @@ them; the rail auto-places after the TL;DR):
 2. `diagram` — the hero: what's new vs what's preserved.
 3. `components` (with optional `anatomy`) — the structure, made scannable.
 4. `fits` — predecessor → this → consumer, plus the layer stack.
-5. `decisions` — choice + **why**, with **rejected** on the contested ones.
-6. `scope` (in/out) → `rollout` (gated) → `done` (targets) → `risks`.
-7. `approve` — the reviewer's capstone.
-8. `reference` — full depth, collapsed.
+5. `example` — one real instance through the core mechanism (walkthrough or contrast).
+6. `decisions` — choice + **why**, with **rejected** on the contested ones.
+7. `scope` (in/out) → `rollout` (gated) → `done` (targets) → `risks`.
+8. `approve` — the reviewer's capstone.
+9. `reference` — full depth, collapsed.
 
 (`spec-prose` is an escape hatch — a markdown block for anything the modeled types don't cover.)
+Examples are chapters in the outline but do not count toward the 5-chapter "large" threshold.
 
 See the catalog for the exact field shape of every block.
 

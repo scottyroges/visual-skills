@@ -5,6 +5,8 @@ import { escapeHtml } from "./html.js";
 import { renderInlineMarkdown, renderMarkdown } from "./renderers/markdown.js";
 import { renderAll, type DiagramResult } from "./render-diagram.js";
 import { renderDiagramCard } from "./review/sections.js";
+import { renderExample } from "./renderers/example.js";
+import { normalizeExampleBlocks } from "./blocks.js";
 import { lintSpec } from "./lint-spec.js";
 import {
   assertUniqueSpecIds, collectSpecDiagrams, toDiagramBlock, isChapter, chapterLabel,
@@ -38,6 +40,9 @@ function sectionHeader(title: string, badge?: string): string {
     `${badge ? `<span class="section-badge">${escapeHtml(badge)}</span>` : ""}</div>`
   );
 }
+
+const inlineEg = async (example?: string): Promise<string> =>
+  example ? `<div class="vs-ex-inline"><span class="vs-ex-inline-tag">e.g.</span>${await mi(example)}</div>` : "";
 
 function renderTopbar(opts: SpecOpts): string {
   const chips: string[] = [];
@@ -236,6 +241,7 @@ async function renderDecisions(b: DecisionsBlock): Promise<string> {
     `<div class="decision-a">${await mi(d.a)}</div>` +
     `${d.why ? `<div class="decision-why">${await mi(d.why)}</div>` : ""}` +
     `${d.rejected ? `<div class="decision-alt"><span class="decision-alt-tag">Rejected</span>${await mi(d.rejected)}</div>` : ""}` +
+    `${await inlineEg(d.example)}` +
     `</div></div>`))).join("");
   return (
     sectionHeader(b.title, b.badge) +
@@ -247,9 +253,12 @@ async function renderDecisions(b: DecisionsBlock): Promise<string> {
 async function renderScope(b: ScopeBlock): Promise<string> {
   const inItems = (await Promise.all(b.inList.map(async (t) =>
     `<li><span class="scope-marker">&#10003;</span><span>${await mi(t)}</span></li>`))).join("");
+  // inlineEg emits a <div>: it closes the inline <span> first so the block lands directly in the
+  // <li> (a block inside an inline element is invalid and browsers hoist it out of the span).
   const outItems = (await Promise.all(b.outList.map(async (o) =>
     `<li><span class="scope-marker">&times;</span><span>${await mi(o.text)}` +
-    `${o.defer ? ` <span class="defer">&rarr; ${escapeHtml(o.defer)}</span>` : ""}</span></li>`))).join("");
+    `${o.defer ? ` <span class="defer">&rarr; ${escapeHtml(o.defer)}</span>` : ""}</span>` +
+    `${await inlineEg(o.example)}</li>`))).join("");
   return (
     sectionHeader(b.title ?? "Scope") +
     `<div class="scope-cols">` +
@@ -272,7 +281,8 @@ async function renderRollout(b: RolloutBlock): Promise<string> {
       `<div class="phase-body"><div class="phase-scope"><div class="phase-sub">Scope</div>` +
       `<p>${await mi(p.scope)}</p></div>` +
       `<div class="phase-gate"><div class="phase-sub">Acceptance gate</div>` +
-      `<ul class="gate-list">${gate}</ul></div></div></div>`
+      `<ul class="gate-list">${gate}</ul>` +
+      `${await inlineEg(p.example)}</div></div></div>`
     );
   }))).join("");
   return (
@@ -314,7 +324,8 @@ async function renderRisks(b: RisksBlock): Promise<string> {
   const cards = (await Promise.all(b.risks.map(async (r) =>
     `<div class="risk-card"><div class="risk-r"><span class="risk-icon">&#9888;</span>` +
     `<span>${await mi(r.risk)}</span></div>` +
-    `<div class="risk-m"><b>Mitigation:</b> ${await mi(r.mitigation)}</div></div>`))).join("");
+    `<div class="risk-m"><b>Mitigation:</b> ${await mi(r.mitigation)}</div>` +
+    `${await inlineEg(r.example)}</div>`))).join("");
   return (
     sectionHeader(b.title) +
     `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}` +
@@ -374,6 +385,8 @@ async function renderBlock(
       case "risks": return renderRisks(b);
       case "approve": return renderApprove(b);
       case "reference": return renderReference(b, opts.onWarn);
+      case "example":
+        return sectionHeader(b.title, b.badge) + (await renderExample(b, { ownHeader: false, onWarn: opts.onWarn, preNormalized: true }));
       case "spec-prose": return renderProse(b, opts.onWarn);
       default: {
         opts.onWarn?.(`spec: no renderer for block type "${(b as SpecBlock).type}"`);
@@ -384,10 +397,15 @@ async function renderBlock(
   return `<section id="${escapeHtml(b.id)}" class="section">${inner}</section>`;
 }
 
-export async function assembleSpec(blocks: SpecBlock[], opts: SpecOpts): Promise<string> {
+export async function assembleSpec(rawBlocks: SpecBlock[], opts: SpecOpts): Promise<string> {
+  // Normalize examples first: assertUniqueSpecIds, the sidebar/rail labels and sectionHeader all
+  // read b.id/b.title raw, so a title-less hand-authored example would crash before renderExample
+  // ever got to coerce it. lintSpec still sees rawBlocks — it reads the author's original mode.
+  const { blocks, problems: exampleProblems } = normalizeExampleBlocks(rawBlocks);
   assertUniqueSpecIds(blocks);
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
   const specCss = await readFile(join(ASSETS, "spec.css"), "utf8");
+  const exampleCss = await readFile(join(ASSETS, "example.css"), "utf8");
   const themeCss = await readFile(join(ASSETS, "theme.css"), "utf8");
   const themeHead = await readFile(join(ASSETS, "theme-head.js"), "utf8");
   const themeToggle = await readFile(join(ASSETS, "theme-toggle.js"), "utf8");
@@ -400,8 +418,9 @@ export async function assembleSpec(blocks: SpecBlock[], opts: SpecOpts): Promise
   const diagrams = new Map<string, DiagramResult>();
   for (const r of rendered) diagrams.set(r.id, r);
   if (opts.onWarn) {
-    validateSpecOpts(opts, opts.onWarn);                 // friendly warning on malformed related/meta (vs a crash)
-    for (const w of lintSpec(blocks)) opts.onWarn(w);   // demo-standard floor: lead / decisions / scope / size-scaled surfaces
+    validateSpecOpts(opts, opts.onWarn);                    // friendly warning on malformed related/meta (vs a crash)
+    for (const p of exampleProblems) opts.onWarn(p);        // malformed example JSON (raw-numbered)
+    for (const w of lintSpec(rawBlocks)) opts.onWarn(w);   // demo-standard floor: lead / decisions / scope / size-scaled surfaces
     const failed = rendered.filter((r) => r.failed).map((r) => r.id);
     if (failed.length) opts.onWarn(`${failed.length} diagram(s) failed to compile: ${failed.join(", ")} — fix their d2 source`);
   }
@@ -434,7 +453,7 @@ export async function assembleSpec(blocks: SpecBlock[], opts: SpecOpts): Promise
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<script>${themeHead}</script>` +
     `${opts.generator ? `<meta name="generator" content="${escapeHtml(opts.generator)}">` : ""}` +
-    `<title>${escapeHtml(opts.title)}</title><style>${css}\n${specCss}\n${themeCss}</style></head>` +
+    `<title>${escapeHtml(opts.title)}</title><style>${css}\n${specCss}\n${exampleCss}\n${themeCss}</style></head>` +
     `<body>${topbar}<div class="sidebar-overlay" id="sidebar-overlay"></div>` +
     `<div class="layout">${sidebar}${main}</div>${zoomOverlay}` +
     `<script>${viewer}</script><script>${themeToggle}</script></body></html>\n`

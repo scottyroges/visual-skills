@@ -331,3 +331,57 @@ describe("assemble — overview block", () => {
     await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id "dup"/);
   });
 });
+
+describe("assemble example hardening", () => {
+  // Regression: assertUniqueIds and withAnchor read b.id raw, ahead of renderExample's normalizer.
+  it("renders a title-less, id-less example without throwing (top level and nested in a group)", async () => {
+    const bad = [
+      { type: "example", stages: [] },
+      { type: "group", id: "g", title: "G", blocks: [{ type: "example", id: "ex-nested", stages: [] }] },
+    ] as unknown as Block[];
+    const html = await assemble(bad, { title: "T", source: "s" });
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');
+  });
+
+  // A tab holds any non-container block (assemble only rejects group/tabs there), so an example can
+  // live in one — and withAnchor reads its id raw exactly like a top-level block's.
+  it("normalizes a tabs-nested example: renders it, and its problems reach onWarn exactly once", async () => {
+    const warns: string[] = [];
+    const bad = [
+      { type: "tabs", id: "t", title: "Cases", tabs: [
+        { label: "one", block: { type: "example", stages: [null, {}] } },
+      ] },
+    ] as unknown as Block[];
+    const html = await assemble(bad, { title: "T", source: "s", onWarn: (m) => warns.push(m) });
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');           // id coerced to the default, no crash
+    // Warned once — by the boundary normalizer, not also by the renderer (preNormalized).
+    expect(warns.filter((w) => w.includes("no source"))).toHaveLength(1);
+    expect(warns.filter((w) => w.includes("no lesson"))).toHaveLength(1);
+    expect(warns.filter((w) => w.includes("dropped"))).toHaveLength(1);   // the [null, …] stage
+  });
+
+  // diff.diagram and overview.diagram are typed `DiagramBlock | TabsBlock`, and that tabs block
+  // holds any Block — so the illustration slots are container paths too. Both render through
+  // renderBlock, so both reach withAnchor(b.id) and must be normalized.
+  for (const host of ["diff", "overview"] as const) {
+    it(`normalizes an id-less example inside tabs under ${host}.diagram`, async () => {
+      const warns: string[] = [];
+      const tabs = { type: "tabs", id: "t", tabs: [
+        { label: "one", block: { type: "example", stages: [null, {}] } },
+      ] };
+      const host2 = host === "diff"
+        ? { type: "diff", id: "d", title: "x", path: "src/x.ts", hunks: [], diagram: tabs }
+        : { type: "overview", id: "ov", headline: "Lead", points: [], diagram: tabs };
+      const html = await assemble([host2] as unknown as Block[], {
+        title: "T", source: "s", onWarn: (m) => warns.push(m),
+      });
+      expect(html).toContain("vs-example");
+      expect(html).toContain('id="example"');
+      expect(warns.filter((w) => w.includes("no source"))).toHaveLength(1);
+      expect(warns.filter((w) => w.includes("no lesson"))).toHaveLength(1);
+      expect(warns.filter((w) => w.includes("dropped"))).toHaveLength(1);
+    });
+  }
+});

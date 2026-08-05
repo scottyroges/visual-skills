@@ -117,6 +117,40 @@
             ]
           }
         ]
+      },
+      {
+        "type": "example",
+        "id": "ex-contrast",
+        "title": "Same rows, before vs after the filter",
+        "badge": "worked example",
+        "variant": "contrast",
+        "columns": [
+          "Before",
+          "After"
+        ],
+        "intro": "The whole behavior change is visible on one golfer's season the Sunday a tournament is still being played — the same `tournamentResult` rows read by the same query, one `WHERE` clause apart.",
+        "source": "src/server/repositories/golfer.ts — the getSeasonStats hunk above; the leading-after-round-1 case is the PR's own reproduction (no test covers it — the golfer-service tests mock this repo).",
+        "stages": [
+          {
+            "label": "input — the rows getSeasonStats aggregates for one golfer + season",
+            "kind": "input",
+            "body": "`syncLiveStandings` has already written this week's row with *projected* numbers while the tournament is still `IN_PROGRESS`:\n\n```ts\n{ tournament.status: \"IN_PROGRESS\", finishPosition: 1, earnings: <projected> }  // mid-round\n{ tournament.status: \"COMPLETED\",   finishPosition: …, earnings: <final>     }  // settled weeks\n```\n\nAll of them pass `tournament.excluded = false`, and the golfer happens to be leading after round 1. `getSeasonResults` reads the same rows and is not touched by this PR."
+          },
+          {
+            "label": "old output — projections counted as history",
+            "kind": "output",
+            "side": "a",
+            "body": "The query had no status filter, so the `IN_PROGRESS` row aggregated like any other:\n\n- `bestFinish` → **1st** — a live leaderboard position reported as a result\n- `totalEarnings` → includes the projected payout, the \"millions in unearned money\"\n- `eventsPlayed` → counts an event that hasn't finished\n\nThe season-results table agreed with the stats: `isFirst` was just `!missedCut && result.finishPosition === 1`, so the live row also took the gold 1st-place styling."
+          },
+          {
+            "label": "new output — settled tournaments only, live row labeled",
+            "kind": "output",
+            "side": "b",
+            "body": "One clause narrows the aggregate — the same filter `repositories/earnings.ts` already applies:\n\n```ts\n.where(\"tournament.status\", \"in\", [\"COMPLETED\", \"FINALIZING\"])\n```\n\n- `bestFinish`, `totalEarnings` and `eventsPlayed` all drop the `IN_PROGRESS` row, so stats and standings finally count the same weeks\n- `FINALIZING` stays in on purpose — play is over and only official results are pending\n- `getSeasonResults` is untouched, so [the table](#diff-3) still lists the live tournament: `styles.rowLive`, a green **Live** badge, an `est.` label under the earnings, and `isFirst` now gated by `!isLive`",
+            "note": "Nothing is deleted or recomputed — the projected numbers stay in `tournamentResult` for standings; they just stop counting as history."
+          }
+        ],
+        "lesson": "A live row isn't bad data, it's unsettled data: the fix is one status filter on the aggregate plus an honest label on the row that still shows — `syncLiveStandings` keeps writing exactly what it wrote before."
       }
     ]
   },

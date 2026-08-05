@@ -332,6 +332,40 @@
         ]
       },
       {
+        "type": "example",
+        "id": "ex-contrast",
+        "title": "Same input, before vs after",
+        "badge": "worked example",
+        "variant": "contrast",
+        "columns": [
+          "Before",
+          "After"
+        ],
+        "intro": "The PR's own test rewrite hands us the pair: the new `\"uses estimated purse when ESPN purse unavailable\"` lands directly above the old case (renamed `\"returns 0 players when neither ESPN nor estimated purse available\"`) on the same ESPN-down mocks — it adds only `estimatedPurse: 20000000` and a `mockCalculateEarnings` return.",
+        "source": "src/server/services/sync.test.ts — “uses estimated purse when ESPN purse unavailable”; the Before column is the removed block in src/server/services/sync.ts",
+        "stages": [
+          {
+            "label": "input — tournament week, ESPN has results but no purse",
+            "kind": "input",
+            "body": "```ts\nmockFindTournamentForSync.mockResolvedValueOnce({\n  ...TOURNAMENT, purse: null, estimatedPurse: 20000000,\n});\nmockGetResults.mockResolvedValueOnce(RESULTS);      // 2 live players\nmockGetEventDetails.mockRejectedValueOnce(new Error(\"ESPN down\"));\n\nawait syncLiveStandings(\"t1\");\n```\n\n`TOURNAMENT` is The Players (`espnId: \"401580340\"`, `IN_PROGRESS`); the admin's $20M estimate is the only purse number in the system at this moment."
+          },
+          {
+            "label": "old output — the catch returned early",
+            "kind": "output",
+            "side": "a",
+            "body": "The failed purse fetch returned straight out of the `catch`:\n\n```ts\n} catch (e) {\n  console.warn(`[sync] Could not fetch purse for ${tournament.name}:`, e);\n  return { …, playerCount: 0 };\n}\n```\n\n`calculateEarnings` was never reached. `playerCount: 0`, no projected earnings written — the live leaderboard showed positions with **$0 beside every name** for the whole tournament."
+          },
+          {
+            "label": "new output — the estimate stands in",
+            "kind": "output",
+            "side": "b",
+            "body": "The `catch` only logs now; the decision moves below it:\n\n```ts\nconst effectivePurse =\n  purse ?? tournament.estimatedPurse;\n\nif (effectivePurse === null) {\n  … bail with playerCount: 0\n}\n\ncalculateEarnings(effectivePurse, …)\n```\n\nWhat the test asserts: `result.playerCount` is `2`, and `mockCalculateEarnings` was called with `(20000000, RESULTS)` — projected money on the board from Thursday.",
+            "note": "With the default fixture's `purse: 25000000`, `??` short-circuits and `effectivePurse` is still the confirmed number — the assertion the diff only had to *rename*."
+          }
+        ],
+        "lesson": "The estimate is a fallback, never an override: `purse ?? estimatedPurse` changes behavior in exactly one state — ESPN silent — and turns a silently earnings-free week into live projected money."
+      },
+      {
         "type": "diff",
         "id": "diff-11",
         "title": "sync.ts (repository)",

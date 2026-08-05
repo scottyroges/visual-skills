@@ -36,7 +36,7 @@
       "rows": [
         {
           "key": "Owns",
-          "value": "The atlas **block model** (the `AtlasBlock` union — `atlas-tldr`, `domain-map`, `domain-index`, `domain-tldr`, `components`, `depth`, `owns`, `seams`, `diagram-section`) and the `atlas.domains.json` **grouping config**."
+          "value": "The atlas **block model** (the `AtlasBlock` union — `atlas-tldr`, `domain-map`, `domain-index`, `domain-tldr`, `components`, `depth`, `owns`, `seams`, `diagram-section`, `example`) and the `atlas.domains.json` **grouping config**."
         },
         {
           "key": "Why",
@@ -349,10 +349,10 @@
           "name": "block model",
           "path": "src/atlas-blocks.ts",
           "detail": [
-            "The type backbone of every atlas page — and the file this very section documents. The `AtlasBlock` union has nine members: atlas-page blocks (`atlas-tldr`, `domain-map`, `domain-index`), domain-page blocks (`domain-tldr`, `components`, `depth`, `owns`, `seams`), and the shared `diagram-section`. `ComponentDeep` is one expandable depth section; `AtlasDiagram` is a rendered d2/mermaid pair.",
+            "The type backbone of every atlas page — and the file this very section documents. The `AtlasBlock` union has ten members: atlas-page blocks (`atlas-tldr`, `domain-map`, `domain-index`), domain-page blocks (`domain-tldr`, `components`, `depth`, `owns`, `seams`), and two shared chapter blocks usable on either page type — `diagram-section` and `example` (a straight re-export of core's `ExampleBlock`, rendered via core's `renderExample`, same pattern as the spec/recap/doc surfaces). `ComponentDeep` is one expandable depth section; `AtlasDiagram` is a rendered d2/mermaid pair.",
             "Beyond the types it carries page-option shapes (`AtlasOpts`/`DomainOpts`), `LAYER_DOTS` (the layer → fill;stroke color table), and small helpers: `collectAtlasDiagrams` pulls every rendered diagram in document order, `assertUniqueAtlasIds` enforces unique block/component/diagram ids, and `isAtlasChapter`/`atlasChapterLabel` drive the numbered chapter nav."
           ],
-          "codeHtml": "<div class=\"code-block\"><pre><span class=\"kw\">export type</span> <span class=\"ty\">AtlasBlock</span> =\n  | <span class=\"ty\">AtlasTldrBlock</span> | <span class=\"ty\">DomainMapBlock</span> | <span class=\"ty\">DomainIndexBlock</span>\n  | <span class=\"ty\">DomainTldrBlock</span> | <span class=\"ty\">ComponentsBlock</span> | <span class=\"ty\">DepthBlock</span>\n  | <span class=\"ty\">OwnsBlock</span> | <span class=\"ty\">SeamsBlock</span>\n  | <span class=\"ty\">DiagramSectionBlock</span>;</pre></div>",
+          "codeHtml": "<div class=\"code-block\"><pre><span class=\"kw\">export type</span> <span class=\"ty\">AtlasBlock</span> =\n  | <span class=\"ty\">AtlasTldrBlock</span> | <span class=\"ty\">DomainMapBlock</span> | <span class=\"ty\">DomainIndexBlock</span>\n  | <span class=\"ty\">DomainTldrBlock</span> | <span class=\"ty\">ComponentsBlock</span> | <span class=\"ty\">DepthBlock</span>\n  | <span class=\"ty\">OwnsBlock</span> | <span class=\"ty\">SeamsBlock</span>\n  | <span class=\"ty\">DiagramSectionBlock</span> | <span class=\"ty\">ExampleBlock</span>;</pre></div>",
           "files": [
             {
               "name": "atlas-blocks.ts",
@@ -362,7 +362,7 @@
           "exports": [
             {
               "name": "AtlasBlock",
-              "desc": "The nine-member block union every page is a list of."
+              "desc": "The ten-member block union every page is a list of, incl. `example`."
             },
             {
               "name": "ComponentDeep",
@@ -400,7 +400,7 @@
             },
             {
               "dir": "imports",
-              "body": "[core](../domain-core/domain-core.html) — `DiagramBlock`/`DiagramKind` (from `blocks.ts`) for `atlasDiagramToBlock`"
+              "body": "[core](../domain-core/domain-core.html) — `DiagramBlock`/`DiagramKind` (from `blocks.ts`) for `atlasDiagramToBlock`, and `ExampleBlock` (re-exported as the `example` union member)"
             }
           ]
         },
@@ -409,8 +409,8 @@
           "name": "render",
           "path": "src/assemble-atlas.ts",
           "detail": [
-            "Turns a block list into a self-contained HTML page. `assembleAtlas` renders the map page (lead, domain-map, tile index); `assembleDomain` renders a domain page (lead, components, internal-arch, depth, owns, seams). `renderAtlasBlock` dispatches per block type, `renderAtlasDiagram` emits each diagram's d2/mermaid render with its authored legend, and `atlasLegend` builds the legend rows.",
-            "Every diagram is rendered through the diagrams domain up front (collected via `collectAtlasDiagrams`), then looked up by id while rendering. The output reuses the review app-shell/CSS from the recap domain — including the same inlined dark-mode toggle (`theme-head.js` head-apply script, `theme-toggle.js` button, `theme.css` appended last in `<style>`) — so atlas pages share the toolkit's look and theme. The CLI calls these two functions and writes the HTML next to the page JSON."
+            "Turns a block list into a self-contained HTML page. `assembleAtlas` renders the map page (lead, domain-map, tile index); `assembleDomain` renders a domain page (lead, components, internal-arch, depth, owns, seams). `renderAtlasBlock` dispatches per block type, `renderAtlasDiagram` emits each diagram's d2/mermaid render with its authored legend, and `atlasLegend` builds the legend rows. An `example` block renders through core's `renderExample(b, { ownHeader: false, preNormalized: true })` behind the same `sectionHeader` every other chapter gets — `renderAtlasBlock` takes a `preNormalized` flag (default **false**, so a direct caller passing raw authored blocks still gets safe rendering plus the normalization warnings; the two assemblers pass true) — a worked-example chapter reads like any other section. Both entry points run core's `normalizeExampleBlocks` first (the id assertion, sidebar labels and `sectionHeader` all read `b.id`/`b.title` raw) and emit its problems themselves, while the lints keep reading the original blocks.",
+            "Every diagram is rendered through the diagrams domain up front (collected via `collectAtlasDiagrams`), then looked up by id while rendering. The output reuses the review app-shell/CSS from the recap domain — including the same inlined dark-mode toggle (`theme-head.js` head-apply script, `theme-toggle.js` button, `theme.css` appended last in `<style>`) — plus `example.css` for worked-example stage/rail/contrast styles, so atlas pages share the toolkit's look and theme. Both `assembleAtlas`/`assembleDomain` also run core's `lintExamples` over any `example` blocks present, piping the judgment warnings through `onWarn` alongside `lintAtlas`/`lintDomain`. The CLI calls these two functions and writes the HTML next to the page JSON."
           ],
           "files": [
             {
@@ -444,6 +444,10 @@
             {
               "dir": "reuses",
               "body": "[recap](../domain-recap/domain-recap.html) — the review app-shell + `review.css` token styles"
+            },
+            {
+              "dir": "uses",
+              "body": "[core](../domain-core/domain-core.html)'s `renderExample`/`lintExamples` for `example` chapters"
             },
             {
               "dir": "called by",
@@ -507,8 +511,8 @@
           "desc": "The domain-page blocks: the lead, the component cards, the in-depth sections, the data-owned table (this block), and the neighbor seams."
         },
         {
-          "name": "diagram-section",
-          "desc": "The shared rendered-diagram block — the atlas spine/map and a domain page's internal-arch."
+          "name": "diagram-section · example",
+          "desc": "Shared chapter blocks usable on either page type: `diagram-section` (the atlas spine/map and a domain page's internal-arch) and `example` (a worked-example chapter, re-exported from core)."
         },
         {
           "name": "Inventory · ModuleInfo · Drift",
@@ -566,8 +570,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:8d5708532e34b43b3d331ce7b853cde97462c7a6d88c7ce6329f2e5c690188a1",
-    "date": "2026-07-21",
-    "commit": "913441f03aaf2b4ed8ad35f811bf8a02dd31e13d"
+    "hash": "sha256:26feae2d18419f2114e1f3e384189fe8e53859fdda730d2dfb5c33f4b8043456",
+    "date": "2026-08-05",
+    "commit": "de7da39862f70cf60c76334c5bb44d99c311746f"
   }
 }

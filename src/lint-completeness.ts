@@ -74,5 +74,29 @@ export function lintCompleteness(blocks: Block[]): string[] {
     );
   }
 
+  // 4. Example — a size-based nudge, NOT behavior detection: this lint counts non-trivial diffs, it
+  // cannot tell a refactor from a behavior change, so the message has to read as a prompt for author
+  // judgment. Examples are counted recursively into groups: that's where they're SUPPOSED to live.
+  //
+  // Deliberately NOT the full walkBlocks traversal the doc-surface lints use. The other container
+  // paths are recap-invisible: assembleReview sends top-level `tabs` and both diagram slots through
+  // renderDiagramLike, which renders diagram/schema only and drops everything else. An example
+  // buried there produces no HTML, so counting it would let a block the reader can never see
+  // silence the nudge. Top-level + groups is exactly the set that renders.
+  const examples: Block[] = [];
+  const collectEx = (bs: Block[]): void => {
+    for (const b of bs) {
+      if (b.type === "example") examples.push(b);
+      else if (b.type === "group") collectEx(b.blocks);
+    }
+  };
+  collectEx(blocks);
+  const nonTrivial = diffs.filter((d) => changedLines(d) > TRIVIAL_DIFF_LINES);
+  if (nonTrivial.length >= 3 && examples.length === 0) {
+    warnings.push(
+      "no example block — a recap with this many non-trivial diffs usually lands harder with one contrast example (same input, old vs new output) when the PR changes behavior; mine the PR's tests for a ready-made pair",
+    );
+  }
+
   return warnings;
 }

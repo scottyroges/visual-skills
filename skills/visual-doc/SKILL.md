@@ -97,6 +97,20 @@ Primary blocks you author for a doc:
         "points": [ { "text": "new `capture` [route](#flow)" } ],
         "diagram": { "type": "diagram", "id": "ov-flow", "title": "Flow", "kind": "flowchart", "d2": "a -> b" } }
 
+- **worked instance -> `example`** — a real input walked through stages to its output (`source` +
+  `lesson` required; static rail by default, `"reveal"`/`"step"` for volume, `variant:"contrast"`
+  for old-vs-new). See `skills/shared/spec-components.md` for the full recipe.
+
+      { "type": "example", "id": "ex-capture", "title": "Capturing an authorized order",
+        "source": "test/fixtures/orders/authorized.json",
+        "stages": [
+          { "label": "Input", "kind": "input", "body": "…" },
+          { "label": "Output", "kind": "output", "body": "…" } ],
+        "lesson": "Capture is idempotent — replaying it twice charges once." }
+
+**When to add an example:** any transformation or algorithm the doc explains gets one worked
+instance — don't just describe the mechanism in prose, show one real case going through it.
+
 Other block types in the `Block` union — `schema`, `api`, `diff` — are normally produced
 automatically by the **visual-recap** flow from a real git diff, not hand-authored. Reach
 for visual-recap when the subject is a code change rather than a plan.

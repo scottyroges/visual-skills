@@ -1,5 +1,7 @@
 import type { Block, DiagramBlock, SchemaBlock } from "./blocks.js";
+import { walkBlocks, collectExamples, isDiagramBlock } from "./blocks.js";
 import { rolesInSource } from "./diagram-colors.js";
+import { lintExamples } from "./lint-examples.js";
 
 // A diff description longer than this with no scannable structure (no bullets, no paragraph
 // breaks) reads as a wall of text — the authoring lint flags it.
@@ -26,36 +28,21 @@ function isWallOfText(desc: string): boolean {
  */
 export function lintBlocks(blocks: Block[]): string[] {
   const warnings: string[] = [];
-  const visit = (bs: Block[]): void => {
-    for (const b of bs) {
-      if (b.type === "group") {
-        if (!b.description || !b.description.trim()) {
-          warnings.push(`group "${b.id}" has no description — add a 1–2 line summary of what it covers`);
-        }
-        visit(b.blocks);
-      } else if (b.type === "diff" && b.description && isWallOfText(b.description)) {
-        warnings.push(
-          `diff "${b.id}" (${b.path}) description is a ${b.description.trim().length}-char single paragraph — break it into bullet points`,
-        );
-      }
+  walkBlocks(blocks, (b) => {
+    if (b.type === "group" && !b.description?.trim()) {
+      warnings.push(`group "${b.id}" has no description — add a 1–2 line summary of what it covers`);
+    } else if (b.type === "diff" && b.description && isWallOfText(b.description)) {
+      warnings.push(
+        `diff "${b.id}" (${b.path}) description is a ${b.description.trim().length}-char single paragraph — break it into bullet points`,
+      );
     }
-  };
-  visit(blocks);
+  });
 
   // ── Diagram authoring guards ────────────────────────────────────────────────
-  // Gather every diagram/schema block reachable: top-level, in group.blocks,
-  // tabs.tabs[].block, diff.diagram, and overview.diagram.
+  // Every diagram/schema block reachable anywhere in the tree — walkBlocks knows the container
+  // paths (group children, tab payloads, diff.diagram, overview.diagram).
   const diagrams: (DiagramBlock | SchemaBlock)[] = [];
-  const collect = (bs: Block[]): void => {
-    for (const b of bs) {
-      if (b.type === "diagram" || b.type === "schema") diagrams.push(b);
-      if (b.type === "group") collect(b.blocks);
-      else if (b.type === "tabs") collect(b.tabs.map((t) => t.block));
-      else if (b.type === "diff" && b.diagram) collect([b.diagram]);
-      else if (b.type === "overview" && b.diagram) collect([b.diagram]);
-    }
-  };
-  collect(blocks);
+  walkBlocks(blocks, (b) => { if (isDiagramBlock(b)) diagrams.push(b); });
 
   for (const b of diagrams) {
     // 1. Unmarked subject (color) — diagrams only (schema excluded).
@@ -83,6 +70,11 @@ export function lintBlocks(blocks: Block[]): string[] {
       `${diagrams.length} diagrams — prefer the fewest that explain the change (one strong diagram beats several weak ones)`,
     );
   }
+
+  // ── Example authoring guards (judgment lints) ──────────────────────────────
+  // Same full traversal as the diagram collector above: an example renders wherever a block can
+  // sit (a tab payload included), so it must be linted wherever it can sit.
+  warnings.push(...lintExamples(collectExamples(blocks)));
 
   return warnings;
 }

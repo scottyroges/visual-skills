@@ -5,7 +5,7 @@
   "layer": "engine",
   "layerLabel": "Engine",
   "path": "src",
-  "count": "15 files",
+  "count": "17 files",
   "depends": "diagrams",
   "date": "2026-06-20",
   "generator": "visual-skills · visual-atlas",
@@ -22,7 +22,7 @@
         },
         {
           "key": "Files",
-          "value": "15 — `blocks.ts`, `assemble.ts`, `html.ts`, `highlight.ts`, `lint-blocks.ts`, `version.ts`, and nine renderers."
+          "value": "17 — `blocks.ts`, `assemble.ts`, `html.ts`, `highlight.ts`, `lint-blocks.ts`, `lint-examples.ts`, `version.ts`, and ten renderers."
         },
         {
           "key": "Role",
@@ -44,7 +44,7 @@
       "cards": [
         {
           "name": "block-model",
-          "purpose": "The `Block` discriminated union — the contract between products and the engine. Every renderable thing (diagram, schema, diff, prose, api, file-tree, annotated-code, questions, group, tabs, overview) is one variant, keyed by `type`.",
+          "purpose": "The `Block` discriminated union — the contract between products and the engine. Every renderable thing (diagram, schema, diff, prose, api, file-tree, annotated-code, questions, group, tabs, overview, example) is one variant, keyed by `type`.",
           "exports": [
             {
               "name": "Block"
@@ -82,7 +82,7 @@
         },
         {
           "name": "renderers",
-          "purpose": "Nine renderer modules: seven pure `Block → HTML` functions (prose, diff, api, file-tree, annotated-code, questions, overview), plus the diagram color-key painter and the shared markdown substrate the prose/diff/overview renderers lean on. `assemble`'s `switch` calls the right one; groups and tabs recurse back through `assemble`.",
+          "purpose": "Ten renderer modules: eight pure `Block → HTML` functions (prose, diff, api, file-tree, annotated-code, questions, overview, example), plus the diagram color-key painter and the shared markdown substrate the prose/diff/overview renderers lean on. `assemble`'s `switch` calls the right one; groups and tabs recurse back through `assemble`.",
           "exports": [
             {
               "name": "renderProse"
@@ -95,6 +95,10 @@
             },
             {
               "name": "renderAnnotatedCode",
+              "deputy": true
+            },
+            {
+              "name": "renderExample",
               "deputy": true
             }
           ],
@@ -119,10 +123,13 @@
         },
         {
           "name": "lint",
-          "purpose": "Non-blocking authoring guards. Walks the `Block[]` and warns — never throws — when a group lacks a description, a diff description is a wall of text, a diagram applies no color, an editable kind drops its mermaid, or there are too many / oversize diagrams.",
+          "purpose": "Non-blocking authoring guards. Walks the `Block[]` and warns — never throws — when a group lacks a description, a diff description is a wall of text, a diagram applies no color, an editable kind drops its mermaid, or there are too many / oversize diagrams. Also lints example blocks for mode/volume/contrast/synthetic issues.",
           "exports": [
             {
               "name": "lintBlocks"
+            },
+            {
+              "name": "lintExamples"
             }
           ],
           "href": "#c-lint"
@@ -186,13 +193,13 @@
           "name": "block-model",
           "path": "src/blocks.ts",
           "detail": [
-            "`Block` is a discriminated union keyed on `type` — `diagram`, `schema`, `api`, `file-tree`, `diff`, `prose`, `annotated-code`, `questions`, `group`, `tabs`, `overview`. This is the entire contract between a product and the engine: a generator never touches HTML, it only constructs typed blocks. `assemble`'s exhaustive `switch (b.type)` is checked against this union, so adding a variant is a compile error until a renderer handles it.",
-            "Two variants are containers that nest **one level deep**: `group` (a labelled `<details>` of child blocks) and `tabs` (a CSS-only switcher, max 6 tabs). `diff` and `overview` may each carry an optional embedded `diagram`. The only logic here is `isDiagramBlock`, the type guard `assemble` uses to find every `diagram`/`schema` block — including those nested inside groups, tabs, diffs, and overviews — so they can be rendered through the diagrams domain up front."
+            "`Block` is a discriminated union keyed on `type` — `diagram`, `schema`, `api`, `file-tree`, `diff`, `prose`, `annotated-code`, `questions`, `group`, `tabs`, `overview`, `example`. This is the entire contract between a product and the engine: a generator never touches HTML, it only constructs typed blocks. `assemble`'s exhaustive `switch (b.type)` is checked against this union, so adding a variant is a compile error until a renderer handles it.",
+            "Two variants are containers that nest **one level deep**: `group` (a labelled `<details>` of child blocks) and `tabs` (a CSS-only switcher, max 6 tabs). `diff` and `overview` may each carry an optional embedded `diagram`. The logic here is small and structural. **`childBlocks` / `withChildBlocks` are the single definition of the block tree** — the one list of places a block can hold another block (`group.blocks`, `tabs.tabs[].block`, `diff.diagram`, `overview.diagram`) plus its inverse. `walkBlocks(blocks, visit)` is the read-only depth-first traversal over that definition and `mapBlocks(blocks, fn)` its rebuilding twin (bottom-up, keeping container identity when nothing underneath changed). Every traversal in the codebase is built on those two — id assertions, diagram collection, the authoring lints, and normalization — so adding a container variant means editing one pair of functions. Hand-rolled `if (b.type === \"group\")` chains are what let tab- and diagram-slot-nested blocks be silently skipped. On top of the walker sit `isDiagramBlock` (the guard that finds every `diagram`/`schema` block for the up-front render) and the example normalizers: `normalizeExample` turns one hand-authored (possibly hostile) example into a safe block plus a list of problems and never throws; `normalizeExampleBlocks` is the assembler-boundary sweep every assembler runs over its incoming blocks **first** — `mapBlocks` reaches an example wherever it sits, replaces it with its normalized form and hands the problems back for the assembler to warn. It has to reach everywhere, because a nested example's raw `b.id`/`b.title` is read by `assemble`'s anchor step exactly like a top-level one's. `collectExamples` is the read-only counterpart the judgment lints use."
           ],
           "files": [
             {
               "name": "blocks.ts",
-              "desc": "The `Block` union, every variant interface, and the `isDiagramBlock` guard."
+              "desc": "The `Block` union, every variant interface, the block-tree walker (`walkBlocks`/`mapBlocks`), and the example normalizers."
             }
           ],
           "exports": [
@@ -219,6 +226,18 @@
             {
               "name": "isDiagramBlock()",
               "desc": "Type guard — is this block rendered through the d2/mermaid diagram path?"
+            },
+            {
+              "name": "walkBlocks()",
+              "desc": "Depth-first visit of every block, through every container path — the one traversal."
+            },
+            {
+              "name": "mapBlocks()",
+              "desc": "walkBlocks' rebuilding twin — map every block, containers rebuilt around their mapped children."
+            },
+            {
+              "name": "normalizeExampleBlocks()",
+              "desc": "Assembler-boundary sweep — normalizes every example anywhere in the tree, returns { blocks, problems }."
             }
           ],
           "connections": [
@@ -241,7 +260,7 @@
           "name": "assemble + shell",
           "path": "src/assemble.ts · src/html.ts",
           "detail": [
-            "`assemble(blocks, opts)` is the plain-document pipeline — the `doc` generator calls it directly, while the recap/spec/atlas shells reuse its pieces rather than the function itself. It first asserts every block id is unique recursively (anchors and in-page `#cross-links` depend on it), runs `lintBlocks` through `opts.onWarn`, then collects every diagram/schema block — including nested ones — and renders them up front through the diagrams domain, keyed by id. It then maps each top-level block to HTML via `renderBlock`, a `switch (b.type)` that calls the matching renderer; `group` and `tabs` recurse. Finally it inlines `assets/template.css` and `assets/viewer.js`, plus the dark-mode toggle assets — `assets/theme-head.js` (a synchronous `<head>` script that sets `data-theme` on `<html>` from `localStorage[\"vs-theme\"]`/OS preference before paint), `assets/theme-toggle.js` (injects the `.vs-theme-toggle` button and wires click + OS-change), and `assets/theme.css` (appended after `template.css` in the `<style>`) — stamps an optional `<meta generator>` and footer, and returns a single self-contained HTML string — no external assets, by design.",
+            "`assemble(blocks, opts)` is the plain-document pipeline — the `doc` generator calls it directly, while the recap/spec/atlas shells reuse its pieces rather than the function itself. It first normalizes every `example` block through `normalizeExampleBlocks` and emits that sweep's problems, asserts every block id is unique across the whole tree (anchors and in-page `#cross-links` depend on it), runs `lintBlocks` on the ORIGINAL blocks through `opts.onWarn`, then collects every diagram/schema block — nested ones included — and renders them up front. The id assertion and the diagram collector both run on `walkBlocks`, so they cover every container path by construction through the diagrams domain, keyed by id. It then maps each top-level block to HTML via `renderBlock`, a `switch (b.type)` that calls the matching renderer; `group` and `tabs` recurse. Finally it inlines `assets/template.css`, `assets/example.css` (the worked-example stage/rail/contrast styles), and `assets/viewer.js`, plus the dark-mode toggle assets — `assets/theme-head.js` (a synchronous `<head>` script that sets `data-theme` on `<html>` from `localStorage[\"vs-theme\"]`/OS preference before paint), `assets/theme-toggle.js` (injects the `.vs-theme-toggle` button and wires click + OS-change), and `assets/theme.css` (appended after `template.css`/`example.css` in the `<style>`) — stamps an optional `<meta generator>` and footer, and returns a single self-contained HTML string — no external assets, by design.",
             "`html.ts` is the tiny shared safety layer: `escapeHtml` (used by every renderer for any text that reaches HTML) and `SAFE_HREF`, the regex that allows only `#fragment` and `http(s)://` links so a `javascript:`/`data:` URL can't slip through the overview and review link renderers. `assemble` also injects each block's id as an anchor on its `<section>` so the cross-links resolve."
           ],
           "files": [
@@ -300,7 +319,7 @@
           "name": "renderers",
           "path": "src/renderers/*.ts",
           "detail": [
-            "Nine modules: seven per-block-type functions — `renderProse`, `renderDiff`, `renderApi`, `renderFileTree`, `renderAnnotatedCode`, `renderOverview`, `renderQuestions` — plus `renderLegend` (the diagram color key) and the shared `renderMarkdown`. Each block renderer takes its block (some plus an `onWarn` or a pre-rendered extra) and returns an HTML fragment wrapped in a `vs-block` section; `assemble` adds the anchor and stitches them together. There is no shared base class — the union + the dispatch switch are the only structure.",
+            "Ten modules: eight per-block-type functions — `renderProse`, `renderDiff`, `renderApi`, `renderFileTree`, `renderAnnotatedCode`, `renderOverview`, `renderQuestions`, `renderExample` — plus `renderLegend` (the diagram color key) and the shared `renderMarkdown`. Each block renderer takes its block (some plus an `onWarn` or a pre-rendered extra) and returns an HTML fragment wrapped in a `vs-block` section; `assemble` adds the anchor and stitches them together. There is no shared base class — the union + the dispatch switch are the only structure. `renderExample` is the odd one out: it takes an `{ ownHeader, onWarn? }` opts object (not a bare `onWarn`) because its own-title-or-not choice differs by call site — a top-level doc section prints its own `<h2>`, while a recap section (top-level or nested in a walkthrough chapter) reuses the surrounding `section-header` instead. The same opts carry `preNormalized`, which every assembler sets: the block already went through `normalizeExampleBlocks` at the page boundary, which emitted its problems against the author's raw JSON, so the renderer's own (defensive, idempotent) re-normalize stays silent rather than duplicating and renumbering them.",
             "`markdown.ts` is the substrate: `renderMarkdown` parses GitHub-flavored markdown, highlights fenced code via the highlight module, and runs the result through `sanitize-html` with a strict tag/attribute allowlist; `renderInlineMarkdown` does the one-line variant for headlines and bullets. `prose`, `diff`, and `overview` all build on it. `diff` and `annotated-code` use `highlightLines` to align highlighted code to a gutter; `file-tree` collapses single-child directory chains and links filenames back to their diff blocks; `legend` paints the auto-derived diagram color key."
           ],
           "files": [
@@ -339,6 +358,10 @@
             {
               "name": "legend.ts",
               "desc": "`renderLegend` — the diagram color key."
+            },
+            {
+              "name": "example.ts",
+              "desc": "`renderExample` — worked-example stages as a rail / contrast columns / reveal / step switcher."
             }
           ],
           "exports": [
@@ -381,6 +404,10 @@
             {
               "name": "renderLegend()",
               "desc": "The diagram color key — role swatches from the diagrams palette."
+            },
+            {
+              "name": "renderExample()",
+              "desc": "Worked-example stages — rail, contrast columns, reveal, or step switcher."
             }
           ],
           "connections": [
@@ -444,21 +471,30 @@
         {
           "id": "c-lint",
           "name": "lint",
-          "path": "src/lint-blocks.ts",
+          "path": "src/lint-blocks.ts · src/lint-examples.ts",
           "detail": [
-            "`lintBlocks(blocks)` returns authoring warnings in document order — it never throws and never blocks rendering. `assemble` pipes them to `opts.onWarn`. The guards nudge quality: a `group` with no description, a `diff` description that is a long single paragraph (a wall of text), a `diagram` that applies no semantic color, an editable-eligible diagram kind that dropped its mermaid source (silently losing the Excalidraw upgrade), and too-many / oversize-edge diagrams overall.",
-            "It walks the same nested structure `assemble` does — groups, tabs, embedded diff/overview diagrams — using the diagram-color helpers to detect which roles a d2/mermaid source applies. The intent is to catch the mistakes that make a document read worse without making the build fail."
+            "`lintBlocks(blocks)` returns authoring warnings in document order — it never throws and never blocks rendering. `assemble` pipes them to `opts.onWarn`. The guards nudge quality: a `group` with no description, a `diff` description that is a long single paragraph (a wall of text), a `diagram` that applies no semantic color, an editable-eligible diagram kind that dropped its mermaid source (silently losing the Excalidraw upgrade), and too-many / oversize-edge diagrams overall. It walks the block tree with `walkBlocks` — the same traversal as its diagram collector, so group children, tab payloads and diagram slots are all covered — to collect every `example` block, and folds `lintExamples`'s findings into its own return, so `assemble` and `assembleReview` get example warnings for free just by calling `lintBlocks` — no separate call needed.",
+            "`lintExamples(examples)` inspects example blocks for quality nudges: checking for undersized step modes, long static walkthroughs (skipped when the *raw* block already asked for `mode: \"step\"` and normalization coerced it — that case gets the cap warning's \"split it\" instead), oversized stage bodies, dead reveals, unbalanced contrast sides, synthetic sources, and multiple reveal blocks on one page. Warnings only — normalization problems are surfaced once at the assembler boundary (`normalizeExampleBlocks`), not re-emitted here, so assemblers can call both without duplicates. Note it reads the blocks as the author wrote them, which is why every assembler lints `rawBlocks` and renders the normalized copy.",
+            "Both walk their respective block structures using judgment heuristics rather than hard constraints. The intent is to catch the mistakes that make a document read worse without making the build fail."
           ],
           "files": [
             {
               "name": "lint-blocks.ts",
               "desc": "The group / diff-prose / diagram authoring guards, recursing through nested blocks."
+            },
+            {
+              "name": "lint-examples.ts",
+              "desc": "Example block quality nudges: mode/volume/contrast/synthetic judgment rules."
             }
           ],
           "exports": [
             {
               "name": "lintBlocks()",
               "desc": "→ `string[]` of non-blocking authoring warnings in document order."
+            },
+            {
+              "name": "lintExamples()",
+              "desc": "→ `string[]` of example block quality nudges; operates on normalized blocks."
             }
           ],
           "connections": [
@@ -467,8 +503,12 @@
               "body": "[assemble()](#c-assemble) and [recap](../domain-recap/domain-recap.html)'s `assembleReview` — emitted through `opts.onWarn`, never blocking"
             },
             {
+              "dir": "exported for",
+              "body": "[authoring](../domain-authoring/domain-authoring.html)'s spec (`lint-spec.ts` calls `lintExamples` directly), doc/[recap](../domain-recap/domain-recap.html) (get it for free — `lintBlocks` now collects example blocks, incl. group children, and calls `lintExamples` itself), and [atlas](../domain-atlas/domain-atlas.html) (`assembleAtlas`/`assembleDomain` call it directly, same pattern as spec)"
+            },
+            {
               "dir": "inspects",
-              "body": "diagram color roles via the [diagrams](../domain-diagrams/domain-diagrams.html) color helpers"
+              "body": "diagram color roles via the [diagrams](../domain-diagrams/domain-diagrams.html) color helpers (lintBlocks)"
             }
           ]
         },
@@ -545,6 +585,10 @@
         {
           "name": "GroupBlock · TabsBlock",
           "desc": "The two one-level-deep containers: a labelled `<details>` group and a CSS-only tab switcher."
+        },
+        {
+          "name": "ExampleBlock",
+          "desc": "A worked example: labelled stages (input/step/output/counter) rendered as a rail, contrast columns, a reveal, or a step switcher — required `source` and `lesson` keep it honest."
         }
       ],
       "note": "All HTML is produced at render time and inlined — core owns no persisted data, only the in-memory block types and the document string `assemble()` returns."
@@ -591,8 +635,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:aafe34eccfd50806e7b2304c7d2de0aa2245a9d022690dd313dc486fa5682aac",
-    "date": "2026-07-21",
-    "commit": "3da9de04ac619ab5f65b339c556ae2a76f5c15dd"
+    "hash": "sha256:79dd7e9f786931c87121f6b3ad2f10870debccb019dd00e510e210248920ea90",
+    "date": "2026-08-05",
+    "commit": "de7da39862f70cf60c76334c5bb44d99c311746f"
   }
 }

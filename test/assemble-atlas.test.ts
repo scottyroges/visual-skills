@@ -272,3 +272,47 @@ it("emits no completeness warnings for the canonical atlas blocks", async () => 
   expect(lintAtlas(blocks)).toEqual([]);
   expect(warns.filter((w) => /no atlas-tldr|no domain map|no domain-index|no purpose/i.test(w))).toEqual([]);
 });
+
+it("renders an example block on a domain page", async () => {
+  const warns: string[] = [];
+  const blocks = [
+    { type: "domain-tldr", id: "tldr", heading: "h", rows: [{ key: "Owns", value: "x" }] },
+    { type: "example", id: "ex-trace", title: "One request through this stack",
+      source: "src/game/engine.ts (traced by hand)", lesson: "the engine never touches the store directly",
+      stages: [
+        { label: "request", kind: "input", body: "POST /score" },
+        { label: "resolution", body: "engine applies handicap" },
+        { label: "persisted row", kind: "output", body: "scores table" },
+      ] },
+  ] as unknown as AtlasBlock[];
+  const html = await assembleDomain(blocks, { title: "game", layer: "engine", layerLabel: "Engine", onWarn: (m) => warns.push(m) });
+  expect(html).toContain("vs-example");
+  expect(html).toContain("One request through this stack");
+  expect(warns.filter((w) => w.includes("no renderer"))).toEqual([]);
+});
+
+describe("assembleDomain example hardening", () => {
+  // Regression: assertUniqueAtlasIds, the sidebar labels and sectionHeader read b.id/b.title raw,
+  // ahead of renderExample's normalizer.
+  it("renders a title-less, id-less example without throwing", async () => {
+    const bad = [{ type: "example", stages: [] }] as unknown as AtlasBlock[];
+    const html = await assembleDomain(bad, { title: "d", layer: "engine", layerLabel: "Engine" });
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');
+  });
+});
+
+describe("renderAtlasBlock standalone safety", () => {
+  // Exported and called directly (as these tests do). preNormalized defaults to FALSE, so a raw
+  // authored block is normalized here — the section id and sectionHeader read id/title raw.
+  it("renders a malformed example without throwing and surfaces its problems once", async () => {
+    const warns: string[] = [];
+    const bad = { type: "example", stages: [null, {}] } as unknown as AtlasBlock;
+    const html = await renderAtlasBlock(bad, new Map(), (m) => warns.push(m));
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');
+    expect(warns.filter((w) => w.includes("no source"))).toHaveLength(1);
+    expect(warns.filter((w) => w.includes("no lesson"))).toHaveLength(1);
+    expect(warns.filter((w) => w.includes("dropped"))).toHaveLength(1);
+  });
+});

@@ -2,7 +2,9 @@
 // `assemble-spec.ts` renders each to a <section> and derives the sidebar outline + progress rail
 // from them. Short text fields are INLINE MARKDOWN (`code`, **bold**, *em*, [link](#id)); longer
 // bodies are block markdown. See skills/shared/spec-components.md for the authoring catalog.
-import type { DiagramBlock, DiagramKind, TabsBlock } from "./blocks.js";
+import type { DiagramBlock, DiagramKind, TabsBlock, ExampleBlock } from "./blocks.js";
+
+export type { ExampleBlock } from "./blocks.js";
 
 export interface TldrBlock {
   type: "tldr";
@@ -58,7 +60,7 @@ export interface FitsBlock {
   stack?: { tag: string; label: string; note: string; kind: "new" | "reused" }[];
 }
 
-export interface DecisionItem { q: string; a: string; why?: string; rejected?: string; }
+export interface DecisionItem { q: string; a: string; why?: string; rejected?: string; example?: string; }
 export interface DecisionsBlock {
   type: "decisions";
   id: string;
@@ -75,10 +77,10 @@ export interface ScopeBlock {
   inTitle?: string;
   outTitle?: string;
   inList: string[];
-  outList: { text: string; defer?: string }[];
+  outList: { text: string; defer?: string; example?: string }[];
 }
 
-export interface PhaseItem { tag: string; title: string; scope: string; gate: string[]; }
+export interface PhaseItem { tag: string; title: string; scope: string; gate: string[]; example?: string; }
 export interface RolloutBlock {
   type: "rollout";
   id: string;
@@ -101,7 +103,7 @@ export interface DoneBlock {
   note?: string;
 }
 
-export interface RiskItem { risk: string; mitigation: string; }
+export interface RiskItem { risk: string; mitigation: string; example?: string; }
 export interface RisksBlock {
   type: "risks";
   id: string;
@@ -147,6 +149,7 @@ export type SpecBlock =
   | RisksBlock
   | ApproveBlock
   | ReferenceBlock
+  | ExampleBlock
   | SpecProseBlock;
 
 /** Blocks that are NOT "chapters": excluded from the numbered outline + progress rail. */
@@ -187,6 +190,7 @@ export function chapterLabel(b: SpecBlock): string {
     case "done": return b.title;
     case "risks": return b.title;
     case "approve": return b.title;
+    case "example": return b.title;
     case "spec-prose": return b.title ?? "Details";
     default: return b.id;
   }

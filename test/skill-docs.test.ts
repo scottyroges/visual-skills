@@ -152,4 +152,15 @@ describe("skill docs stay in sync", () => {
       expect(quizSkill, `quiz SKILL.md must document quiz block type \`${t}\``).toContain(`\`${t}\``);
     }
   });
+
+  it("documents the example block in all four surface skills", () => {
+    // blocks.ts's discriminant only auto-forces visual-doc; spec/atlas import the type
+    // rather than redeclaring the literal, so lock all four explicitly.
+    for (const [name, text] of [
+      ["visual-doc", docSkill], ["visual-recap", recapSkill],
+      ["visual-spec", specSkill], ["visual-atlas", atlasSkill],
+    ] as const) {
+      expect(text, `${name} SKILL.md must document \`example\``).toContain("`example`");
+    }
+  });
 });

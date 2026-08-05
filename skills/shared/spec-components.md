@@ -201,12 +201,43 @@ carries a text label or legend too.
 </div>
 ```
 
+### Worked example (input → stages → lesson)
+- **Use when:** the spec defines an algorithm, contract, validation rule, or merge semantics — one
+  real instance walked to its output teaches faster than any prose. Three shapes: **walkthrough**
+  (input → steps → output), **contrast** (`variant:"contrast"` — same input, old vs new, side by
+  side; the natural form when behavior changes), **counterexample** (terminal stage
+  `kind:"counter"` — the instance that made a rejected alternative necessary). Ground it: `source`
+  names the fixture/test/artifact it came from (required — a missing one renders a visible ⚠);
+  synthetic data must say so. End with the `lesson` (required): one sentence the reader leaves with.
+- **Interaction is a response to volume, not decoration.** Default `mode:"static"`. `"reveal"`
+  collapses one flagged stage behind "Show: …" (predict-then-check — at most one per page).
+  `"step"` walks stages one at a time via a pure-CSS stepper (3–8 stages; more stages → split).
+  Fat stages get trimmed, never hidden.
+- **Avoid when:** the mechanism is trivial, or no design element needs the instance ("gotcha"
+  examples are noise). One example on the trickiest path beats three happy-path ones. Keep it to
+  one screenful; elide with `…` and say so.
+
+```html
+<div class="vs-example">
+  <p class="vs-ex-src"><span class="vs-ex-src-tag">source</span>test/fixtures/….json, msgs 4–7</p>
+  <div class="vs-ex-rail">
+    <div class="vs-ex-stage" data-kind="input"><div class="vs-ex-stage-h"><span class="vs-ex-kind">Input</span>…</div><div class="vs-ex-stage-body">…</div></div>
+    <div class="vs-ex-arrow" aria-hidden="true">↓</div>
+    <div class="vs-ex-stage" data-kind="output"><div class="vs-ex-stage-h"><span class="vs-ex-kind">Output</span>…</div><div class="vs-ex-stage-body">…</div></div>
+  </div>
+  <div class="vs-ex-lesson"><span class="vs-ex-lesson-tag">Lesson</span>…one sentence…</div>
+</div>
+```
+
 ### Decision cards (choice + why + rejected)
 - **Use when:** the spec records locked design decisions — the highest-value content for an
   approver. Every card shows the question and the choice. Add `.decision-why` to **all** cards.
   Add `.decision-alt` (the red **Rejected** tag + the path not taken) to **only the 2–3 most
   contested** decisions — the asymmetry itself signals which forks were real.
 - **Avoid when:** there were no genuine alternatives (then it's a fact, not a decision).
+- **Optional `example`** renders a quiet `e.g.` line (`.vs-ex-inline`) under the why/rejected lines —
+  for a one-liner; anything needing stages graduates to a full worked-example block above. The same
+  optional `example` field is available on risks, rollout phases, and out-of-scope items.
 
 ```html
 <div class="decision-grid">
@@ -215,6 +246,7 @@ carries a text label or legend too.
     <div class="decision-a">The choice made</div>
     <div class="decision-why">the positive reason it won.</div>
     <div class="decision-alt"><span class="decision-alt-tag">Rejected</span>the alternative — why it lost.</div>
+    <div class="vs-ex-inline"><span class="vs-ex-inline-tag">e.g.</span>a one-line concrete instance.</div>
   </div></div>
   <!-- cards without .decision-alt for the uncontested ones -->
 </div>

@@ -2,7 +2,8 @@
 // skips the lead, the decisions, or the scope underdelivers; these warnings (surfaced via onWarn)
 // nudge the author back to the standard. The lesson from the recap rewrite: a mechanical backstop
 // keeps every page at the bar even when the prose says "good enough". Heuristics, not hard errors.
-import type { SpecBlock, DecisionsBlock, TldrBlock } from "./spec-blocks.js";
+import type { SpecBlock, DecisionsBlock, TldrBlock, ExampleBlock } from "./spec-blocks.js";
+import { lintExamples } from "./lint-examples.js";
 
 /** A spec with this many chapters is "large" — it should carry the fuller treatment. */
 const LARGE_CHAPTERS = 5;
@@ -10,7 +11,7 @@ const LARGE_CHAPTERS = 5;
 export function lintSpec(blocks: SpecBlock[]): string[] {
   const warns: string[] = [];
   const types = new Set(blocks.map((b) => b.type));
-  const chapters = blocks.filter((b) => b.type !== "tldr" && b.type !== "reference").length;
+  const chapters = blocks.filter((b) => b.type !== "tldr" && b.type !== "reference" && b.type !== "example").length;
   const large = chapters >= LARGE_CHAPTERS;
 
   // Lead
@@ -36,6 +37,13 @@ export function lintSpec(blocks: SpecBlock[]): string[] {
 
   // Boundaries
   if (!types.has("scope")) warns.push("no Scope block — in/out boundaries are approval-critical; reviewers check them first");
+
+  // Examples — the proof layer (spec §"Making the skills actually reach for it")
+  const examples = blocks.filter((b): b is ExampleBlock => b.type === "example");
+  if (large && examples.length === 0) {
+    warns.push("no example block — algorithm/contract specs land harder with one worked example (real input → stages → output)");
+  }
+  warns.push(...lintExamples(examples));
 
   // Orientation picture + reviewer surfaces (scaled to size)
   if (large && !types.has("diagram")) warns.push("no hero diagram — a large spec should lead with one architecture/flow diagram (new vs preserved)");

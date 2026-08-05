@@ -1489,6 +1489,140 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 .nav-domain .nd-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.12); }
 .nav-domain .nd-pending { margin-left: auto; font-size: var(--text-xs); color: var(--ink-faint); }
 
+/* example.css — the shared worked-example block (spec/recap/doc/atlas all inline this).
+   The two page families define nearly disjoint light-mode tokens (review.css: --panel/--border/
+   --ink-muted…; template.css: --card/--line/--ctx…). Every value resolves through a local --ex-*
+   layer whose fallback chain covers both, then a literal. theme.css's dark block defines a
+   superset of both, so dark mode needs no special casing. */
+.vs-example {
+  --ex-line:       var(--border, var(--line, #d8d4c8));
+  --ex-panel:      var(--panel, var(--card, #ffffff));
+  --ex-muted:      var(--ink-muted, var(--ctx, #57606a));
+  --ex-radius:     var(--radius, 8px);
+  --ex-mono:       var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  --ex-accent:     var(--accent, var(--link, #2563eb));
+  --ex-input:      var(--accent, var(--link, #2563eb));
+  --ex-input-bg:   var(--accent-subtle, #eff4ff);
+  --ex-input-line: var(--accent-border, #bfdbfe);
+  --ex-out:        var(--change, #b45309);
+  --ex-out-bg:     var(--change-bg, var(--warn-bg, #fffdf3));
+  --ex-out-line:   var(--change-border, #fde68a);
+  --ex-counter:    var(--remove, var(--del, #cf222e));
+  --ex-counter-bg: var(--remove-bg, var(--del-bg, #ffebe9));
+  --ex-counter-line: var(--remove-border, #fecaca);
+  margin: 18px 0;
+}
+
+.vs-ex-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.vs-ex-title { margin: 0; font-size: 1.1em; }
+.vs-ex-badge { font-size: 0.72em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ex-muted); border: 1px solid var(--ex-line); border-radius: 999px; padding: 2px 10px; }
+.vs-ex-intro { margin: 0 0 8px; color: var(--ex-muted); }
+
+/* provenance: always visible, above the stages — the reader knows what they're looking at first */
+.vs-ex-src { margin: 0 0 12px; font-family: var(--ex-mono); font-size: 0.8em; color: var(--ex-muted); }
+.vs-ex-src-tag { font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-right: 8px; }
+.vs-ex-src.is-missing, .vs-ex-lesson.is-missing, .vs-ex-missing { color: var(--ex-counter); font-weight: 600; }
+.vs-ex-missing { border: 1px dashed var(--ex-counter); border-radius: var(--ex-radius); padding: 10px 14px; }
+
+/* stage cards */
+.vs-ex-rail { display: flex; flex-direction: column; gap: 0; }
+.vs-ex-stage { border: 1px solid var(--ex-line); border-radius: var(--ex-radius);
+  background: var(--ex-panel); padding: 12px 16px; }
+.vs-ex-stage-h { font-weight: 600; margin-bottom: 6px; }
+.vs-ex-kind { font-size: 0.68em; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  border: 1px solid var(--ex-line); border-radius: 4px; padding: 1px 7px; margin-right: 9px;
+  color: var(--ex-muted); vertical-align: 1px; }
+.vs-ex-stage[data-kind="input"]   { border-color: var(--ex-input-line); background: var(--ex-input-bg); }
+.vs-ex-stage[data-kind="input"] .vs-ex-kind   { color: var(--ex-input); border-color: var(--ex-input-line); }
+.vs-ex-stage[data-kind="output"]  { border-color: var(--ex-out-line); background: var(--ex-out-bg); }
+.vs-ex-stage[data-kind="output"] .vs-ex-kind  { color: var(--ex-out); border-color: var(--ex-out-line); }
+.vs-ex-stage[data-kind="counter"] { border-color: var(--ex-counter-line); background: var(--ex-counter-bg); }
+.vs-ex-stage[data-kind="counter"] .vs-ex-kind { color: var(--ex-counter); border-color: var(--ex-counter-line); }
+.vs-ex-stage-body > :first-child { margin-top: 0; }
+.vs-ex-stage-body > :last-child { margin-bottom: 0; }
+/* A fenced block's min-content width is its longest line; left visible it drags the stage — and,
+   in contrast mode, the whole grid track — wider than the page. Scroll it inside the card. */
+.vs-ex-stage-body pre { overflow-x: auto; max-width: 100%; }
+.vs-ex-arrow { text-align: center; color: var(--ex-muted); padding: 2px 0; line-height: 1; }
+.vs-ex-note { margin: 6px 0 0; font-size: 0.85em; color: var(--ex-muted); }
+
+/* lesson band — the block always ends on one sentence */
+.vs-ex-lesson { margin-top: 12px; padding: 10px 16px; border-left: 3px solid var(--ex-accent);
+  background: var(--ex-panel); border-radius: 0 var(--ex-radius) var(--ex-radius) 0; }
+.vs-ex-lesson-tag { font-size: 0.7em; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--ex-accent); margin-right: 9px; }
+
+/* contrast columns */
+/* minmax(0,…) not 1fr: a track's default min is min-content, so one long code line in a column
+   would widen the grid past the page instead of scrolling inside its own card. */
+.vs-ex-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 10px; }
+.vs-ex-col { min-width: 0; }
+.vs-ex-col-h { font-size: 0.78em; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ex-muted); margin-bottom: 6px; }
+.vs-ex-col[data-side="b"] .vs-ex-col-h { color: var(--ex-out); }
+.vs-ex-col .vs-ex-stage { margin-bottom: 8px; }
+@media (max-width: 700px) { .vs-ex-cols { grid-template-columns: 1fr; } }
+
+/* reveal */
+.vs-ex-reveal { border: 1px dashed var(--ex-line); border-radius: var(--ex-radius); }
+.vs-ex-reveal > summary { cursor: pointer; padding: 10px 16px; font-weight: 600; color: var(--ex-accent); }
+.vs-ex-reveal > summary:focus-visible { outline: 2px solid var(--ex-accent); outline-offset: -2px; }
+.vs-ex-reveal[open] > summary { border-bottom: 1px dashed var(--ex-line); }
+.vs-ex-reveal .vs-ex-stage { border: none; }
+
+/* ── step mode: pure-CSS radio stepper (same mechanism as template.css .vs-tabs, but the radios
+   stay FOCUSABLE — visually hidden without pointer-events:none — and pair :focus-visible to their
+   label via the same written-out nth-of-type pattern as :checked. Cap: 8 stages. ── */
+.vs-ex-stepper { border: 0; margin: 0; padding: 0; min-width: 0; }
+.vs-ex-srlegend { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.vs-ex-radio { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.vs-ex-steps { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.vs-ex-steps label { cursor: pointer; padding: 5px 13px; border: 1px solid var(--ex-line);
+  border-radius: 999px; font-size: 0.85em; font-weight: 600; color: var(--ex-muted); }
+.vs-example.is-step .vs-ex-stage { display: none; }
+/* checked → show nth stage / highlight nth label (n = 1..8; the All radio is .is-all) */
+.vs-ex-radio:nth-of-type(1):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(1),
+.vs-ex-radio:nth-of-type(2):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(2),
+.vs-ex-radio:nth-of-type(3):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(3),
+.vs-ex-radio:nth-of-type(4):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(4),
+.vs-ex-radio:nth-of-type(5):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(5),
+.vs-ex-radio:nth-of-type(6):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(6),
+.vs-ex-radio:nth-of-type(7):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(7),
+.vs-ex-radio:nth-of-type(8):checked ~ .vs-ex-rail .vs-ex-stage:nth-child(8),
+.vs-ex-radio.is-all:checked ~ .vs-ex-rail .vs-ex-stage { display: block; }
+.vs-ex-radio:nth-of-type(1):checked ~ .vs-ex-steps label:nth-child(1),
+.vs-ex-radio:nth-of-type(2):checked ~ .vs-ex-steps label:nth-child(2),
+.vs-ex-radio:nth-of-type(3):checked ~ .vs-ex-steps label:nth-child(3),
+.vs-ex-radio:nth-of-type(4):checked ~ .vs-ex-steps label:nth-child(4),
+.vs-ex-radio:nth-of-type(5):checked ~ .vs-ex-steps label:nth-child(5),
+.vs-ex-radio:nth-of-type(6):checked ~ .vs-ex-steps label:nth-child(6),
+.vs-ex-radio:nth-of-type(7):checked ~ .vs-ex-steps label:nth-child(7),
+.vs-ex-radio:nth-of-type(8):checked ~ .vs-ex-steps label:nth-child(8),
+.vs-ex-radio.is-all:checked ~ .vs-ex-steps label:last-child {
+  color: var(--ex-accent); border-color: var(--ex-accent); background: var(--ex-input-bg); }
+.vs-ex-radio:nth-of-type(1):focus-visible ~ .vs-ex-steps label:nth-child(1),
+.vs-ex-radio:nth-of-type(2):focus-visible ~ .vs-ex-steps label:nth-child(2),
+.vs-ex-radio:nth-of-type(3):focus-visible ~ .vs-ex-steps label:nth-child(3),
+.vs-ex-radio:nth-of-type(4):focus-visible ~ .vs-ex-steps label:nth-child(4),
+.vs-ex-radio:nth-of-type(5):focus-visible ~ .vs-ex-steps label:nth-child(5),
+.vs-ex-radio:nth-of-type(6):focus-visible ~ .vs-ex-steps label:nth-child(6),
+.vs-ex-radio:nth-of-type(7):focus-visible ~ .vs-ex-steps label:nth-child(7),
+.vs-ex-radio:nth-of-type(8):focus-visible ~ .vs-ex-steps label:nth-child(8),
+.vs-ex-radio.is-all:focus-visible ~ .vs-ex-steps label:last-child {
+  outline: 2px solid var(--ex-accent); outline-offset: 2px; }
+
+/* print: hidden stages are unacceptable on paper; reveal is accepted-collapsed per spec */
+@media print {
+  .vs-example.is-step .vs-ex-stage { display: block !important; }
+  .vs-ex-steps { display: none; }
+}
+
+/* inline one-liner on decisions / risks / phases / scope-out */
+.vs-ex-inline { margin-top: 6px; font-size: 0.85em; color: var(--ex-muted); }
+.vs-ex-inline-tag { font-weight: 700; font-style: italic; margin-right: 7px; color: var(--ex-muted); }
+
 /* vs-theme */
 .vs-theme-toggle {
   position: fixed; top: 14px; right: 14px; z-index: 1000;
@@ -1536,7 +1670,14 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
   --diff-ctx-fg:#c9cdd3; --diff-num:#7f8792; --diff-gutter:#8b939e;
   --syntax-kw:#b39cf5; --syntax-fn:#6aa3ff; --syntax-ty:#d4a72c;
   --risk-med:#d4a72c;
+
+  /* quiz.css family badges — light literals stay as fallbacks in quiz.css */
+  --quiz-fit:#a78bfa; --quiz-rationale:#d4a72c; --quiz-mechanism:#3fb950;
 }
+
+/* quiz.css: number chip sits on --accent, which is light blue in dark — white text drops
+   to ~2.4:1 there, so the chip text flips to the dark page ink instead. */
+:root[data-theme="dark"] .quiz-num { color:#16181d; }
 
 /* Diagrams (d2/Excalidraw inline SVGs) bake in light colors and are NOT re-themed dark —
    instead each container gets a light "card" so the SVG reads as an intentional light panel
@@ -1614,7 +1755,7 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 /* atlas.css .topbar-back:hover: hardcoded light-blue hover fill collided with the
    themed --accent text color (also light blue in dark mode) → illegible on hover. */
 :root[data-theme="dark"] .topbar-back:hover { background: rgba(106,163,255,0.22); }
-</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><span class="topbar-title">System Atlas · visual-skills</span><div class="topbar-meta"><span class="chip chip-stack">TypeScript · Node CLI</span><span class="chip chip-count">6 domains</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">generated 2026-06-20</span><span class="chip chip-stat">static HTML output</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>Start here</span></a></li><li><a href="#map" class="outline-item" data-target="map"><span class="outline-num" aria-hidden="true">1</span><span>The domain map</span></a></li><li><a href="#spine" class="outline-item" data-target="spine"><span class="outline-num" aria-hidden="true">2</span><span>Spine</span></a></li><li><a href="#domains" class="outline-item" data-target="domains"><span class="outline-num" aria-hidden="true">3</span><span>The 6 domains</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Domains</span><ul class="nav-domains" role="list"><li><a href="domain-core/domain-core.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>core</span></a></li><li><a href="domain-diagrams/domain-diagrams.html" class="nav-domain"><span class="nd-dot" style="background:#e5dbff;border-color:#9775fa;"></span><span>diagrams</span></a></li><li><a href="domain-code-intel/domain-code-intel.html" class="nav-domain"><span class="nd-dot" style="background:#ffd43b;border-color:#f08c00;"></span><span>code-intel</span></a></li><li><a href="domain-recap/domain-recap.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>recap</span></a></li><li><a href="domain-atlas/domain-atlas.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>atlas</span></a></li><li><a href="domain-authoring/domain-authoring.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>authoring</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Root</span><span class="mv">`src/` &amp; `bin/`</span></div><div class="meta-row"><span class="mk">Domains</span><span class="mv">6 (all with pages)</span></div><div class="meta-row"><span class="mk">Read first</span><span class="mv">core → diagrams → a product</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Start here</span><h2 class="tldr-heading">A toolkit of four CLI generators that turn code, diffs, and specs into self-contained, visually-readable HTML — all built on one shared block→HTML rendering engine.</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">What</span><span class="tldr-val">Four generators ship as <code>bin/</code> CLIs: <strong>visual-recap</strong> (PR / commit / diff review), <strong>visual-atlas</strong> (this codebase-map), <strong>visual-spec</strong> (design-spec / RFC page), and <strong>visual-doc</strong> (general illustrated doc). Each emits one standalone <code>.html</code> that opens over <code>file://</code> — no server, no reader-side build.</span></div><div class="tldr-row"><span class="tldr-key">Shape</span><span class="tldr-val">Logic lives in <code>src/</code> and is consumed by thin entrypoints in <code>bin/</code>. A <strong>rendering core</strong> turns a typed <code>Block[]</code> into a page; <strong>diagrams</strong> and <strong>code-intelligence</strong> are shared services the products lean on. Two products <em>scan</em> a real repo (recap, atlas); three are <em>pure authoring</em> (spec, doc, quiz).</span></div><div class="tldr-row"><span class="tldr-key">Spine</span><span class="tldr-val">Every product is the same pipeline: build a typed <code>Block[]</code> → its assembler walks it, calling one renderer per block type → rendered diagrams and highlighted code get inlined → one self-contained HTML file.</span></div></div></div><div class="primer"><div class="primer-row"><span class="primer-n">1</span><div class="primer-body"><div class="primer-h">One pattern, four products.</div><div class="primer-p">Each product pairs a block vocabulary with a thin assembler built on core's shared primitives — the renderers, lint, and highlighting. Only the doc CLI calls core's <code>assemble()</code> directly; recap, spec, and atlas each have their own assembler over the same parts. Read <code>src/blocks.ts</code> then <code>src/assemble.ts</code> and you have the pattern the other three follow.</div></div></div><div class="primer-row"><span class="primer-n">2</span><div class="primer-body"><div class="primer-h">The output is a single self-contained file.</div><div class="primer-p">Every generator inlines its CSS, syntax-highlighted code, and rendered diagrams into one <code>.html</code> that works over <code>file://</code>. Self-containment is a hard product constraint, not a nicety — it shapes how diagrams and assets are handled.</div></div></div><div class="primer-row"><span class="primer-n">3</span><div class="primer-body"><div class="primer-h">Two products read code; two only author.</div><div class="primer-p"><code>recap</code> and <code>atlas</code> understand a real repo — git diffs, Prisma/tRPC parsing, import graphs — through the <strong>code-intel</strong> layer. <code>spec</code> and <code>doc</code> take hand-authored blocks JSON and never scan. That split explains why code-intel exists.</div></div></div><div class="primer-row"><span class="primer-n">4</span><div class="primer-body"><div class="primer-h">d2 is the diagram floor; the atlas is hybrid.</div><div class="primer-p">Diagrams compile through the <code>d2</code> CLI to static SVG (with an optional editable-Excalidraw upgrade), and one palette colors every diagram. The atlas itself is <em>hybrid</em>: a mechanical scan drafts JSON, humans enrich the prose, and the committed JSON re-renders with no scan.</div></div></div></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#map"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">The domain map</span></a><a class="progress-step" href="#spine"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Spine</span></a><a class="progress-step" href="#domains"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">The 6 domains</span></a></nav><section id="map" class="section"><div class="section-header"><h2 class="section-title">The domain map</h2><span class="section-badge">layered</span></div><p class="section-intro">Six domains in three tiers. A <strong>foundation</strong> (<code>diagrams</code>) and an <strong>engine</strong> (<code>core</code>) sit at the bottom; an <strong>intelligence</strong> layer (<code>code-intel</code>) reads real repos; three <strong>surface</strong> products stack on top. Arrows are <em>depends on</em> — and <code>atlas</code> and <code>authoring</code> share <code>recap</code>'s review shell (its css, viewer script, and section helpers).</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1476 426"><svg class="d2-2477579105 d2-svg" width="1476" height="426" viewBox="-25 -35 1476 426"><rect x="-25.000000" y="-35.000000" width="1476.000000" height="426.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+</style></head><body><header class="topbar" role="banner"><button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle navigation sidebar" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75" fill="currentColor"/><rect x="2" y="11.5" width="12" height="1.5" rx="0.75" fill="currentColor"/></svg></button><span class="topbar-title">System Atlas · visual-skills</span><div class="topbar-meta"><span class="chip chip-stack">TypeScript · Node CLI</span><span class="chip chip-count">6 domains</span><span class="topbar-sep" aria-hidden="true"></span><span class="chip chip-stat">generated 2026-06-20</span><span class="chip chip-stat">static HTML output</span></div></header><div class="sidebar-overlay" id="sidebar-overlay"></div><div class="layout"><nav class="sidebar" id="sidebar" aria-label="Document navigation"><div class="sidebar-section"><span class="sidebar-label">Contents</span><ul class="outline-list" role="list"><li><a href="#tldr" class="outline-item" data-target="tldr"><span class="outline-num" aria-hidden="true">&#8212;</span><span>Start here</span></a></li><li><a href="#map" class="outline-item" data-target="map"><span class="outline-num" aria-hidden="true">1</span><span>The domain map</span></a></li><li><a href="#spine" class="outline-item" data-target="spine"><span class="outline-num" aria-hidden="true">2</span><span>Spine</span></a></li><li><a href="#domains" class="outline-item" data-target="domains"><span class="outline-num" aria-hidden="true">3</span><span>The 6 domains</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Domains</span><ul class="nav-domains" role="list"><li><a href="domain-core/domain-core.html" class="nav-domain"><span class="nd-dot" style="background:#d0ebff;border-color:#4dabf7;"></span><span>core</span></a></li><li><a href="domain-diagrams/domain-diagrams.html" class="nav-domain"><span class="nd-dot" style="background:#e5dbff;border-color:#9775fa;"></span><span>diagrams</span></a></li><li><a href="domain-code-intel/domain-code-intel.html" class="nav-domain"><span class="nd-dot" style="background:#ffd43b;border-color:#f08c00;"></span><span>code-intel</span></a></li><li><a href="domain-recap/domain-recap.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>recap</span></a></li><li><a href="domain-atlas/domain-atlas.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>atlas</span></a></li><li><a href="domain-authoring/domain-authoring.html" class="nav-domain"><span class="nd-dot" style="background:#eff4ff;border-color:#2563eb;"></span><span>authoring</span></a></li></ul></div><div class="sidebar-section"><span class="sidebar-label">Meta</span><div class="meta-list"><div class="meta-row"><span class="mk">Root</span><span class="mv">`src/` &amp; `bin/`</span></div><div class="meta-row"><span class="mk">Domains</span><span class="mv">6 (all with pages)</span></div><div class="meta-row"><span class="mk">Read first</span><span class="mv">core → diagrams → a product</span></div></div></div></nav><main class="main"><section id="tldr" class="section"><div class="tldr-card"><div class="tldr-header"><span class="tldr-eyebrow">Start here</span><h2 class="tldr-heading">A toolkit of four CLI generators that turn code, diffs, and specs into self-contained, visually-readable HTML — all built on one shared block→HTML rendering engine.</h2></div><div class="tldr-rows"><div class="tldr-row"><span class="tldr-key">What</span><span class="tldr-val">Four generators ship as <code>bin/</code> CLIs: <strong>visual-recap</strong> (PR / commit / diff review), <strong>visual-atlas</strong> (this codebase-map), <strong>visual-spec</strong> (design-spec / RFC page), and <strong>visual-doc</strong> (general illustrated doc). Each emits one standalone <code>.html</code> that opens over <code>file://</code> — no server, no reader-side build.</span></div><div class="tldr-row"><span class="tldr-key">Shape</span><span class="tldr-val">Logic lives in <code>src/</code> and is consumed by thin entrypoints in <code>bin/</code>. A <strong>rendering core</strong> turns a typed <code>Block[]</code> into a page; <strong>diagrams</strong> and <strong>code-intelligence</strong> are shared services the products lean on. Two products <em>scan</em> a real repo (recap, atlas); three are <em>pure authoring</em> (spec, doc, quiz).</span></div><div class="tldr-row"><span class="tldr-key">Spine</span><span class="tldr-val">Every product is the same pipeline: build a typed <code>Block[]</code> → its assembler walks it, calling one renderer per block type → rendered diagrams and highlighted code get inlined → one self-contained HTML file.</span></div></div></div><div class="primer"><div class="primer-row"><span class="primer-n">1</span><div class="primer-body"><div class="primer-h">One pattern, four products.</div><div class="primer-p">Each product pairs a block vocabulary with a thin assembler built on core's shared primitives — the renderers, lint, and highlighting. Only the doc CLI calls core's <code>assemble()</code> directly; recap, spec, and atlas each have their own assembler over the same parts. Read <code>src/blocks.ts</code> then <code>src/assemble.ts</code> and you have the pattern the other three follow.</div></div></div><div class="primer-row"><span class="primer-n">2</span><div class="primer-body"><div class="primer-h">The output is a single self-contained file.</div><div class="primer-p">Every generator inlines its CSS, syntax-highlighted code, and rendered diagrams into one <code>.html</code> that works over <code>file://</code>. Self-containment is a hard product constraint, not a nicety — it shapes how diagrams and assets are handled.</div></div></div><div class="primer-row"><span class="primer-n">3</span><div class="primer-body"><div class="primer-h">Two products read code; two only author.</div><div class="primer-p"><code>recap</code> and <code>atlas</code> understand a real repo — git diffs, Prisma/tRPC parsing, import graphs — through the <strong>code-intel</strong> layer. <code>spec</code> and <code>doc</code> take hand-authored blocks JSON and never scan. That split explains why code-intel exists.</div></div></div><div class="primer-row"><span class="primer-n">4</span><div class="primer-body"><div class="primer-h">d2 is the diagram floor; the atlas is hybrid.</div><div class="primer-p">Diagrams compile through the <code>d2</code> CLI to static SVG (with an optional editable-Excalidraw upgrade), and one palette colors every diagram. The atlas itself is <em>hybrid</em>: a mechanical scan drafts JSON, humans enrich the prose, and the committed JSON re-renders with no scan.</div></div></div></div></section><nav class="progress-rail" aria-label="Section progress"><a class="progress-step is-active" href="#map"><div class="progress-step-num" aria-hidden="true">1</div><span class="progress-step-label">The domain map</span></a><a class="progress-step" href="#spine"><div class="progress-step-num" aria-hidden="true">2</div><span class="progress-step-label">Spine</span></a><a class="progress-step" href="#domains"><div class="progress-step-num" aria-hidden="true">3</div><span class="progress-step-label">The 6 domains</span></a></nav><section id="map" class="section"><div class="section-header"><h2 class="section-title">The domain map</h2><span class="section-badge">layered</span></div><p class="section-intro">Six domains in three tiers. A <strong>foundation</strong> (<code>diagrams</code>) and an <strong>engine</strong> (<code>core</code>) sit at the bottom; an <strong>intelligence</strong> layer (<code>code-intel</code>) reads real repos; three <strong>surface</strong> products stack on top. Arrows are <em>depends on</em> — and <code>atlas</code> and <code>authoring</code> share <code>recap</code>'s review shell (its css, viewer script, and section helpers).</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1476 426"><svg class="d2-2477579105 d2-svg" width="1476" height="426" viewBox="-25 -35 1476 426"><rect x="-25.000000" y="-35.000000" width="1476.000000" height="426.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-2477579105 .text-bold {
 	font-family: "d2-2477579105-font-bold";
 }
@@ -1718,7 +1859,7 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 <rect x="297.000000" y="170.000000" width="82" height="21" fill="black"></rect>
 <rect x="346.000000" y="293.000000" width="82" height="21" fill="black"></rect>
 </mask></svg></svg>
-</div><div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>Central engine (every product uses it)</span></div><p class="diagram-caption">Read bottom-up: <code>diagrams</code> and <code>core</code> are shared infrastructure; <code>code-intel</code> reads real repos for the scanning products; <code>recap</code> / <code>atlas</code> / <code>authoring</code> are the user-facing CLIs. <code>core</code> is highlighted because all five products build on its <code>Block</code> primitives and renderers.</p></section><section id="spine" class="section"><div class="section-header"><h2 class="section-title">Spine</h2><span class="section-badge">runtime</span></div><p class="section-intro">The one flow worth memorizing — it is identical across all four generators. A product builds a typed <code>Block[]</code>; its assembler walks it and dispatches one renderer per block type; diagram and code blocks get compiled and inlined; the result is a single self-contained HTML file.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1730 314"><svg class="d2-4248321208 d2-svg" width="1730" height="314" viewBox="-25 -65 1730 314"><rect x="-25.000000" y="-65.000000" width="1730.000000" height="314.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+</div><div class="legend" aria-label="Diagram legend"><span class="legend-item"><span class="legend-swatch" style="background:#ffd43b;border-color:#f08c00;"></span>Central engine (every product uses it)</span></div><p class="diagram-caption">Read bottom-up: <code>diagrams</code> and <code>core</code> are shared infrastructure; <code>code-intel</code> reads real repos for the scanning products; <code>recap</code> / <code>atlas</code> / <code>authoring</code> are the user-facing CLIs. <code>core</code> is highlighted because all five products build on its <code>Block</code> primitives and renderers.</p></section><section id="spine" class="section"><div class="section-header"><h2 class="section-title">Spine</h2><span class="section-badge">runtime</span></div><p class="section-intro">The one flow worth memorizing — it is identical across all four generators. A product builds a typed <code>Block[]</code>; its assembler walks it and dispatches one renderer per block type; diagram and code blocks get compiled and inlined; the result is a single self-contained HTML file.</p><div class="diagram-box"><button class="diagram-enlarge" type="button" aria-label="Enlarge diagram">&#10530; Enlarge</button><?xml version="1.0" encoding="utf-8"?><svg class="diagram-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="0.7.1" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1730 314"><svg class="d2-4248321208 d2-svg" width="1730" height="314" viewBox="-25 -65 1730 314"><rect x="-25.000000" y="-65.000000" width="1730.000000" height="314.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
 .d2-4248321208 .text-bold {
 	font-family: "d2-4248321208-font-bold";
 }

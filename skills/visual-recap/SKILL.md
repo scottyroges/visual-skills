@@ -32,6 +32,11 @@ A finished recap **always** has, regardless of change size:
   a narrative (e.g. *core change → supporting wiring → tests/config*), each group with a
   `description`.
 - **At least one authored diagram** when behavior or structure is clearer shown than read.
+- For a **behavior-changing PR**, one contrast `example`: the same input under old vs new code,
+  mined from the PR's tests (ready-made input/output pairs) — or grounded in a documented
+  reproduction when no test covers the case, said plainly in `source` — placed inside the group
+  beside the diff it explains. The lint only counts diffs, so it nudges by size; *you* decide
+  whether this PR is one where an example earns its place.
 
 **Size scales the ceiling, it never lowers the floor.** A small change gets fewer overview points
 and maybe no diagram — but it still gets the headline, the what/why/size facets, the risk chip, and
@@ -45,6 +50,9 @@ If any of these is true, the recap is **not done** — keep going:
 - The title is still `Recap — commit <sha>` / `Recap — <branch>`.
 - There is no `overview` block, or its `facets`/`risk` are unset.
 - Diff cards have no `description`.
+- The PR changes behavior and no `example` shows a concrete before/after. (The zero-example warning
+  is a heuristic nudge off diff count, not a verdict — on a pure refactor or a docs-only PR it is
+  fine to leave it standing.)
 - You ran only `--out` (the one-shot bare render) and opened that. That output is raw material.
 - The tool printed warnings about a missing overview, incomplete TL;DR, unannotated diffs, an
   ungrouped pile of diffs, or a wall-of-text description. **Those warnings mean below standard —
