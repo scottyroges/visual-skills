@@ -4,6 +4,7 @@ import { renderDiffBody } from "./diff.js";
 import { renderDiagramLike } from "./sections.js";
 import { stripChapterOrdinal } from "./normalize.js";
 import { renderExample } from "../renderers/example.js";
+import { normalizeExample } from "../blocks.js";
 import type { Block, DiffBlock, DiffHunk, GroupBlock } from "../blocks.js";
 import type { DiagramResult } from "../render-diagram.js";
 
@@ -93,6 +94,7 @@ async function renderChapter(
   n: number,
   onWarn?: (m: string) => void,
   diagrams: Map<string, DiagramResult> = new Map(),
+  preNormalized = false,
 ): Promise<string> {
   let intro = "";
   if (g.description) {
@@ -110,16 +112,23 @@ async function renderChapter(
     if (child.type === "diff") {
       parts.push(await renderSubsection(child, `${n}${String.fromCharCode(97 + diffIdx++)}`, onWarn, diagrams));
     } else if (child.type === "example") {
+      // This branch reads id/title/badge RAW, so a standalone caller (preNormalized false, the
+      // default) must normalize here or escapeHtml gets undefined — and it owns the warnings too.
+      // assembleReview passes true: it already swept the tree and emitted them.
+      let ex = child;
+      if (!preNormalized) {
+        const n2 = normalizeExample(child);
+        ex = n2.block;
+        for (const p of n2.problems) onWarn?.(p);
+      }
       // Own the header here (ownHeader:false) so the nested example sits at <h4> — the same level as
       // the diff subsections it lives beside, under the chapter's <h3>. renderExample's own header is
       // an <h2>, which would invert the hierarchy inside the group.
-      const badgeHtml = child.badge ? `<span class="section-badge">${escapeHtml(child.badge)}</span>` : "";
+      const badgeHtml = ex.badge ? `<span class="section-badge">${escapeHtml(ex.badge)}</span>` : "";
       parts.push(
-        `<div id="${escapeHtml(child.id)}" class="subsection">` +
-        `<div class="subsection-header"><h4 class="subsection-title">${escapeHtml(child.title)}</h4>${badgeHtml}</div>` +
-        // preNormalized: assembleReview — the only production caller — runs normalizeExampleBlocks
-        // over the whole tree (groups included) and emits the problems itself.
-        `${await renderExample(child, { ownHeader: false, onWarn, preNormalized: true })}</div>`,
+        `<div id="${escapeHtml(ex.id)}" class="subsection">` +
+        `<div class="subsection-header"><h4 class="subsection-title">${escapeHtml(ex.title)}</h4>${badgeHtml}</div>` +
+        `${await renderExample(ex, { ownHeader: false, onWarn, preNormalized: true })}</div>`,
       );
     }
     // other child types: unchanged behavior (not rendered here)
@@ -134,13 +143,16 @@ async function renderChapter(
   );
 }
 
+/** `preNormalized` defaults to false so a direct caller handing over raw authored blocks still gets
+ *  safe rendering and the normalization warnings; assembleReview passes true (it did the sweep). */
 export async function renderWalkthrough(
   blocks: Block[],
   onWarn?: (m: string) => void,
   diagrams: Map<string, DiagramResult> = new Map(),
+  preNormalized = false,
 ): Promise<string> {
   const groups = blocks.filter((b): b is GroupBlock => b.type === "group");
-  const chapters = await Promise.all(groups.map((g, i) => renderChapter(g, i + 1, onWarn, diagrams)));
+  const chapters = await Promise.all(groups.map((g, i) => renderChapter(g, i + 1, onWarn, diagrams, preNormalized)));
   // A bold rule between chapters (never before the first) makes the narrative beats scannable.
   return chapters.join('<hr class="chapter-divider" />');
 }

@@ -94,7 +94,7 @@ export async function assembleReview(rawBlocks: Block[], opts: ReviewOpts): Prom
       return (
         `<section id="walkthrough" class="section">` +
         `<div class="section-header"><h2 class="section-title">Guided walkthrough</h2></div>` +
-        `${renderProgressRail(view)}${await renderWalkthrough(view, opts.onWarn, diagrams)}</section>`
+        `${renderProgressRail(view)}${await renderWalkthrough(view, opts.onWarn, diagrams, true)}</section>`
       );
     }
     if (b.type === "diagram" || b.type === "schema") {

@@ -301,3 +301,18 @@ describe("assembleDomain example hardening", () => {
     expect(html).toContain('id="example"');
   });
 });
+
+describe("renderAtlasBlock standalone safety", () => {
+  // Exported and called directly (as these tests do). preNormalized defaults to FALSE, so a raw
+  // authored block is normalized here — the section id and sectionHeader read id/title raw.
+  it("renders a malformed example without throwing and surfaces its problems once", async () => {
+    const warns: string[] = [];
+    const bad = { type: "example", stages: [null, {}] } as unknown as AtlasBlock;
+    const html = await renderAtlasBlock(bad, new Map(), (m) => warns.push(m));
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');
+    expect(warns.filter((w) => w.includes("no source"))).toHaveLength(1);
+    expect(warns.filter((w) => w.includes("no lesson"))).toHaveLength(1);
+    expect(warns.filter((w) => w.includes("dropped"))).toHaveLength(1);
+  });
+});

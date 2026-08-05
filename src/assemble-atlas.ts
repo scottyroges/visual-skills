@@ -7,7 +7,7 @@ import {
   type AtlasBlock, type AtlasOpts, type DomainOpts, type AtlasDiagram,
   type KV, type ComponentDeep, type ExampleBlock,
 } from "./atlas-blocks.js";
-import { normalizeExampleBlocks } from "./blocks.js";
+import { normalizeExample, normalizeExampleBlocks } from "./blocks.js";
 import { renderInlineMarkdown } from "./renderers/markdown.js";
 import { renderExample } from "./renderers/example.js";
 import { renderAll, type DiagramResult } from "./render-diagram.js";
@@ -301,8 +301,19 @@ async function renderSeams(b: Extract<AtlasBlock, { type: "seams" }>): Promise<s
     `<div class="seam-body"><div class="seam-neighbors">${neighbors}</div>${note}</div></div></div>`;
 }
 
-/** Dispatch one block to its renderer, wrapped in its <section>. */
-export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, DiagramResult>, onWarn?: (m: string) => void): Promise<string> {
+/** Dispatch one block to its renderer, wrapped in its <section>.
+ *  `preNormalized` defaults to false so a direct caller handing over raw authored blocks still gets
+ *  safe rendering and the normalization warnings; the assemblers pass true (they did the sweep). */
+export async function renderAtlasBlock(
+  raw: AtlasBlock, diagrams: Map<string, DiagramResult>, onWarn?: (m: string) => void, preNormalized = false,
+): Promise<string> {
+  // The section id and sectionHeader read b.id/b.title raw, ahead of renderExample.
+  let b = raw;
+  if (!preNormalized && raw.type === "example") {
+    const n = normalizeExample(raw);
+    b = n.block;
+    for (const p of n.problems) onWarn?.(p);
+  }
   const inner = await (async () => {
     switch (b.type) {
       case "atlas-tldr": return renderAtlasTldr(b);
@@ -314,7 +325,7 @@ export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, Diag
       case "depth": return renderDepth(b, diagrams);
       case "owns": return renderOwns(b);
       case "seams": return renderSeams(b);
-      // preNormalized: assembleAtlas/assembleDomain run the boundary normalizer and emit its problems.
+      // Always preNormalized here: either the assembler swept the tree, or the guard above did.
       case "example": return sectionHeader(b.title, b.badge) + (await renderExample(b, { ownHeader: false, onWarn, preNormalized: true }));
       default: onWarn?.(`atlas: no renderer for block type "${(b as AtlasBlock).type}"`); return "";
     }
@@ -334,7 +345,7 @@ async function renderMain(blocks: AtlasBlock[], opts: { outDir?: string; excalid
   const parts: string[] = [];
   let railPlaced = false;
   for (const b of blocks) {
-    parts.push(await renderAtlasBlock(b, diagrams, opts.onWarn));
+    parts.push(await renderAtlasBlock(b, diagrams, opts.onWarn, true)); // both entry points swept the tree
     if (!railPlaced && (b.type === "atlas-tldr" || b.type === "domain-tldr")) { parts.push(railHtml); railPlaced = true; }
   }
   if (!railPlaced) parts.unshift(railHtml);

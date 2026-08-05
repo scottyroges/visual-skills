@@ -79,3 +79,21 @@ describe("renderWalkthrough", () => {
     expect(html).not.toContain("vs-ex-title");
   });
 });
+
+describe("renderWalkthrough standalone safety", () => {
+  // Exported and called directly. preNormalized defaults to FALSE, so the chapter normalizes the
+  // example itself — its <h4> header reads title/id raw, ahead of renderExample.
+  it("renders a malformed nested example without throwing and surfaces its problems once", async () => {
+    const warns: string[] = [];
+    const blocks = [{
+      type: "group", id: "g1", title: "1. Core", description: "d",
+      blocks: [{ type: "example", stages: [null, {}] }],
+    }] as unknown as Block[];
+    const html = await renderWalkthrough(blocks, (m) => warns.push(m), new Map());
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');
+    expect(warns.filter((w) => w.includes("no source"))).toHaveLength(1);
+    expect(warns.filter((w) => w.includes("no lesson"))).toHaveLength(1);
+    expect(warns.filter((w) => w.includes("dropped"))).toHaveLength(1);
+  });
+});
