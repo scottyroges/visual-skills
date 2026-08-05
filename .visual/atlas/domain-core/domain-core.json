@@ -450,7 +450,7 @@
           "path": "src/lint-blocks.ts · src/lint-examples.ts",
           "detail": [
             "`lintBlocks(blocks)` returns authoring warnings in document order — it never throws and never blocks rendering. `assemble` pipes them to `opts.onWarn`. The guards nudge quality: a `group` with no description, a `diff` description that is a long single paragraph (a wall of text), a `diagram` that applies no semantic color, an editable-eligible diagram kind that dropped its mermaid source (silently losing the Excalidraw upgrade), and too-many / oversize-edge diagrams overall.",
-            "`lintExamples(examples)` inspects example blocks for quality nudges: checking for undersized step modes, long static walkthroughs, oversized stage bodies, dead reveals, contrast sides, and synthetic sources. Warnings only — normalization problems are surfaced by the renderer, not re-emitted here, so assemblers can call both without duplicates.",
+            "`lintExamples(examples)` inspects example blocks for quality nudges: checking for undersized step modes, long static walkthroughs, oversized stage bodies, dead reveals, unbalanced contrast sides, synthetic sources, and multiple reveal blocks on one page. Warnings only — normalization problems are surfaced by the renderer, not re-emitted here, so assemblers can call both without duplicates.",
             "Both walk their respective block structures using judgment heuristics rather than hard constraints. The intent is to catch the mistakes that make a document read worse without making the build fail."
           ],
           "files": [
@@ -479,8 +479,8 @@
               "body": "[assemble()](#c-assemble) and [recap](../domain-recap/domain-recap.html)'s `assembleReview` — emitted through `opts.onWarn`, never blocking"
             },
             {
-              "dir": "called by",
-              "body": "[authoring](../domain-authoring/domain-authoring.html) surfaces (spec/recap/doc/atlas) from their existing lint routines"
+              "dir": "exported for",
+              "body": "[authoring](../domain-authoring/domain-authoring.html) surfaces (spec/recap/doc/atlas) to call from their lint routines (wiring pending)"
             },
             {
               "dir": "inspects",
@@ -609,6 +609,6 @@
   "verifiedAgainst": {
     "hash": "sha256:0df580a4cdf4b3599fdb2e1b80a23d18ba2d22d810b4d5a637f28bfe195d082d",
     "date": "2026-08-05",
-    "commit": "6d6be2134c2368ad860bc460cc00a71ab5b49943"
+    "commit": "0deb1a33d6521063f2629d0deb31d12edde78093"
   }
 }
