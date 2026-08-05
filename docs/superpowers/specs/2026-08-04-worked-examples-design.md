@@ -199,9 +199,15 @@ JS stepper as well as more robust — but the `.vs-tabs` pattern is copied **sel
 position invisible. The stepper instead keeps radios focusable (visually hidden, no
 `pointer-events: none`) and joins `review.css`'s existing `:focus-visible` outline convention via
 the same written-out `:nth-of-type` pairing used for `:checked` (`.vs-ex-radio:nth-of-type(n):focus-visible
-~ .vs-ex-steps label:nth-child(n)` → accent outline). Each label carries an `aria-label` of the
-form "Stage 2 of 4: model returns a verdict per sentence" so the accessible name is the stage
-label, not the digit.
+~ .vs-ex-steps label:nth-child(n)` → accent outline). Accessible names go **on the radios
+themselves**, per the ARIA radio-group pattern: each `<input>` carries `aria-label="Stage 2 of 4:
+model returns a verdict per sentence"` (a native control's name derives from its label's content —
+`aria-label` on the `<label>` element would name the label, not the input), the "All" radio gets
+`aria-label="Show all stages"`, and the group itself is named by a `<fieldset>` with a
+visually-hidden `<legend>` ("Walkthrough stages"). The fieldset wraps the whole switcher —
+radios, labels, *and* the stage rail — because the `:checked ~` selectors need the radios as
+preceding siblings of the rail (fieldset chrome is reset to nothing: `border: 0; margin: 0;
+padding: 0`). The visible label text stays the bare digit / "All".
 
 It inherits the same structural cap as `.vs-tabs`: the `:nth-of-type` selectors must be written
 out, so **step mode supports at most 8 stages**. (The existing tabs switcher caps at 6 for the
@@ -289,7 +295,9 @@ nudges. All are warnings, consistent with the existing "heuristics, not hard err
 
 The `no examples` rule lives in `lint-spec.ts` at the same soft tier as the existing
 hero/rollout/approve expectations. Recap gets its own nudge in `lint-completeness.ts` (same tier
-as its overview/annotation/grouping rules): **3+ non-trivial diffs and zero example blocks** →
+as its overview/annotation/grouping rules): **3+ non-trivial diffs and zero example blocks,
+counted recursively into groups** — the same one-level recursion `collectDiffs` already does,
+since groups are where examples are *supposed* to live in a recap — →
 "behavior-changing recaps land harder with one contrast example — mine the PR's tests for a
 ready-made input/output pair". Doc and atlas get the per-block rules but no zero-examples nudge —
 atlas is maintenance-checked by `atlas-review`, and doc inputs are too heterogeneous for a count
@@ -308,9 +316,11 @@ pressure is real but not padding):
   and no example shows a concrete before/after".
 - **visual-doc** — definition of done: "any transformation or algorithm the doc explains carries
   one worked example". Red flag: "the doc describes an algorithm in prose only".
-- **visual-atlas** — definition of done: "each domain page anchors on one worked trace — a single
-  real request/input walked through the domain's stack". Red flag: "a domain page is a module
-  list with no trace of anything moving through it".
+- **visual-atlas** — definition of done: "a domain page with a meaningful runtime or data path —
+  something a request, event, or record actually moves through — anchors on one worked trace of
+  it. Pure-utility and pure-config domains are exempt: a trace through a helper grab-bag teaches
+  nothing." Red flag: "a domain page describes a pipeline or flow in prose but shows nothing
+  moving through it".
 
 ## Per-surface integration
 
@@ -347,7 +357,11 @@ it to accident.
 - One of `example/pr-190-season-stats` / `example/pr-194-estimated-purse` — one contrast example
   mined from the PR's tests, placed **inside a group** beside the diff it explains, so the
   canonical recap build exercises the nested-walkthrough path.
-- `example/atlas-ppgl` — one domain trace ("one request walked through this stack").
+- `example/atlas-ppgl` — one domain trace ("one request walked through this stack") on the domain
+  with the clearest runtime path, as the demonstration of the pattern. This is deliberately less
+  than the definition of done asks of a fresh atlas build — the canonical build demonstrates the
+  block; retrofitting traces onto all qualifying ppgl domains is follow-up authoring work, not
+  part of this change. The atlas skill's definition of done governs *new* pages going forward.
 
 All re-rendered and lint-clean. There is no visual-doc build under `example/`, so visual-doc ships
 the renderer plus its skill line only.
@@ -362,6 +376,9 @@ the renderer plus its skill line only.
 - `test/review-block-coverage.test.ts` — an `example` sample (compile-forced by the union).
 - `test/review-walkthrough.test.ts` — an `example` nested inside a `group` renders in the chapter,
   in document order beside its diff (the path `groupLooseDiffs` makes the recap norm).
+- `test/lint-completeness.test.ts` — the zero-examples nudge fires on a grouped recap with none,
+  and clears when the example sits *inside* a group (so the canonical build renders warning-free
+  rather than warning about an example it contains).
 - `test/assemble-spec.test.ts` / `test/assemble-atlas.test.ts` — the block reaches the sidebar
   outline and progress rail as a chapter.
 - `test/skill-docs.test.ts` — the explicit four-skill assertion described above.
