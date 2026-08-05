@@ -462,7 +462,7 @@
           "path": "src/lint-blocks.ts · src/lint-examples.ts",
           "detail": [
             "`lintBlocks(blocks)` returns authoring warnings in document order — it never throws and never blocks rendering. `assemble` pipes them to `opts.onWarn`. The guards nudge quality: a `group` with no description, a `diff` description that is a long single paragraph (a wall of text), a `diagram` that applies no semantic color, an editable-eligible diagram kind that dropped its mermaid source (silently losing the Excalidraw upgrade), and too-many / oversize-edge diagrams overall. It also recurses the block tree (incl. group children) to collect every `example` block and folds `lintExamples`'s findings into its own return, so `assemble` and `assembleReview` get example warnings for free just by calling `lintBlocks` — no separate call needed.",
-            "`lintExamples(examples)` inspects example blocks for quality nudges: checking for undersized step modes, long static walkthroughs, oversized stage bodies, dead reveals, unbalanced contrast sides, synthetic sources, and multiple reveal blocks on one page. Warnings only — normalization problems are surfaced by the renderer, not re-emitted here, so assemblers can call both without duplicates.",
+            "`lintExamples(examples)` inspects example blocks for quality nudges: checking for undersized step modes, long static walkthroughs (skipped when the *raw* block already asked for `mode: \"step\"` and normalization coerced it — that case gets the cap warning's \"split it\" instead), oversized stage bodies, dead reveals, unbalanced contrast sides, synthetic sources, and multiple reveal blocks on one page. Warnings only — normalization problems are surfaced by the renderer, not re-emitted here, so assemblers can call both without duplicates.",
             "Both walk their respective block structures using judgment heuristics rather than hard constraints. The intent is to catch the mistakes that make a document read worse without making the build fail."
           ],
           "files": [
@@ -623,8 +623,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:6fd7c7ce07a913399954dbc649fb3c3a3dbfb8cffbb08b786b7ac2a5d47b06ed",
+    "hash": "sha256:e89bbb66c0d26b4de91ef2b2d26ee1850963a0743eb3892d5e5e0c33465648c6",
     "date": "2026-08-05",
-    "commit": "2249edd490bed378a12276d4771767baf093e491"
+    "commit": "9aee48310b63eb16fb63c63140b981315819a572"
   }
 }

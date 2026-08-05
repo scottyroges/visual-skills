@@ -357,7 +357,7 @@
           "name": "review shell",
           "path": "src/assemble-review.ts · src/review/*.ts",
           "detail": [
-            "`assembleReview(blocks, opts)` is the app-shell: it asserts unique ids, normalizes loose top-level diffs into walkthrough chapters (`groupLooseDiffs`), inlines `review.css` + `example.css` (the worked-example stage/rail/contrast styles) + the viewer script + the dark-mode toggle assets (`theme-head.js` in `<head>`, `theme-toggle.js` after the viewer, `theme.css` appended last in `<style>`), renders every diagram once, then walks the blocks emitting `<section>`s — TL;DR + overview, files-changed, the guided walkthrough (progress rail + chapters), standalone diagram/schema/api/prose/example sections — into one self-contained HTML document. A top-level `example` block gets its own `<section>` with the shell's own `section-header` (the renderer's `ownHeader` is `false` here, unlike the doc/walkthrough call sites). Along the way it runs `lintBlocks` and [lintCompleteness](#c-lint), surfacing warnings (including any diagram that failed to compile) through `onWarn`.",
+            "`assembleReview(blocks, opts)` is the app-shell: it asserts unique ids, normalizes loose top-level diffs into walkthrough chapters (`groupLooseDiffs`), inlines `review.css` + `example.css` (the worked-example stage/rail/contrast styles) + the viewer script + the dark-mode toggle assets (`theme-head.js` in `<head>`, `theme-toggle.js` after the viewer, `theme.css` appended last in `<style>`), renders every diagram once, then walks the blocks emitting `<section>`s — TL;DR + overview, files-changed, the guided walkthrough (progress rail + chapters), standalone diagram/schema/api/prose/example sections — into one self-contained HTML document. A top-level `example` block gets its own `<section>` with the shell's own `section-header`, carrying the block's `badge` as a `section-badge` span (the renderer's `ownHeader` is `false` here, unlike the doc/walkthrough call sites). Along the way it runs `lintBlocks` and [lintCompleteness](#c-lint), surfacing warnings (including any diagram that failed to compile) through `onWarn`.",
             "The `src/review/*` renderers are the shell's vocabulary, each a focused function: `topbar` (title + risk/stat chips), `sidebar` (files + walkthrough outline + meta + progress rail), `tldr` (the What/Why/Risk/Size card + overview points), `files-table`, `walkthrough` (chapters and per-file subsections — diff bodies, and any `example` blocks nested in a group, rendered in document order beside the diff they illustrate), `diff` (the raw +/- body), `sections` (diagram cards, the rendered legend, api-surface cards, reused-block fallbacks), `diagrams` (collect + render all), and `normalize` (`stripChapterOrdinal`, `groupLooseDiffs`). **This shell is the domain's biggest shared seam** — `assemble-atlas`, `assemble-spec`, and `assemble-quiz` build the atlas, spec, and quiz pages on the same `review.css` + viewer script and the same topbar/sidebar/section class vocabulary (importing `sections.ts` helpers like `renderDiagramCard` / `withDiagramSvgClass` directly, while emitting their own topbar/sidebar HTML), so the chrome looks and behaves identically across all four page types."
           ],
           "diagrams": [
@@ -619,8 +619,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:f8f3ac1f03991400e9a96deca7aaa9eab88128ab99e290a6dc99d85920a33945",
+    "hash": "sha256:fcffd465414c8d0bde8c7da8578b4c7c6ba23a3b2404c912f37cf68889571d71",
     "date": "2026-08-05",
-    "commit": "5e0d09bca70aa3fc1cc9bc7d189286473b4e6a07"
+    "commit": "9aee48310b63eb16fb63c63140b981315819a572"
   }
 }

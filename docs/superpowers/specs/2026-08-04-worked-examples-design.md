@@ -312,6 +312,16 @@ nudges. All are warnings, consistent with the existing "heuristics, not hard err
 | synthetic | `source` contains "synthetic" | replace with a real fixture once one exists |
 | no examples | spec only: 5+ non-example chapters, zero example blocks | algorithm/contract specs land harder with one worked example |
 
+**Recorded deviation (as built).** Four rows above — *missing source*, *missing lesson*, *over cap*,
+and *stepped contrast* — are **not** in `lint-examples.ts`. They live in `normalizeExample`
+(`src/blocks.ts`) as normalization `problems`, and reach the reader through the renderer's `onWarn`.
+Reason: each is a fact normalization already has to establish to render at all (it coerces the
+over-cap and contrast cases to `mode: "static"`, and draws the `⚠ no source given` / `⚠ no lesson
+written` markers), so re-deriving them in lint would emit every message twice on the surfaces that
+run both. The author-facing behavior is unchanged — same wording, same warning tier — only the
+emitting module differs. `lint-examples.ts` deliberately does not re-emit them (see its header
+comment).
+
 The `no examples` rule lives in `lint-spec.ts` at the same soft tier as the existing
 hero/rollout/approve expectations. Recap gets its own nudge in `lint-completeness.ts` (same tier
 as its overview/annotation/grouping rules): **3+ non-trivial diffs and zero example blocks,
