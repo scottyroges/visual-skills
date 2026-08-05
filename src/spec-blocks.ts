@@ -60,7 +60,7 @@ export interface FitsBlock {
   stack?: { tag: string; label: string; note: string; kind: "new" | "reused" }[];
 }
 
-export interface DecisionItem { q: string; a: string; why?: string; rejected?: string; }
+export interface DecisionItem { q: string; a: string; why?: string; rejected?: string; example?: string; }
 export interface DecisionsBlock {
   type: "decisions";
   id: string;
@@ -77,10 +77,10 @@ export interface ScopeBlock {
   inTitle?: string;
   outTitle?: string;
   inList: string[];
-  outList: { text: string; defer?: string }[];
+  outList: { text: string; defer?: string; example?: string }[];
 }
 
-export interface PhaseItem { tag: string; title: string; scope: string; gate: string[]; }
+export interface PhaseItem { tag: string; title: string; scope: string; gate: string[]; example?: string; }
 export interface RolloutBlock {
   type: "rollout";
   id: string;
@@ -103,7 +103,7 @@ export interface DoneBlock {
   note?: string;
 }
 
-export interface RiskItem { risk: string; mitigation: string; }
+export interface RiskItem { risk: string; mitigation: string; example?: string; }
 export interface RisksBlock {
   type: "risks";
   id: string;

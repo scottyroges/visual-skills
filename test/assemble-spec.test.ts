@@ -166,4 +166,20 @@ describe("assembleSpec", () => {
     expect(warns.some((w) => w.includes("no source"))).toBe(true);
     expect(warns.some((w) => w.includes("dropped"))).toBe(true);   // [null, …] entry
   });
+
+  it("renders inline e.g. lines on decisions, risks, phases, and scope-out items", async () => {
+    const blocks = [
+      { type: "decisions", id: "d", title: "D", decisions: [
+        { q: "q", a: "a", why: "w", example: "burn-unit msgs 4–7 — one verdict merged 3 milestones" }] },
+      { type: "risks", id: "r", title: "R", risks: [
+        { risk: "x", mitigation: "y", example: "the ambiguous anchor that occurs twice" }] },
+      { type: "rollout", id: "ro", title: "Ro", phases: [
+        { tag: "A", title: "t", scope: "s", gate: ["g"], example: "window 2 passes the gate" }] },
+      { type: "scope", id: "s", inList: ["in"], outList: [
+        { text: "not this", example: "the r2 rerun case" }] },
+    ] as unknown as SpecBlock[];
+    const html = await assembleSpec(blocks, { title: "T" });
+    expect((html.match(/class="vs-ex-inline-tag"/g) ?? []).length).toBe(4);
+    expect(html).toContain("one verdict merged 3 milestones");
+  });
 });

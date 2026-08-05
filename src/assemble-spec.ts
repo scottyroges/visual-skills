@@ -40,6 +40,9 @@ function sectionHeader(title: string, badge?: string): string {
   );
 }
 
+const inlineEg = async (example?: string): Promise<string> =>
+  example ? `<div class="vs-ex-inline"><span class="vs-ex-inline-tag">e.g.</span>${await mi(example)}</div>` : "";
+
 function renderTopbar(opts: SpecOpts): string {
   const chips: string[] = [];
   if (opts.phase) chips.push(`<span class="chip chip-phase">${escapeHtml(opts.phase)}</span>`);
@@ -237,6 +240,7 @@ async function renderDecisions(b: DecisionsBlock): Promise<string> {
     `<div class="decision-a">${await mi(d.a)}</div>` +
     `${d.why ? `<div class="decision-why">${await mi(d.why)}</div>` : ""}` +
     `${d.rejected ? `<div class="decision-alt"><span class="decision-alt-tag">Rejected</span>${await mi(d.rejected)}</div>` : ""}` +
+    `${await inlineEg(d.example)}` +
     `</div></div>`))).join("");
   return (
     sectionHeader(b.title, b.badge) +
@@ -250,7 +254,8 @@ async function renderScope(b: ScopeBlock): Promise<string> {
     `<li><span class="scope-marker">&#10003;</span><span>${await mi(t)}</span></li>`))).join("");
   const outItems = (await Promise.all(b.outList.map(async (o) =>
     `<li><span class="scope-marker">&times;</span><span>${await mi(o.text)}` +
-    `${o.defer ? ` <span class="defer">&rarr; ${escapeHtml(o.defer)}</span>` : ""}</span></li>`))).join("");
+    `${o.defer ? ` <span class="defer">&rarr; ${escapeHtml(o.defer)}</span>` : ""}` +
+    `${await inlineEg(o.example)}</span></li>`))).join("");
   return (
     sectionHeader(b.title ?? "Scope") +
     `<div class="scope-cols">` +
@@ -273,7 +278,8 @@ async function renderRollout(b: RolloutBlock): Promise<string> {
       `<div class="phase-body"><div class="phase-scope"><div class="phase-sub">Scope</div>` +
       `<p>${await mi(p.scope)}</p></div>` +
       `<div class="phase-gate"><div class="phase-sub">Acceptance gate</div>` +
-      `<ul class="gate-list">${gate}</ul></div></div></div>`
+      `<ul class="gate-list">${gate}</ul>` +
+      `${await inlineEg(p.example)}</div></div></div>`
     );
   }))).join("");
   return (
@@ -315,7 +321,8 @@ async function renderRisks(b: RisksBlock): Promise<string> {
   const cards = (await Promise.all(b.risks.map(async (r) =>
     `<div class="risk-card"><div class="risk-r"><span class="risk-icon">&#9888;</span>` +
     `<span>${await mi(r.risk)}</span></div>` +
-    `<div class="risk-m"><b>Mitigation:</b> ${await mi(r.mitigation)}</div></div>`))).join("");
+    `<div class="risk-m"><b>Mitigation:</b> ${await mi(r.mitigation)}</div>` +
+    `${await inlineEg(r.example)}</div>`))).join("");
   return (
     sectionHeader(b.title) +
     `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}` +
