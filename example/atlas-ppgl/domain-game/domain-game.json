@@ -147,6 +147,37 @@
       ]
     },
     {
+      "type": "example",
+      "id": "ex-trace",
+      "title": "One pick, from tap to LOCKED",
+      "badge": "worked trace",
+      "intro": "The domain's whole shape is the life of a single `Pick` row. This is one row through all five components — the path the *dual locking* big idea describes.",
+      "source": "In depth › pick service and pick locking (`services/pick.ts`, `repositories/pick-lock.ts`) + the Seams note on golf-data's cron; identifiers are this domain's own exports.",
+      "stages": [
+        {
+          "label": "Input — `pick.plan` from the GolferPicker drawer",
+          "kind": "input",
+          "body": "A member taps a golfer for a week that is still `UPCOMING`:\n\n```ts\npick.plan({ tournamentId, golferId })\n```\n\n`planPick` runs the shared guardrails — league active, caller resolved to a `leagueMemberId` via **leagues**, tournament exists and hasn't started, golfer exists — then does the domain's signature move: if that golfer was already `PLANNED` for a *different* week, **that plan is deleted first**. Planning is season-wide drag-and-drop, not per-week CRUD.",
+          "note": "The row lands `status: PLANNED`, protected by the `(leagueMemberId, tournamentId)` unique constraint — one row per member per week, always."
+        },
+        {
+          "label": "Every read until tee time — the overlay lock",
+          "body": "Nothing is written again until the cron runs, but reads do not wait for it. `getAllSeasonPicks`, `dashboard.get`, and the league week view all pass results through `applyReadSideLocking`, a pure overlay that reports any `PLANNED` pick whose tournament has started **as LOCKED**.\n\nMeanwhile the golfer still counts against nothing: `findRemainingPool` excludes only golfers whose `LOCKED` count (plus started-`PLANNED`) has reached the league's `maxGolferUses`.",
+          "note": "So the UI is already correct for a tournament that teed off five minutes ago — no write required."
+        },
+        {
+          "label": "Start day — the write-side pass, inside golf-data's transaction",
+          "body": "golf-data's `sync.ts` flips the tournament to `IN_PROGRESS` and, in the *same* `withTransaction`, calls this domain's guard-free entry point:\n\n```ts\nlockPlannedPicksForTournament(tournamentId, season, executor)\n```\n\nTwo checks per plan:\n\n| check | pass | fail |\n|---|---|---|\n| `CONFIRMED` entry in `tournamentField` | on to exhaustion | forks on the league's `burnStalePicks`: **burn** locks it anyway, **skip** deletes it and returns the golfer to the pool |\n| `LOCKED` count `< maxGolferUses` | promote | skipped, untouched |\n\nOur row passes both, so it gets `status: LOCKED` and a `lockedAt` timestamp."
+        },
+        {
+          "label": "Output — LOCKED, and the soft reservations collapse",
+          "kind": "output",
+          "body": "The promotion returns `{ locked, skipped, cleaned }` for the cron log. The `cleaned` count comes from the sweep that runs straight after: our member's golfer is now exhausted, so **his remaining `PLANNED` picks on other tournaments are deleted** — the soft reservations disappear the moment the hard use is spent.\n\nFrom here the row is ordinary: **scoring** rolls its earnings into the standings, `/season/[userId]` shows it to peers (`memberPicksByUser` returns `LOCKED` only), and only a commissioner override can change it — with an audit row and a recalc."
+        }
+      ],
+      "lesson": "The same row is locked twice — optimistically at read time so the UI is never stale, then for real by the cron, which is the only place field membership and exhaustion are actually enforced."
+    },
+    {
       "type": "diagram-section",
       "id": "arch",
       "title": "Internal architecture",

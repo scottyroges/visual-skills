@@ -246,6 +246,37 @@
       ]
     },
     {
+      "type": "example",
+      "id": "ex-autolock",
+      "title": "One plan through the start-day cron",
+      "badge": "worked example",
+      "intro": "The whole phase hangs on an unattended write. Here is a single `PLANNED` row walked through `lockPlannedPicksForTournament` on the morning its tournament starts — the path the [approval note](#approve) asks you to scrutinize hardest.",
+      "source": "Reference › “Auto-lock algorithm” drawer (`pick-lock.ts` · `sync.ts`) + the TL;DR's own scenario — Scheffler reserved for the Masters. Row ids shortened for reading.",
+      "stages": [
+        {
+          "label": "Input — one PLANNED row, written three months earlier",
+          "kind": "input",
+          "body": "The Masters is still `UPCOMING`, its `startDate` has just passed, and the member has exactly one plan for it:\n\n```json\n{\n  \"leagueMemberId\": \"lm_042\",\n  \"tournamentId\":   \"t_masters\",\n  \"golferId\":       \"g_scheffler\",\n  \"status\":         \"PLANNED\",\n  \"lockedAt\":       null\n}\n```\n\nNothing about the field was checked when this row was written — the Masters field had not been published yet. The golfer is **not** consumed: he is still in the remaining pool for every other week.",
+          "note": "`@@unique([leagueMemberId, tournamentId])` guarantees this is the *only* row the cron can find for this member and tournament."
+        },
+        {
+          "label": "Field check — is the golfer actually playing?",
+          "body": "`startTournaments` selects the tournament (`status = UPCOMING AND startDate <= now`), opens one `withTransaction` scope, flips it to `IN_PROGRESS`, and hands it to `lockPlannedPicksForTournament`. Check one is field membership:\n\n> Is there a `CONFIRMED` `tournamentField` entry for (`t_masters`, `g_scheffler`)?\n\nScheffler is in the field, so the plan survives. Had he withdrawn, the plan would be **skipped, not burned** — the row stays `PLANNED`, the golfer returns to the pool, and the timeline flags the week “missed”.",
+          "note": "This is the check the spec deliberately moves from plan time to lock time: for most of the season the field simply does not exist yet."
+        },
+        {
+          "label": "Usage check → promote, in the same transaction",
+          "body": "Check two: how many `LOCKED` picks does `lm_042` already hold for `g_scheffler` this season? Zero — under the league's `maxGolferUses` (default 1). Both checks pass, so the promotion writes:\n\n```sql\nUPDATE pick SET status = 'LOCKED', lockedAt = now()\nWHERE id = …;   -- same tx as the UPCOMING → IN_PROGRESS flip\n```\n\nThe cleanup sweep then looks for the member's *other* `PLANNED` picks on the now-exhausted `g_scheffler` and deletes them; here there are none."
+        },
+        {
+          "label": "Output — a pick nothing downstream can tell from a manual one",
+          "kind": "output",
+          "body": "`lockPlannedPicksForTournament` returns `{ locked: 1, skipped: 0, cleaned: 0 }` for the cron log, and the row is now the right-hand half of the anatomy above:\n\n```\nstatus: LOCKED · lockedAt: startDate\n```\n\nThe earnings rollup (`WHERE pick.status = 'LOCKED'`) counts it, the league can see it, and the golfer is spent for the season — identical in every respect to a pick submitted by hand on Make Pick."
+        }
+      ],
+      "lesson": "Validation runs at the only moment the answer exists — start day — and when it fails the cost is a $0 week, never a lost golfer."
+    },
+    {
       "type": "decisions",
       "id": "decisions",
       "title": "Key decisions",
@@ -256,7 +287,8 @@
           "q": "What does a PLANNED pick reserve?",
           "a": "Nothing — it's a soft reservation. Only `LOCKED` picks consume a golfer for the season.",
           "why": "Planning three months out shouldn't cost options today. The exhausted-golfer query counts only `LOCKED` picks, so a golfer can be planned for week 10 *and* picked for week 8.",
-          "rejected": "Hard reservation (PLANNED blocks the remaining pool) — one speculative plan would lock away a golfer the user may never actually field, and stale plans would silently shrink the pool."
+          "rejected": "Hard reservation (PLANNED blocks the remaining pool) — one speculative plan would lock away a golfer the user may never actually field, and stale plans would silently shrink the pool.",
+          "example": "Scheffler planned for the Masters in March is still in this week's remaining pool — the exhausted-golfer query counts `LOCKED` picks only."
         },
         {
           "q": "How does a plan become a real pick?",
