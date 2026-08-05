@@ -69,7 +69,8 @@ describe("renderExample", () => {
     const html = await renderExample(base({ mode: "step" }), { ownHeader: false });
     expect(html).toContain("<fieldset");
     expect(html).toContain("Walkthrough stages");
-    expect((html.match(/class="vs-ex-radio"/g) ?? []).length).toBe(4);   // 3 stages + All
+    expect((html.match(/class="vs-ex-radio[" ]/g) ?? []).length).toBe(4);   // 3 stages + All
+    expect(html).toContain('class="vs-ex-radio is-all"');                  // all-radio merged class
     expect(html).toContain('aria-label="Stage 1 of 3: Input — window 2"');
     expect(html).toContain('aria-label="Show all stages"');
     expect(html).toContain(">All<");

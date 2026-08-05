@@ -62,8 +62,8 @@ async function renderStepped(b: ExampleBlock, onWarn?: (m: string) => void): Pro
     ` aria-label="Stage ${i + 1} of ${n}: ${escapeHtml(s.label.trim() || "unlabeled")}"${i === 0 ? " checked" : ""}>`,
   ).join("");
   const allRadio =
-    `<input class="vs-ex-radio" type="radio" name="${escapeHtml(name)}" id="${escapeHtml(b.id)}--all"` +
-    ` aria-label="Show all stages" class="is-all">`;
+    `<input class="vs-ex-radio is-all" type="radio" name="${escapeHtml(name)}" id="${escapeHtml(b.id)}--all"` +
+    ` aria-label="Show all stages">`;
   const labels = b.stages.map((_, i) => `<label for="${escapeHtml(b.id)}--${i + 1}">${i + 1}</label>`).join("");
   const allLabel = `<label for="${escapeHtml(b.id)}--all">All</label>`;
   const stagesHtml = (await Promise.all(b.stages.map((s) => renderStage(s, onWarn)))).join("");
