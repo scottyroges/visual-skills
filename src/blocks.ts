@@ -113,6 +113,104 @@ export interface OverviewBlock {
   risk?: { level: "low" | "med" | "high"; note?: string };
 }
 
+// ---- worked examples (spec: docs/superpowers/specs/2026-08-04-worked-examples-design.md) ----
+
+export type ExampleStageKind = "input" | "step" | "output" | "counter";
+
+export interface ExampleStage {
+  label: string;                       // "Input — window 2 of burn-unit-wanderer"
+  kind?: ExampleStageKind;             // default "step"; drives the card tint
+  body: string;                        // block markdown (fences + tables OK)
+  note?: string;                       // one-line aside under the card
+  side?: "a" | "b";                    // contrast only; omit → shared context, full width
+  reveal?: boolean;                    // mode:"reveal" — this stage starts collapsed
+}
+
+export interface ExampleBlock {
+  type: "example";
+  id: string;
+  title: string;
+  badge?: string;
+  intro?: string;
+  variant?: "walkthrough" | "contrast";
+  mode?: "static" | "reveal" | "step"; // default "static"
+  columns?: [string, string];          // contrast headers, default ["Before", "After"]
+  source: string;                      // REQUIRED — provenance (the honesty floor)
+  stages: ExampleStage[];
+  lesson: string;                      // REQUIRED — the one-line takeaway
+}
+
+/** Step mode writes out :nth-of-type selectors, so it has a hard structural cap. */
+export const MAX_STEP_STAGES = 8;
+
+export interface NormalizedExample { block: ExampleBlock; problems: string[]; }
+
+/**
+ * Guard hand-authored JSON before lint AND render (both consume the normalized block; neither
+ * touches raw input). Never throws: hostile shapes ("stages": [null, {}], wrong-typed fields)
+ * degrade to empty strings / dropped entries, each with a problem message the caller surfaces
+ * via onWarn. The renderer turns empty required fields into visible ⚠ markers.
+ */
+export function normalizeExample(raw: ExampleBlock): NormalizedExample {
+  const problems: string[] = [];
+  const r = ((raw ?? {}) as unknown) as Record<string, unknown>;
+  const str = (v: unknown): string => (typeof v === "string" ? v : "");
+  const id = str(r.id) || "example";
+
+  const stages: ExampleStage[] = [];
+  if (!Array.isArray(r.stages)) {
+    problems.push(`example "${id}": stages is not an array — block renders a placeholder`);
+  } else {
+    r.stages.forEach((s, i) => {
+      if (typeof s !== "object" || s === null) {
+        problems.push(`example "${id}": stage ${i + 1} is not an object — dropped`);
+        return;
+      }
+      const o = s as Record<string, unknown>;
+      if (!str(o.label).trim()) problems.push(`example "${id}": stage ${i + 1} has no label`);
+      if (!str(o.body).trim()) problems.push(`example "${id}": stage ${i + 1} has no body`);
+      stages.push({
+        label: str(o.label),
+        kind: o.kind === "input" || o.kind === "output" || o.kind === "counter" ? o.kind : "step",
+        body: str(o.body),
+        note: str(o.note) || undefined,
+        side: o.side === "a" || o.side === "b" ? o.side : undefined,
+        reveal: o.reveal === true,
+      });
+    });
+    if (r.stages.length > 0 && stages.length === 0) {
+      problems.push(`example "${id}": every stage was malformed — block renders a placeholder`);
+    }
+  }
+
+  const variant = r.variant === "contrast" ? "contrast" : "walkthrough";
+  let mode: "static" | "reveal" | "step" = r.mode === "reveal" || r.mode === "step" ? r.mode : "static";
+  if (mode === "step" && variant === "contrast") {
+    problems.push(`example "${id}": contrast is for seeing both at once — mode:"step" rendered static`);
+    mode = "static";
+  }
+  if (mode === "step" && stages.length > MAX_STEP_STAGES) {
+    problems.push(`example "${id}": ${stages.length} stages exceeds the ${MAX_STEP_STAGES}-stage step cap — rendered as a static rail; split it`);
+    mode = "static";
+  }
+
+  if (!str(r.source).trim()) problems.push(`example "${id}": no source — name the fixture, test, or run artifact it came from`);
+  if (!str(r.lesson).trim()) problems.push(`example "${id}": no lesson — write the one-line takeaway, or pick a different instance`);
+
+  const c = r.columns;
+  const columns: [string, string] =
+    Array.isArray(c) && typeof c[0] === "string" && typeof c[1] === "string" ? [c[0], c[1]] : ["Before", "After"];
+
+  return {
+    block: {
+      type: "example", id, title: str(r.title), badge: str(r.badge) || undefined,
+      intro: str(r.intro) || undefined, variant, mode, columns,
+      source: str(r.source), stages, lesson: str(r.lesson),
+    },
+    problems,
+  };
+}
+
 export type Block =
   | DiagramBlock
   | SchemaBlock
