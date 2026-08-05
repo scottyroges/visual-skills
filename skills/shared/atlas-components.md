@@ -209,6 +209,15 @@ The models/tables the domain owns: `{ "type": "owns", "id": "data", "title": "Da
 `desc`/`note` are inline markdown. (Model→domain attribution is a judgment call — the scanner leaves
 this for you to author.)
 
+### Worked trace (`example` block)
+
+One real request/record walked through the domain's stack — the shared `example` block (see the
+[spec catalog](spec-components.md#worked-example-input--stages--lesson) for the full recipe and
+rendered-HTML shape). `source` and `lesson` are required, same as everywhere else it's used. Use it
+on a domain with a meaningful runtime or data path (the reader needs to see something *move*
+through the pieces `depth` just described); skip it for pure-utility/config domains where there's
+no interesting trace to show.
+
 ### Seams (`seams`)
 
 The bounded-context edges — what the domain exposes and what it leans on:

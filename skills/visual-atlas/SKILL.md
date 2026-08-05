@@ -38,6 +38,9 @@ A finished atlas **always** has, regardless of repo size:
   (internal-arch) when the domain is large; a **`depth`** block (one full section per component — Key
   files, Key exports, connections, optional diagrams); **`owns`** (the data it owns); and **`seams`**
   (what it exposes / depends on, with neighbor links).
+- A domain page with a meaningful runtime or data path anchors on one worked trace (`example`
+  block) — a single real request/event/record walked through the domain's stack. Pure-utility/config
+  domains are exempt.
 
 **Size scales the ceiling, never the floor.** A small repo may have just the atlas + one or two domain
 pages — but each page still gets its lead, its map/components, and its seams. See "Scaling by repo
@@ -52,6 +55,7 @@ If any of these is true, the atlas is **not done** — keep going:
 - A domain page is just `components` cards with **no `depth` deep-dive** behind them — cards alone are
   too sparse to understand a domain.
 - A domain page has no **`seams`** — the reader can't see how it connects to its neighbors.
+- A domain page describes a pipeline or flow in prose but shows nothing moving through it.
 - Connections / detail prose is still the empty placeholders the scanner emitted.
 - The tool printed completeness warnings. **Those mean below standard — enrich the JSON and re-render
   until they are gone.**
@@ -199,7 +203,7 @@ the chrome (topbar chips, sidebar Meta, the domain page's layer accent + "← At
 `AtlasOpts` / `DomainOpts` in `src/atlas-blocks.ts`. The block types:
 
 - **Atlas page:** `atlas-tldr`, `domain-map`, `diagram-section`, `domain-index`.
-- **Domain page:** `domain-tldr`, `components`, `diagram-section`, `depth`, `owns`, `seams`.
+- **Domain page:** `domain-tldr`, `components`, `diagram-section`, `depth`, `owns`, `example`, `seams`.
 
 The catalog (`skills/shared/atlas-components.md`) shows what each renders to and when to use it; the
 field shapes are in `src/atlas-blocks.ts`.

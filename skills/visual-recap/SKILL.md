@@ -32,6 +32,9 @@ A finished recap **always** has, regardless of change size:
   a narrative (e.g. *core change → supporting wiring → tests/config*), each group with a
   `description`.
 - **At least one authored diagram** when behavior or structure is clearer shown than read.
+- For a **behavior-changing PR**, one contrast `example`: the same input under old vs new code,
+  mined from the PR's tests (ready-made input/output pairs), placed inside the group beside the
+  diff it explains.
 
 **Size scales the ceiling, it never lowers the floor.** A small change gets fewer overview points
 and maybe no diagram — but it still gets the headline, the what/why/size facets, the risk chip, and
@@ -45,6 +48,7 @@ If any of these is true, the recap is **not done** — keep going:
 - The title is still `Recap — commit <sha>` / `Recap — <branch>`.
 - There is no `overview` block, or its `facets`/`risk` are unset.
 - Diff cards have no `description`.
+- The PR changes behavior and no `example` shows a concrete before/after.
 - You ran only `--out` (the one-shot bare render) and opened that. That output is raw material.
 - The tool printed warnings about a missing overview, incomplete TL;DR, unannotated diffs, an
   ungrouped pile of diffs, or a wall-of-text description. **Those warnings mean below standard —
