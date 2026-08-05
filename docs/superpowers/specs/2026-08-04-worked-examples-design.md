@@ -186,12 +186,23 @@ runs on any surface, so the worst failure mode is a plain stacked rail rather th
 
 ```html
 <div class="vs-example is-step">
-  <input class="vs-ex-radio" type="radio" name="ex-rollcall" id="ex-rollcall-1" checked>
-  <!-- one per stage, plus a final "All" -->
-  <div class="vs-ex-steps"><label for="ex-rollcall-1">1</label><!-- … --><label>All</label></div>
-  <div class="vs-ex-rail"><div class="vs-ex-stage" data-kind="input"><!-- … --></div></div>
+  <fieldset class="vs-ex-stepper"><!-- border/margin/padding reset to 0 -->
+    <legend class="sr-only">Walkthrough stages</legend>
+    <input class="vs-ex-radio" type="radio" name="ex-rollcall" id="ex-rollcall-1"
+           aria-label="Stage 1 of 4: input — window 2 of burn-unit-wanderer" checked>
+    <!-- one per stage … -->
+    <input class="vs-ex-radio" type="radio" name="ex-rollcall" id="ex-rollcall-all"
+           aria-label="Show all stages">
+    <div class="vs-ex-steps">
+      <label for="ex-rollcall-1">1</label><!-- … --><label for="ex-rollcall-all">All</label>
+    </div>
+    <div class="vs-ex-rail"><div class="vs-ex-stage" data-kind="input"><!-- … --></div></div>
+  </fieldset>
 </div>
 ```
+
+The fieldset wraps radios, labels, *and* the rail — the `:checked ~` selectors need the radios as
+preceding siblings of the rail, and the group name must cover the whole switcher.
 
 Radios are natively arrow-key navigable, which makes this pattern better for accessibility than a
 JS stepper as well as more robust — but the `.vs-tabs` pattern is copied **selectively**: it sets
@@ -269,8 +280,15 @@ scroll past:
 - missing/empty `lesson` → `⚠ no lesson written` rendered in the lesson band.
 - missing/empty/non-array `stages` → the block renders its header and provenance plus a visible
   `⚠ no stages` placeholder card; iteration is guarded so a malformed value cannot crash assembly.
+- malformed stage *entries* — an array guard alone doesn't survive `"stages": [null, {}]`. A
+  shared `normalizeExample()` runs **before both lint and render** (lint rules inspect `body` and
+  `reveal`, so it cannot be render-only): non-object entries are dropped with a warning; a missing
+  `label` renders as `⚠ unlabeled stage`; a missing `body` renders as a visible `⚠ empty stage`
+  card. Lint and the renderer both consume the normalized block, so neither ever touches raw JSON.
 
-Tests cover malformed hand-authored JSON for all three, not just a missing `source`.
+Tests cover malformed hand-authored JSON for all of the above — driven **through an assembler with
+lint enabled** (`assembleSpec` with `onWarn`), not just `renderExample` in isolation, so the
+lint-before-render path is exercised against the same hostile input.
 
 ## Lint
 
@@ -289,9 +307,10 @@ nudges. All are warnings, consistent with the existing "heuristics, not hard err
 | dead reveal | `mode: "reveal"`, no stage flagged | nothing is hidden |
 | reveal spam | more than 1 reveal block on a page | predict-then-check, not a click-fest |
 | flat contrast | `variant: "contrast"`, no `side` tags | renders as a plain rail |
+| one-sided contrast | `variant: "contrast"` missing side `a` or `b` entirely | the other column renders a visible `⚠ empty column` marker — give both sides at least one stage |
 | stepped contrast | `variant: "contrast"` with `mode: "step"` | contrast is for seeing both at once — rendered static |
 | synthetic | `source` contains "synthetic" | replace with a real fixture once one exists |
-| no examples | spec only: 5+ chapters, zero example blocks | algorithm/contract specs land harder with one worked example |
+| no examples | spec only: 5+ non-example chapters, zero example blocks | algorithm/contract specs land harder with one worked example |
 
 The `no examples` rule lives in `lint-spec.ts` at the same soft tier as the existing
 hero/rollout/approve expectations. Recap gets its own nudge in `lint-completeness.ts` (same tier
@@ -326,7 +345,7 @@ pressure is real but not padding):
 
 | surface | code | docs |
 |---|---|---|
-| **visual-spec** | `SpecBlock` union · `chapterLabel` case · `renderBlock` case (examples are chapters, so they appear in the sidebar and progress rail) | ladder slot after `fits` and before `decisions`; scaling-table row; red-flag entry; definition-of-done bullet; catalog entry in `spec-components.md` |
+| **visual-spec** | `SpecBlock` union · `chapterLabel` case · `renderBlock` case (examples are chapters, so they appear in the sidebar and progress rail) · **size classification excludes them**: `lint-spec.ts`'s chapter count for the `LARGE_CHAPTERS` threshold skips `example` blocks, so adding an example to a four-chapter medium spec does not flip it "large" and suddenly demand hero/rollout/approve — that would punish exactly the behavior this change encourages | ladder slot after `fits` and before `decisions`; scaling-table row; red-flag entry; definition-of-done bullet; catalog entry in `spec-components.md` |
 | **visual-recap + visual-doc** | `Block` union → coverage-test sample forces both renderers · `assemble.ts` case (wrapped in `.vs-block`, incl. inside its `group` case) · `review/sections.ts` case · **`review/walkthrough.ts` `renderChapter`: render `diff` and `example` children in document order** (today it filters groups to diffs only, and `groupLooseDiffs` makes groups the *normal* recap shape — without this, an example placed beside the diff it explains silently disappears) | recap: definition-of-done + red-flag entries (below); gather guidance to mine the PR's *tests* for ready-made input/output pairs → contrast form. doc: a real "when to add an example" subsection — any transformation or algorithm the doc explains — not a one-liner |
 | **visual-atlas** | `AtlasBlock` union · `atlasChapterLabel` case · `assemble-atlas` case | `atlas-components.md` entry plus definition-of-done + red-flag entries in the skill |
 
