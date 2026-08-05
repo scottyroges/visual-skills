@@ -68,3 +68,38 @@ describe("lintBlocks", () => {
     expect(w[0]).toContain('diff "d1"');
   });
 });
+
+describe("lintBlocks traversal completeness", () => {
+  // The example collector must reach everywhere a block can sit — same paths as the diagram
+  // collector — or an example that RENDERS gets no judgment lints at all.
+  it("lints an example nested in a tabs block (synthetic source + dead reveal)", () => {
+    const blocks: Block[] = [
+      { type: "tabs", id: "t", title: "Cases", tabs: [
+        { label: "one", block: {
+          type: "example", id: "ex", title: "E", source: "synthetic fixture", lesson: "l",
+          mode: "reveal", stages: [{ label: "in", body: "x" }],
+        } },
+      ] },
+    ];
+    const w = lintBlocks(blocks);
+    expect(w.some((m) => m.includes("synthetic source"))).toBe(true);
+    expect(w.some((m) => m.includes("no stage has reveal:true"))).toBe(true);
+  });
+
+  it("lints an example hanging off diff.diagram and overview.diagram", () => {
+    const ex = (id: string) => ({
+      type: "example", id, title: "E", source: "synthetic fixture", lesson: "l",
+      stages: [{ label: "in", body: "x" }],
+    });
+    const blocks = [
+      { type: "diff", id: "d", title: "x", path: "src/x.ts", hunks: [],
+        diagram: { type: "tabs", id: "t1", tabs: [{ label: "a", block: ex("ex-diff") }] } },
+      { type: "overview", id: "ov", headline: "h", points: [],
+        diagram: { type: "tabs", id: "t2", tabs: [{ label: "a", block: ex("ex-ov") }] } },
+    ] as unknown as Block[];
+    const w = lintBlocks(blocks);
+    expect(w.filter((m) => m.includes("synthetic source"))).toHaveLength(2);
+    expect(w.some((m) => m.includes('"ex-diff"'))).toBe(true);
+    expect(w.some((m) => m.includes('"ex-ov"'))).toBe(true);
+  });
+});

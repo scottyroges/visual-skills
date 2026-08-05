@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Block } from "./blocks.js";
-import { isDiagramBlock, normalizeExampleBlocks } from "./blocks.js";
+import { isDiagramBlock, normalizeExampleBlocks, walkBlocks } from "./blocks.js";
 import { lintBlocks } from "./lint-blocks.js";
 import { escapeHtml } from "./html.js";
 import { renderAll } from "./render-diagram.js";
@@ -31,19 +31,15 @@ export interface AssembleOpts {
 
 const ASSETS = fileURLToPath(new URL("../assets", import.meta.url));
 
-/** Throw if any block id repeats (recursively, incl. group children) — anchors and
- *  in-page #cross-links depend on every block id being unique across the document. */
+/** Throw if any block id repeats anywhere in the tree — anchors and in-page #cross-links depend
+ *  on every block id being unique across the document. (walkBlocks owns the container paths.) */
 function assertUniqueIds(blocks: Block[], seen = new Set<string>()): void {
-  for (const b of blocks) {
+  walkBlocks(blocks, (b) => {
     if (seen.has(b.id)) {
       throw new Error(`duplicate block id "${b.id}" — block ids must be unique (anchors/cross-links depend on it)`);
     }
     seen.add(b.id);
-    if (b.type === "group") assertUniqueIds(b.blocks, seen);
-    else if (b.type === "tabs") assertUniqueIds(b.tabs.map((t) => t.block), seen);
-    else if (b.type === "diff" && b.diagram) assertUniqueIds([b.diagram], seen);
-    else if (b.type === "overview" && b.diagram) assertUniqueIds([b.diagram], seen);
-  }
+  });
 }
 
 export async function assemble(rawBlocks: Block[], opts: AssembleOpts): Promise<string> {
@@ -56,16 +52,10 @@ export async function assemble(rawBlocks: Block[], opts: AssembleOpts): Promise<
     for (const p of exampleProblems) opts.onWarn(p);
     for (const w of lintBlocks(rawBlocks)) opts.onWarn(w);
   }
-  // Collect diagram/schema blocks recursively (they may be nested in groups), render up front.
+  // Collect diagram/schema blocks from anywhere in the tree, render up front.
   const collectDiagrams = (bs: Block[]): (import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock)[] => {
     const out: (import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock)[] = [];
-    for (const b of bs) {
-      if (isDiagramBlock(b)) out.push(b);
-      else if (b.type === "group") out.push(...collectDiagrams(b.blocks));
-      else if (b.type === "tabs") out.push(...collectDiagrams(b.tabs.map((t) => t.block)));
-      else if (b.type === "diff" && b.diagram) out.push(...collectDiagrams([b.diagram]));
-      else if (b.type === "overview" && b.diagram) out.push(...collectDiagrams([b.diagram]));
-    }
+    walkBlocks(bs, (b) => { if (isDiagramBlock(b)) out.push(b); });
     return out;
   };
   // Map each diff block's file path to its block id, so the file tree can link filenames to diffs.

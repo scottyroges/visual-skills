@@ -211,11 +211,75 @@ export function normalizeExample(raw: ExampleBlock): NormalizedExample {
   };
 }
 
+// ---- block-tree traversal (THE list of container paths) ----
+
 /**
- * Assembler-boundary guard: replace every example block (incl. group children) with its normalized
- * form BEFORE anything reads b.id / b.title. Assemblers touch those raw — unique-id assertions,
- * sidebar/nav labels, section headers — and a hand-authored example missing `title` would otherwise
- * reach escapeHtml as undefined and throw.
+ * **Every place in the Block model where one block holds another** — group children, tab payloads,
+ * and the optional illustration hanging off a diff/overview. This function and its rebuilding twin
+ * below are the ONE list; `walkBlocks`/`mapBlocks` and everything built on them inherit it.
+ *
+ * Adding a container variant to `Block`? Extend these two functions and nothing else needs to know.
+ * Hand-rolling a `if (b.type === "group") recurse(...)` chain is how tab- and diagram-slot-nested
+ * blocks got silently skipped twice.
+ *
+ * Tolerant of hostile input (a null entry in hand-authored JSON) — traversal must never throw.
+ */
+function childBlocks(b: Block): Block[] {
+  switch ((b as { type?: unknown } | null)?.type) {
+    case "group": return (b as GroupBlock).blocks ?? [];
+    case "tabs": return ((b as TabsBlock).tabs ?? []).map((t) => t?.block);
+    case "diff":
+    case "overview": {
+      const d = (b as DiffBlock | OverviewBlock).diagram;
+      return d ? [d] : [];
+    }
+    default: return [];
+  }
+}
+
+/** `childBlocks`' inverse: the same container with `children` (same order) put back. */
+function withChildBlocks(b: Block, children: Block[]): Block {
+  switch ((b as { type?: unknown } | null)?.type) {
+    case "group": return { ...(b as GroupBlock), blocks: children };
+    case "tabs": {
+      const t = b as TabsBlock;
+      return { ...t, tabs: t.tabs.map((x, i) => ({ ...x, block: children[i] })) };
+    }
+    case "diff":
+    case "overview":
+      return { ...(b as DiffBlock | OverviewBlock), diagram: children[0] as DiagramBlock | TabsBlock };
+    default: return b;
+  }
+}
+
+/** Depth-first pre-order visit of every block in the tree, nested ones included. */
+export function walkBlocks(blocks: Block[], visit: (b: Block) => void): void {
+  for (const b of blocks) {
+    if (!b) continue;
+    visit(b);
+    walkBlocks(childBlocks(b), visit);
+  }
+}
+
+/**
+ * `walkBlocks`' rebuilding twin — bottom-up: children are mapped first, then `fn` sees the rebuilt
+ * parent. Containers keep their identity when nothing underneath them changed.
+ */
+export function mapBlocks(blocks: Block[], fn: (b: Block) => Block): Block[] {
+  return blocks.map((b) => {
+    if (!b) return b;
+    const kids = childBlocks(b);
+    const mapped = kids.length ? mapBlocks(kids, fn) : kids;
+    const changed = mapped.some((k, i) => k !== kids[i]);
+    return fn(changed ? withChildBlocks(b, mapped) : b);
+  });
+}
+
+/**
+ * Assembler-boundary guard: replace every example block — wherever it sits in the tree — with its
+ * normalized form BEFORE anything reads b.id / b.title. Assemblers touch those raw (unique-id
+ * assertions, sidebar/nav labels, section headers, `assemble`'s anchor step), and a hand-authored
+ * example missing `title` would otherwise reach escapeHtml as undefined and throw.
  *
  * The problems come back with the blocks because they can only be derived ONCE, here, against the
  * author's raw JSON: re-normalizing the normalized block (what renderExample would do) no longer
@@ -223,36 +287,33 @@ export function normalizeExample(raw: ExampleBlock): NormalizedExample {
  * emits these, and passes preNormalized:true to renderExample so nothing is warned twice.
  *
  * Generic over the per-surface block unions (Block / SpecBlock / AtlasBlock), which all carry
- * ExampleBlock; the "group"/"tabs" branches are no-ops for the surfaces that have no such type.
- * Both containers must recurse: a tab holds any non-container Block, so an example can live there
- * too, and a tabs-nested one is read raw by assemble's withAnchor just like a top-level one.
+ * ExampleBlock; the container branches in `childBlocks` are no-ops for the surfaces without them.
  */
 export function normalizeExampleBlocks<T>(blocks: T[]): { blocks: T[]; problems: string[] } {
   const problems: string[] = [];
-  const out = blocks.map((b) => {
-    const type = (b as { type?: unknown } | null)?.type;
-    if (type === "example") {
-      const n = normalizeExample(b as unknown as ExampleBlock);
-      problems.push(...n.problems);
-      return n.block as unknown as T;
-    }
-    if (type === "group") {
-      const g = b as unknown as GroupBlock;
-      const inner = normalizeExampleBlocks(g.blocks);
-      problems.push(...inner.problems);
-      return { ...g, blocks: inner.blocks } as unknown as T;
-    }
-    if (type === "tabs") {
-      const t = b as unknown as TabsBlock;
-      const inner = normalizeExampleBlocks(t.tabs.map((x) => x.block));
-      problems.push(...inner.problems);
-      return { ...t, tabs: t.tabs.map((x, i) => ({ ...x, block: inner.blocks[i] })) } as unknown as T;
-    }
-    return b;
+  const out = mapBlocks(blocks as unknown as Block[], (b) => {
+    if (b.type !== "example") return b;
+    const n = normalizeExample(b);
+    problems.push(...n.problems);
+    return n.block;
   });
-  return { blocks: out, problems };
+  return { blocks: out as unknown as T[], problems };
 }
 
+/** Every example block in the tree, in document order — for the judgment lints. */
+export function collectExamples(blocks: Block[]): ExampleBlock[] {
+  const out: ExampleBlock[] = [];
+  walkBlocks(blocks, (b) => { if (b.type === "example") out.push(b); });
+  return out;
+}
+
+/**
+ * The contract between a product generator and the engine.
+ *
+ * **Adding a container type** (a variant that holds other blocks)? Extend `childBlocks` /
+ * `withChildBlocks` above — that pair is the single definition of the tree, and every traversal
+ * (normalization, lints, id assertions, diagram collection) is built on `walkBlocks`/`mapBlocks`.
+ */
 export type Block =
   | DiagramBlock
   | SchemaBlock

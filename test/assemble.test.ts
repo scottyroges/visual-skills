@@ -361,4 +361,27 @@ describe("assemble example hardening", () => {
     expect(warns.filter((w) => w.includes("no lesson"))).toHaveLength(1);
     expect(warns.filter((w) => w.includes("dropped"))).toHaveLength(1);   // the [null, …] stage
   });
+
+  // diff.diagram and overview.diagram are typed `DiagramBlock | TabsBlock`, and that tabs block
+  // holds any Block — so the illustration slots are container paths too. Both render through
+  // renderBlock, so both reach withAnchor(b.id) and must be normalized.
+  for (const host of ["diff", "overview"] as const) {
+    it(`normalizes an id-less example inside tabs under ${host}.diagram`, async () => {
+      const warns: string[] = [];
+      const tabs = { type: "tabs", id: "t", tabs: [
+        { label: "one", block: { type: "example", stages: [null, {}] } },
+      ] };
+      const host2 = host === "diff"
+        ? { type: "diff", id: "d", title: "x", path: "src/x.ts", hunks: [], diagram: tabs }
+        : { type: "overview", id: "ov", headline: "Lead", points: [], diagram: tabs };
+      const html = await assemble([host2] as unknown as Block[], {
+        title: "T", source: "s", onWarn: (m) => warns.push(m),
+      });
+      expect(html).toContain("vs-example");
+      expect(html).toContain('id="example"');
+      expect(warns.filter((w) => w.includes("no source"))).toHaveLength(1);
+      expect(warns.filter((w) => w.includes("no lesson"))).toHaveLength(1);
+      expect(warns.filter((w) => w.includes("dropped"))).toHaveLength(1);
+    });
+  }
 });
