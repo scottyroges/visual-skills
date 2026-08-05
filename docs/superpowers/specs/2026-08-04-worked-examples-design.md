@@ -194,9 +194,19 @@ runs on any surface, so the worst failure mode is a plain stacked rail rather th
 ```
 
 Radios are natively arrow-key navigable, which makes this pattern better for accessibility than a
-JS stepper as well as more robust. It inherits the same structural cap as `.vs-tabs`: the
-`:nth-of-type` selectors must be written out, so **step mode supports at most 8 stages**, with a
-lint warning past that. (The existing tabs switcher caps at 6 for the same reason.)
+JS stepper as well as more robust — but the `.vs-tabs` pattern is copied **selectively**: it sets
+`opacity: 0; pointer-events: none` on the radios and styles no focus state, which makes keyboard
+position invisible. The stepper instead keeps radios focusable (visually hidden, no
+`pointer-events: none`) and joins `review.css`'s existing `:focus-visible` outline convention via
+the same written-out `:nth-of-type` pairing used for `:checked` (`.vs-ex-radio:nth-of-type(n):focus-visible
+~ .vs-ex-steps label:nth-child(n)` → accent outline). Each label carries an `aria-label` of the
+form "Stage 2 of 4: model returns a verdict per sentence" so the accessible name is the stage
+label, not the digit.
+
+It inherits the same structural cap as `.vs-tabs`: the `:nth-of-type` selectors must be written
+out, so **step mode supports at most 8 stages**. (The existing tabs switcher caps at 6 for the
+same reason.) Past the cap the renderer **falls back to the static rail** — all stages visible, no
+radios emitted — plus a warning; a soft warning alone would knowingly ship unreachable content.
 
 ### Accepted limitations
 
@@ -242,12 +252,19 @@ easiest place to quietly fabricate.
   it and pasting real output.
 
 **Required fields are a compile-time guarantee only.** A hand-authored `spec.json` is parsed, not
-typechecked, so `source` and `lesson` being non-optional in TypeScript stops programmatic
-construction but not a missing key in JSON. The render path therefore guards separately: rather
-than throwing (which kills the whole page mid-iteration, and `validateSpecOpts` sets the precedent
-of warning instead of crashing), the renderer emits a **visible** `⚠ no source given` in the
-provenance slot alongside the warning. The omission then shows up in the artifact itself, which is
-a stronger honesty guarantee than a console line an author can scroll past.
+typechecked, so required fields in TypeScript stop programmatic construction but not a missing key
+in JSON. The render path therefore guards each required field separately — never throwing (which
+kills the whole page mid-iteration; `validateSpecOpts` sets the precedent of warning instead of
+crashing), always leaving a **visible** mark in the artifact plus a warning, because an omission
+that shows up in the page itself is a stronger honesty guarantee than a console line an author can
+scroll past:
+
+- missing/empty `source` → `⚠ no source given` rendered in the provenance slot.
+- missing/empty `lesson` → `⚠ no lesson written` rendered in the lesson band.
+- missing/empty/non-array `stages` → the block renders its header and provenance plus a visible
+  `⚠ no stages` placeholder card; iteration is guarded so a malformed value cannot crash assembly.
+
+Tests cover malformed hand-authored JSON for all three, not just a missing `source`.
 
 ## Lint
 
@@ -261,7 +278,7 @@ nudges. All are warnings, consistent with the existing "heuristics, not hard err
 | missing lesson | `lesson` absent or empty | write the one-line takeaway, or pick a different instance |
 | under-stepped | `mode: "step"`, fewer than 3 stages | stepping hides content that already fits — use static |
 | under-walked | 5+ stages, static | long walkthrough rendered flat — consider `mode: "step"` |
-| over cap | `mode: "step"`, more than 8 stages | exceeds the CSS switcher cap; stages 9+ unreachable — split it |
+| over cap | `mode: "step"`, more than 8 stages | exceeds the CSS switcher cap — rendered as a static rail; split it |
 | fat stage | a `body` over ~1200 chars | trim to the minimum that exercises the mechanism; elide with `…` |
 | dead reveal | `mode: "reveal"`, no stage flagged | nothing is hidden |
 | reveal spam | more than 1 reveal block on a page | predict-then-check, not a click-fest |
@@ -271,16 +288,37 @@ nudges. All are warnings, consistent with the existing "heuristics, not hard err
 | no examples | spec only: 5+ chapters, zero example blocks | algorithm/contract specs land harder with one worked example |
 
 The `no examples` rule lives in `lint-spec.ts` at the same soft tier as the existing
-hero/rollout/approve expectations. Recap, doc, and atlas get the per-block rules but no
-zero-examples nudge.
+hero/rollout/approve expectations. Recap gets its own nudge in `lint-completeness.ts` (same tier
+as its overview/annotation/grouping rules): **3+ non-trivial diffs and zero example blocks** →
+"behavior-changing recaps land harder with one contrast example — mine the PR's tests for a
+ready-made input/output pair". Doc and atlas get the per-block rules but no zero-examples nudge —
+atlas is maintenance-checked by `atlas-review`, and doc inputs are too heterogeneous for a count
+heuristic; both rely on the definition-of-done pressure below.
+
+### Making the skills actually reach for it
+
+A capable block that agents rarely author misses the point. Each skill's **definition of done**
+and **red flags** sections gain an example expectation, scoped to when one applies (so the
+pressure is real but not padding):
+
+- **visual-spec** — already covered: ladder slot, scaling-table row (Medium: usually · Large:
+  yes), red flag, lint.
+- **visual-recap** — definition of done: "a behavior-changing PR shows one contrast example —
+  same input, old vs new output, mined from the PR's tests". Red flag: "the PR changes behavior
+  and no example shows a concrete before/after".
+- **visual-doc** — definition of done: "any transformation or algorithm the doc explains carries
+  one worked example". Red flag: "the doc describes an algorithm in prose only".
+- **visual-atlas** — definition of done: "each domain page anchors on one worked trace — a single
+  real request/input walked through the domain's stack". Red flag: "a domain page is a module
+  list with no trace of anything moving through it".
 
 ## Per-surface integration
 
 | surface | code | docs |
 |---|---|---|
 | **visual-spec** | `SpecBlock` union · `chapterLabel` case · `renderBlock` case (examples are chapters, so they appear in the sidebar and progress rail) | ladder slot after `fits` and before `decisions`; scaling-table row; red-flag entry; definition-of-done bullet; catalog entry in `spec-components.md` |
-| **visual-recap + visual-doc** | `Block` union → coverage-test sample forces both renderers · `assemble.ts` case (wrapped in `.vs-block`) · `review/sections.ts` case | recap: gather guidance to mine the PR's *tests* for ready-made input/output pairs → contrast form. doc: one line |
-| **visual-atlas** | `AtlasBlock` union · `atlasChapterLabel` case · `assemble-atlas` case | `atlas-components.md` entry plus "one request walked through this stack" in the skill |
+| **visual-recap + visual-doc** | `Block` union → coverage-test sample forces both renderers · `assemble.ts` case (wrapped in `.vs-block`, incl. inside its `group` case) · `review/sections.ts` case · **`review/walkthrough.ts` `renderChapter`: render `diff` and `example` children in document order** (today it filters groups to diffs only, and `groupLooseDiffs` makes groups the *normal* recap shape — without this, an example placed beside the diff it explains silently disappears) | recap: definition-of-done + red-flag entries (below); gather guidance to mine the PR's *tests* for ready-made input/output pairs → contrast form. doc: a real "when to add an example" subsection — any transformation or algorithm the doc explains — not a one-liner |
+| **visual-atlas** | `AtlasBlock` union · `atlasChapterLabel` case · `assemble-atlas` case | `atlas-components.md` entry plus definition-of-done + red-flag entries in the skill |
 
 `skill-docs.test.ts` will force visual-doc to document `example` automatically (the discriminant
 literal lives in `blocks.ts`). It will *not* force spec/atlas, because those unions import the type
@@ -307,7 +345,8 @@ it to accident.
 - `example/spec-season-planner` — one static worked example, plus one inline `e.g.` on a decision,
   so the canonical "what good looks like" build demonstrates both affordances.
 - One of `example/pr-190-season-stats` / `example/pr-194-estimated-purse` — one contrast example
-  mined from the PR's tests.
+  mined from the PR's tests, placed **inside a group** beside the diff it explains, so the
+  canonical recap build exercises the nested-walkthrough path.
 - `example/atlas-ppgl` — one domain trace ("one request walked through this stack").
 
 All re-rendered and lint-clean. There is no visual-doc build under `example/`, so visual-doc ships
@@ -316,10 +355,13 @@ the renderer plus its skill line only.
 ## Testing
 
 - `test/example-block.test.ts` — tints per stage kind; contrast columns plus shared full-width
-  context; radio count and the 8-stage cap; reveal `<details>`; markdown in bodies; HTML escaping
-  in labels and the lesson band; the visible missing-source marker.
+  context; radio count, focus/aria attributes, and the 8-stage cap's static fallback; reveal
+  `<details>`; markdown in bodies; HTML escaping in labels and the lesson band; the visible
+  markers for missing `source`, missing `lesson`, and missing/empty/malformed `stages`.
 - `test/lint-examples.test.ts` — every rule fires on a violating block and clears when fixed.
 - `test/review-block-coverage.test.ts` — an `example` sample (compile-forced by the union).
+- `test/review-walkthrough.test.ts` — an `example` nested inside a `group` renders in the chapter,
+  in document order beside its diff (the path `groupLooseDiffs` makes the recap norm).
 - `test/assemble-spec.test.ts` / `test/assemble-atlas.test.ts` — the block reaches the sidebar
   outline and progress rail as a chapter.
 - `test/skill-docs.test.ts` — the explicit four-skill assertion described above.
