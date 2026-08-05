@@ -110,7 +110,17 @@ async function renderChapter(
     if (child.type === "diff") {
       parts.push(await renderSubsection(child, `${n}${String.fromCharCode(97 + diffIdx++)}`, onWarn, diagrams));
     } else if (child.type === "example") {
-      parts.push(`<div id="${escapeHtml(child.id)}" class="subsection">${await renderExample(child, { ownHeader: true, onWarn })}</div>`);
+      // Own the header here (ownHeader:false) so the nested example sits at <h4> — the same level as
+      // the diff subsections it lives beside, under the chapter's <h3>. renderExample's own header is
+      // an <h2>, which would invert the hierarchy inside the group.
+      const badgeHtml = child.badge ? `<span class="section-badge">${escapeHtml(child.badge)}</span>` : "";
+      parts.push(
+        `<div id="${escapeHtml(child.id)}" class="subsection">` +
+        `<div class="subsection-header"><h4 class="subsection-title">${escapeHtml(child.title)}</h4>${badgeHtml}</div>` +
+        // preNormalized: assembleReview — the only production caller — runs normalizeExampleBlocks
+        // over the whole tree (groups included) and emits the problems itself.
+        `${await renderExample(child, { ownHeader: false, onWarn, preNormalized: true })}</div>`,
+      );
     }
     // other child types: unchanged behavior (not rendered here)
   }

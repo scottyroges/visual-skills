@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Block } from "./blocks.js";
+import { normalizeExampleBlocks } from "./blocks.js";
 import { escapeHtml } from "./html.js";
 import { assertUniqueIds, collectDiagrams, renderAllDiagrams } from "./review/diagrams.js";
 import { renderTldr, renderOverviewPoints } from "./review/tldr.js";
@@ -36,7 +37,10 @@ export interface ReviewOpts {
 
 const ASSETS = fileURLToPath(new URL("../assets", import.meta.url));
 
-export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise<string> {
+export async function assembleReview(rawBlocks: Block[], opts: ReviewOpts): Promise<string> {
+  // Normalize examples (incl. group children) first: assertUniqueIds, the sidebar and the top-level
+  // example section header all read b.id/b.title raw, ahead of renderExample's own coercion.
+  const { blocks, problems: exampleProblems } = normalizeExampleBlocks(rawBlocks);
   assertUniqueIds(blocks);
   const view = groupLooseDiffs(blocks);
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
@@ -55,8 +59,9 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
     onWarn: opts.onWarn,
   });
   if (opts.onWarn) {
-    for (const w of lintBlocks(blocks)) opts.onWarn(w); // NOTE: lint the ORIGINAL blocks, not `view`
-    for (const w of lintCompleteness(blocks)) opts.onWarn(w); // demo-standard floor: overview/TL;DR/annotations/grouping
+    for (const p of exampleProblems) opts.onWarn(p); // malformed example JSON (numbered off the raw blocks)
+    for (const w of lintBlocks(rawBlocks)) opts.onWarn(w); // NOTE: lint the ORIGINAL blocks, not `view`
+    for (const w of lintCompleteness(rawBlocks)) opts.onWarn(w); // demo-standard floor: overview/TL;DR/annotations/grouping
     const failed = [...diagrams.values()].filter((r) => r.failed).map((r) => r.id);
     if (failed.length) opts.onWarn(`${failed.length} diagram(s) failed to compile and show a placeholder: ${failed.join(", ")} — fix their d2 source`);
   }
@@ -112,7 +117,7 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
         `<section id="${escapeHtml(b.id)}" class="section">` +
         `<div class="section-header"><h2 class="section-title">${escapeHtml(b.title)}</h2>` +
         `${b.badge ? `<span class="section-badge">${escapeHtml(b.badge)}</span>` : ""}</div>` +
-        `${await renderExample(b, { ownHeader: false, onWarn: opts.onWarn })}</section>`
+        `${await renderExample(b, { ownHeader: false, onWarn: opts.onWarn, preNormalized: true })}</section>`
       );
     }
     if (b.type === "prose" || b.type === "questions" || b.type === "annotated-code") {

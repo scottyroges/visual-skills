@@ -331,3 +331,16 @@ describe("assemble — overview block", () => {
     await expect(assemble(blocks, { title: "T", source: "s" })).rejects.toThrow(/duplicate block id "dup"/);
   });
 });
+
+describe("assemble example hardening", () => {
+  // Regression: assertUniqueIds and withAnchor read b.id raw, ahead of renderExample's normalizer.
+  it("renders a title-less, id-less example without throwing (top level and nested in a group)", async () => {
+    const bad = [
+      { type: "example", stages: [] },
+      { type: "group", id: "g", title: "G", blocks: [{ type: "example", id: "ex-nested", stages: [] }] },
+    ] as unknown as Block[];
+    const html = await assemble(bad, { title: "T", source: "s" });
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');
+  });
+});

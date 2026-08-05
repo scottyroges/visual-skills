@@ -290,3 +290,14 @@ it("renders an example block on a domain page", async () => {
   expect(html).toContain("One request through this stack");
   expect(warns.filter((w) => w.includes("no renderer"))).toEqual([]);
 });
+
+describe("assembleDomain example hardening", () => {
+  // Regression: assertUniqueAtlasIds, the sidebar labels and sectionHeader read b.id/b.title raw,
+  // ahead of renderExample's normalizer.
+  it("renders a title-less, id-less example without throwing", async () => {
+    const bad = [{ type: "example", stages: [] }] as unknown as AtlasBlock[];
+    const html = await assembleDomain(bad, { title: "d", layer: "engine", layerLabel: "Engine" });
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');
+  });
+});

@@ -73,5 +73,9 @@ describe("renderWalkthrough", () => {
     expect(html).toContain("vs-example");
     expect(html).toContain("Same input, old vs new");
     expect(html.indexOf("src/x.ts")).toBeLessThan(html.indexOf("vs-example"));  // document order
+    // The nested example heads at <h4>, level with the diff subsections beside it under the
+    // chapter's <h3> — never renderExample's own <h2> (which would invert the hierarchy).
+    expect(html).toContain('<h4 class="subsection-title">Same input, old vs new</h4>');
+    expect(html).not.toContain("vs-ex-title");
   });
 });

@@ -51,3 +51,20 @@ describe("assembleReview", () => {
     expect(headScriptIdx).toBeLessThan(bodyIdx);
   });
 });
+
+describe("assembleReview example hardening", () => {
+  // Regression: assertUniqueIds, the sidebar and the top-level example section header all read
+  // b.id/b.title raw, ahead of renderExample's normalizer.
+  it("renders a title-less, id-less example without throwing (top level and nested in a group)", async () => {
+    const bad = [
+      { type: "example", stages: [] },
+      { type: "group", id: "g", title: "G", description: "d", blocks: [
+        { type: "diff", id: "d0", title: "x", path: "x", hunks: [{ header: "@@ -1 +1 @@", lines: ["+a"] }] },
+        { type: "example", id: "ex-nested", stages: [] },
+      ] },
+    ] as unknown as Block[];
+    const html = await assembleReview(bad, { title: "T", source: "s" });
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');
+  });
+});

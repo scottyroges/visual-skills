@@ -7,6 +7,7 @@ import {
   type AtlasBlock, type AtlasOpts, type DomainOpts, type AtlasDiagram,
   type KV, type ComponentDeep, type ExampleBlock,
 } from "./atlas-blocks.js";
+import { normalizeExampleBlocks } from "./blocks.js";
 import { renderInlineMarkdown } from "./renderers/markdown.js";
 import { renderExample } from "./renderers/example.js";
 import { renderAll, type DiagramResult } from "./render-diagram.js";
@@ -313,7 +314,8 @@ export async function renderAtlasBlock(b: AtlasBlock, diagrams: Map<string, Diag
       case "depth": return renderDepth(b, diagrams);
       case "owns": return renderOwns(b);
       case "seams": return renderSeams(b);
-      case "example": return sectionHeader(b.title, b.badge) + (await renderExample(b, { ownHeader: false, onWarn }));
+      // preNormalized: assembleAtlas/assembleDomain run the boundary normalizer and emit its problems.
+      case "example": return sectionHeader(b.title, b.badge) + (await renderExample(b, { ownHeader: false, onWarn, preNormalized: true }));
       default: onWarn?.(`atlas: no renderer for block type "${(b as AtlasBlock).type}"`); return "";
     }
   })();
@@ -339,18 +341,25 @@ async function renderMain(blocks: AtlasBlock[], opts: { outDir?: string; excalid
   return `<main class="main">${parts.join("")}</main>`;
 }
 
-export async function assembleAtlas(blocks: AtlasBlock[], opts: AtlasOpts): Promise<string> {
+export async function assembleAtlas(rawBlocks: AtlasBlock[], opts: AtlasOpts): Promise<string> {
+  // Normalize examples first: assertUniqueAtlasIds, the sidebar labels and sectionHeader read
+  // b.id/b.title raw, ahead of renderExample's own coercion. The lints keep reading rawBlocks —
+  // lintExamples needs the author's original `mode` to tell a downgrade from a choice.
+  const { blocks, problems } = normalizeExampleBlocks(rawBlocks);
   assertUniqueAtlasIds(blocks);
-  if (opts.onWarn) for (const w of lintAtlas(blocks)) opts.onWarn(w); // demo-standard floor: lead / map / index
-  if (opts.onWarn) for (const w of lintExamples(blocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(w);
+  if (opts.onWarn) for (const p of problems) opts.onWarn(p);
+  if (opts.onWarn) for (const w of lintAtlas(rawBlocks)) opts.onWarn(w); // demo-standard floor: lead / map / index
+  if (opts.onWarn) for (const w of lintExamples(rawBlocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(w);
   const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, atlasTopbar(opts), sidebar(blocks, opts, null, true), main);
 }
 
-export async function assembleDomain(blocks: AtlasBlock[], opts: DomainOpts): Promise<string> {
+export async function assembleDomain(rawBlocks: AtlasBlock[], opts: DomainOpts): Promise<string> {
+  const { blocks, problems } = normalizeExampleBlocks(rawBlocks);
   assertUniqueAtlasIds(blocks);
-  if (opts.onWarn) for (const w of lintDomain(blocks)) opts.onWarn(w); // demo-standard floor: lead / components / arch / seams
-  if (opts.onWarn) for (const w of lintExamples(blocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(w);
+  if (opts.onWarn) for (const p of problems) opts.onWarn(p);
+  if (opts.onWarn) for (const w of lintDomain(rawBlocks)) opts.onWarn(w); // demo-standard floor: lead / components / arch / seams
+  if (opts.onWarn) for (const w of lintExamples(rawBlocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(w);
   const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, domainTopbar(opts), sidebar(blocks, opts, opts.layer, false), main);
 }

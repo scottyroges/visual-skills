@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Block } from "./blocks.js";
-import { isDiagramBlock } from "./blocks.js";
+import { isDiagramBlock, normalizeExampleBlocks } from "./blocks.js";
 import { lintBlocks } from "./lint-blocks.js";
 import { escapeHtml } from "./html.js";
 import { renderAll } from "./render-diagram.js";
@@ -46,10 +46,16 @@ function assertUniqueIds(blocks: Block[], seen = new Set<string>()): void {
   }
 }
 
-export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<string> {
+export async function assemble(rawBlocks: Block[], opts: AssembleOpts): Promise<string> {
+  // Normalize examples (incl. group children) first: assertUniqueIds and withAnchor read b.id raw.
+  const { blocks, problems: exampleProblems } = normalizeExampleBlocks(rawBlocks);
   assertUniqueIds(blocks);
   // Authoring lints (non-blocking): nudge toward described groups and scannable diff descriptions.
-  if (opts.onWarn) for (const w of lintBlocks(blocks)) opts.onWarn(w);
+  // Both run on the ORIGINAL blocks — lintExamples reads the author's raw `mode`.
+  if (opts.onWarn) {
+    for (const p of exampleProblems) opts.onWarn(p);
+    for (const w of lintBlocks(rawBlocks)) opts.onWarn(w);
+  }
   // Collect diagram/schema blocks recursively (they may be nested in groups), render up front.
   const collectDiagrams = (bs: Block[]): (import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock)[] => {
     const out: (import("./blocks.js").DiagramBlock | import("./blocks.js").SchemaBlock)[] = [];
@@ -140,7 +146,7 @@ export async function assemble(blocks: Block[], opts: AssembleOpts): Promise<str
       case "annotated-code": html = await renderAnnotatedCode(b, opts.onWarn); break;
       case "questions": html = renderQuestions(b); break;
       case "example":
-        html = `<section class="vs-block">${await renderExample(b, { ownHeader: true, onWarn: opts.onWarn })}</section>`;
+        html = `<section class="vs-block">${await renderExample(b, { ownHeader: true, onWarn: opts.onWarn, preNormalized: true })}</section>`;
         break;
       case "group": {
         for (const child of b.blocks) {

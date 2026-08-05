@@ -211,6 +211,40 @@ export function normalizeExample(raw: ExampleBlock): NormalizedExample {
   };
 }
 
+/**
+ * Assembler-boundary guard: replace every example block (incl. group children) with its normalized
+ * form BEFORE anything reads b.id / b.title. Assemblers touch those raw — unique-id assertions,
+ * sidebar/nav labels, section headers — and a hand-authored example missing `title` would otherwise
+ * reach escapeHtml as undefined and throw.
+ *
+ * The problems come back with the blocks because they can only be derived ONCE, here, against the
+ * author's raw JSON: re-normalizing the normalized block (what renderExample would do) no longer
+ * sees the dropped stages, the coerced mode, or the original stage numbering. So the assembler
+ * emits these, and passes preNormalized:true to renderExample so nothing is warned twice.
+ *
+ * Generic over the per-surface block unions (Block / SpecBlock / AtlasBlock), which all carry
+ * ExampleBlock; the "group" branch is a no-op for the surfaces that have no group type.
+ */
+export function normalizeExampleBlocks<T>(blocks: T[]): { blocks: T[]; problems: string[] } {
+  const problems: string[] = [];
+  const out = blocks.map((b) => {
+    const type = (b as { type?: unknown } | null)?.type;
+    if (type === "example") {
+      const n = normalizeExample(b as unknown as ExampleBlock);
+      problems.push(...n.problems);
+      return n.block as unknown as T;
+    }
+    if (type === "group") {
+      const g = b as unknown as GroupBlock;
+      const inner = normalizeExampleBlocks(g.blocks);
+      problems.push(...inner.problems);
+      return { ...g, blocks: inner.blocks } as unknown as T;
+    }
+    return b;
+  });
+  return { blocks: out, problems };
+}
+
 export type Block =
   | DiagramBlock
   | SchemaBlock

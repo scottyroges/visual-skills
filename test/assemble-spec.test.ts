@@ -183,3 +183,14 @@ describe("assembleSpec", () => {
     expect(html).toContain("one verdict merged 3 milestones");
   });
 });
+
+describe("assembleSpec example hardening", () => {
+  // Regression: the sidebar/rail (chapterLabel) and sectionHeader read b.title raw, before
+  // renderExample's normalizer ever ran — a hand-authored example with no title threw in escapeHtml.
+  it("renders a title-less, id-less example without throwing", async () => {
+    const blocks = [{ type: "example", stages: [] }] as unknown as SpecBlock[];
+    const html = await assembleSpec(blocks, { title: "T" });
+    expect(html).toContain("vs-example");
+    expect(html).toContain('id="example"');   // id coerced to the "example" default
+  });
+});

@@ -2,7 +2,15 @@ import { escapeHtml } from "../html.js";
 import { renderMarkdown, renderInlineMarkdown } from "./markdown.js";
 import { normalizeExample, type ExampleBlock, type ExampleStage } from "../blocks.js";
 
-export interface RenderExampleOpts { ownHeader: boolean; onWarn?: (m: string) => void; }
+export interface RenderExampleOpts {
+  ownHeader: boolean;
+  onWarn?: (m: string) => void;
+  /** The block already went through normalizeExampleBlocks at the assembler boundary, which emitted
+   *  its problems against the AUTHOR'S raw JSON. Re-deriving them here would both duplicate them and
+   *  renumber the stages, so skip the warning (the normalize call itself stays — it's idempotent and
+   *  keeps this renderer safe for direct callers). onWarn still reaches the markdown renderer. */
+  preNormalized?: boolean;
+}
 
 const KIND_LABEL: Record<NonNullable<ExampleStage["kind"]>, string> =
   { input: "Input", step: "Step", output: "Output", counter: "Counter" };
@@ -78,7 +86,7 @@ async function renderStepped(b: ExampleBlock, onWarn?: (m: string) => void): Pro
 
 export async function renderExample(raw: ExampleBlock, opts: RenderExampleOpts): Promise<string> {
   const { block: b, problems } = normalizeExample(raw);
-  for (const p of problems) opts.onWarn?.(p);
+  if (!opts.preNormalized) for (const p of problems) opts.onWarn?.(p);
 
   const head = opts.ownHeader
     ? `<div class="vs-ex-head"><h2 class="vs-ex-title">${escapeHtml(b.title)}</h2>` +

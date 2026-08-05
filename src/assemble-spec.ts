@@ -6,6 +6,7 @@ import { renderInlineMarkdown, renderMarkdown } from "./renderers/markdown.js";
 import { renderAll, type DiagramResult } from "./render-diagram.js";
 import { renderDiagramCard } from "./review/sections.js";
 import { renderExample } from "./renderers/example.js";
+import { normalizeExampleBlocks } from "./blocks.js";
 import { lintSpec } from "./lint-spec.js";
 import {
   assertUniqueSpecIds, collectSpecDiagrams, toDiagramBlock, isChapter, chapterLabel,
@@ -385,7 +386,7 @@ async function renderBlock(
       case "approve": return renderApprove(b);
       case "reference": return renderReference(b, opts.onWarn);
       case "example":
-        return sectionHeader(b.title, b.badge) + (await renderExample(b, { ownHeader: false, onWarn: opts.onWarn }));
+        return sectionHeader(b.title, b.badge) + (await renderExample(b, { ownHeader: false, onWarn: opts.onWarn, preNormalized: true }));
       case "spec-prose": return renderProse(b, opts.onWarn);
       default: {
         opts.onWarn?.(`spec: no renderer for block type "${(b as SpecBlock).type}"`);
@@ -396,7 +397,11 @@ async function renderBlock(
   return `<section id="${escapeHtml(b.id)}" class="section">${inner}</section>`;
 }
 
-export async function assembleSpec(blocks: SpecBlock[], opts: SpecOpts): Promise<string> {
+export async function assembleSpec(rawBlocks: SpecBlock[], opts: SpecOpts): Promise<string> {
+  // Normalize examples first: assertUniqueSpecIds, the sidebar/rail labels and sectionHeader all
+  // read b.id/b.title raw, so a title-less hand-authored example would crash before renderExample
+  // ever got to coerce it. lintSpec still sees rawBlocks — it reads the author's original mode.
+  const { blocks, problems: exampleProblems } = normalizeExampleBlocks(rawBlocks);
   assertUniqueSpecIds(blocks);
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
   const specCss = await readFile(join(ASSETS, "spec.css"), "utf8");
@@ -413,8 +418,9 @@ export async function assembleSpec(blocks: SpecBlock[], opts: SpecOpts): Promise
   const diagrams = new Map<string, DiagramResult>();
   for (const r of rendered) diagrams.set(r.id, r);
   if (opts.onWarn) {
-    validateSpecOpts(opts, opts.onWarn);                 // friendly warning on malformed related/meta (vs a crash)
-    for (const w of lintSpec(blocks)) opts.onWarn(w);   // demo-standard floor: lead / decisions / scope / size-scaled surfaces
+    validateSpecOpts(opts, opts.onWarn);                    // friendly warning on malformed related/meta (vs a crash)
+    for (const p of exampleProblems) opts.onWarn(p);        // malformed example JSON (raw-numbered)
+    for (const w of lintSpec(rawBlocks)) opts.onWarn(w);   // demo-standard floor: lead / decisions / scope / size-scaled surfaces
     const failed = rendered.filter((r) => r.failed).map((r) => r.id);
     if (failed.length) opts.onWarn(`${failed.length} diagram(s) failed to compile: ${failed.join(", ")} — fix their d2 source`);
   }
