@@ -15,6 +15,7 @@
         "src/highlight.ts",
         "src/assemble.ts",
         "src/lint-blocks.ts",
+        "src/lint-examples.ts",
         "src/version.ts",
         "src/renderers/**"
       ],
@@ -24,6 +25,7 @@
         "src/highlight.ts",
         "src/html.ts",
         "src/lint-blocks.ts",
+        "src/lint-examples.ts",
         "src/renderers/annotated-code.ts",
         "src/renderers/api.ts",
         "src/renderers/diff.ts",

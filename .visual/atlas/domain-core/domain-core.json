@@ -5,7 +5,7 @@
   "layer": "engine",
   "layerLabel": "Engine",
   "path": "src",
-  "count": "15 files",
+  "count": "16 files",
   "depends": "diagrams",
   "date": "2026-06-20",
   "generator": "visual-skills · visual-atlas",
@@ -22,7 +22,7 @@
         },
         {
           "key": "Files",
-          "value": "15 — `blocks.ts`, `assemble.ts`, `html.ts`, `highlight.ts`, `lint-blocks.ts`, `version.ts`, and nine renderers."
+          "value": "16 — `blocks.ts`, `assemble.ts`, `html.ts`, `highlight.ts`, `lint-blocks.ts`, `lint-examples.ts`, `version.ts`, and nine renderers."
         },
         {
           "key": "Role",
@@ -119,10 +119,13 @@
         },
         {
           "name": "lint",
-          "purpose": "Non-blocking authoring guards. Walks the `Block[]` and warns — never throws — when a group lacks a description, a diff description is a wall of text, a diagram applies no color, an editable kind drops its mermaid, or there are too many / oversize diagrams.",
+          "purpose": "Non-blocking authoring guards. Walks the `Block[]` and warns — never throws — when a group lacks a description, a diff description is a wall of text, a diagram applies no color, an editable kind drops its mermaid, or there are too many / oversize diagrams. Also lints example blocks for mode/volume/contrast/synthetic issues.",
           "exports": [
             {
               "name": "lintBlocks"
+            },
+            {
+              "name": "lintExamples"
             }
           ],
           "href": "#c-lint"
@@ -444,21 +447,30 @@
         {
           "id": "c-lint",
           "name": "lint",
-          "path": "src/lint-blocks.ts",
+          "path": "src/lint-blocks.ts · src/lint-examples.ts",
           "detail": [
             "`lintBlocks(blocks)` returns authoring warnings in document order — it never throws and never blocks rendering. `assemble` pipes them to `opts.onWarn`. The guards nudge quality: a `group` with no description, a `diff` description that is a long single paragraph (a wall of text), a `diagram` that applies no semantic color, an editable-eligible diagram kind that dropped its mermaid source (silently losing the Excalidraw upgrade), and too-many / oversize-edge diagrams overall.",
-            "It walks the same nested structure `assemble` does — groups, tabs, embedded diff/overview diagrams — using the diagram-color helpers to detect which roles a d2/mermaid source applies. The intent is to catch the mistakes that make a document read worse without making the build fail."
+            "`lintExamples(examples)` inspects example blocks for quality nudges: checking for undersized step modes, long static walkthroughs, oversized stage bodies, dead reveals, contrast sides, and synthetic sources. Warnings only — normalization problems are surfaced by the renderer, not re-emitted here, so assemblers can call both without duplicates.",
+            "Both walk their respective block structures using judgment heuristics rather than hard constraints. The intent is to catch the mistakes that make a document read worse without making the build fail."
           ],
           "files": [
             {
               "name": "lint-blocks.ts",
               "desc": "The group / diff-prose / diagram authoring guards, recursing through nested blocks."
+            },
+            {
+              "name": "lint-examples.ts",
+              "desc": "Example block quality nudges: mode/volume/contrast/synthetic judgment rules."
             }
           ],
           "exports": [
             {
               "name": "lintBlocks()",
               "desc": "→ `string[]` of non-blocking authoring warnings in document order."
+            },
+            {
+              "name": "lintExamples()",
+              "desc": "→ `string[]` of example block quality nudges; operates on normalized blocks."
             }
           ],
           "connections": [
@@ -467,8 +479,12 @@
               "body": "[assemble()](#c-assemble) and [recap](../domain-recap/domain-recap.html)'s `assembleReview` — emitted through `opts.onWarn`, never blocking"
             },
             {
+              "dir": "called by",
+              "body": "[authoring](../domain-authoring/domain-authoring.html) surfaces (spec/recap/doc/atlas) from their existing lint routines"
+            },
+            {
               "dir": "inspects",
-              "body": "diagram color roles via the [diagrams](../domain-diagrams/domain-diagrams.html) color helpers"
+              "body": "diagram color roles via the [diagrams](../domain-diagrams/domain-diagrams.html) color helpers (lintBlocks)"
             }
           ]
         },
@@ -591,8 +607,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:aafe34eccfd50806e7b2304c7d2de0aa2245a9d022690dd313dc486fa5682aac",
-    "date": "2026-07-21",
-    "commit": "3da9de04ac619ab5f65b339c556ae2a76f5c15dd"
+    "hash": "sha256:0df580a4cdf4b3599fdb2e1b80a23d18ba2d22d810b4d5a637f28bfe195d082d",
+    "date": "2026-08-05",
+    "commit": "6d6be2134c2368ad860bc460cc00a71ab5b49943"
   }
 }
