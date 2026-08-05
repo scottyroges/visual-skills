@@ -129,10 +129,10 @@
           "After"
         ],
         "intro": "The whole behavior change is visible on one golfer's season the Sunday a tournament is still being played — the same `tournamentResult` rows read by the same query, one `WHERE` clause apart.",
-        "source": "src/server/repositories/golfer.ts — the `getSeasonStats` hunk above; the leading-after-round-1 case is the PR's own reproduction (no test covers it — the golfer-service tests mock this repo).",
+        "source": "src/server/repositories/golfer.ts — the getSeasonStats hunk above; the leading-after-round-1 case is the PR's own reproduction (no test covers it — the golfer-service tests mock this repo).",
         "stages": [
           {
-            "label": "input — the rows `getSeasonStats` aggregates for one golfer + season",
+            "label": "input — the rows getSeasonStats aggregates for one golfer + season",
             "kind": "input",
             "body": "`syncLiveStandings` has already written this week's row with *projected* numbers while the tournament is still `IN_PROGRESS`:\n\n```ts\n{ tournament.status: \"IN_PROGRESS\", finishPosition: 1, earnings: <projected> }  // mid-round\n{ tournament.status: \"COMPLETED\",   finishPosition: …, earnings: <final>     }  // settled weeks\n```\n\nAll of them pass `tournament.excluded = false`, and the golfer happens to be leading after round 1. `getSeasonResults` reads the same rows and is not touched by this PR."
           },

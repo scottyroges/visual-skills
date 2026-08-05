@@ -251,7 +251,7 @@
       "title": "One plan through the start-day cron",
       "badge": "worked example",
       "intro": "The whole phase hangs on an unattended write. Here is a single `PLANNED` row walked through `lockPlannedPicksForTournament` on the morning its tournament starts — the path the [approval note](#approve) asks you to scrutinize hardest.",
-      "source": "Reference › “Auto-lock algorithm” drawer (`pick-lock.ts` · `sync.ts`) + the TL;DR's own scenario — Scheffler reserved for the Masters. Row ids shortened for reading.",
+      "source": "Reference › “Auto-lock algorithm” drawer (pick-lock.ts · sync.ts) + the TL;DR's own scenario — Scheffler reserved for the Masters. Row ids shortened for reading.",
       "stages": [
         {
           "label": "Input — one PLANNED row, written three months earlier",

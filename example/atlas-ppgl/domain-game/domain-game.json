@@ -152,10 +152,10 @@
       "title": "One pick, from tap to LOCKED",
       "badge": "worked trace",
       "intro": "The domain's whole shape is the life of a single `Pick` row. This is one row through all five components — the path the *dual locking* big idea describes.",
-      "source": "In depth › pick service and pick locking (`services/pick.ts`, `repositories/pick-lock.ts`) + the Seams note on golf-data's cron; identifiers are this domain's own exports.",
+      "source": "In depth › pick service and pick locking (services/pick.ts, repositories/pick-lock.ts) + the Seams note on golf-data's cron; identifiers are this domain's own exports.",
       "stages": [
         {
-          "label": "Input — `pick.plan` from the GolferPicker drawer",
+          "label": "Input — pick.plan from the GolferPicker drawer",
           "kind": "input",
           "body": "A member taps a golfer for a week that is still `UPCOMING`:\n\n```ts\npick.plan({ tournamentId, golferId })\n```\n\n`planPick` runs the shared guardrails — league active, caller resolved to a `leagueMemberId` via **leagues**, tournament exists and hasn't started, golfer exists — then does the domain's signature move: if that golfer was already `PLANNED` for a *different* week, **that plan is deleted first**. Planning is season-wide drag-and-drop, not per-week CRUD.",
           "note": "The row lands `status: PLANNED`, protected by the `(leagueMemberId, tournamentId)` unique constraint — one row per member per week, always."
