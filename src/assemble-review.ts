@@ -106,9 +106,12 @@ export async function assembleReview(blocks: Block[], opts: ReviewOpts): Promise
       );
     }
     if (b.type === "example") {
+      // ownHeader:false, so the section header carries the badge (same markup as the spec surface's
+      // sectionHeader) — otherwise a top-level example silently drops b.badge.
       return (
         `<section id="${escapeHtml(b.id)}" class="section">` +
-        `<div class="section-header"><h2 class="section-title">${escapeHtml(b.title)}</h2></div>` +
+        `<div class="section-header"><h2 class="section-title">${escapeHtml(b.title)}</h2>` +
+        `${b.badge ? `<span class="section-badge">${escapeHtml(b.badge)}</span>` : ""}</div>` +
         `${await renderExample(b, { ownHeader: false, onWarn: opts.onWarn })}</section>`
       );
     }

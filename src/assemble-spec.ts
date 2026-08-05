@@ -252,10 +252,12 @@ async function renderDecisions(b: DecisionsBlock): Promise<string> {
 async function renderScope(b: ScopeBlock): Promise<string> {
   const inItems = (await Promise.all(b.inList.map(async (t) =>
     `<li><span class="scope-marker">&#10003;</span><span>${await mi(t)}</span></li>`))).join("");
+  // inlineEg emits a <div>: it closes the inline <span> first so the block lands directly in the
+  // <li> (a block inside an inline element is invalid and browsers hoist it out of the span).
   const outItems = (await Promise.all(b.outList.map(async (o) =>
     `<li><span class="scope-marker">&times;</span><span>${await mi(o.text)}` +
-    `${o.defer ? ` <span class="defer">&rarr; ${escapeHtml(o.defer)}</span>` : ""}` +
-    `${await inlineEg(o.example)}</span></li>`))).join("");
+    `${o.defer ? ` <span class="defer">&rarr; ${escapeHtml(o.defer)}</span>` : ""}</span>` +
+    `${await inlineEg(o.example)}</li>`))).join("");
   return (
     sectionHeader(b.title ?? "Scope") +
     `<div class="scope-cols">` +

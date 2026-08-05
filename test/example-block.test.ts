@@ -76,6 +76,19 @@ describe("renderExample", () => {
     expect(html).toContain(">All<");
   });
 
+  it("step over the 8-stage cap falls back to the static rail — no radios, no fieldset", async () => {
+    const warns: string[] = [];
+    const html = await renderExample(base({
+      mode: "step",
+      stages: Array.from({ length: 9 }, (_, i) => ({ label: `Stage ${i + 1}`, kind: "step" as const, body: `body ${i + 1}` })),
+    }), { ownHeader: false, onWarn: (m) => warns.push(m) });
+    expect(html).not.toContain("vs-ex-radio");
+    expect(html).not.toContain("<fieldset");
+    expect(html).toContain("vs-ex-rail");
+    expect((html.match(/class="vs-ex-arrow"/g) ?? []).length).toBe(8);    // n-1 arrows: rendered flat
+    expect(warns.some((w) => /9 stages exceeds the 8-stage step cap/.test(w))).toBe(true);
+  });
+
   it("malformed JSON: missing source/lesson/stages render visible markers, problems reach onWarn", async () => {
     const warns: string[] = [];
     const html = await renderExample(

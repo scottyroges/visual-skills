@@ -10,13 +10,16 @@ const WALK_MAX = 4;   // more static walkthrough stages than this: consider step
 
 export function lintExamples(rawExamples: ExampleBlock[]): string[] {
   const warns: string[] = [];
-  const examples = rawExamples.map((e) => normalizeExample(e).block);
+  // Keep each normalized block paired with its RAW mode: normalization coerces some step blocks to
+  // static (over the cap, or contrast), and the under-walked nudge must not then tell an author who
+  // already asked for step to "consider mode:step" — the cap warning's "split it" is the real advice.
+  const examples = rawExamples.map((e) => ({ block: normalizeExample(e).block, rawMode: (e as { mode?: unknown })?.mode }));
 
-  for (const b of examples) {
+  for (const { block: b, rawMode } of examples) {
     if (b.mode === "step" && b.stages.length < STEP_MIN && b.stages.length > 0) {
       warns.push(`example "${b.id}": only ${b.stages.length} stage(s) — stepping hides content that already fits; use static`);
     }
-    if (b.mode === "static" && b.variant === "walkthrough" && b.stages.length > WALK_MAX) {
+    if (b.mode === "static" && rawMode !== "step" && b.variant === "walkthrough" && b.stages.length > WALK_MAX) {
       warns.push(`example "${b.id}": ${b.stages.length} stages rendered flat — consider mode:"step" so the reader takes it a stage at a time`);
     }
     b.stages.forEach((s, i) => {
@@ -38,7 +41,7 @@ export function lintExamples(rawExamples: ExampleBlock[]): string[] {
     }
   }
 
-  const reveals = examples.filter((b) => b.mode === "reveal").length;
+  const reveals = examples.filter(({ block }) => block.mode === "reveal").length;
   if (reveals > 1) {
     warns.push(`${reveals} reveal examples on one page — predict-then-check works once; make the rest static`);
   }
