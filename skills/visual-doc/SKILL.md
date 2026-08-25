@@ -13,6 +13,10 @@ blocks — so ground every reference in the real repo.
 
     VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
+**Required language guide.** Before writing user-facing text, read
+`$VISUAL_SKILLS_DIR/skills/shared/plain-language.md`. Apply it to every authored field and live
+reply.
+
 ## Steps
 
 1. **Read the source** spec/plan (the file the user names, or the plan already in context).
