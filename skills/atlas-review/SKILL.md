@@ -16,6 +16,10 @@ what drifted, re-render, and re-stamp.
 
     VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
+**Required language guide.** Before writing user-facing text, read
+`$VISUAL_SKILLS_DIR/skills/shared/plain-language.md`. Apply it to every authored field and live
+reply.
+
 **Preconditions.** An existing atlas (default `<repo>/.visual/atlas`) containing
 `atlas.domains.json`, `domain-<slug>/domain-<slug>.json` pages, and `atlas-check.mjs`. If any of
 that is missing — or the review reveals the domain *grouping* itself is wrong — this is not a

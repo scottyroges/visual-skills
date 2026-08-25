@@ -21,6 +21,10 @@ favor the newcomer.
 
     VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
+**Required language guide.** Before writing user-facing text, read
+`$VISUAL_SKILLS_DIR/skills/shared/plain-language.md`. Apply it to every authored field and live
+reply.
+
 Unlike `visual-spec` (pure authoring), the atlas is **hybrid**: a mechanical scanner walks the repo
 and emits *draft* JSON; you **enrich** the drafts (write the meaning) and render. The scanner does
 the inventory; your judgment does the domains, the "why", and the connections.

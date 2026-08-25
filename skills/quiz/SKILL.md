@@ -13,6 +13,10 @@ in this family present understanding; this one verifies it.
 
     VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
+**Required language guide.** Before writing user-facing text, read
+`$VISUAL_SKILLS_DIR/skills/shared/plain-language.md`. Apply it to every authored field and live
+reply.
+
 ## The standard — what makes a question good
 
 **The dividing line is recall-without-understanding, not depth.** Banned: anything answerable by
