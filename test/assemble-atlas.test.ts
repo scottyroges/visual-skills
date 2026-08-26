@@ -62,6 +62,22 @@ describe("assemble shell", () => {
     expect(html).toContain('class="chip chip-count">~76 files');
     expect(html).toContain("depends on sim · world");
   });
+
+  it("constrains long topic topbars instead of widening narrow viewports", async () => {
+    const html = await assembleTopic(
+      [{ type: "topic-tldr", id: "tldr", heading: "Compaction", summary: "s", inputs: [], outputs: [] }],
+      {
+        title: "Compaction and summarization",
+        purpose: "How older messages stay inside the model budget.",
+        shape: "algorithm",
+        backHref: "../context-building.html",
+        backLabel: "Context building",
+        date: "2026-08-26",
+      },
+    );
+    expect(html).toMatch(/@media \(max-width: 720px\)[\s\S]*?\.topbar-meta\s*\{\s*display:\s*none/);
+    expect(html).toMatch(/@media \(max-width: 720px\)[\s\S]*?\.topbar-title\s*\{[^}]*min-width:\s*0[^}]*overflow:\s*hidden/);
+  });
 });
 
 describe("sidebar + rail", () => {

@@ -248,6 +248,14 @@ a.domain-tile.is-linked:hover .dtf-arrow { transform: translateX(3px); }
 .atlas-page-footer strong { color: var(--ink); font-size: var(--text-sm); }
 
 @media (max-width: 720px) {
+  .topbar { overflow: hidden; }
+  .topbar-back {
+    min-width: 0; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .topbar-title {
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1;
+  }
+  .topbar-meta { display: none; }
   .topic-io, .topic-rule-grid { grid-template-columns: 1fr; }
   .topic-io-group + .topic-io-group { border-left: 0; border-top: 1px solid var(--border); }
   .atlas-breadcrumbs { margin-top: 4px; }

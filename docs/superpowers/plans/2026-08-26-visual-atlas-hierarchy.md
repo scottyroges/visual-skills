@@ -326,7 +326,7 @@ Describe recursive topic pages and per-page freshness without exposing implement
 - Consumes the shipped CLI, renderer, checker, and skills from Tasks 1–4.
 - Produces benchmark evidence for the six approved conversation-context questions.
 
-- [ ] **Step 1: Verify the visual-skills branch with the focused atlas suite and typecheck**
+- [x] **Step 1: Verify the visual-skills branch with the focused atlas suite and typecheck**
 
 Run:
 
@@ -335,31 +335,75 @@ npm test -- test/atlas-config.test.ts test/atlas-tree.test.ts test/atlas-blocks.
 npm run typecheck
 ```
 
-- [ ] **Step 2: Create or refresh Telltale's `misc` lane from current `origin/main` and verify every read/write resolves inside that lane**
+- [x] **Step 2: Establish a fresh Telltale `origin/main` pilot workspace without interfering with the occupied `misc` lane**
 
-- [ ] **Step 3: Record the existing conversation-engine baseline**
+The named `misc` worktree was already on unrelated branch `pr-review-gate-parallel` (+1/-8). Per
+Telltale's lane isolation rule, the pilot did not switch or reset that live workspace. It used a
+disposable local clone at exact `origin/main` commit `2b141d4fa8d6de2e4764528bab0485a4df9fe8f8`
+instead. This preserves the intent—fresh main and no interference—while leaving the occupied lane
+untouched. No Telltale branch or PR was created.
+
+- [x] **Step 3: Record the existing conversation-engine baseline**
 
 Record visible word count, longest paragraph, history-term count, current pages, and whether the six
 benchmark questions have direct destinations. Do not reuse historical prose as authority.
 
-- [ ] **Step 4: Author the fresh topic tree and source groups from current Telltale code**
+- [x] **Step 4: Author the fresh topic tree and source groups from current Telltale code**
 
 At minimum author conversation-engine -> context-building -> compaction-and-summarization. Group
 scattered entry-point, assembly, storage, and compaction evidence with labeled include/exclude
 scopes. Add a root-level lifecycle topic only if current code supports a coherent cross-domain
 reader destination.
 
-- [ ] **Step 5: Generate the replacement subtree, answer the benchmark from docs, and run the emitted checker**
+- [x] **Step 5: Generate the replacement subtree, answer the benchmark from docs, and run the emitted checker**
 
 The pilot passes only when answers are correct and more direct, the landing page is materially
 smaller, no project-history prose remains, direct child entry works, and the checker has complete
 per-page coverage. Inspect desktop/narrow layouts and light/dark theme output.
 
-- [ ] **Step 6: If the pilot reveals a generator defect, reproduce it with a failing visual-skills test before fixing it**
+- [x] **Step 6: If the pilot reveals a generator defect, reproduce it with a failing visual-skills test before fixing it**
 
-- [ ] **Step 7: Run final visual-skills verification, inspect the complete diff, and commit any pilot-driven generator fixes**
+- [x] **Step 7: Run final visual-skills verification, inspect the complete diff, and commit any pilot-driven generator fixes**
 
 - [ ] **Step 8: Use the requesting-code-review and finishing-a-development-branch workflows, then open one visual-skills PR**
 
 The Telltale lane remains a separate repository boundary. Report its exact validation state and do
 not open or merge an additional Telltale PR under the instruction to open a single PR.
+
+#### Telltale pilot record
+
+**Baseline at `origin/main` (`2b141d4f`):** Conversation Engine was one HTML page. Its authored JSON
+contained 14,562 visible prose words, a 1,433-word longest prose field, and 63 task/PR/review/
+supersession references. Context construction and compaction were anchors inside the same page, so
+all six reader questions loaded the entire domain.
+
+**Regenerated subtree:** The authored tree is Conversation Engine → Context building → Compaction
+and summarization. Evidence groups cover assembly/token policy, turn call sites, system-prompt
+composition, summary storage, the summarizer contract, and the compaction algorithm. The landing is
+225 visible words with a 19-word longest field; Context building is 580 words; Compaction and
+summarization is 655 words. All three have zero history references. The landing is 98% smaller while
+retaining purpose, boundary, one-turn architecture, data, seams, and a collapsed implementation
+reference.
+
+The generated docs answer the six benchmark questions from three direct destinations:
+
+1. Context building lists system prompt, summary/transcript, core memory, ordering, and the final cap.
+2. Compaction states the 8,000-token entry threshold and 3,000-token old-bucket trigger.
+3. Compaction explains the append-only `InterviewSummary` parent chain and `messageCount` cursor.
+4. Context building identifies opening/send/redirect call sites and the ordinary-turn fan-out.
+5. Context building and Compaction state the 4,000-token failure fallback and final 16,000-token cap.
+6. The domain landing and reading path place context construction inside one fenced interview turn.
+
+Headless browser checks covered all three pages at 1440×900 light and 375×812 dark. Breadcrumb
+depths were 2/3/4, child cards 1/1/0, implementation references stayed collapsed, the 14-entry
+search index loaded, and no page errors occurred. The first narrow run exposed topbar overflow; a
+failing assembler test reproduced it before the responsive CSS fix. The final run had no horizontal
+overflow.
+
+The emitted checker independently stamped the three reviewed page IDs. A full-atlas check has no
+failure for the regenerated subtree, but remains nonzero for pre-existing out-of-scope debt: an
+ungrounded `createWorkRunner` claim on Transcript Analysis, a missing system stamp, and stale source
+stamps on Books and Questions, Story Synthesis, Engine Contracts, Identity and Access, and Transcript
+Analysis. Advisory history/density warnings also remain on the pre-existing system and domain pages;
+those results validate that the new review contract covers the earlier historical-prose problem but
+do not authorize silently rewriting unrelated Telltale domains in this visual-skills PR.
