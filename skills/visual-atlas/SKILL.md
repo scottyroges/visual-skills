@@ -83,12 +83,68 @@ If any of these is true, the atlas is **not done** — keep going:
 - You enriched pages but never ran `atlas-check.mjs --stamp` — unstamped system, domain, and topic
   pages fail the drift check in any repo that wires it into pre-commit.
 
+## Discover behavior before choosing pages
+
+The page tree is the result of source-grounded discovery, not the starting guess. After the
+mechanical scan and before editing `atlas.domains.json` or page JSON, build a temporary discovery
+brief. Keep it as working output for the run; the configured tree and rendered pages remain the
+durable artifacts.
+
+### Journey traces
+
+Inventory user-facing adapters, runtime entrypoints, routes, jobs, and central orchestrators. Choose
+the smallest representative set of user or system journeys that exposes the domain's meaningful
+behavior, then follow each journey from its earliest meaningful preparation through externally
+visible effects, termination, or recovery. Cross directory and domain boundaries when the calls,
+data, or state do.
+
+Each **journey trace** records:
+
+- its trigger, entrypoint, boundary crossings, and central orchestrators;
+- ordered phases, state transitions, and admission guards such as leases, budgets, or deadlines;
+- asynchronous branches, their purposes, and the barrier or convergence point that joins them;
+- durable writes and other externally visible effects;
+- failure, cancellation, terminal signaling, recovery, and cleanup behavior;
+- repository-relative source evidence for every claim.
+
+Read complete orchestration functions and their material callees; filenames and import counts are
+leads, not explanations. Search for companion entrypoints and variants that change the journey. A
+trace that starts at an internal service despite earlier preparation, or ends at the first visible
+response despite later settlement, is incomplete.
+
+### Responsibility ledger
+
+Convert the traces and source inventory into a de-duplicated **responsibility ledger**. Every row
+contains the responsibility in reader language, why it matters, its evidence, the journey or invariant
+that exposed it, and its **documentation disposition**. Assign each significant row to exactly one
+of these outcomes:
+
+- summarize it on the domain landing page;
+- explain it on a topic or nested topic page;
+- link to its canonical home in another domain or cross-cutting topic;
+- omit it with a concrete reason, such as generated code or an incidental implementation detail.
+
+"Not selected as a topic" is not an omission reason. Before choosing pages, challenge the ledger
+against the central orchestrators: account for their meaningful phases, branching and convergence,
+durable writes, terminal paths, and cleanup. A large domain is not covered merely because one
+well-understood mechanism received a child page.
+
+Close the brief with a coverage decision:
+
+- make page source groups cover the evidence actually used during discovery;
+- add related and reading-path links that preserve important cross-domain journeys;
+- confirm every significant ledger row has a visible home, canonical link, or supported omission;
+- include the discovery brief in the final handoff so the user can see what was considered and how
+  it was dispositioned.
+
 ## Choose the page tree before writing prose
 
-Start with reader questions. Keep a subject on its domain landing when a concise summary is enough.
-Extract a child when it has its own flow, rules, failure behavior, worked example, or implementation
+Use the completed responsibility ledger to start with reader questions. The domain landing gives a
+high-level end-to-end account of its primary journeys, and every significant ledger row has a
+visible home or link. Keep a subject on its domain landing when a concise summary is enough. Extract
+a child when it has its own flow, rules, failure behavior, worked example, or implementation
 evidence. Use a nested child when an internal algorithm deserves independent treatment, such as
-`domain -> context building -> compaction`. A root-level topic belongs directly beneath the system
+`domain -> pricing -> discount selection`. A root-level topic belongs directly beneath the system
 page when it crosses domains and has no natural domain owner.
 
 Prefer at most two topic levels beneath a domain. Deeper authored trees remain valid, but warn so
@@ -112,62 +168,62 @@ different relationships: domains own modules, while topics cite evidence without
 
 ```json
 {
-  "repo": "telltale",
+  "repo": "shop-app",
   "srcRoots": ["apps", "packages"],
   "topics": [
     {
-      "slug": "one-interview-turn",
-      "title": "One interview turn",
-      "purpose": "How one response crosses the system.",
+      "slug": "one-checkout",
+      "title": "One checkout",
+      "purpose": "How one purchase crosses the system.",
       "shape": "lifecycle",
-      "aliases": ["turn lifecycle"],
+      "aliases": ["checkout lifecycle"],
       "sources": [
-        { "label": "Entry and orchestration", "include": ["apps/api/src/**/*turn*.ts"] }
+        { "label": "Entry and orchestration", "include": ["apps/api/src/**/*checkout*.ts"] }
       ],
-      "related": ["conversation-engine/context-building"]
+      "related": ["order-processing/pricing"]
     }
   ],
   "readingPaths": [
     {
-      "title": "Understand one interview turn",
-      "pages": ["one-interview-turn", "conversation-engine/context-building"]
+      "title": "Understand one checkout",
+      "pages": ["one-checkout", "order-processing/pricing"]
     }
   ],
   "domains": [
     {
-      "slug": "conversation-engine",
-      "name": "Conversation Engine",
-      "purpose": "Runs a conversation turn and prepares model input.",
-      "globs": ["apps/api/src/conversation/**"],
+      "slug": "order-processing",
+      "name": "Order processing",
+      "purpose": "Prices, accepts, and fulfills a purchase.",
+      "globs": ["apps/api/src/orders/**"],
       "modules": [],
       "topics": [
         {
-          "slug": "context-building",
-          "title": "Context building",
-          "purpose": "How stored state becomes ordered model input.",
+          "slug": "pricing",
+          "title": "Pricing",
+          "purpose": "How cart state becomes the final quoted total.",
           "shape": "mechanism",
-          "aliases": ["context builder", "prompt context"],
+          "aliases": ["quote", "cart total"],
           "sources": [
             {
-              "label": "Context assembly",
-              "include": ["apps/api/src/context/**/*.ts"],
+              "label": "Quote assembly",
+              "include": ["apps/api/src/pricing/**/*.ts"],
               "exclude": ["**/*.test.ts", "**/*.spec.ts"]
             },
             {
-              "label": "Stored summaries",
-              "include": ["packages/db/src/**/*summary*.ts"]
+              "label": "Catalog prices",
+              "include": ["packages/db/src/**/*price*.ts"]
             }
           ],
           "topics": [
             {
-              "slug": "compaction",
-              "title": "Compaction and summarization",
-              "purpose": "How older content is reduced and reused.",
+              "slug": "discount-selection",
+              "title": "Discount selection",
+              "purpose": "How eligible discounts are combined or rejected.",
               "shape": "algorithm",
               "sources": [
                 {
-                  "label": "Compaction policy",
-                  "include": ["apps/api/src/context/**/*compact*.ts"]
+                  "label": "Discount policy",
+                  "include": ["apps/api/src/pricing/**/*discount*.ts"]
                 }
               ]
             }
@@ -220,7 +276,9 @@ prose token.
    domain drift, resolves topic evidence, emits configured recursive drafts only where absent, and
    renders. It never clobbers authored prose unless `--force` is explicit.
 
-2. **Curate the grouping — usually required, not optional.** Open `atlas.domains.json`. The
+2. **Discover behavior, then curate the grouping — usually required, not optional.** Build the
+   journey traces and responsibility ledger above before you choose the reader hierarchy. Then open
+   `atlas.domains.json`. The
    first-guess is one domain per top-level dir, which on a **layered** codebase (a `routers/` +
    `services/` + `repositories/` split, or `app/` + `lib/` + `server/`) produces exactly the flat
    folder grouping this skill forbids — one giant "server" tile is not a domain. For anything beyond
@@ -232,8 +290,10 @@ prose token.
    You may write `atlas.domains.json` by hand; the scanner fills in resolved domain `modules` but
    never invents or rearranges `topics`.
 
-3. **Read the code, then enrich the drafts.** Open the actual modules — don't work from the draft
-   skeleton alone. Replace generated structure and text with reader-owned units and current truth.
+3. **Enrich the drafts from the discovery brief.** Open the actual modules again as needed — don't
+   work from the draft skeleton alone. Replace generated structure and text with reader-owned units
+   and current truth. Ensure every significant responsibility has the landing summary, child page,
+   or canonical link assigned by its disposition.
    Fill, per the **catalog**:
 
        $VISUAL_SKILLS_DIR/skills/shared/atlas-components.md
@@ -265,7 +325,7 @@ prose token.
        node <ABSOLUTE_OUT_DIR>/atlas-check.mjs --stamp
 
    Only stamp pages whose prose you actually wrote or reviewed this run. Stable IDs are slash-joined
-   paths such as `conversation-engine/context-building/compaction`.
+   paths such as `order-processing/pricing/discount-selection`.
 
 ### 2. Single domain
 
@@ -273,7 +333,9 @@ Refresh one configured domain subtree after its code changed:
 
     npx tsx bin/atlas.ts --repo <ABSOLUTE_SUBJECT_REPO> --domain <slug> --out <ABSOLUTE_OUT_DIR>
 
-After re-enriching, stamp only the pages actually reviewed. A child topic has an independent stamp;
+Refresh the journey traces and responsibility ledger before re-enriching, including upstream or
+downstream boundary evidence when the changed behavior crosses domains. Then stamp only the pages
+actually reviewed. A child topic has an independent stamp;
 do not stamp its parent merely because it rendered in the same run. Independent does not mean
 disjoint: overlapping evidence may legitimately make parent and child stale together.
 

@@ -143,8 +143,9 @@ semantic completeness from configuration alone.
 
 Skill behavior follows RED-GREEN-REFACTOR:
 
-1. Run a fresh-context, read-only agent against the current skill and an untouched subject-repo
-   snapshot. Ask for a domain hierarchy and detailed source-grounded outline.
+1. Run an isolated, read-only agent against the prior skill and a validation subject different
+   from the worked example and final pilot. Ask for a domain hierarchy and detailed source-grounded
+   outline.
 2. Exclude existing generated atlas files, project plans, specs, and git history from the agent's
    evidence. Do not mention suspected omissions or expected pages.
 3. Preserve the raw baseline output and score whether it traces representative journeys, exposes
@@ -152,14 +153,17 @@ Skill behavior follows RED-GREEN-REFACTOR:
    conceptual hierarchy.
 4. Add the smallest positive discovery recipe and required output shape that addresses observed
    baseline omissions.
-5. Run the same task with a separate fresh-context agent using the revised skill.
+5. Run the same subject and task with a separate isolated agent using the revised skill.
 6. If the second agent finds a new loophole, refine the contract and repeat without adding
    subject-specific answers.
 
-Telltale's Conversation Engine is the first subject because its implementation crosses client,
-route, service, context, model, persistence, and lifecycle boundaries. Passing requires a useful
-end-to-end orientation and justified deeper pages grounded in current code. It does not require
-matching one predetermined vocabulary or exact page tree.
+The initial clean control uses this repository's Atlas generation capability because it is not the
+skill's worked example and has enough CLI, scanning, authorship, rendering, and verification seams
+to expose superficial file-shaped discovery. Telltale's Conversation Engine remains the final
+real-world pilot because its implementation crosses client, route, service, context, model,
+persistence, and lifecycle boundaries. The Telltale pilot is source-driven but is not labeled a
+blind evaluation. Passing requires useful end-to-end orientation and justified deeper pages
+grounded in current code; it does not require one predetermined vocabulary or exact page tree.
 
 ## Implementation scope
 
@@ -167,7 +171,7 @@ This iteration changes:
 
 - `skills/visual-atlas/SKILL.md`, adding the discovery contract before page-tree authorship;
 - focused skill-documentation tests that make the required output slots and ordering explicit;
-- the Telltale pilot output, regenerated only after blind validation from independent source
+- the Telltale pilot output, regenerated only after isolated validation from independent source
   analysis.
 
 This iteration does not change:
@@ -181,10 +185,11 @@ This iteration does not change:
 
 ## Verification
 
-- Capture the blind baseline before modifying the skill.
+- Capture the clean-subject baseline from the prior committed skill before accepting the revision.
 - Add and observe a focused failing documentation test.
 - Run that test after the minimal skill revision.
-- Run a fresh blind forward evaluation and compare it with the baseline using the generic rubric.
+- Run a separate forward evaluation on the same clean subject and compare it with the baseline using
+  the generic rubric.
 - Regenerate the Conversation Engine pilot without copying the user's example into the skill or
   agent prompt.
 - Run the relevant atlas tests, full test suite, and TypeScript typecheck.

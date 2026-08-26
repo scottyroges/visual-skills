@@ -131,6 +131,53 @@ describe("skill docs stay in sync", () => {
     expect(atlasSkill).toMatch(/child (?:page )?card/i);
   });
 
+  it("visual-atlas accounts for behavior before choosing the page tree", () => {
+    const discoveryHeading = "## Discover behavior before choosing pages";
+    const pageTreeHeading = "## Choose the page tree before writing prose";
+    const discovery = atlasSkill.indexOf(discoveryHeading);
+    const pageTree = atlasSkill.indexOf(pageTreeHeading);
+    expect(discovery).toBeGreaterThan(-1);
+    expect(pageTree).toBeGreaterThan(discovery);
+
+    const contract = atlasSkill.slice(discovery, pageTree);
+    for (const phrase of [
+      "journey trace",
+      "responsibility ledger",
+      "documentation disposition",
+      "boundary crossings",
+      "convergence",
+      "durable writes",
+      "terminal signaling",
+      "recovery",
+      "cleanup",
+      "responsibility in reader language",
+      "why it matters",
+      "journey or invariant",
+      "summarize it on the domain landing page",
+      "topic or nested topic page",
+      "canonical home",
+      "omit it with a concrete reason",
+      "source groups cover",
+      "related and reading-path links",
+      "final handoff",
+      "central orchestrators",
+    ]) {
+      expect(contract.toLowerCase(), `visual-atlas discovery contract must require ${phrase}`)
+        .toContain(phrase.toLowerCase());
+    }
+
+    const singleDomain = atlasSkill.slice(
+      atlasSkill.indexOf("### 2. Single domain"),
+      atlasSkill.indexOf("### 3. Render-only"),
+    );
+    expect(singleDomain).toContain("Refresh the journey traces and responsibility ledger");
+  });
+
+  it("visual-atlas examples stay repository-neutral", () => {
+    expect(atlasSkill.toLowerCase()).not.toContain("telltale");
+    expect(atlasSkill.toLowerCase()).not.toContain("conversation-engine");
+  });
+
   it("atlas-review rewrites coherent current truth and scopes review per page", () => {
     for (const phrase of [
       "smallest coherent current-truth update",
