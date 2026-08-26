@@ -19,14 +19,28 @@ function writeJson(path: string, value: unknown): void {
   writeFileSync(path, JSON.stringify(value, null, 2));
 }
 
-function topicDoc(pageId: string, slug: string, title: string, summary: string, shape = "mechanism") {
+function topicDoc(
+  pageId: string,
+  slug: string,
+  title: string,
+  summary: string,
+  evidenceFile: string,
+  shape = "mechanism",
+) {
   return {
     kind: "topic", pageId, slug, title, purpose: summary, shape,
     blocks: [
       { type: "topic-tldr", id: "tldr", heading: title, summary, inputs: ["stored state"], outputs: ["model input"] },
-      { type: "topic-flow", id: "flow", title: "How it works", steps: [{ title: "Load", body: "Read state" }] },
-      { type: "topic-rules", id: "rules", title: "Rules", guarantees: ["Order is stable"], failures: [] },
-      { type: "implementation-reference", id: "reference", title: "Implementation", groups: [] },
+      { type: "topic-flow", id: "flow", title: "How it works", steps: [
+        { title: "Load", body: "Read the durable state that constrains this operation." },
+        { title: "Assemble", body: "Transform that state into the ordered output." },
+      ] },
+      { type: "topic-rules", id: "rules", title: "Rules", guarantees: ["Order is stable"], failures: [
+        { condition: "Stored state cannot be read", behavior: "Stop before emitting model input." },
+      ] },
+      { type: "implementation-reference", id: "reference", title: "Implementation", groups: [
+        { label: "Runtime", files: [{ name: evidenceFile, desc: "Implements the ordered topic behavior." }] },
+      ] },
     ],
   };
 }
@@ -75,9 +89,22 @@ function seedAtlas(): { root: string; atlas: string } {
     ],
   });
   writeJson(join(atlas, "domain-conversation", "context-building", "context-building.json"),
-    topicDoc("conversation/context-building", "context-building", "Context building", "Builds model input"));
+    topicDoc(
+      "conversation/context-building",
+      "context-building",
+      "Context building",
+      "Builds model input",
+      "packages/context/build-context.ts",
+    ));
   writeJson(join(atlas, "domain-conversation", "context-building", "compaction", "compaction.json"),
-    topicDoc("conversation/context-building/compaction", "compaction", "Compaction", "Reduces older input", "algorithm"));
+    topicDoc(
+      "conversation/context-building/compaction",
+      "compaction",
+      "Compaction",
+      "Reduces older input",
+      "packages/context/compact.ts",
+      "algorithm",
+    ));
 
   writeFileSync(join(atlas, "atlas.html"), '<a href="domain-conversation/domain-conversation.html">Conversation</a>');
   writeFileSync(join(atlas, "domain-conversation", "domain-conversation.html"), '<a href="../atlas.html">Atlas</a><a href="context-building/context-building.html">Context</a>');
@@ -219,7 +246,14 @@ describe("recursive atlas checker", () => {
       }];
       writeJson(configPath, config);
       writeJson(join(atlas, "domain-conversation", "context-building", "compaction", "trimming", "trimming.json"),
-        topicDoc("conversation/context-building/compaction/trimming", "trimming", "Trimming", "Removes redundant detail", "algorithm"));
+        topicDoc(
+          "conversation/context-building/compaction/trimming",
+          "trimming",
+          "Trimming",
+          "Removes redundant detail",
+          "packages/context/compact.ts",
+          "algorithm",
+        ));
       writeFileSync(join(atlas, "domain-conversation", "context-building", "compaction", "trimming", "trimming.html"),
         '<a href="../compaction.html">Compaction</a>');
       expect(run(root, ["--stamp"]).ok).toBe(true);
@@ -277,6 +311,120 @@ describe("recursive atlas checker", () => {
       expect(result.ok).toBe(true);
       expect(result.output).toMatch(/warning.*project history/i);
       expect(result.output).toMatch(/warning.*2,000/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses to stamp a materially empty topic", () => {
+    const { root, atlas } = seedAtlas();
+    try {
+      const path = join(atlas, "domain-conversation", "context-building", "context-building.json");
+      const doc = JSON.parse(readFileSync(path, "utf8"));
+      const lead = doc.blocks.find((block: any) => block.type === "topic-tldr");
+      lead.summary = "";
+      lead.inputs = [];
+      lead.outputs = [];
+      doc.blocks.find((block: any) => block.type === "topic-flow").steps = [];
+      const rules = doc.blocks.find((block: any) => block.type === "topic-rules");
+      rules.guarantees = [];
+      rules.failures = [];
+      doc.blocks.find((block: any) => block.type === "implementation-reference")
+        .groups[0].files[0].desc = "";
+      writeJson(path, doc);
+
+      const result = run(root, ["--stamp", "conversation/context-building"]);
+
+      expect(result.ok).toBe(false);
+      expect(result.output).toMatch(/context-building.*summary/i);
+      expect(result.output).toMatch(/context-building.*two non-empty flow steps/i);
+      expect(result.output).toMatch(/context-building.*implementation reference.*description/i);
+      expect(JSON.parse(readFileSync(path, "utf8")).verifiedAgainst).toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("allows a targeted stamp when an unrelated page has a grounding defect", () => {
+    const { root, atlas } = seedAtlas();
+    try {
+      const domainPath = join(atlas, "domain-conversation", "domain-conversation.json");
+      const domain = JSON.parse(readFileSync(domainPath, "utf8"));
+      domain.blocks.find((block: any) => block.type === "implementation-reference").groups = [
+        {
+          label: "Wrong domain scope",
+          files: [{
+            name: "packages/context/build-context.ts",
+            desc: "This file exists but is outside the domain's evidence.",
+          }],
+        },
+      ];
+      writeJson(domainPath, domain);
+
+      const result = run(root, ["--stamp", "conversation/context-building/compaction"]);
+
+      expect(result.ok).toBe(true);
+      const leafPath = join(
+        atlas,
+        "domain-conversation",
+        "context-building",
+        "compaction",
+        "compaction.json",
+      );
+      expect(JSON.parse(readFileSync(leafPath, "utf8")).verifiedAgainst?.hash).toMatch(/^sha256:/);
+      expect(run(root).output).toMatch(/conversation.*outside page evidence.*build-context/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("blocks a targeted stamp when an unselected topic misses the global content floor", () => {
+    const { root, atlas } = seedAtlas();
+    try {
+      const leafPath = join(
+        atlas,
+        "domain-conversation",
+        "context-building",
+        "compaction",
+        "compaction.json",
+      );
+      const leaf = JSON.parse(readFileSync(leafPath, "utf8"));
+      leaf.blocks.find((block: any) => block.type === "topic-tldr").summary = "";
+      writeJson(leafPath, leaf);
+
+      const parentPath = join(
+        atlas,
+        "domain-conversation",
+        "context-building",
+        "context-building.json",
+      );
+      const result = run(root, ["--stamp", "conversation/context-building"]);
+
+      expect(result.ok).toBe(false);
+      expect(result.output).toMatch(/compaction.*summary is empty/i);
+      expect(JSON.parse(readFileSync(parentPath, "utf8")).verifiedAgainst).toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("emits topic substance advisories without blocking a valid stamp", () => {
+    const { root, atlas } = seedAtlas();
+    try {
+      const path = join(atlas, "domain-conversation", "context-building", "context-building.json");
+      const doc = JSON.parse(readFileSync(path, "utf8"));
+      doc.blocks.find((block: any) => block.type === "topic-flow").steps.push(
+        { title: "Reserve", body: "Protect output capacity." },
+        { title: "Return", body: "Return the bounded context." },
+      );
+      writeJson(path, doc);
+
+      const result = run(root, ["--stamp", "conversation/context-building"]);
+
+      expect(result.ok).toBe(true);
+      expect(result.output).toMatch(/fewer than roughly 180 visible narrative words/i);
+      expect(result.output).toMatch(/multi-stage topic has no diagram or worked example/i);
+      expect(result.output).toMatch(/algorithm topic has no worked example/i);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

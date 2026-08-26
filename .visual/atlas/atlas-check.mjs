@@ -27,6 +27,7 @@ const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", "co
 const NON_DOMAIN_DIRS = new Set(["generated", "__generated__", "test", "tests", "__tests__", "__mocks__"]);
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const TEST_FILE_RE = /\.(test|spec)\.[cm]?[jt]sx?$/;
+const SAFE_PAGE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function walk(dir, out = [], sourceOnly = false) {
   let entries;
@@ -84,7 +85,7 @@ function addTopics(topics, parent, domainSlug) {
       id, kind: "topic", slug: topic.slug, title: topic.title, purpose: topic.purpose ?? "",
       shape: topic.shape, topicDepth: parent?.kind === "topic" ? parent.topicDepth + 1 : 1,
       domainSlug, parentId: parent?.id, childIds: [], related: topic.related ?? [],
-      sources: topic.sources ?? [], outputDir,
+      sources: topic.sources ?? [], topic, outputDir,
       jsonPath: `${outputDir}/${stem}.json`, htmlPath: `${outputDir}/${stem}.html`,
     };
     register(node);
@@ -112,6 +113,12 @@ for (const node of nodes) {
   if (seenPaths.has(node.htmlPath)) problems.push(`duplicate page path "${node.htmlPath}"`);
   else seenPaths.set(node.htmlPath, node.id);
   if (!node.slug || !node.title) problems.push(`page "${node.id}" has an empty slug or title`);
+  if (!SAFE_PAGE_SLUG.test(node.slug)) problems.push(`page "${node.id}" has unsafe slug "${node.slug}"; use lowercase kebab-case`);
+  for (const artifact of [node.jsonPath, node.htmlPath]) {
+    const local = relative(atlasDir, resolve(atlasDir, artifact));
+    if (local === ".." || /^\.\.(?:[\\/]|$)/.test(local))
+      problems.push(`page "${node.id}" resolves outside the atlas directory: ${artifact}`);
+  }
   if (node.kind === "topic" && !node.purpose) problems.push(`topic "${node.id}" has no purpose`);
   if (node.domainSlug && node.topicDepth > 2) warnings.push(`page "${node.id}": more than two topic levels beneath a domain`);
   for (const related of node.related) if (!byId.has(related)) problems.push(`page "${node.id}" links to missing related page "${related}"`);
@@ -128,10 +135,25 @@ for (const module of live) {
   if (!(config.domains ?? []).some((domain) => (domain.globs ?? []).some((glob) => matchGlob(glob, module))))
     problems.push(`unassigned module (no domain glob matches): ${module}`);
 }
+const domainFiles = new Map();
 for (const domain of config.domains ?? []) {
-  for (const module of domain.modules ?? []) if (!liveSet.has(module)) problems.push(`stale module in domain "${domain.slug}": ${module}`);
-  if (!live.some((module) => (domain.globs ?? []).some((glob) => matchGlob(glob, module))))
+  const matched = live.filter((module) => (domain.globs ?? []).some((glob) => matchGlob(glob, module))).sort();
+  const matchedSet = new Set(matched);
+  const recorded = [...new Set(domain.modules ?? [])].sort();
+  const recordedSet = new Set(recorded);
+  const newlyMatched = matched.filter((module) => !recordedSet.has(module));
+  const noLongerMatched = recorded.filter((module) => liveSet.has(module) && !matchedSet.has(module));
+  if (newlyMatched.length || noLongerMatched.length) {
+    const detail = [
+      newlyMatched.length ? `newly matched: ${newlyMatched.join(", ")}` : "",
+      noLongerMatched.length ? `no longer matched: ${noLongerMatched.join(", ")}` : "",
+    ].filter(Boolean).join("; ");
+    problems.push(`domain "${domain.slug}" module inventory differs from its globs (${detail})`);
+  }
+  for (const module of recorded) if (!liveSet.has(module)) problems.push(`stale module in domain "${domain.slug}": ${module}`);
+  if (!matched.length)
     problems.push(`domain "${domain.slug}" resolves to zero modules`);
+  domainFiles.set(domain.slug, matched);
 }
 function resolveSourceGroup(group) {
   return allRepoFiles
@@ -150,8 +172,28 @@ for (const node of nodes.filter((item) => item.kind === "topic")) {
   topicFiles.set(node.id, [...files].sort());
 }
 
+// Stamp mode mutates page JSON. Refuse all writes until config structure, artifact paths, source
+// coverage, and evidence scopes are known safe. In particular, never merely report a traversal
+// slug and then follow it during the stamping loop below.
+if (stampMode && problems.length) {
+  console.error("✗ visual atlas has integrity or freshness problems:\n");
+  for (const problem of [...new Set(problems)]) console.error(`  - ${problem}`);
+  process.exit(1);
+}
+
 // Configured artifacts and structured floors.
 const pages = [{ id: "@system", kind: "atlas", jsonPath: "atlas.json", htmlPath: "atlas.html" }, ...nodes];
+const selected = (page) => !stampIds.length || stampIds.includes(page.id) ||
+  (page.kind === "atlas" && stampIds.includes("system")) ||
+  (page.kind === "domain" && stampIds.includes(page.slug));
+const stampSelectionProblems = stampMode
+  ? stampIds
+    .filter((id) => !pages.some((page) => page.id === id ||
+      (page.kind === "atlas" && id === "system") ||
+      (page.kind === "domain" && page.slug === id)))
+    .map((id) => `unknown page id: ${id}`)
+  : [];
+const documentProblemStart = problems.length;
 const docs = new Map();
 for (const page of pages) {
   const json = join(atlasDir, page.jsonPath);
@@ -179,6 +221,7 @@ if (atlasDoc) {
     problems.push(`atlas domain count is stale: expected ${(config.domains ?? []).length}, found ${Number.isFinite(count) ? count : "none"}`);
 }
 const hasBlock = (doc, type) => (doc?.blocks ?? []).some((block) => block.type === type);
+const nonEmpty = (value) => typeof value === "string" && value.trim().length > 0;
 for (const page of pages) {
   const doc = docs.get(page.id);
   if (!doc) continue;
@@ -191,9 +234,54 @@ for (const page of pages) {
     if (!hasBlock(doc, "seams")) problems.push(`domain "${page.id}": missing required seams block`);
   } else for (const type of ["topic-tldr", "topic-flow", "topic-rules"])
     if (!hasBlock(doc, type)) problems.push(`topic "${page.id}": missing required ${type} block`);
+
+  if (page.kind === "domain") {
+    if (doc.kind !== "domain") problems.push(`domain "${page.id}": kind must be "domain"`);
+    if (doc.slug !== page.slug) problems.push(`domain "${page.id}": slug must match config value "${page.slug}"`);
+    if (doc.title !== page.title) problems.push(`domain "${page.id}": title must match config value "${page.title}"`);
+  } else if (page.kind === "topic") {
+    if (doc.kind !== "topic") problems.push(`topic "${page.id}": kind must be "topic"`);
+    if (doc.pageId !== page.id) problems.push(`topic "${page.id}": pageId must match config value "${page.id}"`);
+    if (doc.slug !== page.slug) problems.push(`topic "${page.id}": slug must match config value "${page.slug}"`);
+    if (doc.title !== page.title) problems.push(`topic "${page.id}": title must match config value "${page.title}"`);
+    if (doc.purpose !== page.purpose) problems.push(`topic "${page.id}": purpose must match config value "${page.purpose}"`);
+    if ((doc.shape ?? null) !== (page.shape ?? null)) problems.push(`topic "${page.id}": shape must match config value "${page.shape ?? "none"}"`);
+
+    const lead = (doc.blocks ?? []).find((block) => block.type === "topic-tldr");
+    if (lead) {
+      if (!nonEmpty(lead.summary)) problems.push(`topic "${page.id}": topic-tldr summary is empty`);
+      if (!(lead.inputs ?? []).some(nonEmpty)) problems.push(`topic "${page.id}": topic-tldr needs at least one input`);
+      if (!(lead.outputs ?? []).some(nonEmpty)) problems.push(`topic "${page.id}": topic-tldr needs at least one output`);
+    }
+    const flow = (doc.blocks ?? []).find((block) => block.type === "topic-flow");
+    if (flow) {
+      const complete = (flow.steps ?? []).filter((step) => nonEmpty(step?.title) && nonEmpty(step?.body));
+      if (complete.length < 2) problems.push(`topic "${page.id}": topic-flow needs at least two non-empty flow steps`);
+    }
+    const rules = (doc.blocks ?? []).find((block) => block.type === "topic-rules");
+    if (rules) {
+      if (!(rules.guarantees ?? []).some(nonEmpty)) problems.push(`topic "${page.id}": topic-rules needs at least one guarantee`);
+      const failures = (rules.failures ?? []).filter((failure) =>
+        nonEmpty(failure?.condition) && nonEmpty(failure?.behavior));
+      if (!failures.length && !nonEmpty(rules.intro))
+        problems.push(`topic "${page.id}": topic-rules needs a failure row or an introduction explaining why none applies`);
+    }
+    const reference = (doc.blocks ?? []).find((block) => block.type === "implementation-reference");
+    if (!reference) {
+      problems.push(`topic "${page.id}": missing required implementation-reference block`);
+    } else {
+      const files = (reference.groups ?? []).flatMap((group) => group.files ?? []);
+      if (!(reference.groups ?? []).length || !files.length)
+        problems.push(`topic "${page.id}": implementation reference needs at least one source file`);
+      if (files.some((file) => !nonEmpty(file?.desc)))
+        problems.push(`topic "${page.id}": implementation reference file description is empty`);
+    }
+  }
 }
+const stampDocumentProblems = problems.slice(documentProblemStart);
 
 // All generated relative links must resolve locally.
+const groundingProblemStart = problems.length;
 for (const page of pages) {
   const absolute = join(atlasDir, page.htmlPath);
   if (!existsSync(absolute)) continue;
@@ -209,6 +297,9 @@ for (const page of pages) {
 // Existing structured file/export/route grounding applies to every page's evidence.
 function fileResolves(name) {
   return allRepoFiles.some((file) => file === name || file.endsWith(`/${name}`));
+}
+function fileResolvesIn(name, evidence) {
+  return evidence.some((file) => file === name || file.endsWith(`/${name}`));
 }
 function collectRefs(doc) {
   const files = [];
@@ -228,12 +319,15 @@ for (const node of nodes) {
   const doc = docs.get(node.id);
   if (!doc) continue;
   const evidence = node.kind === "domain"
-    ? (node.domain.modules ?? []).filter((file) => liveSet.has(file)) : topicFiles.get(node.id) ?? [];
+    ? domainFiles.get(node.slug) ?? [] : topicFiles.get(node.id) ?? [];
   const source = evidence.map((file) => {
     try { return readFileSync(join(repoRoot, file), "utf8"); } catch { return ""; }
   }).join("\n");
   const refs = collectRefs(doc);
-  for (const file of refs.files) if (!fileResolves(file)) problems.push(`page "${node.id}": referenced file no longer exists: ${file}`);
+  for (const file of refs.files) {
+    if (!fileResolves(file)) problems.push(`page "${node.id}": referenced file no longer exists: ${file}`);
+    else if (!fileResolvesIn(file, evidence)) problems.push(`page "${node.id}": referenced file is outside page evidence: ${file}`);
+  }
   for (const raw of refs.names) {
     const route = raw.match(/^(?:GET|POST|PUT|PATCH|DELETE)\s+(\S+)/);
     if (route) {
@@ -243,12 +337,32 @@ for (const node of nodes) {
     if (!/^[A-Za-z0-9_$]/.test(raw)) continue;
     if (raw.includes("/") || SOURCE_RE.test(raw)) {
       if (!fileResolves(raw)) problems.push(`page "${node.id}": referenced file no longer exists: ${raw}`);
+      else if (!fileResolvesIn(raw, evidence)) problems.push(`page "${node.id}": referenced file is outside page evidence: ${raw}`);
       continue;
     }
     const ident = raw.match(/^[A-Za-z_$][A-Za-z0-9_$]*/)?.[0];
     if (ident && !new RegExp(`\\b${escapeRe(ident)}\\b`).test(source))
       problems.push(`page "${node.id}": identifier not found in page evidence: ${ident} (from "${raw}")`);
   }
+}
+
+// Stamp mode is a claim that every selected page was read and authored against current evidence.
+// All configured documents must clear the objective content floor. Link and evidence defects are
+// scoped to the selected pages so an unrelated legacy domain cannot block a focused refresh.
+const selectedPageIds = new Set(pages.filter(selected).map((page) => page.id));
+const stampGroundingProblems = problems.slice(groundingProblemStart).filter((problem) => {
+  const id = problem.match(/^page "([^"]+)":/)?.[1];
+  return id ? selectedPageIds.has(id) : true;
+});
+const stampProblems = [
+  ...stampDocumentProblems,
+  ...stampGroundingProblems,
+  ...stampSelectionProblems,
+];
+if (stampMode && stampProblems.length) {
+  console.error("✗ visual atlas has integrity or freshness problems:\n");
+  for (const problem of [...new Set(stampProblems)]) console.error(`  - ${problem}`);
+  process.exit(1);
 }
 
 // Independent system/domain/topic fingerprints.
@@ -269,9 +383,12 @@ function childParts(node) {
     return child ? [Buffer.from(child.id), Buffer.from(child.title), Buffer.from(child.purpose)] : [];
   });
 }
-const summarizeTopic = (topic) => ({
+const summarizeOwnTopic = (topic) => ({
   slug: topic.slug, title: topic.title, purpose: topic.purpose, shape: topic.shape,
-  related: topic.related ?? [], topics: (topic.topics ?? []).map(summarizeTopic),
+  aliases: topic.aliases ?? [], sources: topic.sources ?? [], related: topic.related ?? [],
+});
+const summarizeTopic = (topic) => ({
+  ...summarizeOwnTopic(topic), topics: (topic.topics ?? []).map(summarizeTopic),
 });
 function pageHash(page) {
   if (page.kind === "atlas") return hashParts([Buffer.from(JSON.stringify({
@@ -279,8 +396,17 @@ function pageHash(page) {
     domains: (config.domains ?? []).map((domain) => ({ slug: domain.slug, name: domain.name, purpose: domain.purpose, related: domain.related ?? [], topics: (domain.topics ?? []).map(summarizeTopic) })),
     topics: (config.topics ?? []).map(summarizeTopic), readingPaths,
   }))]);
-  if (page.kind === "domain") return hashParts([...fileParts((page.domain.modules ?? []).filter((file) => liveSet.has(file))), ...childParts(page)]);
-  return hashParts([...fileParts(topicFiles.get(page.id) ?? []), ...childParts(page)]);
+  if (page.kind === "domain") return hashParts([
+    Buffer.from(JSON.stringify({
+      slug: page.domain.slug, name: page.domain.name, purpose: page.domain.purpose ?? "",
+      globs: page.domain.globs ?? [], related: page.domain.related ?? [], readingPaths: page.domain.readingPaths ?? [],
+    })),
+    ...fileParts(domainFiles.get(page.slug) ?? []), ...childParts(page),
+  ]);
+  return hashParts([
+    Buffer.from(JSON.stringify(summarizeOwnTopic(page.topic))),
+    ...fileParts(topicFiles.get(page.id) ?? []), ...childParts(page),
+  ]);
 }
 function gitHead() {
   try { return execSync("git rev-parse HEAD", { cwd: repoRoot, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); }
@@ -288,9 +414,6 @@ function gitHead() {
 }
 const stampCommit = stampMode ? gitHead() : null;
 const today = () => new Date().toISOString().slice(0, 10);
-const selected = (page) => !stampIds.length || stampIds.includes(page.id) ||
-  (page.kind === "atlas" && stampIds.includes("system")) ||
-  (page.kind === "domain" && stampIds.includes(page.slug));
 const stamped = [];
 for (const page of pages) {
   const doc = docs.get(page.id);
@@ -305,8 +428,6 @@ for (const page of pages) {
     else if (doc.verifiedAgainst.hash !== hash) problems.push(`page "${page.id}": source changed since page was verified (${doc.verifiedAgainst.date ?? "unknown date"})`);
   }
 }
-if (stampMode) for (const id of stampIds)
-  if (!pages.some((page) => page.id === id || (page.kind === "atlas" && id === "system") || (page.kind === "domain" && page.slug === id))) problems.push(`unknown page id: ${id}`);
 
 // Readability warnings never change the exit code.
 const HISTORY = [/\bPR\s*#?\d+\b/i, /\btask(?:s)?\s*(?:#?\d+|implementation)\b/i, /\breview\s+round\b/i, /\bsupersed(?:e|es|ed|ing)\b/i, /\b(?:previous|old)\s+(?:version|implementation|behavior|design)\b/i];
@@ -327,17 +448,27 @@ for (const page of pages) {
   if (longest > 100) warnings.push(`page "${page.id}": paragraph exceeds roughly 100 words (${longest})`);
   const total = strings.reduce((sum, text) => sum + wordCount(text), 0);
   if (page.kind === "domain" && total > 1200) warnings.push(`page "${page.id}": domain page exceeds 1,200 visible words (${total})`);
+  if (page.kind === "topic" && total < 180) warnings.push(`page "${page.id}": topic page has fewer than roughly 180 visible narrative words (${total})`);
   if (page.kind === "topic" && total > 2000) warnings.push(`page "${page.id}": topic page exceeds 2,000 visible words (${total})`);
+  if (page.kind === "topic") {
+    const blocks = docs.get(page.id)?.blocks ?? [];
+    const flow = blocks.find((block) => block.type === "topic-flow");
+    const hasTrace = blocks.some((block) => block.type === "diagram-section" || block.type === "example");
+    if ((flow?.steps ?? []).length >= 4 && !hasTrace)
+      warnings.push(`page "${page.id}": multi-stage topic has no diagram or worked example`);
+    if (page.shape === "algorithm" && !blocks.some((block) => block.type === "example"))
+      warnings.push(`page "${page.id}": algorithm topic has no worked example`);
+  }
 }
 for (const warning of warnings) console.warn(`warning: ${warning}`);
 
+if (stampMode) {
+  console.log(`✓ stamped ${stamped.length} atlas page(s): ${stamped.join(", ")}`);
+  process.exit(0);
+}
 if (problems.length) {
   console.error("✗ visual atlas has integrity or freshness problems:\n");
   for (const problem of [...new Set(problems)]) console.error(`  - ${problem}`);
   process.exit(1);
-}
-if (stampMode) {
-  console.log(`✓ stamped ${stamped.length} atlas page(s): ${stamped.join(", ")}`);
-  process.exit(0);
 }
 console.log(`✓ visual atlas in sync (${live.length} modules, ${config.domains.length} domains, ${pages.length} pages)`);

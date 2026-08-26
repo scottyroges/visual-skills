@@ -60,7 +60,7 @@ A finished atlas **always** has, regardless of repo size:
   compact implementation index. When children exist, the domain is orientation-first and a
   monolithic **`depth`** dump is not required.
 - **Each topic page with:** a plain-language **`topic-tldr`**; the applicable flow or algorithm;
-  guarantees and failures; grounded examples where useful; child cards; and a collapsed
+  guarantees and failures; a grounded example or diagram for multi-stage behavior; child cards; and a collapsed
   **`implementation-reference`**.
 
 **Size scales the ceiling, never the floor.** A small repo may have just the atlas and one or two
@@ -75,6 +75,9 @@ If any of these is true, the atlas is **not done** — keep going:
 - A domain **tile has no `purpose`** (the scanner left it blank and you didn't fill it).
 - A large domain explains every mechanism inline instead of giving substantial mechanisms their own
   child pages.
+- A child page only repeats its purpose through empty or one-sentence scaffold blocks.
+- Every topic uses the same four-block outline without shape-specific decisions, invariants, or evidence.
+- A multi-stage mechanism has no grounded worked trace or diagram.
 - A domain page has no **`seams`** — the reader can't see how it connects to its neighbors.
 - A domain page describes a pipeline or flow in prose but shows nothing moving through it.
 - Connections / detail prose is still the empty placeholders the scanner emitted.
@@ -160,6 +163,23 @@ Choose an optional shape to guide the page ladder:
 - `integration` — boundary, protocol, request/response flow, failure behavior.
 
 The shape is guidance, not permission to pad irrelevant sections.
+
+## Earn every child page
+
+Progressive disclosure moves explanation into a child page; it does not remove the explanation.
+Before authoring each topic, derive a temporary **teaching brief** from the discovery evidence:
+
+- the reader question and mental model the page will teach;
+- the inputs, outputs, and state transformed;
+- the decisions, invariants, thresholds, or transitions that make the behavior non-obvious;
+- one grounded trace or representative case, including failure and externally visible outcome;
+- the source evidence supporting each part.
+
+Use the shape-specific teaching contracts in `skills/shared/atlas-components.md`. A page earns its
+place when a reader can predict what the system will do in a representative case, not when every
+block type exists. Clear every **hard integrity** problem before rendering or stamping. Treat each
+substance **advisory** as a prompt to add explanation, a worked example, or a diagram—never word-count
+padding.
 
 ## Authored configuration
 
@@ -290,7 +310,7 @@ prose token.
    You may write `atlas.domains.json` by hand; the scanner fills in resolved domain `modules` but
    never invents or rearranges `topics`.
 
-3. **Enrich the drafts from the discovery brief.** Open the actual modules again as needed — don't
+3. **Enrich the drafts from the discovery and teaching briefs.** Open the actual modules again as needed — don't
    work from the draft skeleton alone. Replace generated structure and text with reader-owned units
    and current truth. Ensure every significant responsibility has the landing summary, child page,
    or canonical link assigned by its disposition.
@@ -301,7 +321,8 @@ prose token.
    - the `atlas-tldr` heading + primer;
    - every tile and child purpose;
    - domain purpose, boundaries, ownership, seams, and useful next questions;
-   - topic summary, flow, guarantees, failure behavior, examples, and source references.
+   - topic summary, shape-specific flow, decisions, guarantees, failure behavior, grounded trace,
+     and source references.
 
    The exact JSON field shape of every block is defined and commented in
    `$VISUAL_SKILLS_DIR/src/atlas-blocks.ts` — **read it as you author.** Short text fields are inline
@@ -316,7 +337,8 @@ prose token.
 
 5. **Render and review signals.** Re-render and open `atlas.html`. Close every hard integrity error.
    Treat readability warnings as editorial prompts: shorten, restructure, remove history, or
-   deliberately extract a child. The linter never auto-splits content.
+   deliberately extract a child. Treat substance warnings as evidence that a child is still an
+   outline. The linter never auto-splits or pads content.
 
 6. **Stamp what you just verified.** Every scan/render also emits `atlas-check.mjs` into the out
    dir (see "Keeping the atlas honest" below). Finish by stamping — this records a per-page hash of

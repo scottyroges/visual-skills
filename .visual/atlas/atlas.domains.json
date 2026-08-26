@@ -18,7 +18,16 @@
         "src/lint-blocks.ts",
         "src/lint-examples.ts",
         "src/version.ts",
-        "src/renderers/**"
+        "src/renderers/annotated-code.ts",
+        "src/renderers/api.ts",
+        "src/renderers/diff.ts",
+        "src/renderers/example.ts",
+        "src/renderers/file-tree.ts",
+        "src/renderers/legend.ts",
+        "src/renderers/markdown.ts",
+        "src/renderers/overview.ts",
+        "src/renderers/prose.ts",
+        "src/renderers/questions.ts"
       ],
       "modules": [
         "src/assemble.ts",
@@ -143,7 +152,7 @@
     },
     {
       "slug": "authoring",
-      "name": "Authoring (spec + doc)",
+      "name": "Authoring (spec + doc + quiz)",
       "purpose": "Renders proposals, plans, quizzes, and other authored visual documents.",
       "globs": [
         "bin/spec.ts",

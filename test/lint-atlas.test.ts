@@ -137,4 +137,94 @@ describe("orientation-first domain and structured topic floors", () => {
       expect.stringMatching(/topic-rules/i),
     ]));
   });
+
+  it("warns when required topic blocks still contain untouched draft fields", () => {
+    const warnings = lintTopic([
+      { type: "topic-tldr", id: "tldr", heading: "Context", summary: "", inputs: [], outputs: [] },
+      { type: "topic-flow", id: "flow", title: "How it works", steps: [] },
+      { type: "topic-rules", id: "rules", title: "Rules", guarantees: [], failures: [] },
+      { type: "implementation-reference", id: "reference", title: "Implementation", groups: [
+        { label: "Assembly", files: [{ name: "src/context.ts", desc: "" }] },
+      ] },
+    ], "mechanism");
+
+    expect(warnings).toEqual(expect.arrayContaining([
+      expect.stringMatching(/summary/i),
+      expect.stringMatching(/input/i),
+      expect.stringMatching(/output/i),
+      expect.stringMatching(/two non-empty steps/i),
+      expect.stringMatching(/guarantee/i),
+      expect.stringMatching(/failure.*introduction/i),
+      expect.stringMatching(/implementation.*description/i),
+    ]));
+  });
+
+  it("warns when a multi-stage mechanism has no grounded visual or trace", () => {
+    const warnings = lintTopic([
+      { type: "topic-tldr", id: "tldr", heading: "Context", summary: "Builds input", inputs: ["messages"], outputs: ["context"] },
+      { type: "topic-flow", id: "flow", title: "Assembly", steps: [
+        { title: "Load", body: "Read stored messages." },
+        { title: "Budget", body: "Calculate the available window." },
+        { title: "Order", body: "Place durable memory before the newest turn." },
+        { title: "Return", body: "Return the bounded model input." },
+      ] },
+      { type: "topic-rules", id: "rules", title: "Rules", guarantees: ["Order is stable"], failures: [
+        { condition: "Storage fails", behavior: "Stop before model invocation." },
+      ] },
+      { type: "implementation-reference", id: "reference", title: "Implementation", groups: [
+        { label: "Assembly", files: [{ name: "src/context.ts", desc: "Builds the context window." }] },
+      ] },
+    ], "mechanism");
+
+    expect(warnings).toEqual(expect.arrayContaining([
+      expect.stringMatching(/multi-stage.*diagram.*worked example/i),
+    ]));
+  });
+
+  it("warns when any flow step is only partially authored", () => {
+    const warnings = lintTopic([
+      { type: "topic-tldr", id: "tldr", heading: "Context", summary: "Builds input", inputs: ["messages"], outputs: ["context"] },
+      { type: "topic-flow", id: "flow", title: "Assembly", steps: [
+        { title: "Load", body: "Read stored messages." },
+        { title: "Order", body: "Place durable memory before the newest turn." },
+        { title: "", body: "This body has no meaningful step title." },
+      ] },
+      { type: "topic-rules", id: "rules", title: "Rules", guarantees: ["Order is stable"], failures: [
+        { condition: "Storage fails", behavior: "Stop before model invocation." },
+      ] },
+      { type: "implementation-reference", id: "reference", title: "Implementation", groups: [
+        { label: "Assembly", files: [{ name: "src/context.ts", desc: "Builds the context window." }] },
+      ] },
+    ], "mechanism");
+
+    expect(warnings).toEqual(expect.arrayContaining([
+      expect.stringMatching(/flow step.*blank title or body/i),
+    ]));
+  });
+
+  it("warns when an algorithm has no worked example", () => {
+    const warnings = lintTopic([
+      { type: "topic-tldr", id: "tldr", heading: "Compaction", summary: "Fits older input", inputs: ["messages"], outputs: ["bounded context"] },
+      { type: "topic-flow", id: "flow", title: "Compaction", steps: [
+        { title: "Measure", body: "Estimate the total token use." },
+        { title: "Choose", body: "Select summarization or incremental assembly." },
+      ] },
+      { type: "topic-rules", id: "rules", title: "Rules", guarantees: ["Recent input remains ordered"], failures: [
+        { condition: "Summarization fails", behavior: "Use bounded truncation." },
+      ] },
+      { type: "implementation-reference", id: "reference", title: "Implementation", groups: [
+        { label: "Policy", files: [{ name: "src/compact.ts", desc: "Selects a bounded assembly path." }] },
+      ] },
+    ], "algorithm");
+
+    expect(warnings).toEqual(expect.arrayContaining([expect.stringMatching(/algorithm.*worked example/i)]));
+  });
+
+  it("warns when a topic is still only a very short outline", () => {
+    const warnings = lintReadability([{
+      type: "topic-tldr", id: "tldr", heading: "Context", summary: "Builds input", inputs: ["messages"], outputs: ["context"],
+    }], "topic");
+
+    expect(warnings).toEqual(expect.arrayContaining([expect.stringMatching(/fewer than.*180/i)]));
+  });
 });

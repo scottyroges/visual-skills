@@ -175,7 +175,7 @@
         },
         {
           "name": "quality checks",
-          "purpose": "`lint-atlas.ts` keeps page-shape, density, paragraph length, card size, project-history, and topic-extraction warnings visible during rendering. The emitted checker separately enforces safe paths, live domain membership, page identity, evidence-scoped grounding, links, and per-page freshness.",
+          "purpose": "`lint-atlas.ts` reports page shape, density, history, and topic-substance gaps during rendering. The emitted checker enforces safe paths, live membership, topic content floors, evidence grounding, links, and per-page freshness before a verification stamp can be written.",
           "exports": [
             {
               "name": "lintAtlas"
@@ -495,15 +495,16 @@
           "name": "quality checks",
           "path": "src/lint-atlas.ts",
           "detail": [
-            "`lintAtlas`, `lintDomain`, and `lintTopic` enforce the structural floor for their page kinds. A domain with child topics is orientation-first and does not need an expanded components/depth inventory; a topic needs a plain lead, ordered flow, and explicit guarantees/failure behavior.",
-            "`lintReadability` measures authored visible prose while excluding diagram source, code HTML, and collapsed implementation-file details. It warns on project-history language, long paragraphs or cards, oversized pages, and multiple independent flows.",
-            "The emitted checker keeps readability findings advisory while failing unsafe or contradictory page structure, domain inventory drift derived from live globs, broken links, stale derived counts, and structured references outside a page's evidence.",
-            "Each topic fingerprint covers its own config and evidence plus immediate child summaries, so deeper descendants remain independently reviewable. Stamp mode refuses all writes until structural paths and scopes are safe."
+            "`lintAtlas`, `lintDomain`, and `lintTopic` enforce the structural floor for their page kinds. A domain with child topics is orientation-first. A topic needs a lead with inputs and outputs, at least two complete flow steps, a guarantee plus failure behavior, and described implementation evidence.",
+            "`lintReadability` measures authored visible prose while excluding diagram source, code HTML, and collapsed implementation-file details. It warns on project-history language, long paragraphs or cards, oversized pages, topics under roughly 180 words, and multiple independent flows.",
+            "Substance diagnostics remain editorial: a multi-stage topic without a diagram or worked trace and an algorithm without a concrete example both render with warnings. The author must improve the explanation from source rather than pad words.",
+            "The emitted checker keeps readability findings advisory while failing unsafe or contradictory page structure, domain inventory drift derived from live globs, broken links, stale derived counts, structured references outside a page's evidence, and untouched topic scaffolds.",
+            "Each topic fingerprint covers its own config and evidence plus immediate child summaries, so deeper descendants remain independently reviewable. Every configured topic must clear the content floor before any stamp write; later link and grounding defects block the selected page without making an unrelated legacy page impossible to refresh."
           ],
           "files": [
             {
               "name": "lint-atlas.ts",
-              "desc": "Structural page floors plus readability and current-truth advisory checks."
+              "desc": "Structural and topic-content floors plus readability, substance, and current-truth advisories."
             }
           ],
           "exports": [
@@ -517,11 +518,11 @@
             },
             {
               "name": "lintTopic()",
-              "desc": "→ warnings for missing lead, flow, rules, or multiple independent mechanisms."
+              "desc": "→ warnings for incomplete leads, flows, rules, evidence, missing traces, or multiple independent mechanisms."
             },
             {
               "name": "lintReadability()",
-              "desc": "→ density, paragraph, card, and project-history advisories."
+              "desc": "→ density, short-topic, paragraph, card, and project-history advisories."
             }
           ],
           "connections": [
@@ -615,8 +616,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:98bab4f5e8925f8ec0f1d8d000e4e63103cc46f17528f932b4a7b0c9bc61ae2a",
+    "hash": "sha256:59b6a4218244bcece65d6201aebb456998dc4939b7c6b511b50fe9e232878bde",
     "date": "2026-08-26",
-    "commit": "a1e394eebcb009888fa1ad3e7a0623fc828e6b79"
+    "commit": "ad48389b7f96b4e4b7a9a983cfa82e18bb7dda4f"
   }
 }

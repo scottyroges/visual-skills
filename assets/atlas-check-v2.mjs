@@ -183,6 +183,17 @@ if (stampMode && problems.length) {
 
 // Configured artifacts and structured floors.
 const pages = [{ id: "@system", kind: "atlas", jsonPath: "atlas.json", htmlPath: "atlas.html" }, ...nodes];
+const selected = (page) => !stampIds.length || stampIds.includes(page.id) ||
+  (page.kind === "atlas" && stampIds.includes("system")) ||
+  (page.kind === "domain" && stampIds.includes(page.slug));
+const stampSelectionProblems = stampMode
+  ? stampIds
+    .filter((id) => !pages.some((page) => page.id === id ||
+      (page.kind === "atlas" && id === "system") ||
+      (page.kind === "domain" && page.slug === id)))
+    .map((id) => `unknown page id: ${id}`)
+  : [];
+const documentProblemStart = problems.length;
 const docs = new Map();
 for (const page of pages) {
   const json = join(atlasDir, page.jsonPath);
@@ -210,6 +221,7 @@ if (atlasDoc) {
     problems.push(`atlas domain count is stale: expected ${(config.domains ?? []).length}, found ${Number.isFinite(count) ? count : "none"}`);
 }
 const hasBlock = (doc, type) => (doc?.blocks ?? []).some((block) => block.type === type);
+const nonEmpty = (value) => typeof value === "string" && value.trim().length > 0;
 for (const page of pages) {
   const doc = docs.get(page.id);
   if (!doc) continue;
@@ -234,10 +246,42 @@ for (const page of pages) {
     if (doc.title !== page.title) problems.push(`topic "${page.id}": title must match config value "${page.title}"`);
     if (doc.purpose !== page.purpose) problems.push(`topic "${page.id}": purpose must match config value "${page.purpose}"`);
     if ((doc.shape ?? null) !== (page.shape ?? null)) problems.push(`topic "${page.id}": shape must match config value "${page.shape ?? "none"}"`);
+
+    const lead = (doc.blocks ?? []).find((block) => block.type === "topic-tldr");
+    if (lead) {
+      if (!nonEmpty(lead.summary)) problems.push(`topic "${page.id}": topic-tldr summary is empty`);
+      if (!(lead.inputs ?? []).some(nonEmpty)) problems.push(`topic "${page.id}": topic-tldr needs at least one input`);
+      if (!(lead.outputs ?? []).some(nonEmpty)) problems.push(`topic "${page.id}": topic-tldr needs at least one output`);
+    }
+    const flow = (doc.blocks ?? []).find((block) => block.type === "topic-flow");
+    if (flow) {
+      const complete = (flow.steps ?? []).filter((step) => nonEmpty(step?.title) && nonEmpty(step?.body));
+      if (complete.length < 2) problems.push(`topic "${page.id}": topic-flow needs at least two non-empty flow steps`);
+    }
+    const rules = (doc.blocks ?? []).find((block) => block.type === "topic-rules");
+    if (rules) {
+      if (!(rules.guarantees ?? []).some(nonEmpty)) problems.push(`topic "${page.id}": topic-rules needs at least one guarantee`);
+      const failures = (rules.failures ?? []).filter((failure) =>
+        nonEmpty(failure?.condition) && nonEmpty(failure?.behavior));
+      if (!failures.length && !nonEmpty(rules.intro))
+        problems.push(`topic "${page.id}": topic-rules needs a failure row or an introduction explaining why none applies`);
+    }
+    const reference = (doc.blocks ?? []).find((block) => block.type === "implementation-reference");
+    if (!reference) {
+      problems.push(`topic "${page.id}": missing required implementation-reference block`);
+    } else {
+      const files = (reference.groups ?? []).flatMap((group) => group.files ?? []);
+      if (!(reference.groups ?? []).length || !files.length)
+        problems.push(`topic "${page.id}": implementation reference needs at least one source file`);
+      if (files.some((file) => !nonEmpty(file?.desc)))
+        problems.push(`topic "${page.id}": implementation reference file description is empty`);
+    }
   }
 }
+const stampDocumentProblems = problems.slice(documentProblemStart);
 
 // All generated relative links must resolve locally.
+const groundingProblemStart = problems.length;
 for (const page of pages) {
   const absolute = join(atlasDir, page.htmlPath);
   if (!existsSync(absolute)) continue;
@@ -302,6 +346,25 @@ for (const node of nodes) {
   }
 }
 
+// Stamp mode is a claim that every selected page was read and authored against current evidence.
+// All configured documents must clear the objective content floor. Link and evidence defects are
+// scoped to the selected pages so an unrelated legacy domain cannot block a focused refresh.
+const selectedPageIds = new Set(pages.filter(selected).map((page) => page.id));
+const stampGroundingProblems = problems.slice(groundingProblemStart).filter((problem) => {
+  const id = problem.match(/^page "([^"]+)":/)?.[1];
+  return id ? selectedPageIds.has(id) : true;
+});
+const stampProblems = [
+  ...stampDocumentProblems,
+  ...stampGroundingProblems,
+  ...stampSelectionProblems,
+];
+if (stampMode && stampProblems.length) {
+  console.error("✗ visual atlas has integrity or freshness problems:\n");
+  for (const problem of [...new Set(stampProblems)]) console.error(`  - ${problem}`);
+  process.exit(1);
+}
+
 // Independent system/domain/topic fingerprints.
 function hashParts(parts) {
   const hash = createHash("sha256");
@@ -351,9 +414,6 @@ function gitHead() {
 }
 const stampCommit = stampMode ? gitHead() : null;
 const today = () => new Date().toISOString().slice(0, 10);
-const selected = (page) => !stampIds.length || stampIds.includes(page.id) ||
-  (page.kind === "atlas" && stampIds.includes("system")) ||
-  (page.kind === "domain" && stampIds.includes(page.slug));
 const stamped = [];
 for (const page of pages) {
   const doc = docs.get(page.id);
@@ -368,8 +428,6 @@ for (const page of pages) {
     else if (doc.verifiedAgainst.hash !== hash) problems.push(`page "${page.id}": source changed since page was verified (${doc.verifiedAgainst.date ?? "unknown date"})`);
   }
 }
-if (stampMode) for (const id of stampIds)
-  if (!pages.some((page) => page.id === id || (page.kind === "atlas" && id === "system") || (page.kind === "domain" && page.slug === id))) problems.push(`unknown page id: ${id}`);
 
 // Readability warnings never change the exit code.
 const HISTORY = [/\bPR\s*#?\d+\b/i, /\btask(?:s)?\s*(?:#?\d+|implementation)\b/i, /\breview\s+round\b/i, /\bsupersed(?:e|es|ed|ing)\b/i, /\b(?:previous|old)\s+(?:version|implementation|behavior|design)\b/i];
@@ -390,17 +448,27 @@ for (const page of pages) {
   if (longest > 100) warnings.push(`page "${page.id}": paragraph exceeds roughly 100 words (${longest})`);
   const total = strings.reduce((sum, text) => sum + wordCount(text), 0);
   if (page.kind === "domain" && total > 1200) warnings.push(`page "${page.id}": domain page exceeds 1,200 visible words (${total})`);
+  if (page.kind === "topic" && total < 180) warnings.push(`page "${page.id}": topic page has fewer than roughly 180 visible narrative words (${total})`);
   if (page.kind === "topic" && total > 2000) warnings.push(`page "${page.id}": topic page exceeds 2,000 visible words (${total})`);
+  if (page.kind === "topic") {
+    const blocks = docs.get(page.id)?.blocks ?? [];
+    const flow = blocks.find((block) => block.type === "topic-flow");
+    const hasTrace = blocks.some((block) => block.type === "diagram-section" || block.type === "example");
+    if ((flow?.steps ?? []).length >= 4 && !hasTrace)
+      warnings.push(`page "${page.id}": multi-stage topic has no diagram or worked example`);
+    if (page.shape === "algorithm" && !blocks.some((block) => block.type === "example"))
+      warnings.push(`page "${page.id}": algorithm topic has no worked example`);
+  }
 }
 for (const warning of warnings) console.warn(`warning: ${warning}`);
 
+if (stampMode) {
+  console.log(`✓ stamped ${stamped.length} atlas page(s): ${stamped.join(", ")}`);
+  process.exit(0);
+}
 if (problems.length) {
   console.error("✗ visual atlas has integrity or freshness problems:\n");
   for (const problem of [...new Set(problems)]) console.error(`  - ${problem}`);
   process.exit(1);
-}
-if (stampMode) {
-  console.log(`✓ stamped ${stamped.length} atlas page(s): ${stamped.join(", ")}`);
-  process.exit(0);
 }
 console.log(`✓ visual atlas in sync (${live.length} modules, ${config.domains.length} domains, ${pages.length} pages)`);

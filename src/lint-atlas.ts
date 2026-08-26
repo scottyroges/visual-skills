@@ -149,6 +149,8 @@ export function lintReadability(
   const total = prose.reduce((sum, text) => sum + words(text), 0);
   if (pageKind === "domain" && total > 1200)
     warnings.push(`domain page has more than 1,200 visible prose words (${total}) — shorten or extract focused topics`);
+  if (pageKind === "topic" && total < 180)
+    warnings.push(`topic page has fewer than roughly 180 visible narrative words (${total}) — it may still be an outline rather than an explanation`);
   if (pageKind === "topic" && total > 2000)
     warnings.push(`topic page has more than 2,000 visible prose words (${total}) — extract an independently useful child topic`);
   return warnings;
@@ -157,9 +159,55 @@ export function lintReadability(
 export function lintTopic(blocks: AtlasBlock[], shape?: TopicShape): string[] {
   const warnings: string[] = [];
   const has = (type: AtlasBlock["type"]) => blocks.some((block) => block.type === type);
-  if (!has("topic-tldr")) warnings.push("no topic-tldr — start with what this mechanism does and when it runs");
-  if (!has("topic-flow")) warnings.push(`no topic-flow — a ${shape ?? "technical"} topic needs an ordered explanation`);
-  if (!has("topic-rules")) warnings.push("no topic-rules — name guarantees and failure behavior explicitly");
+  const lead = blocks.find((block) => block.type === "topic-tldr");
+  const flow = blocks.find((block) => block.type === "topic-flow");
+  const rules = blocks.find((block) => block.type === "topic-rules");
+  const reference = blocks.find((block) => block.type === "implementation-reference");
+  const nonEmpty = (value: string | undefined): boolean => !!value?.trim();
+
+  if (!lead || lead.type !== "topic-tldr") {
+    warnings.push("no topic-tldr — start with what this mechanism does and when it runs");
+  } else {
+    if (!nonEmpty(lead.summary)) warnings.push("topic-tldr summary is empty — explain what the topic does");
+    if (!lead.inputs.some(nonEmpty)) warnings.push("topic-tldr has no input — name what enters the mechanism");
+    if (!lead.outputs.some(nonEmpty)) warnings.push("topic-tldr has no output — name what the mechanism produces or changes");
+  }
+
+  if (!flow || flow.type !== "topic-flow") {
+    warnings.push(`no topic-flow — a ${shape ?? "technical"} topic needs an ordered explanation`);
+  } else {
+    const completeSteps = flow.steps.filter((step) => nonEmpty(step.title) && nonEmpty(step.body));
+    if (completeSteps.length < 2)
+      warnings.push("topic-flow needs at least two non-empty steps — explain meaningful movement, not a placeholder");
+    if (flow.steps.some((step) => !nonEmpty(step.title) || !nonEmpty(step.body)))
+      warnings.push("topic-flow has a flow step with a blank title or body — finish or remove the partial step");
+  }
+
+  if (!rules || rules.type !== "topic-rules") {
+    warnings.push("no topic-rules — name guarantees and failure behavior explicitly");
+  } else {
+    if (!rules.guarantees.some(nonEmpty)) warnings.push("topic-rules has no guarantee — name the invariant the mechanism preserves");
+    const completeFailures = rules.failures.filter((failure) =>
+      nonEmpty(failure.condition) && nonEmpty(failure.behavior));
+    if (!completeFailures.length && !nonEmpty(rules.intro))
+      warnings.push("topic-rules needs a condition/behavior failure or an introduction explaining why no material failure branch applies");
+  }
+
+  if (!reference || reference.type !== "implementation-reference") {
+    warnings.push("no implementation-reference — connect the explanation to its source evidence");
+  } else {
+    const files = reference.groups.flatMap((group) => group.files);
+    if (!reference.groups.length || !files.length)
+      warnings.push("implementation-reference has no source files — include the evidence used to author the page");
+    if (files.some((file) => !nonEmpty(file.desc)))
+      warnings.push("implementation-reference file description is empty — explain what each source contributes");
+  }
+
+  const hasTrace = has("diagram-section") || has("example");
+  if (flow?.type === "topic-flow" && flow.steps.length >= 4 && !hasTrace)
+    warnings.push("multi-stage topic has no diagram or worked example — show one grounded path through the mechanism");
+  if (shape === "algorithm" && !has("example"))
+    warnings.push("algorithm topic has no worked example — exercise a meaningful decision with concrete values or records");
   if (blocks.filter((block) => block.type === "topic-flow").length > 1)
     warnings.push("topic contains multiple independent mechanisms — consider extracting a child page");
   return [...warnings, ...lintReadability(blocks, "topic")];

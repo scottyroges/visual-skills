@@ -9,6 +9,7 @@ const recapSkill = read("../skills/visual-recap/SKILL.md");
 const specSkill = read("../skills/visual-spec/SKILL.md");
 const atlasBlocks = read("../src/atlas-blocks.ts");
 const atlasSkill = read("../skills/visual-atlas/SKILL.md");
+const atlasCatalog = read("../skills/shared/atlas-components.md");
 const atlasReviewSkill = read("../skills/atlas-review/SKILL.md");
 const quizBlocks = read("../src/quiz-blocks.ts");
 const quizSkill = read("../skills/quiz/SKILL.md");
@@ -176,6 +177,45 @@ describe("skill docs stay in sync", () => {
   it("visual-atlas examples stay repository-neutral", () => {
     expect(atlasSkill.toLowerCase()).not.toContain("telltale");
     expect(atlasSkill.toLowerCase()).not.toContain("conversation-engine");
+  });
+
+  it("visual-atlas requires child pages to earn their depth", () => {
+    const heading = "## Earn every child page";
+    const substance = atlasSkill.indexOf(heading);
+    const workflow = atlasSkill.indexOf("## Workflow (three modes)");
+    expect(substance).toBeGreaterThan(-1);
+    expect(workflow).toBeGreaterThan(substance);
+
+    const contract = atlasSkill.slice(substance, workflow).toLowerCase();
+    for (const phrase of [
+      "teaching brief",
+      "reader question",
+      "mental model",
+      "predict",
+      "representative case",
+      "progressive disclosure",
+      "hard integrity",
+      "advisory",
+    ]) {
+      expect(contract, `visual-atlas substance contract must require ${phrase}`).toContain(phrase);
+    }
+
+    for (const phrase of [
+      "shape-specific teaching contracts",
+      "mechanism",
+      "algorithm",
+      "lifecycle",
+      "integration",
+      "data model",
+      "concrete values",
+      "state transition",
+      "worked trace",
+    ]) {
+      expect(atlasCatalog.toLowerCase(), `atlas catalog must explain ${phrase}`)
+        .toContain(phrase.toLowerCase());
+    }
+
+    expect(atlasSkill.split("\n").length).toBeLessThanOrEqual(500);
   });
 
   it("atlas-review rewrites coherent current truth and scopes review per page", () => {

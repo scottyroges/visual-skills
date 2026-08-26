@@ -121,6 +121,54 @@ after the `*-tldr` lead. Author blocks top-to-bottom in these orders.
 Shape adapts this ladder: `mechanism`, `algorithm`, `data-model`, `lifecycle`, and `integration` are
 editorial guides, not rigid templates.
 
+## Shape-specific teaching contracts
+
+Progressive disclosure moves the complete explanation from a parent into a focused child. A topic
+is not finished when it merely has the standard four blocks. Build it from a page teaching brief:
+the reader question, mental model, transformed state, non-obvious decisions, representative case,
+failures/outcomes, and supporting evidence. The reader should be able to predict a new case after
+reading it.
+
+### Mechanism
+
+Explain inputs, ordered transformations, outputs, state changes, collaborators, and why the order
+matters. For multi-stage behavior, include a diagram or grounded worked trace that follows one input
+through the transformations and externally visible result.
+
+### Algorithm
+
+Explain the objective, inputs, thresholds or priorities, decision branches, invariants, edge cases,
+and fallback behavior. Include a worked example with concrete values or records that exercises a
+meaningful branch; do not replace the example with a restatement of the steps.
+
+### Lifecycle
+
+Explain states or phases, entry triggers, legal and rejected transitions, guards, terminal states,
+cancellation, and recovery. Include a state/sequence diagram or worked trace through a normal path
+and an abnormal state transition.
+
+### Integration
+
+Explain both sides of the boundary, request and response shape, ordering, deadlines, retry or
+idempotence behavior, cancellation, and reconciliation. Include a sequence or representative
+exchange that makes the protocol observable.
+
+### Data model
+
+Explain entities, relationships, ownership, constraints, mutation paths, lifecycle, and the queries
+or invariants the model exists to support. Include a representative record or state transition when
+it clarifies why the schema has its shape.
+
+### Objective floor and editorial judgment
+
+Every topic lead has a summary, input, and output. Every ordered flow has at least two meaningful
+steps. Rules name a guarantee plus a failure/fallback, or explain why no material failure branch
+exists. The implementation reference contains the actual source files and says what each contributes.
+These are objective integrity requirements; the checker refuses to stamp an untouched scaffold.
+
+Short-page, missing-trace, and algorithm-without-example messages are advisories. Inspect the source
+and improve the explanation; never satisfy an advisory by padding words or inventing a diagram.
+
 ## Color / role vocabulary
 
 Domains are tagged by **layer** — a coarse architectural tier that tints the tile, the topbar accent,
