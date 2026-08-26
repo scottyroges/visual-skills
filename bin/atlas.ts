@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { assembleAtlas, assembleDomain, assembleTopic } from "../src/assemble-atlas.js";
 import type { AtlasBlock, AtlasOpts, DomainOpts, TopicOpts } from "../src/atlas-blocks.js";
-import { scanInventory, aggregateDomainEdges, buildAtlasDraft, buildDomainDraft, buildTopicDraft } from "../src/gather-atlas.js";
+import { scanInventory, aggregateDomainEdges, buildAtlasDraft, buildDomainDraft, buildTopicDraft, suggestTopicExtractions } from "../src/gather-atlas.js";
 import { firstGuessConfig, reconcile, type AtlasConfig } from "../src/atlas-config.js";
 import {
   buildPageNavigation,
@@ -132,7 +132,7 @@ const today = () => new Date().toISOString().slice(0, 10);
  *  overwritten): target repos commit it and run it from pre-commit/CI with plain Node —
  *  no visual-skills checkout needed. See assets/atlas-check.mjs for what it verifies. */
 async function emitChecker(outDir: string): Promise<void> {
-  const src = fileURLToPath(new URL("../assets/atlas-check.mjs", import.meta.url));
+  const src = fileURLToPath(new URL("../assets/atlas-check-v2.mjs", import.meta.url));
   await copyFile(src, join(outDir, "atlas-check.mjs"));
   console.log("wrote atlas-check.mjs (drift checker — wire `node .visual/atlas/atlas-check.mjs` into pre-commit)");
 }
@@ -244,6 +244,10 @@ async function main() {
     }
     console.log(`scanned ${inv.modules.length} module(s) → ${config.domains.length} domain(s); wrote ${wrote} new draft(s)`);
     printDrift(drift);
+    for (const suggestion of suggestTopicExtractions(config, inv)) {
+      const hint = suggestion.titleHint ? ` (possible topic: "${suggestion.titleHint}")` : "";
+      console.warn(`⚠ extraction suggestion for "${suggestion.domainSlug}"${hint}: ${suggestion.reason}`);
+    }
 
     // Orphaned domain folders: a domain-<slug>/ with no matching domain in the (re)grouped config
     // — left behind after a regroup. Warn so the human can delete it (we never delete files).

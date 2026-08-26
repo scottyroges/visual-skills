@@ -76,6 +76,7 @@ describe("domainMapDiagram", () => {
 });
 
 import { buildAtlasDraft, buildTopicDraft } from "../src/gather-atlas.js";
+import { suggestTopicExtractions } from "../src/gather-atlas.js";
 import { buildPageTree } from "../src/atlas-tree.js";
 
 describe("buildAtlasDraft", () => {
@@ -188,5 +189,33 @@ describe("buildTopicDraft", () => {
     expect(draft.blocks.map((block) => block.type)).toEqual([
       "domain-tldr", "diagram-section", "implementation-reference", "seams",
     ]);
+  });
+});
+
+describe("suggestTopicExtractions", () => {
+  it("reports explainable size and directory-cluster candidates without changing config", () => {
+    const large: AtlasConfig = {
+      repo: "demo", srcRoots: ["src"],
+      domains: [{
+        slug: "conversation", name: "Conversation", globs: ["src/conversation/**"],
+        modules: [
+          ...Array.from({ length: 7 }, (_, i) => `src/conversation/context/file-${i}.ts`),
+          ...Array.from({ length: 6 }, (_, i) => `src/conversation/turn/file-${i}.ts`),
+        ],
+      }],
+    };
+    const inventory = {
+      modules: large.domains[0].modules.map((path) => ({ path, imports: [], exports: [], isRouter: false })),
+      models: [],
+    };
+    const before = JSON.stringify(large);
+
+    const suggestions = suggestTopicExtractions(large, inventory);
+
+    expect(suggestions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ domainSlug: "conversation", reason: expect.stringMatching(/13 modules/i) }),
+      expect.objectContaining({ domainSlug: "conversation", titleHint: "context", evidence: expect.arrayContaining(["src/conversation/context/file-0.ts"]) }),
+    ]));
+    expect(JSON.stringify(large)).toBe(before);
   });
 });

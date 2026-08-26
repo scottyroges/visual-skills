@@ -62,6 +62,8 @@ export interface ResolvedSourceGroup {
   files: string[];
 }
 
+export const SYSTEM_PAGE_ID = "@system";
+
 function domainPaths(slug: string) {
   const outputDir = `domain-${slug}`;
   return {
@@ -94,7 +96,7 @@ export function buildPageTree(config: AtlasConfig): AtlasPageTree {
   const nodes: AtlasPageNode[] = [];
   const byId = new Map<string, AtlasPageNode>();
   const systemCrumb: AtlasBreadcrumb = {
-    id: "atlas",
+    id: SYSTEM_PAGE_ID,
     title: `System Atlas · ${config.repo}`,
     htmlPath: "atlas.html",
   };
@@ -134,7 +136,7 @@ export function buildPageTree(config: AtlasConfig): AtlasPageTree {
     };
     node.breadcrumbs = [
       systemCrumb,
-      ...((parent?.breadcrumbs ?? []).filter((crumb) => crumb.id !== "atlas")),
+      ...((parent?.breadcrumbs ?? []).filter((crumb) => crumb.id !== SYSTEM_PAGE_ID)),
       { id: node.id, title: node.title, htmlPath: node.htmlPath },
     ];
     register(node);
@@ -265,7 +267,7 @@ export function buildPageNavigation(tree: AtlasPageTree, currentId?: string): Pa
     breadcrumb: breadcrumbTitle(node),
   });
   const atlasLink: AtlasPageLink = {
-    id: "atlas",
+    id: SYSTEM_PAGE_ID,
     title: `System Atlas · ${tree.config.repo}`,
     purpose: "",
     href: relativeHref(currentHtmlPath, "atlas.html"),
@@ -284,7 +286,7 @@ export function buildPageNavigation(tree: AtlasPageTree, currentId?: string): Pa
   };
 
   const breadcrumbs = current
-    ? current.breadcrumbs.map((crumb) => crumb.id === "atlas" ? atlasLink : linkFor(tree.byId.get(crumb.id)!))
+    ? current.breadcrumbs.map((crumb) => crumb.id === SYSTEM_PAGE_ID ? atlasLink : linkFor(tree.byId.get(crumb.id)!))
     : [atlasLink];
   const siblingPool = current?.parent?.children ?? (current ? tree.roots : []);
   const related = (current?.related ?? []).flatMap((id) => {

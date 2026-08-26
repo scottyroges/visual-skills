@@ -161,6 +161,20 @@ describe("buildPageNavigation", () => {
       sources: ["lib/sim/engine.ts"],
     });
   });
+
+  it("keeps the system page distinct from a legitimate domain slugged atlas", () => {
+    const tree = buildPageTree({
+      repo: "self-map", srcRoots: ["src"],
+      domains: [{ slug: "atlas", name: "Atlas domain", purpose: "Builds the atlas", globs: [], modules: [] }],
+    });
+
+    const navigation = buildPageNavigation(tree, "atlas");
+
+    expect(navigation.breadcrumbs.map((link) => [link.id, link.href])).toEqual([
+      ["@system", "../atlas.html"],
+      ["atlas", "domain-atlas.html"],
+    ]);
+  });
 });
 
 describe("resolveTopicSources", () => {

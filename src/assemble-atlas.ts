@@ -13,7 +13,7 @@ import { renderInlineMarkdown } from "./renderers/markdown.js";
 import { renderExample } from "./renderers/example.js";
 import { renderAll, type DiagramResult } from "./render-diagram.js";
 import { withDiagramSvgClass } from "./review/sections.js";
-import { lintAtlas, lintDomain } from "./lint-atlas.js";
+import { lintAtlas, lintDomain, lintReadability, lintTopic } from "./lint-atlas.js";
 import { lintExamples } from "./lint-examples.js";
 
 const mi = (s: string) => renderInlineMarkdown(s);
@@ -503,6 +503,7 @@ export async function assembleAtlas(rawBlocks: AtlasBlock[], opts: AtlasOpts): P
   assertUniqueAtlasIds(blocks);
   if (opts.onWarn) for (const p of problems) opts.onWarn(p);
   if (opts.onWarn) for (const w of lintAtlas(rawBlocks)) opts.onWarn(w); // demo-standard floor: lead / map / index
+  if (opts.onWarn) for (const w of lintReadability(rawBlocks, "atlas", { cardPurposes: opts.navigation?.children.map((child) => child.purpose) })) opts.onWarn(w);
   if (opts.onWarn) for (const w of lintExamples(rawBlocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(w);
   const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, atlasTopbar(opts), sidebar(blocks, opts, null, true), main, opts.navigation);
@@ -512,7 +513,8 @@ export async function assembleDomain(rawBlocks: AtlasBlock[], opts: DomainOpts):
   const { blocks, problems } = normalizeExampleBlocks(rawBlocks);
   assertUniqueAtlasIds(blocks);
   if (opts.onWarn) for (const p of problems) opts.onWarn(p);
-  if (opts.onWarn) for (const w of lintDomain(rawBlocks)) opts.onWarn(w); // demo-standard floor: lead / components / arch / seams
+  if (opts.onWarn) for (const w of lintDomain(rawBlocks, { hasChildren: !!opts.navigation?.children.length })) opts.onWarn(w);
+  if (opts.onWarn) for (const w of lintReadability(rawBlocks, "domain", { cardPurposes: opts.navigation?.children.map((child) => child.purpose) })) opts.onWarn(w);
   if (opts.onWarn) for (const w of lintExamples(rawBlocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(w);
   const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, domainTopbar(opts), sidebar(blocks, opts, opts.layer, false), main, opts.navigation);
@@ -522,6 +524,7 @@ export async function assembleTopic(rawBlocks: AtlasBlock[], opts: TopicOpts): P
   const { blocks, problems } = normalizeExampleBlocks(rawBlocks);
   assertUniqueAtlasIds(blocks);
   if (opts.onWarn) for (const problem of problems) opts.onWarn(problem);
+  if (opts.onWarn) for (const warning of lintTopic(rawBlocks, opts.shape)) opts.onWarn(warning);
   if (opts.onWarn) for (const warning of lintExamples(rawBlocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(warning);
   const main = await renderMain(blocks, opts);
   return doc(opts.title, opts.generator, topicTopbar(opts), sidebar(blocks, opts, null, false), main, opts.navigation);

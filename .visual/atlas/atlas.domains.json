@@ -9,6 +9,7 @@
     {
       "slug": "core",
       "name": "Rendering core",
+      "purpose": "Turns typed visual blocks into safe, self-contained HTML.",
       "globs": [
         "src/blocks.ts",
         "src/html.ts",
@@ -42,6 +43,7 @@
     {
       "slug": "diagrams",
       "name": "Diagram pipeline",
+      "purpose": "Compiles authored diagrams and optional editable sidecars.",
       "globs": [
         "src/render-diagram.ts",
         "src/diagram-colors.ts",
@@ -58,6 +60,7 @@
     {
       "slug": "code-intel",
       "name": "Code intelligence",
+      "purpose": "Extracts code structure, imports, APIs, and data models for visual documents.",
       "globs": [
         "src/adapters/**",
         "src/prisma-schema.ts",
@@ -80,6 +83,7 @@
     {
       "slug": "recap",
       "name": "Recap (diff review)",
+      "purpose": "Turns a code change into a visual review narrative.",
       "globs": [
         "bin/recap.ts",
         "src/gather-recap.ts",
@@ -117,6 +121,7 @@
     {
       "slug": "atlas",
       "name": "Atlas (codebase map)",
+      "purpose": "Builds and maintains the codebase’s standing architecture map.",
       "globs": [
         "bin/atlas.ts",
         "src/atlas-blocks.ts",
@@ -139,6 +144,7 @@
     {
       "slug": "authoring",
       "name": "Authoring (spec + doc)",
+      "purpose": "Renders proposals, plans, quizzes, and other authored visual documents.",
       "globs": [
         "bin/spec.ts",
         "bin/doc.ts",

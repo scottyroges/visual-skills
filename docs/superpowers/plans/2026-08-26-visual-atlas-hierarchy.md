@@ -210,7 +210,7 @@ breadcrumbs/paths in authored JSON.
 - Produces deterministic page fingerprint inputs: system configuration summaries, domain modules plus child summaries, and topic evidence files plus child summaries.
 - The emitted checker exits nonzero for integrity problems and zero for advisory warnings alone.
 
-- [ ] **Step 1: Write failing readability tests with hand-authored strings**
+- [x] **Step 1: Write failing readability tests with hand-authored strings**
 
 ```ts
 expect(lintReadability([
@@ -224,9 +224,9 @@ Add independent tests for a paragraph over 100 words, a child-card purpose over 
 domain visible prose over 1,200 words, topic visible prose over 2,000 words, and more than one
 independent mechanism signal. Tests assert warnings, not exact complete prose.
 
-- [ ] **Step 2: Run `npm test -- test/lint-atlas.test.ts` and confirm the new exports/behaviors fail**
+- [x] **Step 2: Run `npm test -- test/lint-atlas.test.ts` and confirm the new exports/behaviors fail**
 
-- [ ] **Step 3: Implement visible-text extraction and advisory linting**
+- [x] **Step 3: Implement visible-text extraction and advisory linting**
 
 Count authored visible prose while excluding diagram source, code HTML, and implementation-reference
 file details. Detect history terms with bounded, case-insensitive patterns that avoid matching
@@ -234,9 +234,9 @@ ordinary words. `lintDomain` becomes orientation-first when navigation has child
 not require a depth block, but still requires lead, architecture, seams, and clear child purposes.
 `lintTopic` requires the lead and the structured sections appropriate to its configured shape.
 
-- [ ] **Step 4: Run focused lint tests and confirm legacy canonical pages still produce only intentional warnings**
+- [x] **Step 4: Run focused lint tests and confirm legacy canonical pages still produce only intentional warnings**
 
-- [ ] **Step 5: Write failing black-box checker tests**
+- [x] **Step 5: Write failing black-box checker tests**
 
 Create a temporary repository and atlas output, copy `atlas-check.mjs`, run it with plain Node, and
 assert observable exit/output for:
@@ -250,7 +250,7 @@ assert observable exit/output for:
 - advisory density/history output with exit code zero;
 - derived system domain count mismatch.
 
-- [ ] **Step 6: Extend the self-contained checker to walk the recursive tree**
+- [x] **Step 6: Extend the self-contained checker to walk the recursive tree**
 
 Use the same path formulas and minimal glob behavior as `atlas-tree.ts`. Hash every resolved file in
 a topic's labeled sources plus serialized child title/purpose summaries. Hash domain modules plus
@@ -258,15 +258,15 @@ child summaries. Hash the system's repo/domain/topic/read-path structure. Suppor
 IDs (all pages) or stable page IDs, retain domain-slug compatibility when unambiguous, and write
 `verifiedAgainst` into each page JSON.
 
-- [ ] **Step 7: Add integrity validation and advisory reporting**
+- [x] **Step 7: Add integrity validation and advisory reporting**
 
 Validate configured JSON/HTML existence, reachability, relative local href targets, source groups,
 structured topic claims, derived atlas counts, grounding references, and stamps. Print integrity
 problems under a failing heading and readability observations under a non-failing warning heading.
 
-- [ ] **Step 8: Run `npm test -- test/lint-atlas.test.ts test/atlas-check.test.ts test/atlas-cli.test.ts` and `npm run typecheck`**
+- [x] **Step 8: Run `npm test -- test/lint-atlas.test.ts test/atlas-check.test.ts test/atlas-cli.test.ts` and `npm run typecheck`**
 
-- [ ] **Step 9: Commit `feat: verify atlas pages independently`**
+- [x] **Step 9: Commit `feat: verify atlas pages independently`**
 
 ---
 

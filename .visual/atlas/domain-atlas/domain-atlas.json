@@ -58,7 +58,7 @@
       "id": "components",
       "title": "The pieces",
       "badge": "1 CLI + 6 modules",
-      "intro": "One CLI (three modes) over six library modules: grouping and page-tree configuration, a scanner that builds drafts, the block model that types the page, an assembler that renders HTML, and a completeness lint. Tap a card to jump to its full section.",
+      "intro": "One CLI over six library modules: grouping and page-tree configuration, scanning and drafts, the block model, self-contained rendering, and quality checks for page structure, readability, current truth, and freshness.",
       "cards": [
         {
           "name": "CLI",
@@ -174,8 +174,8 @@
           "href": "#c-assemble"
         },
         {
-          "name": "completeness lint",
-          "purpose": "`lint-atlas.ts` — the demo-standard floor. Warns (via `onWarn`, never errors) when a page skips the lead, the map, the index, the components, an internal-arch diagram when large, or the seams — and flags scanner-drafted tiles with no purpose.",
+          "name": "quality checks",
+          "purpose": "`lint-atlas.ts` keeps page-shape, density, paragraph length, card size, project-history, and topic-extraction warnings visible during rendering. The emitted checker separately fails broken tree, evidence, links, metadata, grounding, and per-page freshness.",
           "exports": [
             {
               "name": "lintAtlas"
@@ -492,16 +492,16 @@
         },
         {
           "id": "c-lint",
-          "name": "completeness lint",
+          "name": "quality checks",
           "path": "src/lint-atlas.ts",
           "detail": [
-            "The demo-standard floor, mirroring the spec/recap linters: heuristics surfaced via `onWarn`, never hard errors. `lintAtlas` checks the atlas page leads with a `atlas-tldr` 'Start here', shows a domain map, and has a `domain-index` whose tiles all have a real `purpose` — flagging any blank ones the scanner left.",
-            "`lintDomain` checks a domain page opens with a `domain-tldr`, lists its `components`, includes an internal-arch `diagram-section` when it has four-plus deep components (`LARGE_COMPONENTS`), and names its `seams`. The warnings tell the human exactly which scanner-drafted fields still need enriching — closing the hybrid loop."
+            "`lintAtlas`, `lintDomain`, and `lintTopic` enforce the structural floor for their page kinds. A domain with child topics is orientation-first and does not need an expanded components/depth inventory; a topic needs a plain lead, ordered flow, and explicit guarantees/failure behavior.",
+            "`lintReadability` measures authored visible prose while excluding diagram source, code HTML, and collapsed implementation-file details. It warns on project-history language, paragraphs over roughly 100 words, card copy over roughly 40 words, domain pages over 1,200 words, topic pages over 2,000 words, and multiple independent flows. The emitted checker treats these as advisories while failing tree, evidence, link, grounding, derived-count, and independent fingerprint problems."
           ],
           "files": [
             {
               "name": "lint-atlas.ts",
-              "desc": "`lintAtlas` (atlas-page floor) and `lintDomain` (domain-page floor)."
+              "desc": "Structural page floors plus readability and current-truth advisory checks."
             }
           ],
           "exports": [
@@ -511,7 +511,15 @@
             },
             {
               "name": "lintDomain()",
-              "desc": "→ warnings: missing lead / components / arch-when-large / seams."
+              "desc": "→ warnings for incomplete deep domains or orientation-first domain landings."
+            },
+            {
+              "name": "lintTopic()",
+              "desc": "→ warnings for missing lead, flow, rules, or multiple independent mechanisms."
+            },
+            {
+              "name": "lintReadability()",
+              "desc": "→ density, paragraph, card, and project-history advisories."
             }
           ],
           "connections": [
@@ -605,8 +613,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:c9759f9a0ae90572df931598153a6afdb4c8b6b1cc445aea6d38d1016751f4b5",
+    "hash": "sha256:76449ae012bd1cb52229a2bcca89b7a43887d46354c7dd3d41d6f72426c2b7f2",
     "date": "2026-08-26",
-    "commit": "d5138e98b6a256c6656e4f3ed9a2aacc24453c87"
+    "commit": "b91a4f7ab7183a6b796068ff5897e39cc14730fb"
   }
 }

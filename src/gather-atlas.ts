@@ -27,6 +27,40 @@ export interface Inventory {
   modules: ModuleInfo[];
   models: string[];      // Prisma model names
 }
+export interface TopicExtractionSuggestion {
+  domainSlug: string;
+  titleHint?: string;
+  reason: string;
+  evidence: string[];
+}
+
+/** Nonbinding signals for an author considering child pages. Never mutates the configured tree. */
+export function suggestTopicExtractions(config: AtlasConfig, inv: Inventory): TopicExtractionSuggestion[] {
+  const live = new Set(inv.modules.map((module) => module.path));
+  const suggestions: TopicExtractionSuggestion[] = [];
+  for (const domain of config.domains) {
+    const modules = domain.modules.filter((module) => live.has(module));
+    if (modules.length >= 12) {
+      suggestions.push({
+        domainSlug: domain.slug,
+        reason: `${modules.length} modules make this domain a candidate for orientation-first child topics`,
+        evidence: modules.slice(0, 12),
+      });
+    }
+    const base = commonPath(modules, domain.slug);
+    for (const group of groupBySubdir(modules, base, domain.slug)) {
+      if (group.name !== domain.slug && group.files.length >= 4) {
+        suggestions.push({
+          domainSlug: domain.slug,
+          titleHint: group.name,
+          reason: `${group.files.length} files form a named source cluster under ${base}`,
+          evidence: [...group.files],
+        });
+      }
+    }
+  }
+  return suggestions;
+}
 
 /** Walk srcRoots, parse imports/exports/routers per module, and collect Prisma models. */
 export async function scanInventory(repoRoot: string, srcRoots: string[]): Promise<Inventory> {
