@@ -255,6 +255,33 @@ describe("full page assembly", () => {
     const railAt = html.indexOf('class="progress-rail"'); const tldrAt = html.indexOf('id="tldr"'); const domAt = html.indexOf('id="domains"');
     expect(tldrAt).toBeLessThan(railAt); expect(railAt).toBeLessThan(domAt);
   });
+  it("places the section guide after landing-page routes and directly before the first chapter", async () => {
+    const link = {
+      id: "conversation/context-building", title: "Context building",
+      purpose: "Builds model input", href: "context-building/context-building.html",
+      breadcrumb: "System Atlas / Conversation / Context building",
+    };
+    const html = await assembleDomain([
+      { type: "domain-tldr", id: "tldr", heading: "Conversation", rows: [], bigIdea: { line: "One owner coordinates the turn." } },
+      { type: "owns", id: "one-turn", title: "One turn at a glance", rows: [] },
+    ], {
+      title: "Conversation", layer: "engine", layerLabel: "Engine",
+      navigation: {
+        breadcrumbs: [], branch: [], children: [link], siblings: [], related: [], searchIndex: [],
+        readingPaths: [{ title: "Follow one turn", pages: [link] }],
+      },
+    });
+
+    const tldrAt = html.indexOf('id="tldr"');
+    const childRoutesAt = html.indexOf('<section class="section atlas-child-pages"');
+    const readingPathsAt = html.indexOf('<section class="section atlas-reading-paths"');
+    const railAt = html.indexOf('class="progress-rail"');
+    const firstChapterAt = html.indexOf('id="one-turn"');
+    expect(tldrAt).toBeLessThan(childRoutesAt);
+    expect(childRoutesAt).toBeLessThan(readingPathsAt);
+    expect(readingPathsAt).toBeLessThan(railAt);
+    expect(railAt).toBeLessThan(firstChapterAt);
+  });
   it("domain renders a depth diagram via the pipeline", async () => {
     const blocks: AtlasBlock[] = [
       { type: "domain-tldr", id: "tldr", heading: "h", rows: [] },

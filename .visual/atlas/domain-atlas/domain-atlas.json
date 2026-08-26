@@ -615,8 +615,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:72ab796cce6b8157243975d4ccf4e6444b3665ec6e24814a61fa3b058cb0de83",
+    "hash": "sha256:98bab4f5e8925f8ec0f1d8d000e4e63103cc46f17528f932b4a7b0c9bc61ae2a",
     "date": "2026-08-26",
-    "commit": "7576d97e1045a8cdf392aedb25abf6b7af028ba4"
+    "commit": "a1e394eebcb009888fa1ad3e7a0623fc828e6b79"
   }
 }

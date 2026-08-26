@@ -484,9 +484,9 @@ async function renderMain(
   for (const b of blocks) {
     parts.push(await renderAtlasBlock(b, diagrams, opts.onWarn, true)); // both entry points swept the tree
     if (!railPlaced && (b.type === "atlas-tldr" || b.type === "domain-tldr" || b.type === "topic-tldr")) {
-      parts.push(railHtml);
       parts.push(await childPagesHtml(opts.navigation?.children ?? []));
       parts.push(await readingPathsHtml(opts.navigation?.readingPaths ?? []));
+      parts.push(railHtml);
       railPlaced = true;
     }
   }
