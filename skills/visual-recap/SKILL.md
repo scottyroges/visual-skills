@@ -18,6 +18,10 @@ enriched and re-rendered.
 
     VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
+**Required language guide.** Before writing user-facing text, read
+`$VISUAL_SKILLS_DIR/skills/shared/plain-language.md`. Apply it to every authored field and live
+reply.
+
 ## The standard — definition of done
 
 A finished recap **always** has, regardless of change size:

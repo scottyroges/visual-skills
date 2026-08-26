@@ -24,6 +24,10 @@ system is in about 60 seconds, choose a relevant domain, and open only the depth
 
     VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
+**Required language guide.** Before writing user-facing text, read
+`$VISUAL_SKILLS_DIR/skills/shared/plain-language.md`. Apply it to every authored field and live
+reply.
+
 Unlike `visual-spec` (pure authoring), the atlas is **hybrid**: a mechanical scanner inventories the
 repo and emits draft JSON; you author the reader-owned hierarchy, write the meaning, and render. The
 scanner may suggest extraction candidates, but the scanner never creates, moves, or mutates a page

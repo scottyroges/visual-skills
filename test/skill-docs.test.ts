@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 const blocks = read("../src/blocks.ts");
@@ -85,6 +85,15 @@ describe("skill docs stay in sync", () => {
       expect(md.startsWith("---")).toBe(true);
       expect(md).toMatch(/\nname:\s*\S+/);
       expect(md).toMatch(/\ndescription:\s*\S+/);
+    }
+  });
+
+  it("all skills require the shared plain-language guide", () => {
+    const guide = "skills/shared/plain-language.md";
+    expect(existsSync(new URL(`../${guide}`, import.meta.url)), `${guide} must exist`).toBe(true);
+    const skills = { docSkill, recapSkill, specSkill, atlasSkill, atlasReviewSkill, quizSkill };
+    for (const [name, md] of Object.entries(skills)) {
+      expect(md, `${name} must require ${guide}`).toContain(guide);
     }
   });
 

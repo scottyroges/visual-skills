@@ -18,6 +18,10 @@ into the component ladder is.
 
     VISUAL_SKILLS_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/visual-skills"
 
+**Required language guide.** Before writing user-facing text, read
+`$VISUAL_SKILLS_DIR/skills/shared/plain-language.md`. Apply it to every authored field and live
+reply.
+
 You author a `spec.json` (page options + an ordered array of blocks) and render it. There is no
 mechanical gather step — the spec's prose is the raw material; your judgment turns it into blocks.
 
