@@ -109,6 +109,42 @@ describe("skill docs stay in sync", () => {
     expect(atlasReviewSkill).toContain("src/atlas-blocks.ts");
   });
 
+  it("visual-atlas teaches recursive reader-owned topics and flexible evidence scopes", () => {
+    for (const phrase of [
+      "recursive topic",
+      "root-level topic",
+      "include",
+      "exclude",
+      "overlap",
+      "mechanism",
+      "algorithm",
+      "data-model",
+      "lifecycle",
+      "integration",
+      "current truth",
+      "1,200",
+      "2,000",
+    ]) {
+      expect(atlasSkill.toLowerCase(), `visual-atlas must teach ${phrase}`).toContain(phrase.toLowerCase());
+    }
+    expect(atlasSkill).toMatch(/scanner.{0,100}never.{0,100}(?:create|move|mutate)/is);
+    expect(atlasSkill).toMatch(/child (?:page )?card/i);
+  });
+
+  it("atlas-review rewrites coherent current truth and scopes review per page", () => {
+    for (const phrase of [
+      "smallest coherent current-truth update",
+      "project history",
+      "stale page",
+      "parent summary",
+      "independent stamp",
+    ]) {
+      expect(atlasReviewSkill.toLowerCase(), `atlas-review must teach ${phrase}`).toContain(phrase.toLowerCase());
+    }
+    expect(atlasReviewSkill).toMatch(/do not preserve.{0,120}sentence/is);
+    expect(atlasReviewSkill).toMatch(/rewrite.{0,120}current (?:truth|explanation)/is);
+  });
+
   it("visual-spec mandates the standard (lead, decisions+why, scope, approval) and references both catalogs", () => {
     for (const s of ["tldr", "decisions", "why", "scope", "approve", "rejected"]) {
       expect(specSkill, `visual-spec SKILL.md must mention "${s}"`).toContain(s);

@@ -10,8 +10,8 @@ too ([further down](#direct-cli-usage-without-claude-code)).
 
 | Skill | Ask Claude Code… | Produces |
 |---|---|---|
-| **visual-atlas** | "make a visual atlas of this codebase" | A standing map of a codebase's domains & architecture |
-| **atlas-review** | "review the atlas against the code" | An existing atlas re-verified, updated, and re-stamped |
+| **visual-atlas** | "make a visual atlas of this codebase" | An orientation map with recursive topic pages for focused depth |
+| **atlas-review** | "review the atlas against the code" | Stale pages rewritten as current truth and independently re-stamped |
 | **visual-recap** | "make a visual recap of this PR / commit" | A reviewable walkthrough of a code change |
 | **visual-spec** | "make this design spec readable so I can approve it" | A design doc / RFC laid out for approval |
 | **visual-doc** | "turn this plan into a readable doc" | Any hand-authored markdown as an illustrated doc |
@@ -24,8 +24,10 @@ tests it, with reveal-style questions on the page and optional live grading in t
 
 ## What the output looks like
 
-Every page uses the same app shell — a sticky sidebar + scrollspy, a TL;DR fold, progressively
-revealed sections, and rendered diagrams. Four example builds live in [`example/`](example/);
+Every page uses the same app shell—a sticky branch-aware sidebar, breadcrumbs, search, a TL;DR fold,
+progressively revealed sections, and rendered diagrams. An atlas starts with system and domain
+orientation pages, then uses recursive conceptual topic pages when a mechanism or algorithm deserves
+focused depth. Four example builds live in [`example/`](example/);
 **click any screenshot below to open the live demo**, or open the `.html` files locally in a
 browser (they need no server).
 
@@ -155,19 +157,19 @@ Node script into the out dir (e.g. `<repo>/.visual/atlas/atlas-check.mjs`). Comm
 atlas; it runs with plain Node, so pre-commit hooks and CI never need this repo checked out. It
 verifies three layers, all deterministic:
 
-1. **Coverage** — every source module under the config's `srcRoots` is matched by a domain glob
-   in `atlas.domains.json`; no recorded module is stale; no domain is empty or missing its page.
-2. **Grounding** — the structured claims on each domain page (component/depth `exports[].name`,
-   depth `files[].name`, seams `exposes[].api` routes) still exist in that domain's source.
-   Catches renamed exports, moved files, and changed routes even when file coverage is unchanged.
-3. **Stamps** — each domain page carries `verifiedAgainst: { hash, date, commit }`: a sha256 over
-   the domain's module contents (plus the git HEAD, when available) from the last time its prose
-   was verified. A mismatch means the code changed since anyone last read the page.
+1. **Structure and coverage** — domain modules, recursive pages, labeled topic source groups, local
+   links, reading paths, search entries, and derived counts agree with `atlas.domains.json`.
+2. **Grounding** — structured file/export/route claims still exist in each page's own evidence.
+3. **Independent stamps** — every system, domain, and topic page carries `verifiedAgainst` with a
+   hash, date, and commit. Topics fingerprint their explicit evidence; domains and the system also
+   include child summaries so navigation claims become stale when relationships change.
+4. **Readability advisories** — density and historical-language observations print separately and
+   do not fail the check by themselves.
 
 ```sh
 node .visual/atlas/atlas-check.mjs                 # check — exits 1 on any drift
-node .visual/atlas/atlas-check.mjs --stamp         # re-stamp every domain page
-node .visual/atlas/atlas-check.mjs --stamp <slug>  # re-stamp specific domains
+node .visual/atlas/atlas-check.mjs --stamp         # re-stamp every configured page
+node .visual/atlas/atlas-check.mjs --stamp <page/id>  # re-stamp specific pages
 ```
 
 Wire the check into the subject repo's pre-commit (e.g. a package.json script
@@ -175,10 +177,10 @@ Wire the check into the subject repo's pre-commit (e.g. a package.json script
 
 **The review skill (`atlas-review`)** — the deterministic layers prove *coverage* and
 *attention*; only a reader can verify prose. When the stamp check fails, ask Claude Code to
-"review the atlas": the skill diffs each stale domain from its stamp's recorded commit, judges
-the page block-by-block against the diff, fixes what drifted (minimal edits), re-renders, and
-re-stamps exactly what it reviewed. Stamping is always explicit — nothing in the pipeline ever
-stamps a page nobody read.
+"review the atlas": the skill reads each stale page's own changed evidence, rewrites the smallest
+coherent current-truth explanation, removes accumulated project history, re-renders, and stamps only
+the pages actually reviewed. Parent summaries change only when a child's purpose or relationship
+changed. Stamping is always explicit—nothing stamps a page nobody read.
 
 ## Direct CLI usage (without Claude Code)
 
@@ -187,11 +189,11 @@ tool writes `*.html` plus any `.excalidraw` sidecars together inside it (a trail
 stripped for convenience). Run from this repo so deps resolve — which means relative paths resolve
 against *this* repo's root, so point `--out` at the target repo explicitly.
 
-**Atlas** — a standing map of a codebase's domains & architecture:
+**Atlas** — an orientation map plus recursive mechanism/algorithm pages:
 
 ```sh
 npx tsx bin/atlas.ts --repo /path/to/repo --out /path/to/repo/.visual/atlas   # scan -> draft JSON -> render
-# enrich the draft JSON (domain purposes, connections, diagrams), then re-render:
+# author atlas.domains.json topics/evidence; enrich current-truth JSON; then re-render:
 npx tsx bin/atlas.ts --all /path/to/repo/.visual/atlas --out /path/to/repo/.visual/atlas
 ```
 
@@ -244,9 +246,10 @@ plan-mermaid diagram producers, contextual recaps (synthesized summary + "where 
 descriptions with in-page cross-links, importance-ordered groups), a shared diagram catalog with a
 `tabs` multi-view block and widened Excalidraw editability (sequence/class), the `visual-spec`
 design-spec→approval skill (its own block model + completeness lint), the `visual-atlas`
-codebase-map skill (a mechanical scanner + human-owned `atlas.domains.json` grouping, per-domain
-folders, and a demo-standard lint), and the atlas honesty loop (an emitted self-contained drift
-checker — coverage/grounding/stamps — plus the `atlas-review` maintenance skill). See
+codebase-map skill (a mechanical scanner + human-owned recursive topic tree, per-page evidence,
+branch-aware navigation/search, and readability lint), and the atlas honesty loop (an emitted
+self-contained drift checker—structure/coverage/grounding/per-page stamps—plus the `atlas-review`
+current-truth maintenance skill). See
 [`docs/superpowers/specs/`](docs/superpowers/specs/).
 
 ## License

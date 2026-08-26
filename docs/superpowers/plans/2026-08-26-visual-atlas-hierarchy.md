@@ -282,7 +282,7 @@ problems under a failing heading and readability observations under a non-failin
 **Interfaces:**
 - Documents the exact configuration, block, CLI, navigation, lint, freshness, and regeneration behavior implemented in Tasks 1–3.
 
-- [ ] **Step 1: Write failing skill-behavior contract tests**
+- [x] **Step 1: Write failing skill-behavior contract tests**
 
 Tests require the visual-atlas skill to document recursive topics, grouped include/exclude sources,
 overlap, topic shapes, current truth, child-page extraction, density warnings, and root-level topics.
@@ -290,28 +290,28 @@ Tests require atlas-review to say it may rewrite coherent current truth, must re
 must review only stale page evidence, and must not preserve prose merely because individual
 sentences remain accurate.
 
-- [ ] **Step 2: Run `npm test -- test/skill-docs.test.ts` and confirm the new contracts fail**
+- [x] **Step 2: Run `npm test -- test/skill-docs.test.ts` and confirm the new contracts fail**
 
-- [ ] **Step 3: Rewrite visual-atlas guidance around orientation and recursive depth**
+- [x] **Step 3: Rewrite visual-atlas guidance around orientation and recursive depth**
 
 Replace the two-level/depth-required standard with system/domain/topic page ladders. Include a
 complete config example, reader-question child-card guidance, topic-shape guidance, one-home-per-fact,
 current-truth exclusions, source-scope semantics, clean regeneration, and the revised CLI/checker
 workflow. Preserve valid tool-location and diagram guidance.
 
-- [ ] **Step 4: Rewrite atlas-review and the component catalog**
+- [x] **Step 4: Rewrite atlas-review and the component catalog**
 
 Document scoped per-page review, independent stamps, parent-summary propagation, advisory versus
 hard checks, the four new blocks, hierarchical paths/navigation/search, and the Telltale-shaped
 domain -> context building -> compaction example.
 
-- [ ] **Step 5: Update README user-facing summaries and commands**
+- [x] **Step 5: Update README user-facing summaries and commands**
 
 Describe recursive topic pages and per-page freshness without exposing implementation history.
 
-- [ ] **Step 6: Run `npm test -- test/skill-docs.test.ts test/install-skills.test.ts` and `npm run typecheck`**
+- [x] **Step 6: Run `npm test -- test/skill-docs.test.ts test/install-skills.test.ts` and `npm run typecheck`**
 
-- [ ] **Step 7: Commit `docs: teach hierarchical atlas authoring`**
+- [x] **Step 7: Commit `docs: teach hierarchical atlas authoring`**
 
 ---
 
