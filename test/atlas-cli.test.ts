@@ -7,11 +7,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 const exec = promisify(execFile);
 const BIN = new URL("../bin/atlas.ts", import.meta.url).pathname;
-const TSX = new URL("../node_modules/.bin/tsx", import.meta.url).pathname;
+const NODE = process.execPath;
+const TSX_IMPORT = new URL("../node_modules/tsx/dist/loader.mjs", import.meta.url).pathname;
 
 /** Run bin/atlas.ts with the given args via tsx; throws on non-zero exit. */
 function runCli(args: string[], cwd?: string): void {
-  execFileSync(TSX, [BIN, ...args], { encoding: "utf8", cwd });
+  execFileSync(NODE, ["--import", TSX_IMPORT, BIN, ...args], { encoding: "utf8", cwd });
 }
 
 const atlasDoc = { kind: "atlas", title: "Atlas · demo", blocks: [
@@ -28,7 +29,7 @@ describe("atlas CLI (render-only)", () => {
   it("renders one page from --blocks and re-writes its json", async () => {
     const dir = await mkdtemp(join(tmpdir(), "atlas-"));
     await writeFile(join(dir, "atlas.json"), JSON.stringify(atlasDoc));
-    await exec(TSX, [BIN, "--blocks", join(dir, "atlas.json"), "--out", dir]);
+    await exec(NODE, ["--import", TSX_IMPORT, BIN, "--blocks", join(dir, "atlas.json"), "--out", dir]);
     const html = await readFile(join(dir, "atlas.html"), "utf8");
     expect(html).toContain("Atlas · demo");
     expect(html).toContain(".domain-tile");
@@ -38,12 +39,46 @@ describe("atlas CLI (render-only)", () => {
     await writeFile(join(dir, "atlas.json"), JSON.stringify(atlasDoc));
     await mkdir(join(dir, "domain-sim"), { recursive: true });
     await writeFile(join(dir, "domain-sim", "domain-sim.json"), JSON.stringify(domainDoc));
-    await exec(TSX, [BIN, "--all", dir, "--out", dir]);
+    await exec(NODE, ["--import", TSX_IMPORT, BIN, "--all", dir, "--out", dir]);
     const files = await readdir(dir);
     expect(files).toContain("atlas.html");
     expect(files).toContain("domain-sim");            // each domain is now its own folder
     const dom = await readFile(join(dir, "domain-sim", "domain-sim.html"), "utf8");
     expect(dom).toContain('class="topbar-back"');
+  });
+
+  it("--all copies the tree config when rendering into a different directory", async () => {
+    const source = await mkdtemp(join(tmpdir(), "atlas-source-"));
+    const out = await mkdtemp(join(tmpdir(), "atlas-output-"));
+    const config = { repo: "demo", srcRoots: ["lib"], domains: [] };
+    await writeFile(join(source, "atlas.domains.json"), JSON.stringify(config));
+    await writeFile(join(source, "atlas.json"), JSON.stringify(atlasDoc));
+
+    await exec(NODE, ["--import", TSX_IMPORT, BIN, "--all", source, "--out", out]);
+
+    expect(JSON.parse(await readFile(join(out, "atlas.domains.json"), "utf8"))).toEqual(config);
+    expect(existsSync(join(out, "atlas-check.mjs"))).toBe(true);
+  });
+
+  it("renders configured page identity instead of stale JSON identity", async () => {
+    const source = await mkdtemp(join(tmpdir(), "atlas-identity-source-"));
+    const out = await mkdtemp(join(tmpdir(), "atlas-identity-output-"));
+    const config = {
+      repo: "demo", srcRoots: ["lib"],
+      domains: [{ slug: "sim", name: "Simulation", purpose: "Runs seasons", globs: [], modules: [] }],
+    };
+    await writeFile(join(source, "atlas.domains.json"), JSON.stringify(config));
+    await writeFile(join(source, "atlas.json"), JSON.stringify(atlasDoc));
+    await mkdir(join(source, "domain-sim"), { recursive: true });
+    await writeFile(join(source, "domain-sim", "domain-sim.json"), JSON.stringify({
+      ...domainDoc, slug: "stale-slug", title: "STALE TITLE",
+    }));
+
+    await exec(NODE, ["--import", TSX_IMPORT, BIN, "--all", source, "--out", out]);
+
+    const html = await readFile(join(out, "domain-sim", "domain-sim.html"), "utf8");
+    expect(html).toContain("Simulation");
+    expect(html).not.toContain("STALE TITLE");
   });
 });
 
@@ -138,6 +173,55 @@ it("--domain regenerates from reconciled config: overwrites authored prose and r
     const filesRow = regeneratedTldr.rows.find((r: any) => r.key === "Files");
     expect(filesRow).toBeDefined();
     expect(filesRow.value).toBe("2");
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+}, 30_000);
+
+it("full scan and --domain generate configured nested topic subtrees", () => {
+  const repo = join(__dirname, "fixtures", "atlas-repo");
+  const out = mkdtempSync(join(tmpdir(), "atlas-topics-"));
+  try {
+    const config = {
+      repo: "demo",
+      srcRoots: ["lib"],
+      domains: [{
+        slug: "sim", name: "Simulation", purpose: "Runs seasons",
+        globs: ["lib/sim/**"], modules: [],
+        topics: [{
+          slug: "season-loop", title: "Season loop", purpose: "Runs one season", shape: "lifecycle",
+          sources: [{ label: "Loop", include: ["lib/sim/loop.ts"] }],
+          topics: [{
+            slug: "game-resolution", title: "Game resolution", purpose: "Resolves one game", shape: "algorithm",
+            sources: [{ label: "Engine", include: ["lib/sim/engine.ts"] }],
+          }],
+        }],
+      }, {
+        slug: "brain", name: "Brain", purpose: "Makes decisions",
+        globs: ["lib/brain/**"], modules: [],
+      }, {
+        slug: "api", name: "API", purpose: "Accepts requests",
+        globs: ["lib/api/**"], modules: [],
+      }],
+      readingPaths: [{ title: "Understand a season", pages: ["sim", "sim/season-loop", "sim/season-loop/game-resolution"] }],
+    };
+    writeFileSync(join(out, "atlas.domains.json"), JSON.stringify(config, null, 2));
+
+    runCli(["--repo", repo, "--out", out]);
+
+    const seasonJson = join(out, "domain-sim", "season-loop", "season-loop.json");
+    const gameHtml = join(out, "domain-sim", "season-loop", "game-resolution", "game-resolution.html");
+    expect(existsSync(seasonJson)).toBe(true);
+    expect(existsSync(gameHtml)).toBe(true);
+    const seasonHtml = readFileSync(join(out, "domain-sim", "season-loop", "season-loop.html"), "utf8");
+    expect(seasonHtml).toContain('class="atlas-breadcrumbs"');
+    expect(seasonHtml).toContain('href="game-resolution/game-resolution.html"');
+    const domain = JSON.parse(readFileSync(join(out, "domain-sim", "domain-sim.json"), "utf8"));
+    expect(domain.blocks.some((block: any) => block.type === "depth")).toBe(false);
+
+    rmSync(join(out, "domain-sim", "season-loop"), { recursive: true });
+    runCli(["--repo", repo, "--domain", "sim", "--out", out]);
+    expect(existsSync(gameHtml)).toBe(true);
   } finally {
     rmSync(out, { recursive: true, force: true });
   }

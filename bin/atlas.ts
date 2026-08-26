@@ -13,16 +13,36 @@ import { existsSync } from "node:fs";
 import { join, resolve, basename, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { assembleAtlas, assembleDomain } from "../src/assemble-atlas.js";
-import type { AtlasBlock, AtlasOpts, DomainOpts } from "../src/atlas-blocks.js";
-import { scanInventory, aggregateDomainEdges, buildAtlasDraft, buildDomainDraft } from "../src/gather-atlas.js";
+import { assembleAtlas, assembleDomain, assembleTopic } from "../src/assemble-atlas.js";
+import type { AtlasBlock, AtlasOpts, DomainOpts, TopicOpts } from "../src/atlas-blocks.js";
+import { scanInventory, aggregateDomainEdges, buildAtlasDraft, buildDomainDraft, buildTopicDraft, suggestTopicExtractions } from "../src/gather-atlas.js";
 import { firstGuessConfig, reconcile, type AtlasConfig } from "../src/atlas-config.js";
+import {
+  buildPageNavigation,
+  buildPageTree,
+  resolveTopicSources,
+  validatePageTree,
+  type AtlasPageTree,
+} from "../src/atlas-tree.js";
 
 interface AtlasDoc extends Partial<AtlasOpts> { kind: "atlas"; blocks: AtlasBlock[]; }
 interface DomainDoc extends Partial<DomainOpts> { kind: "domain"; slug: string; blocks: AtlasBlock[]; }
-type Doc = AtlasDoc | DomainDoc;
+interface TopicDoc extends Partial<TopicOpts> { kind: "topic"; pageId: string; slug: string; blocks: AtlasBlock[]; }
+type Doc = AtlasDoc | DomainDoc | TopicDoc;
 
-async function renderFile(file: string, outDir: string, noExcalidraw = false): Promise<{ outName: string; warnings: number }> {
+function configuredNodeForFile(tree: AtlasPageTree | undefined, file: string, kind: "domain" | "topic") {
+  if (!tree) return undefined;
+  const normalized = resolve(file).replace(/\\/g, "/");
+  return tree.nodes.find((node) =>
+    node.kind === kind && normalized.endsWith(`/${node.jsonPath}`));
+}
+
+async function renderFile(
+  file: string,
+  outDir: string,
+  noExcalidraw = false,
+  tree?: AtlasPageTree,
+): Promise<{ outName: string; warnings: number }> {
   const raw = JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
   if (!Array.isArray(raw["blocks"])) {
     console.error(`${file}: expected a { "blocks": [...] } object`);
@@ -37,21 +57,49 @@ async function renderFile(file: string, outDir: string, noExcalidraw = false): P
   let html: string, outName: string, jsonName: string, pageDir: string, rel: string;
   if (kind === "domain") {
     const d = doc as DomainDoc;
-    pageDir = join(outDir, `domain-${d.slug}`);
+    const node = configuredNodeForFile(tree, file, "domain");
+    if (tree && !node) throw new Error(`domain document "${file}" is not at a configured page path`);
+    pageDir = join(outDir, node?.outputDir ?? `domain-${d.slug}`);
     await mkdir(pageDir, { recursive: true });
-    const o: DomainOpts = { ...d, title: d.title ?? d.slug, layer: d.layer ?? "engine",
+    const o: DomainOpts = { ...d, title: node?.title ?? d.title ?? d.slug, layer: d.layer ?? "engine",
       layerLabel: d.layerLabel ?? "Engine", outDir: pageDir, onWarn, generator: d.generator ?? "visual-skills · visual-atlas",
+      navigation: tree ? buildPageNavigation(tree, node!.id) : d.navigation,
       // --no-excalidraw forces the d2 floor; otherwise honor the doc's own excalidraw field.
       excalidraw: noExcalidraw ? false : d.excalidraw };
     html = await assembleDomain(d.blocks, o);
-    outName = `domain-${d.slug}.html`;
-    jsonName = `domain-${d.slug}.json`;
-    rel = `domain-${d.slug}/${outName}`;
+    outName = node ? basename(node.htmlPath) : `domain-${d.slug}.html`;
+    jsonName = node ? basename(node.jsonPath) : `domain-${d.slug}.json`;
+    rel = node?.htmlPath ?? `domain-${d.slug}/${outName}`;
+  } else if (kind === "topic") {
+    const t = doc as TopicDoc;
+    const node = configuredNodeForFile(tree, file, "topic");
+    if (tree && !node) throw new Error(`topic document "${file}" is not at a configured page path`);
+    pageDir = join(outDir, node?.outputDir ?? `topic-${t.slug}`);
+    await mkdir(pageDir, { recursive: true });
+    const navigation = tree ? buildPageNavigation(tree, node!.id) : t.navigation;
+    const o: TopicOpts = {
+      ...t,
+      title: node?.title ?? t.title ?? t.slug,
+      purpose: node?.purpose ?? t.purpose ?? "",
+      shape: node?.shape ?? t.shape,
+      outDir: pageDir,
+      onWarn,
+      navigation,
+      backHref: t.backHref ?? navigation?.parent?.href,
+      backLabel: t.backLabel ?? navigation?.parent?.title,
+      generator: t.generator ?? "visual-skills · visual-atlas",
+      excalidraw: noExcalidraw ? false : t.excalidraw,
+    };
+    html = await assembleTopic(t.blocks, o);
+    outName = node ? basename(node.htmlPath) : `topic-${t.slug}.html`;
+    jsonName = node ? basename(node.jsonPath) : `topic-${t.slug}.json`;
+    rel = node?.htmlPath ?? `topic-${t.slug}/${outName}`;
   } else {
     if (kind !== "atlas") console.warn(`⚠ ${basename(file)}: unknown kind "${kind}", rendering as atlas`);
     const a = doc as AtlasDoc;
     pageDir = outDir;
     const o: AtlasOpts = { ...a, title: a.title ?? "System Atlas", outDir: pageDir, onWarn, generator: a.generator ?? "visual-skills · visual-atlas",
+      navigation: tree ? buildPageNavigation(tree) : a.navigation,
       excalidraw: noExcalidraw ? false : a.excalidraw };
     html = await assembleAtlas(a.blocks, o);
     outName = "atlas.html";
@@ -64,19 +112,26 @@ async function renderFile(file: string, outDir: string, noExcalidraw = false): P
   return { outName: rel, warnings: warnings.length };
 }
 
-/** Discover the doc JSONs in an atlas dir: atlas.json (top) + each domain-<slug>/domain-<slug>.json. */
-async function listDocJsons(dir: string): Promise<string[]> {
-  const out: string[] = [];
-  if (existsSync(join(dir, "atlas.json"))) out.push(join(dir, "atlas.json"));
-  const subs: string[] = [];
-  for (const e of await readdir(dir, { withFileTypes: true })) {
-    if (e.isDirectory() && e.name.startsWith("domain-")) {
-      const j = join(dir, e.name, `${e.name}.json`);
-      if (existsSync(j)) subs.push(j);
-    }
+/** Discover configured docs in page-tree order, with a recursive fallback for standalone output. */
+async function listDocJsons(dir: string, tree?: AtlasPageTree): Promise<string[]> {
+  if (tree) {
+    const configured = [join(dir, "atlas.json"), ...tree.nodes.map((node) => join(dir, node.jsonPath))];
+    return configured.filter(existsSync);
   }
-  subs.sort();
-  return [...out, ...subs];
+  const out: string[] = [];
+  const walk = async (current: string) => {
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      const path = join(current, entry.name);
+      if (entry.isDirectory()) await walk(path);
+      else if (entry.isFile() && entry.name.endsWith(".json") && entry.name !== "atlas.domains.json") {
+        const stem = entry.name.slice(0, -5);
+        if (entry.name === "atlas.json" || stem === basename(current) || stem === `domain-${basename(current).replace(/^domain-/, "")}`)
+          out.push(path);
+      }
+    }
+  };
+  await walk(dir);
+  return out.sort((a, b) => (basename(a) === "atlas.json" ? -1 : basename(b) === "atlas.json" ? 1 : a.localeCompare(b)));
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -85,7 +140,7 @@ const today = () => new Date().toISOString().slice(0, 10);
  *  overwritten): target repos commit it and run it from pre-commit/CI with plain Node —
  *  no visual-skills checkout needed. See assets/atlas-check.mjs for what it verifies. */
 async function emitChecker(outDir: string): Promise<void> {
-  const src = fileURLToPath(new URL("../assets/atlas-check.mjs", import.meta.url));
+  const src = fileURLToPath(new URL("../assets/atlas-check-v2.mjs", import.meta.url));
   await copyFile(src, join(outDir, "atlas-check.mjs"));
   console.log("wrote atlas-check.mjs (drift checker — wire `node .visual/atlas/atlas-check.mjs` into pre-commit)");
 }
@@ -97,6 +152,20 @@ function parseConfig(cfgPath: string, raw: string): AtlasConfig {
     console.error(`atlas.domains.json: could not parse — ${(e as Error).message}`);
     process.exit(2);
   }
+}
+
+function checkedTree(config: AtlasConfig): AtlasPageTree {
+  const tree = buildPageTree(config);
+  const validation = validatePageTree(tree);
+  if (validation.problems.length) throw new Error(`invalid atlas page tree:\n- ${validation.problems.join("\n- ")}`);
+  for (const warning of validation.warnings) console.warn(`⚠ ${warning}`);
+  return tree;
+}
+
+async function loadTree(dir: string): Promise<AtlasPageTree | undefined> {
+  const path = join(dir, "atlas.domains.json");
+  if (!existsSync(path)) return undefined;
+  return checkedTree(parseConfig(path, await readFile(path, "utf8")));
 }
 
 async function loadOrGuessConfig(repoRoot: string, outDir: string): Promise<AtlasConfig> {
@@ -143,12 +212,22 @@ async function main() {
       const { config: live, drift } = reconcile(config, inv.modules.map((m) => m.path));
       const liveDomain = live.domains.find((d) => d.slug === values.domain)!;
       const edges = aggregateDomainEdges(live, inv);
-      const slugDir = join(outDir, `domain-${liveDomain.slug}`);
-      await mkdir(slugDir, { recursive: true });
-      const domJson = join(slugDir, `domain-${liveDomain.slug}.json`);
-      await writeFile(domJson, JSON.stringify(buildDomainDraft(liveDomain.slug, live, inv, edges, { date: today() }), null, 2));
-      const { outName, warnings } = await renderFile(domJson, outDir, noExcalidraw);
-      console.log(`refreshed ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
+      await writeFile(cfgPath, JSON.stringify(live, null, 2));
+      const tree = checkedTree(live);
+      const subtree = tree.nodes.filter((node) => node.id === liveDomain.slug || node.id.startsWith(`${liveDomain.slug}/`));
+      const date = today();
+      for (const node of subtree) {
+        const draft = node.kind === "domain"
+          ? buildDomainDraft(node.slug, live, inv, edges, { date })
+          : buildTopicDraft(node, await resolveTopicSources(repo, node.topic!), { date });
+        const json = join(outDir, node.jsonPath);
+        await mkdir(dirname(json), { recursive: true });
+        await writeFile(json, JSON.stringify(draft, null, 2));
+      }
+      for (const node of subtree) {
+        const { outName, warnings } = await renderFile(join(outDir, node.jsonPath), outDir, noExcalidraw, tree);
+        console.log(`refreshed ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
+      }
       // tile-only note (do not recompute the atlas map; see spec "Resolved during review")
       console.log(`note: atlas tile for "${liveDomain.slug}" — ${liveDomain.modules.length} files, deps: ${[...(edges.get(liveDomain.slug) ?? [])].sort().join(", ") || "none"} (update atlas.json's tile if changed)`);
       printDrift(drift);
@@ -159,15 +238,24 @@ async function main() {
     const inv = await scanInventory(repo, config0.srcRoots);
     const { config, drift } = reconcile(config0, inv.modules.map((m) => m.path));
     await writeFile(join(outDir, "atlas.domains.json"), JSON.stringify(config, null, 2));
+    const tree = checkedTree(config);
 
     const edges = aggregateDomainEdges(config, inv);
     const date = today();
     let wrote = 0;
     if (await writeDraftIfAbsent(outDir, "atlas.json", buildAtlasDraft(config, inv, edges, { date }), !!values.force)) wrote++;
-    for (const d of config.domains)
-      if (await writeDraftIfAbsent(outDir, `domain-${d.slug}/domain-${d.slug}.json`, buildDomainDraft(d.slug, config, inv, edges, { date }), !!values.force)) wrote++;
+    for (const node of tree.nodes) {
+      const draft = node.kind === "domain"
+        ? buildDomainDraft(node.slug, config, inv, edges, { date })
+        : buildTopicDraft(node, await resolveTopicSources(repo, node.topic!), { date });
+      if (await writeDraftIfAbsent(outDir, node.jsonPath, draft, !!values.force)) wrote++;
+    }
     console.log(`scanned ${inv.modules.length} module(s) → ${config.domains.length} domain(s); wrote ${wrote} new draft(s)`);
     printDrift(drift);
+    for (const suggestion of suggestTopicExtractions(config, inv)) {
+      const hint = suggestion.titleHint ? ` (possible topic: "${suggestion.titleHint}")` : "";
+      console.warn(`⚠ extraction suggestion for "${suggestion.domainSlug}"${hint}: ${suggestion.reason}`);
+    }
 
     // Orphaned domain folders: a domain-<slug>/ with no matching domain in the (re)grouped config
     // — left behind after a regroup. Warn so the human can delete it (we never delete files).
@@ -177,21 +265,27 @@ async function main() {
         console.warn(`⚠ ${e.name}/: no matching domain in atlas.domains.json (stale after a regroup? delete it)`);
     }
 
-    for (const f of await listDocJsons(outDir)) {
-      const { outName, warnings } = await renderFile(f, outDir, noExcalidraw);
+    for (const f of await listDocJsons(outDir, tree)) {
+      const { outName, warnings } = await renderFile(f, outDir, noExcalidraw, tree);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
     }
     await emitChecker(outDir);
   } else if (values.all) {
     await mkdir(outDir, { recursive: true });
-    for (const f of await listDocJsons(resolve(values.all))) {
-      const { outName, warnings } = await renderFile(f, outDir, noExcalidraw);
+    const sourceDir = resolve(values.all);
+    const tree = await loadTree(sourceDir);
+    const sourceConfig = join(sourceDir, "atlas.domains.json");
+    if (existsSync(sourceConfig) && resolve(sourceConfig) !== resolve(outDir, "atlas.domains.json"))
+      await copyFile(sourceConfig, join(outDir, "atlas.domains.json"));
+    for (const f of await listDocJsons(sourceDir, tree)) {
+      const { outName, warnings } = await renderFile(f, outDir, noExcalidraw, tree);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
     }
     await emitChecker(outDir);
   } else if (values.blocks) {
     await mkdir(outDir, { recursive: true });
-    const { outName, warnings } = await renderFile(resolve(values.blocks), outDir, noExcalidraw);
+    const tree = await loadTree(outDir);
+    const { outName, warnings } = await renderFile(resolve(values.blocks), outDir, noExcalidraw, tree);
     console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);
   } else { console.error("usage: atlas --repo <path> [--domain <slug>] [--force] [--no-excalidraw] --out <dir> | --all <dir> --out <dir> | --blocks <file> --out <dir>"); process.exit(2); }
 }

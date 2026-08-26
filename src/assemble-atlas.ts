@@ -4,15 +4,16 @@ import { fileURLToPath } from "node:url";
 import { escapeHtml } from "./html.js";
 import {
   assertUniqueAtlasIds, isAtlasChapter, atlasChapterLabel, LAYER_DOTS, collectAtlasDiagrams,
-  type AtlasBlock, type AtlasOpts, type DomainOpts, type AtlasDiagram,
-  type KV, type ComponentDeep, type ExampleBlock,
+  type AtlasBlock, type AtlasOpts, type DomainOpts, type TopicOpts, type AtlasDiagram,
+  type KV, type ComponentDeep, type ExampleBlock, type PageNavigation,
+  type AtlasPageLink, type AtlasTreeNavItem,
 } from "./atlas-blocks.js";
 import { normalizeExample, normalizeExampleBlocks } from "./blocks.js";
 import { renderInlineMarkdown } from "./renderers/markdown.js";
 import { renderExample } from "./renderers/example.js";
 import { renderAll, type DiagramResult } from "./render-diagram.js";
 import { withDiagramSvgClass } from "./review/sections.js";
-import { lintAtlas, lintDomain } from "./lint-atlas.js";
+import { lintAtlas, lintDomain, lintReadability, lintTopic } from "./lint-atlas.js";
 import { lintExamples } from "./lint-examples.js";
 
 const mi = (s: string) => renderInlineMarkdown(s);
@@ -58,7 +59,24 @@ function domainTopbar(o: DomainOpts): string {
     `<span class="topbar-title">${escapeHtml(o.title)}</span><div class="topbar-meta">${chips.join("")}</div></header>`;
 }
 
-async function doc(title: string, generator: string | undefined, topbar: string, sidebar: string, main: string): Promise<string> {
+function topicTopbar(o: TopicOpts): string {
+  const shape = o.shape ? chip("chip-stat", o.shape.replace(/-/g, " ")) : "";
+  const date = o.date ? chip("chip-stat", o.date) : "";
+  const href = o.backHref ?? o.navigation?.parent?.href ?? "../atlas.html";
+  const label = o.backLabel ?? o.navigation?.parent?.title ?? "Atlas";
+  return `<header class="topbar" role="banner">${TOGGLE}` +
+    `<a class="topbar-back" href="${escapeHtml(href)}"><span aria-hidden="true">&larr;</span> ${escapeHtml(label)}</a>` +
+    `<span class="topbar-title">${escapeHtml(o.title)}</span><div class="topbar-meta">${shape}${date}</div></header>`;
+}
+
+function safeJson(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, "\\u003c").replace(/&/g, "\\u0026");
+}
+
+async function doc(
+  title: string, generator: string | undefined, topbar: string, sidebar: string, main: string,
+  navigation?: PageNavigation,
+): Promise<string> {
   const css = await readFile(join(ASSETS, "review.css"), "utf8");
   const specCss = await readFile(join(ASSETS, "spec.css"), "utf8");
   const atlasCss = await readFile(join(ASSETS, "atlas.css"), "utf8");
@@ -67,13 +85,18 @@ async function doc(title: string, generator: string | undefined, topbar: string,
   const themeHead = await readFile(join(ASSETS, "theme-head.js"), "utf8");
   const themeToggle = await readFile(join(ASSETS, "theme-toggle.js"), "utf8");
   const viewer = await readFile(join(ASSETS, "review-viewer.js"), "utf8");
+  const atlasNavigation = navigation ? await readFile(join(ASSETS, "atlas-navigation.js"), "utf8") : "";
+  const searchData = navigation
+    ? `<script type="application/json" id="atlas-search-index">${safeJson(navigation.searchIndex)}</script>`
+    : "";
   return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<script>${themeHead}</script>` +
     `${generator ? `<meta name="generator" content="${escapeHtml(generator)}">` : ""}` +
     `<title>${escapeHtml(title)}</title><style>${css}\n${specCss}\n${atlasCss}\n${exampleCss}\n${themeCss}</style></head>` +
     `<body>${topbar}<div class="sidebar-overlay" id="sidebar-overlay"></div>` +
-    `<div class="layout">${sidebar}${main}</div>${ZOOM}<script>${viewer}</script><script>${themeToggle}</script></body></html>\n`;
+    `<div class="layout">${sidebar}${main}</div>${ZOOM}${searchData}<script>${viewer}</script>` +
+    `<script>${themeToggle}</script>${atlasNavigation ? `<script>${atlasNavigation}</script>` : ""}</body></html>\n`;
 }
 
 interface NavEntry { id: string; label: string; num: string; subs?: { id: string; label: string; dot: string }[]; }
@@ -129,11 +152,38 @@ function domainsNavHtml(blocks: AtlasBlock[]): string {
   return `<div class="sidebar-section"><span class="sidebar-label">Domains</span><ul class="nav-domains" role="list">${items}</ul></div>`;
 }
 
-function sidebar(blocks: AtlasBlock[], opts: { meta?: { key: string; value: string }[] }, layer: DomainOpts["layer"] | null, domainsNav: boolean): string {
+function treeItemHtml(item: AtlasTreeNavItem): string {
+  const classes = ["atlas-tree-item", item.current ? "is-current" : "", item.expanded ? "is-expanded" : ""].filter(Boolean).join(" ");
+  const current = item.current ? ` aria-current="page"` : "";
+  const children = item.expanded && item.children.length
+    ? `<ul class="atlas-tree-children" role="list">${item.children.map(treeItemHtml).join("")}</ul>`
+    : "";
+  return `<li class="${classes}"><a href="${escapeHtml(item.link.href)}"${current}>${escapeHtml(item.link.title)}</a>${children}</li>`;
+}
+
+function hierarchyNavHtml(navigation?: PageNavigation): string {
+  if (!navigation) return "";
+  const tree = navigation.branch.map(treeItemHtml).join("");
+  return `<div class="sidebar-section"><span class="sidebar-label">Atlas tree</span>` +
+    `<ul class="atlas-tree" role="list">${tree}</ul></div>`;
+}
+
+function searchHtml(navigation?: PageNavigation): string {
+  if (!navigation?.searchIndex.length) return "";
+  return `<div class="sidebar-section atlas-search"><label class="sidebar-label" for="atlas-search-input">Find a page</label>` +
+    `<input id="atlas-search-input" class="atlas-search-input" type="search" autocomplete="off" placeholder="Title, purpose, or source">` +
+    `<div id="atlas-search-results" class="atlas-search-results" aria-live="polite"></div></div>`;
+}
+
+function sidebar(
+  blocks: AtlasBlock[], opts: { meta?: { key: string; value: string }[]; navigation?: PageNavigation },
+  layer: DomainOpts["layer"] | null, domainsNav: boolean,
+): string {
   const contents = `<div class="sidebar-section"><span class="sidebar-label">Contents</span>` +
     `<ul class="outline-list" role="list">${outlineHtml(navEntries(blocks, layer))}</ul></div>`;
   return `<nav class="sidebar" id="sidebar" aria-label="Document navigation">` +
-    `${contents}${domainsNav ? domainsNavHtml(blocks) : ""}${metaHtml(opts.meta)}</nav>`;
+    `${searchHtml(opts.navigation)}${hierarchyNavHtml(opts.navigation)}${contents}` +
+    `${domainsNav ? domainsNavHtml(blocks) : ""}${metaHtml(opts.meta)}</nav>`;
 }
 
 function rail(blocks: AtlasBlock[]): string {
@@ -223,6 +273,43 @@ async function renderDomainTldr(b: Extract<AtlasBlock, { type: "domain-tldr" }>)
       `${b.bigIdea.sub ? `<p class="bigidea-sub">${await mi(b.bigIdea.sub)}</p>` : ""}</div>`
     : "";
   return card + big;
+}
+
+async function renderTopicTldr(b: Extract<AtlasBlock, { type: "topic-tldr" }>): Promise<string> {
+  const io = async (label: string, values: string[]) => values.length
+    ? `<div class="topic-io-group"><span class="topic-io-label">${escapeHtml(label)}</span><ul>` +
+      `${(await Promise.all(values.map(async (value) => `<li>${await mi(value)}</li>`))).join("")}</ul></div>`
+    : "";
+  return `<div class="tldr-card topic-tldr"><div class="tldr-header">` +
+    `<span class="tldr-eyebrow">${escapeHtml(b.eyebrow ?? "Technical topic")}</span>` +
+    `<h2 class="tldr-heading">${await mi(b.heading)}</h2><p class="topic-summary">${await mi(b.summary)}</p></div>` +
+    `${b.when ? `<div class="topic-when"><span>When it runs</span>${await mi(b.when)}</div>` : ""}` +
+    `<div class="topic-io">${await io("Inputs", b.inputs)}${await io("Outputs", b.outputs)}</div></div>`;
+}
+
+async function renderTopicFlow(b: Extract<AtlasBlock, { type: "topic-flow" }>): Promise<string> {
+  const steps = (await Promise.all(b.steps.map(async (step, index) =>
+    `<li class="topic-flow-step"><span class="topic-flow-number">${index + 1}</span><div>` +
+    `<h3>${escapeHtml(step.title)}</h3><p>${await mi(step.body)}</p></div></li>`))).join("");
+  return sectionHeader(b.title, b.badge) +
+    `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}` +
+    `<ol class="topic-flow">${steps}</ol>`;
+}
+
+async function renderTopicRules(b: Extract<AtlasBlock, { type: "topic-rules" }>): Promise<string> {
+  const guarantees = (await Promise.all(b.guarantees.map(async (item) => `<li>${await mi(item)}</li>`))).join("");
+  const failures = (await Promise.all(b.failures.map(async (failure) =>
+    `<div class="topic-failure"><dt>${await mi(failure.condition)}</dt><dd>${await mi(failure.behavior)}</dd></div>`))).join("");
+  return sectionHeader(b.title) + `${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}` +
+    `<div class="topic-rule-grid"><div class="topic-rule-card"><h3>Guarantees</h3><ul>${guarantees}</ul></div>` +
+    `<div class="topic-rule-card"><h3>Failure behavior</h3><dl>${failures}</dl></div></div>`;
+}
+
+async function renderImplementationReference(b: Extract<AtlasBlock, { type: "implementation-reference" }>): Promise<string> {
+  const groups = (await Promise.all(b.groups.map(async (group) =>
+    `<div class="implementation-group"><h3>${escapeHtml(group.label)}</h3>${await kvList(group.files)}</div>`))).join("");
+  return `<details class="implementation-reference"><summary>${escapeHtml(b.title)}</summary>` +
+    `<div class="implementation-reference-body">${b.intro ? `<p class="section-intro">${await mi(b.intro)}</p>` : ""}${groups}</div></details>`;
 }
 
 async function renderComponents(b: Extract<AtlasBlock, { type: "components" }>): Promise<string> {
@@ -320,6 +407,10 @@ export async function renderAtlasBlock(
       case "domain-map": return renderDomainMap(b);
       case "domain-index": return renderDomainIndex(b);
       case "domain-tldr": return renderDomainTldr(b);
+      case "topic-tldr": return renderTopicTldr(b);
+      case "topic-flow": return renderTopicFlow(b);
+      case "topic-rules": return renderTopicRules(b);
+      case "implementation-reference": return renderImplementationReference(b);
       case "components": return renderComponents(b);
       case "diagram-section": return renderDiagramSection(b, diagrams);
       case "depth": return renderDepth(b, diagrams);
@@ -333,7 +424,53 @@ export async function renderAtlasBlock(
   return `<section id="${escapeHtml(b.id)}" class="section">${inner}</section>`;
 }
 
-async function renderMain(blocks: AtlasBlock[], opts: { outDir?: string; excalidraw?: boolean; onWarn?: (m: string) => void }): Promise<string> {
+function breadcrumbsHtml(navigation?: PageNavigation): string {
+  if (!navigation?.breadcrumbs.length) return "";
+  const items = navigation.breadcrumbs.map((link, index) => {
+    const current = index === navigation.breadcrumbs.length - 1;
+    const body = current
+      ? `<span aria-current="page">${escapeHtml(link.title)}</span>`
+      : `<a href="${escapeHtml(link.href)}">${escapeHtml(link.title)}</a>`;
+    return `<li>${body}</li>`;
+  }).join("");
+  return `<nav class="atlas-breadcrumbs" aria-label="Breadcrumb"><ol>${items}</ol></nav>`;
+}
+
+async function childPagesHtml(children: AtlasPageLink[]): Promise<string> {
+  if (!children.length) return "";
+  const cards = (await Promise.all(children.map(async (child) =>
+    `<a class="topic-child-card" href="${escapeHtml(child.href)}"><h3>${escapeHtml(child.title)}</h3>` +
+    `<p>${await mi(child.purpose)}</p><span>Open topic <span aria-hidden="true">&rarr;</span></span></a>`))).join("");
+  return `<section class="section atlas-child-pages"><div class="section-header"><h2 class="section-title">Go deeper</h2>` +
+    `<span class="section-badge">${children.length} ${children.length === 1 ? "topic" : "topics"}</span></div>` +
+    `<div class="topic-child-grid">${cards}</div></section>`;
+}
+
+async function readingPathsHtml(paths: PageNavigation["readingPaths"]): Promise<string> {
+  if (!paths.length) return "";
+  const items = (await Promise.all(paths.map(async (path) => {
+    const links = path.pages.map((page, index) =>
+      `<li><a href="${escapeHtml(page.href)}">${escapeHtml(page.title)}</a>${index < path.pages.length - 1 ? `<span aria-hidden="true">&rarr;</span>` : ""}</li>`).join("");
+    return `<article class="atlas-reading-path"><h3>${escapeHtml(path.title)}</h3>` +
+      `${path.purpose ? `<p>${await mi(path.purpose)}</p>` : ""}<ol>${links}</ol></article>`;
+  }))).join("");
+  return `<section class="section atlas-reading-paths"><div class="section-header"><h2 class="section-title">Suggested paths</h2></div>${items}</section>`;
+}
+
+function pageFooterHtml(navigation?: PageNavigation): string {
+  if (!navigation || (!navigation.parent && !navigation.siblings.length && !navigation.related.length)) return "";
+  const link = (item: AtlasPageLink, rel: string) =>
+    `<a href="${escapeHtml(item.href)}"><span>${escapeHtml(rel)}</span><strong>${escapeHtml(item.title)}</strong></a>`;
+  const parent = navigation.parent ? link(navigation.parent, "Up one level") : "";
+  const siblings = navigation.siblings.map((item) => link(item, "Sibling topic")).join("");
+  const related = navigation.related.map((item) => link(item, "Related topic")).join("");
+  return `<nav class="atlas-page-footer" aria-label="Nearby pages">${parent}${siblings}${related}</nav>`;
+}
+
+async function renderMain(
+  blocks: AtlasBlock[],
+  opts: { outDir?: string; excalidraw?: boolean; onWarn?: (m: string) => void; navigation?: PageNavigation },
+): Promise<string> {
   const rendered = await renderAll(collectAtlasDiagrams(blocks), { outDir: opts.outDir, excalidraw: opts.excalidraw, onWarn: opts.onWarn });
   const diagrams = new Map<string, DiagramResult>();
   for (const r of rendered) diagrams.set(r.id, r);
@@ -342,13 +479,19 @@ async function renderMain(blocks: AtlasBlock[], opts: { outDir?: string; excalid
     if (failed.length) opts.onWarn(`${failed.length} diagram(s) failed to compile: ${failed.join(", ")} — fix their d2 source`);
   }
   const railHtml = rail(blocks);
-  const parts: string[] = [];
+  const parts: string[] = [breadcrumbsHtml(opts.navigation)];
   let railPlaced = false;
   for (const b of blocks) {
     parts.push(await renderAtlasBlock(b, diagrams, opts.onWarn, true)); // both entry points swept the tree
-    if (!railPlaced && (b.type === "atlas-tldr" || b.type === "domain-tldr")) { parts.push(railHtml); railPlaced = true; }
+    if (!railPlaced && (b.type === "atlas-tldr" || b.type === "domain-tldr" || b.type === "topic-tldr")) {
+      parts.push(await childPagesHtml(opts.navigation?.children ?? []));
+      parts.push(await readingPathsHtml(opts.navigation?.readingPaths ?? []));
+      parts.push(railHtml);
+      railPlaced = true;
+    }
   }
   if (!railPlaced) parts.unshift(railHtml);
+  parts.push(pageFooterHtml(opts.navigation));
   return `<main class="main">${parts.join("")}</main>`;
 }
 
@@ -360,17 +503,29 @@ export async function assembleAtlas(rawBlocks: AtlasBlock[], opts: AtlasOpts): P
   assertUniqueAtlasIds(blocks);
   if (opts.onWarn) for (const p of problems) opts.onWarn(p);
   if (opts.onWarn) for (const w of lintAtlas(rawBlocks)) opts.onWarn(w); // demo-standard floor: lead / map / index
+  if (opts.onWarn) for (const w of lintReadability(rawBlocks, "atlas", { cardPurposes: opts.navigation?.children.map((child) => child.purpose) })) opts.onWarn(w);
   if (opts.onWarn) for (const w of lintExamples(rawBlocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(w);
   const main = await renderMain(blocks, opts);
-  return doc(opts.title, opts.generator, atlasTopbar(opts), sidebar(blocks, opts, null, true), main);
+  return doc(opts.title, opts.generator, atlasTopbar(opts), sidebar(blocks, opts, null, true), main, opts.navigation);
 }
 
 export async function assembleDomain(rawBlocks: AtlasBlock[], opts: DomainOpts): Promise<string> {
   const { blocks, problems } = normalizeExampleBlocks(rawBlocks);
   assertUniqueAtlasIds(blocks);
   if (opts.onWarn) for (const p of problems) opts.onWarn(p);
-  if (opts.onWarn) for (const w of lintDomain(rawBlocks)) opts.onWarn(w); // demo-standard floor: lead / components / arch / seams
+  if (opts.onWarn) for (const w of lintDomain(rawBlocks, { hasChildren: !!opts.navigation?.children.length })) opts.onWarn(w);
+  if (opts.onWarn) for (const w of lintReadability(rawBlocks, "domain", { cardPurposes: opts.navigation?.children.map((child) => child.purpose) })) opts.onWarn(w);
   if (opts.onWarn) for (const w of lintExamples(rawBlocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(w);
   const main = await renderMain(blocks, opts);
-  return doc(opts.title, opts.generator, domainTopbar(opts), sidebar(blocks, opts, opts.layer, false), main);
+  return doc(opts.title, opts.generator, domainTopbar(opts), sidebar(blocks, opts, opts.layer, false), main, opts.navigation);
+}
+
+export async function assembleTopic(rawBlocks: AtlasBlock[], opts: TopicOpts): Promise<string> {
+  const { blocks, problems } = normalizeExampleBlocks(rawBlocks);
+  assertUniqueAtlasIds(blocks);
+  if (opts.onWarn) for (const problem of problems) opts.onWarn(problem);
+  if (opts.onWarn) for (const warning of lintTopic(rawBlocks, opts.shape)) opts.onWarn(warning);
+  if (opts.onWarn) for (const warning of lintExamples(rawBlocks.filter((b): b is ExampleBlock => b.type === "example"))) opts.onWarn(warning);
+  const main = await renderMain(blocks, opts);
+  return doc(opts.title, opts.generator, topicTopbar(opts), sidebar(blocks, opts, null, false), main, opts.navigation);
 }

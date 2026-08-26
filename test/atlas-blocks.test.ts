@@ -32,6 +32,18 @@ describe("atlas-blocks helpers", () => {
     expect(isAtlasChapter(arch)).toBe(true);
     expect(atlasChapterLabel(depth)).toBe("In depth");
   });
+  it("treats topic-tldr as the lead and labels topic chapters", () => {
+    const topicLead: AtlasBlock = {
+      type: "topic-tldr", id: "tldr", heading: "Context building",
+      summary: "Builds model input.", inputs: [], outputs: [],
+    };
+    const flow: AtlasBlock = {
+      type: "topic-flow", id: "flow", title: "How it works",
+      steps: [{ title: "Load", body: "Read stored state." }],
+    };
+    expect(isAtlasChapter(topicLead)).toBe(false);
+    expect(atlasChapterLabel(flow)).toBe("How it works");
+  });
   it("maps every layer to a dot color", () => {
     for (const l of ["foundation","engine","intelligence","narrative","surface","harness"] as const)
       expect(LAYER_DOTS[l]).toMatch(/^#([0-9a-f]{6});#([0-9a-f]{6})$/i);

@@ -9,6 +9,7 @@ const recapSkill = read("../skills/visual-recap/SKILL.md");
 const specSkill = read("../skills/visual-spec/SKILL.md");
 const atlasBlocks = read("../src/atlas-blocks.ts");
 const atlasSkill = read("../skills/visual-atlas/SKILL.md");
+const atlasCatalog = read("../skills/shared/atlas-components.md");
 const atlasReviewSkill = read("../skills/atlas-review/SKILL.md");
 const quizBlocks = read("../src/quiz-blocks.ts");
 const quizSkill = read("../skills/quiz/SKILL.md");
@@ -116,6 +117,128 @@ describe("skill docs stay in sync", () => {
     }
     expect(atlasReviewSkill).toContain("skills/shared/atlas-components.md");
     expect(atlasReviewSkill).toContain("src/atlas-blocks.ts");
+  });
+
+  it("visual-atlas teaches recursive reader-owned topics and flexible evidence scopes", () => {
+    for (const phrase of [
+      "recursive topic",
+      "root-level topic",
+      "include",
+      "exclude",
+      "overlap",
+      "mechanism",
+      "algorithm",
+      "data-model",
+      "lifecycle",
+      "integration",
+      "current truth",
+      "1,200",
+      "2,000",
+    ]) {
+      expect(atlasSkill.toLowerCase(), `visual-atlas must teach ${phrase}`).toContain(phrase.toLowerCase());
+    }
+    expect(atlasSkill).toMatch(/scanner.{0,100}never.{0,100}(?:create|move|mutate)/is);
+    expect(atlasSkill).toMatch(/child (?:page )?card/i);
+  });
+
+  it("visual-atlas accounts for behavior before choosing the page tree", () => {
+    const discoveryHeading = "## Discover behavior before choosing pages";
+    const pageTreeHeading = "## Choose the page tree before writing prose";
+    const discovery = atlasSkill.indexOf(discoveryHeading);
+    const pageTree = atlasSkill.indexOf(pageTreeHeading);
+    expect(discovery).toBeGreaterThan(-1);
+    expect(pageTree).toBeGreaterThan(discovery);
+
+    const contract = atlasSkill.slice(discovery, pageTree);
+    for (const phrase of [
+      "journey trace",
+      "responsibility ledger",
+      "documentation disposition",
+      "boundary crossings",
+      "convergence",
+      "durable writes",
+      "terminal signaling",
+      "recovery",
+      "cleanup",
+      "responsibility in reader language",
+      "why it matters",
+      "journey or invariant",
+      "summarize it on the domain landing page",
+      "topic or nested topic page",
+      "canonical home",
+      "omit it with a concrete reason",
+      "source groups cover",
+      "related and reading-path links",
+      "final handoff",
+      "central orchestrators",
+    ]) {
+      expect(contract.toLowerCase(), `visual-atlas discovery contract must require ${phrase}`)
+        .toContain(phrase.toLowerCase());
+    }
+
+    const singleDomain = atlasSkill.slice(
+      atlasSkill.indexOf("### 2. Single domain"),
+      atlasSkill.indexOf("### 3. Render-only"),
+    );
+    expect(singleDomain).toContain("Refresh the journey traces and responsibility ledger");
+  });
+
+  it("visual-atlas examples stay repository-neutral", () => {
+    expect(atlasSkill.toLowerCase()).not.toContain("telltale");
+    expect(atlasSkill.toLowerCase()).not.toContain("conversation-engine");
+  });
+
+  it("visual-atlas requires child pages to earn their depth", () => {
+    const heading = "## Earn every child page";
+    const substance = atlasSkill.indexOf(heading);
+    const workflow = atlasSkill.indexOf("## Workflow (three modes)");
+    expect(substance).toBeGreaterThan(-1);
+    expect(workflow).toBeGreaterThan(substance);
+
+    const contract = atlasSkill.slice(substance, workflow).toLowerCase();
+    for (const phrase of [
+      "teaching brief",
+      "reader question",
+      "mental model",
+      "predict",
+      "representative case",
+      "progressive disclosure",
+      "hard integrity",
+      "advisory",
+    ]) {
+      expect(contract, `visual-atlas substance contract must require ${phrase}`).toContain(phrase);
+    }
+
+    for (const phrase of [
+      "shape-specific teaching contracts",
+      "mechanism",
+      "algorithm",
+      "lifecycle",
+      "integration",
+      "data model",
+      "concrete values",
+      "state transition",
+      "worked trace",
+    ]) {
+      expect(atlasCatalog.toLowerCase(), `atlas catalog must explain ${phrase}`)
+        .toContain(phrase.toLowerCase());
+    }
+
+    expect(atlasSkill.split("\n").length).toBeLessThanOrEqual(500);
+  });
+
+  it("atlas-review rewrites coherent current truth and scopes review per page", () => {
+    for (const phrase of [
+      "smallest coherent current-truth update",
+      "project history",
+      "stale page",
+      "parent summary",
+      "independent stamp",
+    ]) {
+      expect(atlasReviewSkill.toLowerCase(), `atlas-review must teach ${phrase}`).toContain(phrase.toLowerCase());
+    }
+    expect(atlasReviewSkill).toMatch(/do not preserve.{0,120}sentence/is);
+    expect(atlasReviewSkill).toMatch(/rewrite.{0,120}current (?:truth|explanation)/is);
   });
 
   it("visual-spec mandates the standard (lead, decisions+why, scope, approval) and references both catalogs", () => {

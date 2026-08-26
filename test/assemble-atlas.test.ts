@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { assembleAtlas, assembleDomain, renderAtlasDiagram, atlasLegend, renderAtlasBlock } from "../src/assemble-atlas.js";
+import { assembleAtlas, assembleDomain, assembleTopic, renderAtlasDiagram, atlasLegend, renderAtlasBlock } from "../src/assemble-atlas.js";
 import { type AtlasBlock } from "../src/atlas-blocks.js";
 import { renderAll } from "../src/render-diagram.js";
 
@@ -61,6 +61,22 @@ describe("assemble shell", () => {
     expect(html).toContain('class="chip chip-stat">lib/brain');
     expect(html).toContain('class="chip chip-count">~76 files');
     expect(html).toContain("depends on sim · world");
+  });
+
+  it("constrains long topic topbars instead of widening narrow viewports", async () => {
+    const html = await assembleTopic(
+      [{ type: "topic-tldr", id: "tldr", heading: "Compaction", summary: "s", inputs: [], outputs: [] }],
+      {
+        title: "Compaction and summarization",
+        purpose: "How older messages stay inside the model budget.",
+        shape: "algorithm",
+        backHref: "../context-building.html",
+        backLabel: "Context building",
+        date: "2026-08-26",
+      },
+    );
+    expect(html).toMatch(/@media \(max-width: 720px\)[\s\S]*?\.topbar-meta\s*\{\s*display:\s*none/);
+    expect(html).toMatch(/@media \(max-width: 720px\)[\s\S]*?\.topbar-title\s*\{[^}]*min-width:\s*0[^}]*overflow:\s*hidden/);
   });
 });
 
@@ -239,6 +255,33 @@ describe("full page assembly", () => {
     const railAt = html.indexOf('class="progress-rail"'); const tldrAt = html.indexOf('id="tldr"'); const domAt = html.indexOf('id="domains"');
     expect(tldrAt).toBeLessThan(railAt); expect(railAt).toBeLessThan(domAt);
   });
+  it("places the section guide after landing-page routes and directly before the first chapter", async () => {
+    const link = {
+      id: "conversation/context-building", title: "Context building",
+      purpose: "Builds model input", href: "context-building/context-building.html",
+      breadcrumb: "System Atlas / Conversation / Context building",
+    };
+    const html = await assembleDomain([
+      { type: "domain-tldr", id: "tldr", heading: "Conversation", rows: [], bigIdea: { line: "One owner coordinates the turn." } },
+      { type: "owns", id: "one-turn", title: "One turn at a glance", rows: [] },
+    ], {
+      title: "Conversation", layer: "engine", layerLabel: "Engine",
+      navigation: {
+        breadcrumbs: [], branch: [], children: [link], siblings: [], related: [], searchIndex: [],
+        readingPaths: [{ title: "Follow one turn", pages: [link] }],
+      },
+    });
+
+    const tldrAt = html.indexOf('id="tldr"');
+    const childRoutesAt = html.indexOf('<section class="section atlas-child-pages"');
+    const readingPathsAt = html.indexOf('<section class="section atlas-reading-paths"');
+    const railAt = html.indexOf('class="progress-rail"');
+    const firstChapterAt = html.indexOf('id="one-turn"');
+    expect(tldrAt).toBeLessThan(childRoutesAt);
+    expect(childRoutesAt).toBeLessThan(readingPathsAt);
+    expect(readingPathsAt).toBeLessThan(railAt);
+    expect(railAt).toBeLessThan(firstChapterAt);
+  });
   it("domain renders a depth diagram via the pipeline", async () => {
     const blocks: AtlasBlock[] = [
       { type: "domain-tldr", id: "tldr", heading: "h", rows: [] },
@@ -314,5 +357,76 @@ describe("renderAtlasBlock standalone safety", () => {
     expect(warns.filter((w) => w.includes("no source"))).toHaveLength(1);
     expect(warns.filter((w) => w.includes("no lesson"))).toHaveLength(1);
     expect(warns.filter((w) => w.includes("dropped"))).toHaveLength(1);
+  });
+});
+
+describe("hierarchical topic pages", () => {
+  const blocks: AtlasBlock[] = [
+    {
+      type: "topic-tldr", id: "tldr", heading: "Context building",
+      summary: "Builds model input from stored conversation state.",
+      when: "Before each model call", inputs: ["stored messages"], outputs: ["ordered context"],
+    },
+    {
+      type: "topic-flow", id: "flow", title: "How it works",
+      steps: [{ title: "Load", body: "Read stored state." }, { title: "Order", body: "Apply stable ordering." }],
+    },
+    {
+      type: "topic-rules", id: "rules", title: "Guarantees and failures",
+      guarantees: ["The ordering is stable."],
+      failures: [{ condition: "The budget is exceeded", behavior: "Compact older content." }],
+    },
+    {
+      type: "implementation-reference", id: "reference", title: "Implementation reference",
+      groups: [{ label: "Assembly", files: [{ name: "lib/context.ts", desc: "Builds the ordered list." }] }],
+    },
+  ];
+  const navigation = {
+    current: { id: "conversation/context-building", title: "Context building", purpose: "Builds model input", href: "context-building.html", breadcrumb: "System Atlas · demo / Conversation / Context building" },
+    breadcrumbs: [
+      { id: "atlas", title: "System Atlas · demo", purpose: "", href: "../../atlas.html", breadcrumb: "System Atlas · demo" },
+      { id: "conversation", title: "Conversation", purpose: "Runs a turn", href: "../domain-conversation.html", breadcrumb: "System Atlas · demo / Conversation" },
+      { id: "conversation/context-building", title: "Context building", purpose: "Builds model input", href: "context-building.html", breadcrumb: "System Atlas · demo / Conversation / Context building" },
+    ],
+    branch: [
+      { link: { id: "conversation", title: "Conversation", purpose: "Runs a turn", href: "../domain-conversation.html", breadcrumb: "System Atlas · demo / Conversation" }, current: false, expanded: true, children: [
+        { link: { id: "conversation/context-building", title: "Context building", purpose: "Builds model input", href: "context-building.html", breadcrumb: "System Atlas · demo / Conversation / Context building" }, current: true, expanded: true, children: [] },
+      ] },
+      { link: { id: "billing", title: "Billing", purpose: "Collects payment", href: "../../domain-billing/domain-billing.html", breadcrumb: "System Atlas · demo / Billing" }, current: false, expanded: false, children: [] },
+    ],
+    parent: { id: "conversation", title: "Conversation", purpose: "Runs a turn", href: "../domain-conversation.html", breadcrumb: "System Atlas · demo / Conversation" },
+    children: [{ id: "conversation/context-building/compaction", title: "Compaction", purpose: "Reduces older input", href: "compaction/compaction.html", breadcrumb: "System Atlas · demo / Conversation / Context building / Compaction" }],
+    siblings: [{ id: "conversation/turn-loop", title: "Turn loop", purpose: "Runs one turn", href: "../turn-loop/turn-loop.html", breadcrumb: "System Atlas · demo / Conversation / Turn loop" }],
+    related: [],
+    readingPaths: [{ title: "Debug context size", purpose: "Follow the budget path", pages: [{ id: "conversation/context-building", title: "Context building", purpose: "Builds model input", href: "context-building.html", breadcrumb: "System Atlas · demo / Conversation / Context building" }] }],
+    searchIndex: [
+      { id: "conversation/context-building", title: "Context building", purpose: "Builds model input", href: "context-building.html", breadcrumb: "System Atlas · demo / Conversation / Context building", aliases: ["context builder"], sources: ["lib/context.ts"] },
+    ],
+  };
+
+  it("renders topic content with direct-entry navigation and collapsed references", async () => {
+    const html = await assembleTopic(blocks, {
+      title: "Context building", purpose: "Builds model input", shape: "mechanism", navigation,
+    });
+
+    expect(html).toContain('class="atlas-breadcrumbs"');
+    expect(html).toContain('class="topic-child-card" href="compaction/compaction.html"');
+    expect(html).toContain('class="atlas-page-footer"');
+    expect(html).toContain('<details class="implementation-reference"');
+    expect(html).not.toContain('<details class="implementation-reference" open');
+    expect(html).toContain('class="topic-flow-step"');
+    expect(html).toContain('id="atlas-search-index"');
+    expect(html).toContain('"aliases":["context builder"]');
+  });
+
+  it("expands only the current hierarchy branch in the sidebar", async () => {
+    const html = await assembleTopic(blocks, {
+      title: "Context building", purpose: "Builds model input", shape: "mechanism", navigation,
+    });
+
+    expect(html).toContain('class="atlas-tree-item is-expanded"');
+    expect(html).toContain('aria-current="page"');
+    expect(html).toContain(">Billing</a>");
+    expect(html).not.toContain("billing/invoices");
   });
 });

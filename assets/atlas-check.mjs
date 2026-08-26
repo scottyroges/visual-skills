@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// Source-tree compatibility entrypoint. The CLI emits atlas-check-v2.mjs as atlas-check.mjs so
+// target repositories still receive one self-contained plain-Node file.
+await import("./atlas-check-v2.mjs");
 /**
  * Atlas drift check — emitted into <repo>/.visual/atlas/ by the visual-atlas tool.
  * Self-contained on purpose: commit it with the atlas so pre-commit hooks and CI can run
