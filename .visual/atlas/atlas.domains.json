@@ -121,6 +121,7 @@
         "bin/atlas.ts",
         "src/atlas-blocks.ts",
         "src/atlas-config.ts",
+        "src/atlas-tree.ts",
         "src/gather-atlas.ts",
         "src/assemble-atlas.ts",
         "src/lint-atlas.ts"
@@ -130,6 +131,7 @@
         "src/assemble-atlas.ts",
         "src/atlas-blocks.ts",
         "src/atlas-config.ts",
+        "src/atlas-tree.ts",
         "src/gather-atlas.ts",
         "src/lint-atlas.ts"
       ]

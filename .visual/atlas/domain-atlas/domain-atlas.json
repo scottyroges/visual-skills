@@ -5,7 +5,7 @@
   "layer": "surface",
   "layerLabel": "Surface",
   "path": "atlas",
-  "count": "6 files",
+  "count": "7 files",
   "depends": "core · diagrams · code-intel · recap",
   "date": "2026-06-20",
   "generator": "visual-skills · visual-atlas",
@@ -20,7 +20,7 @@
     },
     {
       "key": "Files",
-      "value": "6 (1 CLI + 5 src modules)"
+      "value": "7 (1 CLI + 6 src modules)"
     },
     {
       "key": "Depends on",
@@ -57,8 +57,8 @@
       "type": "components",
       "id": "components",
       "title": "The pieces",
-      "badge": "1 CLI + 5 modules",
-      "intro": "One CLI (three modes) over five library modules: a grouping config with drift detection, a scanner that builds drafts, the block model that types the page, an assembler that renders HTML, and a completeness lint. Tap a card to jump to its full section.",
+      "badge": "1 CLI + 6 modules",
+      "intro": "One CLI (three modes) over six library modules: grouping and page-tree configuration, a scanner that builds drafts, the block model that types the page, an assembler that renders HTML, and a completeness lint. Tap a card to jump to its full section.",
       "cards": [
         {
           "name": "CLI",
@@ -81,8 +81,8 @@
           "href": "#c-cli"
         },
         {
-          "name": "config + drift",
-          "purpose": "`atlas-config.ts` — the human-owned `atlas.domains.json`: one domain per `globs` set. `firstGuessConfig` seeds it (one domain per srcRoot subdir); `reconcile` refills resolved `modules` and reports drift — unassigned modules, stale paths, empty domains.",
+          "name": "config + page tree",
+          "purpose": "`atlas-config.ts` owns domain grouping plus authored recursive topic types. `atlas-tree.ts` derives stable page paths, breadcrumbs, relationships, reading paths, and labeled file-level evidence scopes without changing the authored hierarchy.",
           "exports": [
             {
               "name": "firstGuessConfig"
@@ -92,6 +92,13 @@
             },
             {
               "name": "matchGlob",
+              "deputy": true
+            },
+            {
+              "name": "buildPageTree"
+            },
+            {
+              "name": "resolveTopicSources",
               "deputy": true
             }
           ],
@@ -256,16 +263,20 @@
         },
         {
           "id": "c-config",
-          "name": "config + drift",
-          "path": "src/atlas-config.ts",
+          "name": "config + page tree",
+          "path": "src/atlas-config.ts + src/atlas-tree.ts",
           "detail": [
-            "`atlas.domains.json` is the human-owned source of truth: each `DomainConfig` carries a `slug`, `name`, and `globs` (the editable lever); the scanner fills the resolved `modules`. `firstGuessConfig` seeds a fresh config — one domain per immediate child directory of each srcRoot — so a new repo starts grouped, not blank. `reconcile` refills each domain's `modules` from its `globs` against the live inventory while **preserving every human-owned field**.",
-            "Crucially, `reconcile` reports **drift** but never applies it: `newModules` (in the repo, matched by no glob), `stalePaths` (config paths no longer present), and `emptyDomains` (globs resolving to nothing). The human resolves drift by editing globs. `matchGlob` is the tiny anchored matcher — `**` spans segments, `*` spans within one."
+            "`atlas.domains.json` is the human-owned source of truth: each `DomainConfig` carries a `slug`, `name`, and `globs` for source ownership, while optional recursive `topics` describe the reader's conceptual page tree. `firstGuessConfig` seeds domains; `reconcile` refills each domain's `modules` while preserving authored purposes, topics, source groups, and reading paths.",
+            "`atlas-tree.ts` turns the authored hierarchy into deterministic page identities, nested output paths, breadcrumbs, parent/child relationships, and related-page validation. Topic `sources` are labeled include/exclude glob groups: they may overlap and span folders because they identify evidence, not ownership. `resolveTopicSources` fingerprints at file granularity. Drift remains explicit: `reconcile` reports unassigned modules, stale paths, and empty domains without reorganizing pages."
           ],
           "files": [
             {
               "name": "atlas-config.ts",
-              "desc": "`DomainConfig`/`AtlasConfig`/`Drift` types, `firstGuessConfig`, `reconcile`, `matchGlob`."
+              "desc": "Domain, topic, source-group, reading-path, and drift types plus `firstGuessConfig`, `reconcile`, and `matchGlob`."
+            },
+            {
+              "name": "atlas-tree.ts",
+              "desc": "Recursive page derivation, stable output paths, breadcrumbs, relationship validation, and evidence-scope resolution."
             }
           ],
           "exports": [
@@ -283,7 +294,19 @@
             },
             {
               "name": "AtlasConfig",
-              "desc": "The config shape (`repo` / `srcRoots` / `domains`)."
+              "desc": "The config shape (`repo` / `srcRoots` / domains plus optional root topics and reading paths)."
+            },
+            {
+              "name": "buildPageTree()",
+              "desc": "Derives ordered domain/topic nodes, output paths, breadcrumbs, and relationships."
+            },
+            {
+              "name": "validatePageTree()",
+              "desc": "Separates invalid identities/references from excessive-depth warnings."
+            },
+            {
+              "name": "resolveTopicSources()",
+              "desc": "Resolves labeled include/exclude file scopes without deduplicating overlap across groups."
             }
           ],
           "connections": [
@@ -519,7 +542,7 @@
           "desc": "The mechanical scan products: per-module imports/exports/router flags, Prisma models, and the reported config drift."
         }
       ],
-      "note": "The block model lives in `atlas-blocks.ts`; the config types in `atlas-config.ts`. The scanner fills `modules` and the draft skeletons; a human owns `globs`, `purpose`, and `detail`."
+      "note": "The block model lives in `atlas-blocks.ts`; domain/topic/source types live in `atlas-config.ts`, and `atlas-tree.ts` derives navigation and evidence. The scanner fills `modules` and draft skeletons; a human owns grouping, page hierarchy, purpose, and detail."
     },
     {
       "type": "seams",
@@ -570,8 +593,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:26feae2d18419f2114e1f3e384189fe8e53859fdda730d2dfb5c33f4b8043456",
-    "date": "2026-08-05",
-    "commit": "de7da39862f70cf60c76334c5bb44d99c311746f"
+    "hash": "sha256:171ff6e57a30ef8b9eddf7d84919a6032087290b300e67b4eae7632df9e7633d",
+    "date": "2026-08-26",
+    "commit": "9d93a77de230f393e8526d7db97e1050fe91352e"
   }
 }

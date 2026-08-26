@@ -41,7 +41,7 @@
 - `AtlasPageNode.id` is the slash-joined conceptual path, for example `conversation-engine/context-building/compaction`.
 - `AtlasPageNode.outputDir`, `.jsonPath`, and `.htmlPath` are repository-output-relative paths used by the renderer, CLI, checker, and search index.
 
-- [ ] **Step 1: Write failing recursive-tree tests**
+- [x] **Step 1: Write failing recursive-tree tests**
 
 ```ts
 const config: AtlasConfig = {
@@ -64,9 +64,9 @@ expect(tree.nodes[2].breadcrumbs.map((b) => b.title)).toEqual([
 ]);
 ```
 
-- [ ] **Step 2: Run `npm test -- test/atlas-tree.test.ts` and confirm it fails because the module and types do not exist**
+- [x] **Step 2: Run `npm test -- test/atlas-tree.test.ts` and confirm it fails because the module and types do not exist**
 
-- [ ] **Step 3: Add config types and minimal deterministic tree derivation**
+- [x] **Step 3: Add config types and minimal deterministic tree derivation**
 
 ```ts
 export type TopicShape = "mechanism" | "algorithm" | "data-model" | "lifecycle" | "integration";
@@ -83,9 +83,9 @@ export interface ReadingPathConfig { title: string; purpose?: string; pages: str
 unreachable related/reading-path IDs, and empty required identity fields; it returns a warning for
 topic depth greater than two below a domain.
 
-- [ ] **Step 4: Run the focused tree tests and confirm path, breadcrumb, uniqueness, and depth behavior passes**
+- [x] **Step 4: Run the focused tree tests and confirm path, breadcrumb, uniqueness, and depth behavior passes**
 
-- [ ] **Step 5: Write failing evidence-scope tests**
+- [x] **Step 5: Write failing evidence-scope tests**
 
 ```ts
 const groups = await resolveTopicSources(REPO, {
@@ -101,11 +101,11 @@ expect(groups.map((g) => [g.label, g.files])).toEqual([
 ]);
 ```
 
-- [ ] **Step 6: Implement file walking plus include/exclude matching and confirm overlapping groups retain their independent matches**
+- [x] **Step 6: Implement file walking plus include/exclude matching and confirm overlapping groups retain their independent matches**
 
-- [ ] **Step 7: Run `npm test -- test/atlas-config.test.ts test/atlas-tree.test.ts` and `npm run typecheck`**
+- [x] **Step 7: Run `npm test -- test/atlas-config.test.ts test/atlas-tree.test.ts` and `npm run typecheck`**
 
-- [ ] **Step 8: Commit `feat: add recursive atlas page model`**
+- [x] **Step 8: Commit `feat: add recursive atlas page model`**
 
 ---
 

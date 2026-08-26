@@ -1,14 +1,47 @@
+export type TopicShape = "mechanism" | "algorithm" | "data-model" | "lifecycle" | "integration";
+
+/** A labeled, file-level evidence scope. Groups may overlap and do not claim file ownership. */
+export interface SourceGroup {
+  label: string;
+  include: string[];
+  exclude?: string[];
+}
+
+/** A conceptual technical page. Its recursive shape is authored rather than scanner-derived. */
+export interface TopicConfig {
+  slug: string;
+  title: string;
+  purpose: string;
+  shape?: TopicShape;
+  aliases?: string[];
+  sources: SourceGroup[];
+  topics?: TopicConfig[];
+  related?: string[];
+}
+
+export interface ReadingPathConfig {
+  title: string;
+  purpose?: string;
+  pages: string[];
+}
+
 /** The committed grouping config (`atlas.domains.json`) — human-owned source of truth. */
 export interface DomainConfig {
   slug: string;
   name: string;
+  purpose?: string;
   globs: string[];      // human-editable lever
   modules: string[];    // resolved membership the scanner fills in (repo-relative)
+  topics?: TopicConfig[];
+  related?: string[];
+  readingPaths?: ReadingPathConfig[];
 }
 export interface AtlasConfig {
   repo: string;
   srcRoots: string[];
   domains: DomainConfig[];
+  topics?: TopicConfig[];
+  readingPaths?: ReadingPathConfig[];
 }
 
 /** Drift between the live inventory and an existing config (reported, never auto-applied). */
@@ -20,15 +53,24 @@ export interface Drift {
 
 /** Minimal glob: `**` spans path segments, `*` spans within one segment. Anchored full-match. */
 export function matchGlob(glob: string, path: string): boolean {
-  const re = new RegExp(
-    "^" +
-      glob
-        .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-        .replace(/\*\*/g, "\x00")     // NUL placeholder — cannot appear in a real path/glob
-        .replace(/\*/g, "[^/]*")
-        .replace(/\x00/g, ".*") +
-      "$",
-  );
+  const normalized = norm(glob);
+  let body = "";
+  for (let i = 0; i < normalized.length;) {
+    if (normalized.startsWith("**/", i)) {
+      body += "(?:.*/)?";
+      i += 3;
+    } else if (normalized.startsWith("**", i)) {
+      body += ".*";
+      i += 2;
+    } else if (normalized[i] === "*") {
+      body += "[^/]*";
+      i += 1;
+    } else {
+      body += normalized[i].replace(/[.+^${}()|[\]\\]/g, "\\$&");
+      i += 1;
+    }
+  }
+  const re = new RegExp(`^${body}$`);
   return re.test(path);
 }
 

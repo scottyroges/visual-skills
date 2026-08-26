@@ -57,6 +57,27 @@ describe("reconcile", () => {
     expect(sim.modules).toEqual(["lib/sim/engine.ts", "lib/sim/loop.ts"]); // refilled, old.ts dropped
   });
 
+  it("preserves authored purposes and topic trees while reconciling modules", () => {
+    const topicConfig = {
+      ...config,
+      domains: [{
+        ...config.domains[0],
+        purpose: "Runs the simulation",
+        topics: [{
+          slug: "season-loop",
+          title: "Season loop",
+          purpose: "Runs one season",
+          sources: [{ label: "Loop", include: ["lib/sim/loop.ts"] }],
+        }],
+      }],
+    };
+
+    const { config: next } = reconcile(topicConfig, live);
+
+    expect(next.domains[0].purpose).toBe("Runs the simulation");
+    expect(next.domains[0].topics?.[0].slug).toBe("season-loop");
+  });
+
   it("reports new (unassigned) modules, stale paths, and empty domains", () => {
     const { drift } = reconcile(config, live);
     expect(drift.newModules).toEqual(["lib/store/cart.ts"]);
