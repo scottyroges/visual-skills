@@ -32,15 +32,15 @@
       "type": "domain-tldr",
       "id": "tldr",
       "eyebrow": "Domain",
-      "heading": "The visual-atlas product — it scans a repo, groups modules into domains, drafts a two-level map, and renders `atlas.html` plus a page per domain.",
+      "heading": "The visual-atlas product scans a repo, maps its domains, and renders a navigable tree of orientation pages and focused technical topics.",
       "rows": [
         {
           "key": "Owns",
-          "value": "The atlas **block model** (the `AtlasBlock` union — `atlas-tldr`, `domain-map`, `domain-index`, `domain-tldr`, `components`, `depth`, `owns`, `seams`, `diagram-section`, `example`) and the `atlas.domains.json` **grouping config**."
+          "value": "The atlas **block model**, the `atlas.domains.json` domain/topic hierarchy, deterministic page paths and navigation, mechanical drafts, self-contained rendering, and completeness checks."
         },
         {
           "key": "Why",
-          "value": "A standing onboarding map: the atlas page gives the all-domains picture, each `domain-<slug>/` page is a deep-dive + reference. Mechanical scan handles the inventory; a human writes the prose and the *why*."
+          "value": "A standing onboarding-to-reference map: system and domain pages orient the reader, while recursively nested topic pages explain mechanisms without overloading their parents. Mechanical scan handles inventory; a human authors the hierarchy and meaning."
         },
         {
           "key": "Self-describing",
@@ -50,7 +50,7 @@
       "bigIdea": {
         "label": "The load-bearing idea",
         "line": "\"Hybrid — the scanner does the inventory, the human writes the domains and the why.\"",
-        "sub": "`scanInventory` finds modules, imports, and exports; `firstGuessConfig`/`reconcile` group them into domains from `atlas.domains.json` globs and report **drift** (never auto-applies it); `buildAtlasDraft`/`buildDomainDraft` emit a skeleton with empty `purpose`/`detail` fields. The draft is written **only when absent** (never clobbers authored prose unless `--force`), and `lint-atlas` flags the blank fields a human still needs to fill."
+        "sub": "`scanInventory` finds modules, imports, and exports; `reconcile` maintains domain coverage; `buildPageTree` derives stable recursive paths and navigation; and the draft builders emit system, domain, and topic skeletons. The scanner never reorganizes the authored hierarchy."
       }
     },
     {
@@ -62,7 +62,7 @@
       "cards": [
         {
           "name": "CLI",
-          "purpose": "`bin/atlas.ts` — the entry with three modes: **full scan** (config + drift + draft-when-absent + render), **single-domain** (rescan one page), and **render-only** (`--all` / `--blocks`). Lays out `atlas.*` at the top and each domain in its own `domain-<slug>/` folder.",
+          "purpose": "`bin/atlas.ts` — full scan, single-domain subtree refresh, and render-only modes. It walks configured page nodes, writes recursive topic drafts, derives navigation at render time, and keeps each nested page's sidecars in its own folder.",
           "exports": [
             {
               "name": "--repo"
@@ -119,16 +119,25 @@
             },
             {
               "name": "buildDomainDraft"
+            },
+            {
+              "name": "buildTopicDraft"
             }
           ],
           "href": "#c-gather"
         },
         {
           "name": "block model",
-          "purpose": "`atlas-blocks.ts` — the `AtlasBlock` union that types every page, plus page-option shapes (`AtlasOpts`/`DomainOpts`), the layer-color table, and the id-uniqueness / diagram-collection helpers. **This very file is documented below.**",
+          "purpose": "`atlas-blocks.ts` — system/domain/topic blocks plus `PageNavigation` and page options. Topic leads, flows, rules, and collapsed implementation references share the existing diagram and example primitives.",
           "exports": [
             {
               "name": "AtlasBlock"
+            },
+            {
+              "name": "TopicOpts"
+            },
+            {
+              "name": "PageNavigation"
             },
             {
               "name": "ComponentDeep"
@@ -146,13 +155,16 @@
         },
         {
           "name": "render",
-          "purpose": "`assemble-atlas.ts` — turns a block list into a self-contained HTML page: `assembleAtlas` for the map, `assembleDomain` for a domain page. Renders each `diagram-section`/`depth` diagram via the diagrams domain.",
+          "purpose": "`assemble-atlas.ts` — renders system, domain, and topic pages in one self-contained shell. It adds breadcrumbs, current-branch navigation, child cards, reading paths, related-page navigation, offline structured search, and collapsed implementation references.",
           "exports": [
             {
               "name": "assembleAtlas"
             },
             {
               "name": "assembleDomain"
+            },
+            {
+              "name": "assembleTopic"
             },
             {
               "name": "renderAtlasBlock",
@@ -181,7 +193,7 @@
       "id": "arch",
       "title": "How a full scan runs",
       "badge": "flow",
-      "intro": "`gather-atlas` is the hub. The repo is scanned into an `Inventory`; `atlas-config` groups modules into domains (first-guess or reconcile, reporting drift); `buildAtlasDraft`/`buildDomainDraft` emit skeleton docs **only when absent**; a human enriches the blank `purpose`/`detail` fields; then `assembleAtlas`/`assembleDomain` render `atlas.html` + each `domain-<slug>/` page — with `lint-atlas` gating the completeness floor.",
+      "intro": "A full scan reconciles domain coverage, derives the authored page tree, and emits system, domain, and topic drafts only when absent. Rendering then adds navigation from the tree rather than copying it into authored JSON. A single-domain refresh regenerates that domain's complete configured subtree.",
       "diagram": {
         "id": "scan-flow",
         "kind": "flowchart",
@@ -219,8 +231,8 @@
           "name": "CLI",
           "path": "bin/atlas.ts",
           "detail": [
-            "The single entry point with three modes (paths may be relative — they resolve against the cwd). **Full scan** (`--repo <dir> --out <dir>`) loads or first-guesses `atlas.domains.json`, scans the repo, reconciles + reports drift, writes the config, drafts `atlas.json` and each `domain-<slug>/domain-<slug>.json` **only when absent** (or always with `--force`), then renders every doc. **Single-domain** (`--domain <slug>`) rescans and regenerates just that page (and prints a tile-update note). **Render-only** replays committed JSON — `--all <dir>` re-renders the atlas plus every `domain-<slug>/` folder, `--blocks <file>` renders one page.",
-            "`writeDraftIfAbsent` is the no-clobber guarantee: it skips any existing draft unless `--force`. The layout puts `atlas.{html,json}` + `atlas.domains.json` at the top of the out dir, and each domain self-contained in its own `domain-<slug>/` folder (page + diagram sidecars). It also warns about orphaned `domain-*/` folders left after a regroup — but never deletes files. Every mode except `--blocks` also refreshes `atlas-check.mjs` in the out dir (`emitChecker` copies the tool-owned `assets/atlas-check.mjs`, always overwritten) — the self-contained drift checker target repos commit and run from pre-commit/CI with plain Node."
+            "The single entry point has three modes. **Full scan** reconciles domain coverage, validates the configured page tree, emits missing system/domain/topic drafts, and renders every configured page. **Single-domain** regenerates the selected domain plus every nested topic beneath it. **Render-only** replays committed JSON with navigation derived from the adjacent config.",
+            "`writeDraftIfAbsent` is the no-clobber guarantee for full scans; `--force` requests clean replacement. `listDocJsons` follows configuration order when a tree exists and recursively discovers standalone page JSON otherwise. `renderFile` handles `atlas`, `domain`, and `topic` documents and passes derived navigation into the shared assembler."
           ],
           "files": [
             {
@@ -253,7 +265,7 @@
           "connections": [
             {
               "dir": "calls",
-              "body": "`scanInventory`, `firstGuessConfig`/`reconcile`, `buildAtlasDraft`/`buildDomainDraft`, `assembleAtlas`/`assembleDomain`"
+              "body": "`scanInventory`, `reconcile`, `buildPageTree`, all three draft builders, and all three assemblers"
             },
             {
               "dir": "writes",
@@ -326,12 +338,12 @@
           "path": "src/gather-atlas.ts",
           "detail": [
             "The hub of the [full-scan flow](#arch). `scanInventory` walks the srcRoots, and per module records resolved in-repo import keys, exported names, and whether it is a tRPC router — skipping generated/test trees and co-located `*.test`/`*.spec` files. It also collects Prisma model names. `aggregateDomainEdges` rolls module→module imports up to cross-domain slug→slug edges (intra-domain edges dropped).",
-            "`buildAtlasDraft` emits the atlas-page doc: a tile per domain (with file counts and dep edges) plus the mechanical `domainMapDiagram`. `buildDomainDraft` groups a domain's modules by subdirectory into component cards + deep sections, listing real files and exports — but leaves every `purpose`/`detail` field **blank** for the human. The scanner never writes prose."
+            "`buildAtlasDraft` emits the system map and uses configured domain purposes. `buildDomainDraft` keeps the legacy deep inventory for domains without child topics, but produces a smaller orientation landing with a collapsed implementation reference when children exist. `buildTopicDraft` creates a plain lead, structured flow and rule sections, and labeled file groups from resolved evidence. The scanner supplies structure and inventory, not the technical explanation."
           ],
           "files": [
             {
               "name": "gather-atlas.ts",
-              "desc": "`scanInventory`, `aggregateDomainEdges`, `domainMapDiagram`, `buildAtlasDraft`, `buildDomainDraft`."
+              "desc": "Inventory, domain edges, the domain map, and system/domain/topic draft builders."
             }
           ],
           "exports": [
@@ -372,7 +384,7 @@
           "name": "block model",
           "path": "src/atlas-blocks.ts",
           "detail": [
-            "The type backbone of every atlas page — and the file this very section documents. The `AtlasBlock` union has ten members: atlas-page blocks (`atlas-tldr`, `domain-map`, `domain-index`), domain-page blocks (`domain-tldr`, `components`, `depth`, `owns`, `seams`), and two shared chapter blocks usable on either page type — `diagram-section` and `example` (a straight re-export of core's `ExampleBlock`, rendered via core's `renderExample`, same pattern as the spec/recap/doc surfaces). `ComponentDeep` is one expandable depth section; `AtlasDiagram` is a rendered d2/mermaid pair.",
+            "The type backbone covers system and domain blocks plus four topic-oriented blocks: `topic-tldr`, `topic-flow`, `topic-rules`, and `implementation-reference`. `PageNavigation` carries derived breadcrumbs, the expanded branch, parent/child/sibling/related links, reading paths, and structured search entries. `TopicOpts` supplies topic shape and direct-entry context to the shared shell.",
             "Beyond the types it carries page-option shapes (`AtlasOpts`/`DomainOpts`), `LAYER_DOTS` (the layer → fill;stroke color table), and small helpers: `collectAtlasDiagrams` pulls every rendered diagram in document order, `assertUniqueAtlasIds` enforces unique block/component/diagram ids, and `isAtlasChapter`/`atlasChapterLabel` drive the numbered chapter nav."
           ],
           "codeHtml": "<div class=\"code-block\"><pre><span class=\"kw\">export type</span> <span class=\"ty\">AtlasBlock</span> =\n  | <span class=\"ty\">AtlasTldrBlock</span> | <span class=\"ty\">DomainMapBlock</span> | <span class=\"ty\">DomainIndexBlock</span>\n  | <span class=\"ty\">DomainTldrBlock</span> | <span class=\"ty\">ComponentsBlock</span> | <span class=\"ty\">DepthBlock</span>\n  | <span class=\"ty\">OwnsBlock</span> | <span class=\"ty\">SeamsBlock</span>\n  | <span class=\"ty\">DiagramSectionBlock</span> | <span class=\"ty\">ExampleBlock</span>;</pre></div>",
@@ -432,8 +444,8 @@
           "name": "render",
           "path": "src/assemble-atlas.ts",
           "detail": [
-            "Turns a block list into a self-contained HTML page. `assembleAtlas` renders the map page (lead, domain-map, tile index); `assembleDomain` renders a domain page (lead, components, internal-arch, depth, owns, seams). `renderAtlasBlock` dispatches per block type, `renderAtlasDiagram` emits each diagram's d2/mermaid render with its authored legend, and `atlasLegend` builds the legend rows. An `example` block renders through core's `renderExample(b, { ownHeader: false, preNormalized: true })` behind the same `sectionHeader` every other chapter gets — `renderAtlasBlock` takes a `preNormalized` flag (default **false**, so a direct caller passing raw authored blocks still gets safe rendering plus the normalization warnings; the two assemblers pass true) — a worked-example chapter reads like any other section. Both entry points run core's `normalizeExampleBlocks` first (the id assertion, sidebar labels and `sectionHeader` all read `b.id`/`b.title` raw) and emit its problems themselves, while the lints keep reading the original blocks.",
-            "Every diagram is rendered through the diagrams domain up front (collected via `collectAtlasDiagrams`), then looked up by id while rendering. The output reuses the review app-shell/CSS from the recap domain — including the same inlined dark-mode toggle (`theme-head.js` head-apply script, `theme-toggle.js` button, `theme.css` appended last in `<style>`) — plus `example.css` for worked-example stage/rail/contrast styles, so atlas pages share the toolkit's look and theme. Both `assembleAtlas`/`assembleDomain` also run core's `lintExamples` over any `example` blocks present, piping the judgment warnings through `onWarn` alongside `lintAtlas`/`lintDomain`. The CLI calls these two functions and writes the HTML next to the page JSON."
+            "`assembleAtlas`, `assembleDomain`, and `assembleTopic` share one self-contained app shell and block dispatcher. Topic pages render plain leads, ordered flows, guarantees/failure behavior, and closed implementation-reference drawers. With derived navigation, the shell adds breadcrumbs, the current branch, child cards, reading paths, nearby-page links, and a compact embedded search index.",
+            "Search indexes structured titles, purposes, aliases, breadcrumbs, and source paths—not every prose token. `atlas-navigation.js` filters that embedded data locally and creates safe result elements. All page kinds retain the same diagram, example, responsive-shell, and theme behavior."
           ],
           "files": [
             {
@@ -593,8 +605,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:171ff6e57a30ef8b9eddf7d84919a6032087290b300e67b4eae7632df9e7633d",
+    "hash": "sha256:c9759f9a0ae90572df931598153a6afdb4c8b6b1cc445aea6d38d1016751f4b5",
     "date": "2026-08-26",
-    "commit": "9d93a77de230f393e8526d7db97e1050fe91352e"
+    "commit": "d5138e98b6a256c6656e4f3ed9a2aacc24453c87"
   }
 }

@@ -1,4 +1,5 @@
 import type { DiagramBlock, DiagramKind, ExampleBlock } from "./blocks.js";
+import type { TopicShape } from "./atlas-config.js";
 
 export type { ExampleBlock } from "./blocks.js";
 
@@ -47,6 +48,31 @@ export interface DomainTldrBlock {
   eyebrow?: string;                            // default "Domain"
   heading: string; rows: { key: string; value: string }[];
   bigIdea?: { label?: string; line: string; sub?: string };
+}
+export interface TopicTldrBlock {
+  type: "topic-tldr"; id: string;
+  eyebrow?: string;
+  heading: string;
+  summary: string;
+  when?: string;
+  inputs: string[];
+  outputs: string[];
+}
+export interface TopicFlowBlock {
+  type: "topic-flow"; id: string;
+  title: string; badge?: string; intro?: string;
+  steps: { title: string; body: string }[];
+}
+export interface TopicRulesBlock {
+  type: "topic-rules"; id: string;
+  title: string; intro?: string;
+  guarantees: string[];
+  failures: { condition: string; behavior: string }[];
+}
+export interface ImplementationReferenceBlock {
+  type: "implementation-reference"; id: string;
+  title: string; intro?: string;
+  groups: { label: string; files: KV[] }[];
 }
 export interface ComponentCard {
   name: string; purpose: string;               // purpose inline md
@@ -97,8 +123,47 @@ export interface DiagramSectionBlock {
 
 export type AtlasBlock =
   | AtlasTldrBlock | DomainMapBlock | DomainIndexBlock
-  | DomainTldrBlock | ComponentsBlock | DepthBlock | OwnsBlock | SeamsBlock
+  | DomainTldrBlock | TopicTldrBlock | TopicFlowBlock | TopicRulesBlock
+  | ImplementationReferenceBlock | ComponentsBlock | DepthBlock | OwnsBlock | SeamsBlock
   | DiagramSectionBlock | ExampleBlock;
+
+export interface AtlasPageLink {
+  id: string;
+  title: string;
+  purpose: string;
+  href: string;
+  breadcrumb: string;
+}
+
+export interface AtlasTreeNavItem {
+  link: AtlasPageLink;
+  current: boolean;
+  expanded: boolean;
+  children: AtlasTreeNavItem[];
+}
+
+export interface AtlasReadingPath {
+  title: string;
+  purpose?: string;
+  pages: AtlasPageLink[];
+}
+
+export interface AtlasSearchEntry extends AtlasPageLink {
+  aliases: string[];
+  sources: string[];
+}
+
+export interface PageNavigation {
+  current?: AtlasPageLink;
+  breadcrumbs: AtlasPageLink[];
+  branch: AtlasTreeNavItem[];
+  parent?: AtlasPageLink;
+  children: AtlasPageLink[];
+  siblings: AtlasPageLink[];
+  related: AtlasPageLink[];
+  readingPaths: AtlasReadingPath[];
+  searchIndex: AtlasSearchEntry[];
+}
 
 /** layer → "fill;stroke" for the small dots used in tiles + the nested sidebar. */
 export const LAYER_DOTS: Record<DomainTile["layer"], string> = {
@@ -153,6 +218,7 @@ export interface AtlasOpts {
   date?: string;                               // chip, e.g. "generated 2026-06-20"
   note?: string;                               // chip, e.g. "in-memory state"
   meta?: { key: string; value: string }[];     // sidebar Meta
+  navigation?: PageNavigation;
   outDir?: string; excalidraw?: boolean; onWarn?: (m: string) => void; generator?: string;
 }
 // domain page options
@@ -162,17 +228,32 @@ export interface DomainOpts {
   path?: string; count?: string; depends?: string; date?: string;
   backHref?: string;                           // default "atlas.html"
   meta?: { key: string; value: string }[];
+  navigation?: PageNavigation;
+  outDir?: string; excalidraw?: boolean; onWarn?: (m: string) => void; generator?: string;
+}
+export interface TopicOpts {
+  title: string;
+  purpose: string;
+  shape?: TopicShape;
+  date?: string;
+  backHref?: string;
+  backLabel?: string;
+  meta?: { key: string; value: string }[];
+  navigation?: PageNavigation;
   outDir?: string; excalidraw?: boolean; onWarn?: (m: string) => void; generator?: string;
 }
 
 /** tldr blocks are the lead; everything else is a numbered chapter. */
 export function isAtlasChapter(b: AtlasBlock): boolean {
-  return b.type !== "atlas-tldr" && b.type !== "domain-tldr";
+  return b.type !== "atlas-tldr" && b.type !== "domain-tldr" && b.type !== "topic-tldr";
 }
 export function atlasChapterLabel(b: AtlasBlock): string {
   switch (b.type) {
     case "domain-map": return b.title ?? "Domain map";
     case "domain-index": return b.title;
+    case "topic-flow": return b.title;
+    case "topic-rules": return b.title;
+    case "implementation-reference": return b.title;
     case "diagram-section": return b.title ?? "Diagram";
     case "components": return b.title;
     case "depth": return b.title;
@@ -181,6 +262,7 @@ export function atlasChapterLabel(b: AtlasBlock): string {
     case "example": return b.title;
     case "atlas-tldr":
     case "domain-tldr": return b.id;
+    case "topic-tldr": return b.id;
     default: { const _exhaustive: never = b; return (_exhaustive as AtlasBlock).id; }
   }
 }

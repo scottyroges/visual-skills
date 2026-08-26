@@ -5,6 +5,7 @@ import { parseRouter } from "./trpc-parse.js";
 import { parsePrismaModels } from "./prisma-schema.js";
 import { walkSource, moduleKey, loadAliases, resolveModule } from "./dep-graph.js";
 import type { AtlasConfig } from "./atlas-config.js";
+import type { AtlasPageNode, ResolvedSourceGroup } from "./atlas-tree.js";
 import type { AtlasDiagram } from "./atlas-blocks.js";
 
 /** Path segments that are never their own domain in an architecture atlas — generated code and
@@ -99,6 +100,17 @@ export interface DomainDraft {
   path?: string; count?: string; depends?: string; date?: string;
   generator: string; blocks: AtlasBlock[];
 }
+export interface TopicDraft {
+  kind: "topic";
+  pageId: string;
+  slug: string;
+  title: string;
+  purpose: string;
+  shape?: AtlasPageNode["shape"];
+  date?: string;
+  generator: string;
+  blocks: AtlasBlock[];
+}
 
 const GENERATOR = "visual-skills · visual-atlas";
 
@@ -136,7 +148,7 @@ export function buildAtlasDraft(
     path: commonPath(d.modules, d.slug),
     layer: "engine",
     layerLabel: "Engine",
-    purpose: "",                                   // agent fills
+    purpose: d.purpose ?? "",                      // agent fills when config has no authored purpose
     meta: [{ key: `~${d.modules.length}`, value: "files" }],
     deps: [...(edges.get(d.slug) ?? [])].sort(),
     href: `domain-${d.slug}/domain-${d.slug}.html`,   // each domain is its own folder
@@ -202,23 +214,71 @@ export function buildDomainDraft(
     .filter((m) => byKey.get(moduleKey(m))?.isRouter)
     .map((m) => ({ api: m, note: "" }));
 
-  const blocks: AtlasBlock[] = [
+  const lead: AtlasBlock =
     { type: "domain-tldr", id: "tldr", heading: domain.name, rows: [
+      ...(domain.purpose ? [{ key: "Purpose", value: domain.purpose }] : []),
       { key: "Path", value: base }, { key: "Files", value: String(domain.modules.length) },
-    ] },
-    { type: "components", id: "components", title: "Components", cards },
+    ] };
+  const architecture: AtlasBlock =
     { type: "diagram-section", id: "arch", title: "Internal architecture",
       diagram: { id: "arch-diagram", kind: "architecture",
         d2: ["direction: right", ...groups.map((g) => g.name)].join("\n"),
-        mermaid: ["graph LR", ...groups.map((g, i) => `  a${i}["${g.name}"]`)].join("\n") } },
-    { type: "depth", id: "depth", title: "In depth", components },
+        mermaid: ["graph LR", ...groups.map((g, i) => `  a${i}["${g.name}"]`)].join("\n") } };
+  const seams: AtlasBlock =
     { type: "seams", id: "seams", title: "Seams", exposes,
-      depends: deps.map((s) => ({ name: s, path: commonPath(config.domains.find((d) => d.slug === s)!.modules, s), href: `../domain-${s}/domain-${s}.html` })) },
-  ];
+      depends: deps.map((s) => ({ name: s, path: commonPath(config.domains.find((d) => d.slug === s)!.modules, s), href: `../domain-${s}/domain-${s}.html` })) };
+
+  const blocks: AtlasBlock[] = domain.topics?.length
+    ? [
+        lead,
+        architecture,
+        { type: "implementation-reference", id: "reference", title: "Implementation reference",
+          intro: "Source inventory for this domain. Open a topic above for the mechanism-level explanation.",
+          groups: groups.map((group) => ({
+            label: group.name,
+            files: group.files.map((file) => ({ name: file, desc: "" })),
+          })) },
+        seams,
+      ]
+    : [
+        lead,
+        { type: "components", id: "components", title: "Components", cards },
+        architecture,
+        { type: "depth", id: "depth", title: "In depth", components },
+        seams,
+      ];
 
   return {
     kind: "domain", slug, title: domain.name, layer: "engine", layerLabel: "Engine",
     path: base, count: `${domain.modules.length} files`,
     depends: deps.join(" · ") || undefined, date: opts.date, generator: GENERATOR, blocks,
+  };
+}
+
+export function buildTopicDraft(
+  node: AtlasPageNode,
+  sources: ResolvedSourceGroup[],
+  opts: { date?: string } = {},
+): TopicDraft {
+  if (node.kind !== "topic" || !node.topic) throw new Error(`page "${node.id}" is not a topic`);
+  const blocks: AtlasBlock[] = [
+    {
+      type: "topic-tldr", id: "tldr", heading: node.title,
+      summary: node.purpose, inputs: [], outputs: [],
+    },
+    { type: "topic-flow", id: "flow", title: "How it works", steps: [] },
+    { type: "topic-rules", id: "rules", title: "Guarantees and failures", guarantees: [], failures: [] },
+    {
+      type: "implementation-reference", id: "reference", title: "Implementation reference",
+      groups: sources.map((group) => ({
+        label: group.label,
+        files: group.files.map((file) => ({ name: file, desc: "" })),
+      })),
+    },
+  ];
+  return {
+    kind: "topic", pageId: node.id, slug: node.slug, title: node.title,
+    purpose: node.purpose, shape: node.shape, date: opts.date,
+    generator: GENERATOR, blocks,
   };
 }

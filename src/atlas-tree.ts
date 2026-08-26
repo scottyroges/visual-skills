@@ -1,5 +1,12 @@
 import { readdir } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { join, relative, posix } from "node:path";
+import type {
+  AtlasPageLink,
+  AtlasReadingPath,
+  AtlasSearchEntry,
+  AtlasTreeNavItem,
+  PageNavigation,
+} from "./atlas-blocks.js";
 import {
   matchGlob,
   type AtlasConfig,
@@ -234,4 +241,79 @@ export async function resolveSourceGroup(repoRoot: string, group: SourceGroup): 
 
 export async function resolveTopicSources(repoRoot: string, topic: TopicConfig): Promise<ResolvedSourceGroup[]> {
   return Promise.all(topic.sources.map((group) => resolveSourceGroup(repoRoot, group)));
+}
+
+function relativeHref(fromHtmlPath: string, toHtmlPath: string): string {
+  return posix.relative(posix.dirname(fromHtmlPath), toHtmlPath) || posix.basename(toHtmlPath);
+}
+
+function breadcrumbTitle(node: AtlasPageNode): string {
+  return node.breadcrumbs.map((crumb) => crumb.title).join(" / ");
+}
+
+/** Derive all reader navigation from the authored tree for one rendered page. */
+export function buildPageNavigation(tree: AtlasPageTree, currentId?: string): PageNavigation {
+  const current = currentId ? tree.byId.get(currentId) : undefined;
+  const currentHtmlPath = current?.htmlPath ?? "atlas.html";
+  if (currentId && !current) throw new Error(`unknown atlas page "${currentId}"`);
+
+  const linkFor = (node: AtlasPageNode): AtlasPageLink => ({
+    id: node.id,
+    title: node.title,
+    purpose: node.purpose,
+    href: relativeHref(currentHtmlPath, node.htmlPath),
+    breadcrumb: breadcrumbTitle(node),
+  });
+  const atlasLink: AtlasPageLink = {
+    id: "atlas",
+    title: `System Atlas · ${tree.config.repo}`,
+    purpose: "",
+    href: relativeHref(currentHtmlPath, "atlas.html"),
+    breadcrumb: `System Atlas · ${tree.config.repo}`,
+  };
+  const isOnCurrentBranch = (node: AtlasPageNode) => current != null &&
+    (node.id === current.id || current.id.startsWith(`${node.id}/`));
+  const navItem = (node: AtlasPageNode): AtlasTreeNavItem => {
+    const expanded = isOnCurrentBranch(node);
+    return {
+      link: linkFor(node),
+      current: node.id === current?.id,
+      expanded,
+      children: expanded ? node.children.map(navItem) : [],
+    };
+  };
+
+  const breadcrumbs = current
+    ? current.breadcrumbs.map((crumb) => crumb.id === "atlas" ? atlasLink : linkFor(tree.byId.get(crumb.id)!))
+    : [atlasLink];
+  const siblingPool = current?.parent?.children ?? (current ? tree.roots : []);
+  const related = (current?.related ?? []).flatMap((id) => {
+    const node = tree.byId.get(id);
+    return node ? [linkFor(node)] : [];
+  });
+  const readingPaths: AtlasReadingPath[] = tree.readingPaths.map((path) => ({
+    title: path.title,
+    purpose: path.purpose,
+    pages: path.pages.flatMap((id) => {
+      const node = tree.byId.get(id);
+      return node ? [linkFor(node)] : [];
+    }),
+  }));
+  const searchIndex: AtlasSearchEntry[] = tree.nodes.map((node) => ({
+    ...linkFor(node),
+    aliases: [...node.aliases],
+    sources: node.topic?.sources.flatMap((group) => group.include) ?? node.domain?.modules ?? [],
+  }));
+
+  return {
+    current: current ? linkFor(current) : undefined,
+    breadcrumbs,
+    branch: tree.roots.map(navItem),
+    parent: current?.parent ? linkFor(current.parent) : current ? atlasLink : undefined,
+    children: (current?.children ?? tree.roots).map(linkFor),
+    siblings: siblingPool.filter((node) => node.id !== current?.id).map(linkFor),
+    related,
+    readingPaths,
+    searchIndex,
+  };
 }

@@ -129,7 +129,7 @@ expect(groups.map((g) => [g.label, g.files])).toEqual([
 - Produces `buildTopicDraft(node, resolvedSources, opts): TopicDraft`.
 - `PageNavigation` carries current node, breadcrumbs, children, siblings, related pages, reading paths, and the full structured search index.
 
-- [ ] **Step 1: Write failing block-helper and renderer tests**
+- [x] **Step 1: Write failing block-helper and renderer tests**
 
 ```ts
 const blocks: AtlasBlock[] = [
@@ -148,31 +148,31 @@ expect(html).toContain('id="atlas-search-index"');
 The production mutation caught is removal of hierarchical navigation or accidental expansion of
 the implementation index.
 
-- [ ] **Step 2: Run `npm test -- test/atlas-blocks.test.ts test/assemble-atlas.test.ts` and confirm the missing types/functions fail**
+- [x] **Step 2: Run `npm test -- test/atlas-blocks.test.ts test/assemble-atlas.test.ts` and confirm the missing types/functions fail**
 
-- [ ] **Step 3: Add the four structured blocks and renderers**
+- [x] **Step 3: Add the four structured blocks and renderers**
 
 `topic-tldr` is the lead. `topic-flow` renders ordered stages. `topic-rules` renders guarantees and
 failure behavior in separate labeled groups. `implementation-reference` renders a closed
 `<details>` element containing labeled file groups.
 
-- [ ] **Step 4: Add page-context rendering shared by system, domain, and topic pages**
+- [x] **Step 4: Add page-context rendering shared by system, domain, and topic pages**
 
 Derive breadcrumbs, current-branch sidebar, child cards, parent/sibling footer, related links,
 reading paths, and a structured JSON search index from `PageNavigation`. Escape all titles,
 purposes, aliases, identifiers, and hrefs. The current branch is expanded; unrelated descendants
 are absent from the sidebar.
 
-- [ ] **Step 5: Add responsive CSS and embedded search behavior**
+- [x] **Step 5: Add responsive CSS and embedded search behavior**
 
 `atlas-navigation.js` reads the embedded index, matches lower-cased structured fields, caps visible
 results, and renders title, breadcrumb, and purpose. It does not index page prose and needs no
 server. CSS covers narrow layouts, keyboard focus, child cards, breadcrumbs, reading paths, topic
 steps/rules, and collapsed references using existing theme tokens.
 
-- [ ] **Step 6: Run focused renderer tests and confirm topic direct-entry, escaping, relative links, and search structure pass**
+- [x] **Step 6: Run focused renderer tests and confirm topic direct-entry, escaping, relative links, and search structure pass**
 
-- [ ] **Step 7: Write failing draft and CLI tests for recursive JSON/HTML output**
+- [x] **Step 7: Write failing draft and CLI tests for recursive JSON/HTML output**
 
 ```ts
 runCli(["--repo", repo, "--out", out]);
@@ -183,16 +183,16 @@ expect(compaction).toContain("Context building");
 expect(compaction).toContain("../context-building.html");
 ```
 
-- [ ] **Step 8: Implement `buildTopicDraft`, config-driven recursive discovery, and topic rendering in full, domain, all, and blocks modes**
+- [x] **Step 8: Implement `buildTopicDraft`, config-driven recursive discovery, and topic rendering in full, domain, all, and blocks modes**
 
 Full scan writes drafts only where absent unless `--force`. `--domain` regenerates the selected
 domain subtree. `--all` uses the config tree when available and falls back to recursive discovery
 of known document JSON. The CLI supplies derived navigation rather than storing copied
 breadcrumbs/paths in authored JSON.
 
-- [ ] **Step 9: Run `npm test -- test/atlas-blocks.test.ts test/assemble-atlas.test.ts test/gather-atlas.test.ts test/atlas-cli.test.ts` and `npm run typecheck`**
+- [x] **Step 9: Run `npm test -- test/atlas-blocks.test.ts test/assemble-atlas.test.ts test/gather-atlas.test.ts test/atlas-cli.test.ts` and `npm run typecheck`**
 
-- [ ] **Step 10: Commit `feat: render hierarchical atlas topics`**
+- [x] **Step 10: Commit `feat: render hierarchical atlas topics`**
 
 ---
 

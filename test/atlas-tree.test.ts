@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { join } from "node:path";
 import {
   buildPageTree,
+  buildPageNavigation,
   resolveTopicSources,
   validatePageTree,
 } from "../src/atlas-tree.js";
@@ -130,6 +131,35 @@ describe("buildPageTree", () => {
     expect(result.warnings).toEqual(expect.arrayContaining([
       expect.stringMatching(/more than two topic levels/i),
     ]));
+  });
+});
+
+describe("buildPageNavigation", () => {
+  it("derives relative links, current-branch expansion, reading paths, and structured search", () => {
+    const tree = buildPageTree(config);
+    const navigation = buildPageNavigation(tree, "conversation/context-building");
+
+    expect(navigation.breadcrumbs.map((link) => [link.title, link.href])).toEqual([
+      ["System Atlas · demo", "../../atlas.html"],
+      ["Conversation", "../domain-conversation.html"],
+      ["Context building", "context-building.html"],
+    ]);
+    expect(navigation.children.map((link) => [link.title, link.href])).toEqual([
+      ["Compaction", "compaction/compaction.html"],
+    ]);
+    expect(navigation.branch[0].expanded).toBe(true);
+    expect(navigation.branch[0].children[0].current).toBe(true);
+    expect(navigation.branch[1]).toMatchObject({ expanded: false, children: [] });
+    expect(navigation.readingPaths[0].pages.map((link) => link.href)).toEqual([
+      "../domain-conversation.html",
+      "context-building.html",
+      "compaction/compaction.html",
+    ]);
+    expect(navigation.searchIndex.find((entry) => entry.id.endsWith("compaction"))).toMatchObject({
+      href: "compaction/compaction.html",
+      breadcrumb: "System Atlas · demo / Conversation / Context building / Compaction",
+      sources: ["lib/sim/engine.ts"],
+    });
   });
 });
 

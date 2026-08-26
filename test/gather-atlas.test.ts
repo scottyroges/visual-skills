@@ -75,7 +75,8 @@ describe("domainMapDiagram", () => {
   });
 });
 
-import { buildAtlasDraft } from "../src/gather-atlas.js";
+import { buildAtlasDraft, buildTopicDraft } from "../src/gather-atlas.js";
+import { buildPageTree } from "../src/atlas-tree.js";
 
 describe("buildAtlasDraft", () => {
   it("emits tldr + domain-map diagram-section + domain-index with a tile per domain", async () => {
@@ -132,5 +133,60 @@ describe("buildDomainDraft", () => {
     const draft = buildDomainDraft("sim", CONFIG, inv, edges);
     expect(draft.blocks.some((b) => b.type === "owns")).toBe(false);
     expect(() => buildDomainDraft("nope", CONFIG, inv, edges)).toThrow(/unknown domain/);
+  });
+});
+
+describe("buildTopicDraft", () => {
+  it("emits an orientation-first structured topic draft with grouped implementation references", () => {
+    const hierarchical: AtlasConfig = structuredClone(CONFIG);
+    hierarchical.domains[0].purpose = "Runs the simulation";
+    hierarchical.domains[0].topics = [{
+      slug: "season-loop",
+      title: "Season loop",
+      purpose: "Turns stored state into one simulated season",
+      shape: "lifecycle",
+      sources: [{ label: "Loop", include: ["lib/sim/loop.ts"] }],
+      topics: [{
+        slug: "game-resolution",
+        title: "Game resolution",
+        purpose: "Resolves one game",
+        shape: "algorithm",
+        sources: [{ label: "Engine", include: ["lib/sim/engine.ts"] }],
+      }],
+    }];
+    const tree = buildPageTree(hierarchical);
+    const node = tree.byId.get("sim/season-loop")!;
+
+    const draft = buildTopicDraft(node, [{ label: "Loop", files: ["lib/sim/loop.ts"] }], { date: "2026-08-26" });
+
+    expect(draft).toMatchObject({
+      kind: "topic",
+      pageId: "sim/season-loop",
+      slug: "season-loop",
+      title: "Season loop",
+      purpose: "Turns stored state into one simulated season",
+      shape: "lifecycle",
+    });
+    expect(draft.blocks.map((block) => block.type)).toEqual([
+      "topic-tldr", "topic-flow", "topic-rules", "implementation-reference",
+    ]);
+    const reference = draft.blocks.find((block) => block.type === "implementation-reference") as any;
+    expect(reference.groups).toEqual([{ label: "Loop", files: [{ name: "lib/sim/loop.ts", desc: "" }] }]);
+  });
+
+  it("makes a domain with child topics an orientation landing instead of expanding component depth", async () => {
+    const hierarchical: AtlasConfig = structuredClone(CONFIG);
+    hierarchical.domains[0].purpose = "Runs the simulation";
+    hierarchical.domains[0].topics = [{
+      slug: "season-loop", title: "Season loop", purpose: "Runs a season", sources: [],
+    }];
+    const inv = await scanInventory(REPO, ["lib"]);
+    const edges = aggregateDomainEdges(hierarchical, inv);
+
+    const draft = buildDomainDraft("sim", hierarchical, inv, edges);
+
+    expect(draft.blocks.map((block) => block.type)).toEqual([
+      "domain-tldr", "diagram-section", "implementation-reference", "seams",
+    ]);
   });
 });
