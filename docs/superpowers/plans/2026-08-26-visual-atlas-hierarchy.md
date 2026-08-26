@@ -365,7 +365,12 @@ per-page coverage. Inspect desktop/narrow layouts and light/dark theme output.
 
 - [x] **Step 7: Run final visual-skills verification, inspect the complete diff, and commit any pilot-driven generator fixes**
 
-- [ ] **Step 8: Use the requesting-code-review and finishing-a-development-branch workflows, then open one visual-skills PR**
+- [x] **Step 8: Use the requesting-code-review and finishing-a-development-branch workflows, then open one visual-skills PR**
+
+  The final independent review found no remaining blockers after regression coverage for live glob
+  membership, config-owned page identity, evidence-scoped references, safe stamp paths,
+  immediate-child freshness boundaries, owner-scoped reading paths, and cross-directory config
+  copying. The full suite passes with 409 tests and TypeScript typechecking passes.
 
 The Telltale lane remains a separate repository boundary. Report its exact validation state and do
 not open or merge an additional Telltale PR under the instruction to open a single PR.

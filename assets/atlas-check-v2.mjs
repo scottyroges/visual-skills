@@ -27,6 +27,7 @@ const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", "co
 const NON_DOMAIN_DIRS = new Set(["generated", "__generated__", "test", "tests", "__tests__", "__mocks__"]);
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const TEST_FILE_RE = /\.(test|spec)\.[cm]?[jt]sx?$/;
+const SAFE_PAGE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function walk(dir, out = [], sourceOnly = false) {
   let entries;
@@ -84,7 +85,7 @@ function addTopics(topics, parent, domainSlug) {
       id, kind: "topic", slug: topic.slug, title: topic.title, purpose: topic.purpose ?? "",
       shape: topic.shape, topicDepth: parent?.kind === "topic" ? parent.topicDepth + 1 : 1,
       domainSlug, parentId: parent?.id, childIds: [], related: topic.related ?? [],
-      sources: topic.sources ?? [], outputDir,
+      sources: topic.sources ?? [], topic, outputDir,
       jsonPath: `${outputDir}/${stem}.json`, htmlPath: `${outputDir}/${stem}.html`,
     };
     register(node);
@@ -112,6 +113,12 @@ for (const node of nodes) {
   if (seenPaths.has(node.htmlPath)) problems.push(`duplicate page path "${node.htmlPath}"`);
   else seenPaths.set(node.htmlPath, node.id);
   if (!node.slug || !node.title) problems.push(`page "${node.id}" has an empty slug or title`);
+  if (!SAFE_PAGE_SLUG.test(node.slug)) problems.push(`page "${node.id}" has unsafe slug "${node.slug}"; use lowercase kebab-case`);
+  for (const artifact of [node.jsonPath, node.htmlPath]) {
+    const local = relative(atlasDir, resolve(atlasDir, artifact));
+    if (local === ".." || /^\.\.(?:[\\/]|$)/.test(local))
+      problems.push(`page "${node.id}" resolves outside the atlas directory: ${artifact}`);
+  }
   if (node.kind === "topic" && !node.purpose) problems.push(`topic "${node.id}" has no purpose`);
   if (node.domainSlug && node.topicDepth > 2) warnings.push(`page "${node.id}": more than two topic levels beneath a domain`);
   for (const related of node.related) if (!byId.has(related)) problems.push(`page "${node.id}" links to missing related page "${related}"`);
@@ -128,10 +135,25 @@ for (const module of live) {
   if (!(config.domains ?? []).some((domain) => (domain.globs ?? []).some((glob) => matchGlob(glob, module))))
     problems.push(`unassigned module (no domain glob matches): ${module}`);
 }
+const domainFiles = new Map();
 for (const domain of config.domains ?? []) {
-  for (const module of domain.modules ?? []) if (!liveSet.has(module)) problems.push(`stale module in domain "${domain.slug}": ${module}`);
-  if (!live.some((module) => (domain.globs ?? []).some((glob) => matchGlob(glob, module))))
+  const matched = live.filter((module) => (domain.globs ?? []).some((glob) => matchGlob(glob, module))).sort();
+  const matchedSet = new Set(matched);
+  const recorded = [...new Set(domain.modules ?? [])].sort();
+  const recordedSet = new Set(recorded);
+  const newlyMatched = matched.filter((module) => !recordedSet.has(module));
+  const noLongerMatched = recorded.filter((module) => liveSet.has(module) && !matchedSet.has(module));
+  if (newlyMatched.length || noLongerMatched.length) {
+    const detail = [
+      newlyMatched.length ? `newly matched: ${newlyMatched.join(", ")}` : "",
+      noLongerMatched.length ? `no longer matched: ${noLongerMatched.join(", ")}` : "",
+    ].filter(Boolean).join("; ");
+    problems.push(`domain "${domain.slug}" module inventory differs from its globs (${detail})`);
+  }
+  for (const module of recorded) if (!liveSet.has(module)) problems.push(`stale module in domain "${domain.slug}": ${module}`);
+  if (!matched.length)
     problems.push(`domain "${domain.slug}" resolves to zero modules`);
+  domainFiles.set(domain.slug, matched);
 }
 function resolveSourceGroup(group) {
   return allRepoFiles
@@ -148,6 +170,15 @@ for (const node of nodes.filter((item) => item.kind === "topic")) {
     for (const file of matched) files.add(file);
   }
   topicFiles.set(node.id, [...files].sort());
+}
+
+// Stamp mode mutates page JSON. Refuse all writes until config structure, artifact paths, source
+// coverage, and evidence scopes are known safe. In particular, never merely report a traversal
+// slug and then follow it during the stamping loop below.
+if (stampMode && problems.length) {
+  console.error("✗ visual atlas has integrity or freshness problems:\n");
+  for (const problem of [...new Set(problems)]) console.error(`  - ${problem}`);
+  process.exit(1);
 }
 
 // Configured artifacts and structured floors.
@@ -191,6 +222,19 @@ for (const page of pages) {
     if (!hasBlock(doc, "seams")) problems.push(`domain "${page.id}": missing required seams block`);
   } else for (const type of ["topic-tldr", "topic-flow", "topic-rules"])
     if (!hasBlock(doc, type)) problems.push(`topic "${page.id}": missing required ${type} block`);
+
+  if (page.kind === "domain") {
+    if (doc.kind !== "domain") problems.push(`domain "${page.id}": kind must be "domain"`);
+    if (doc.slug !== page.slug) problems.push(`domain "${page.id}": slug must match config value "${page.slug}"`);
+    if (doc.title !== page.title) problems.push(`domain "${page.id}": title must match config value "${page.title}"`);
+  } else if (page.kind === "topic") {
+    if (doc.kind !== "topic") problems.push(`topic "${page.id}": kind must be "topic"`);
+    if (doc.pageId !== page.id) problems.push(`topic "${page.id}": pageId must match config value "${page.id}"`);
+    if (doc.slug !== page.slug) problems.push(`topic "${page.id}": slug must match config value "${page.slug}"`);
+    if (doc.title !== page.title) problems.push(`topic "${page.id}": title must match config value "${page.title}"`);
+    if (doc.purpose !== page.purpose) problems.push(`topic "${page.id}": purpose must match config value "${page.purpose}"`);
+    if ((doc.shape ?? null) !== (page.shape ?? null)) problems.push(`topic "${page.id}": shape must match config value "${page.shape ?? "none"}"`);
+  }
 }
 
 // All generated relative links must resolve locally.
@@ -210,6 +254,9 @@ for (const page of pages) {
 function fileResolves(name) {
   return allRepoFiles.some((file) => file === name || file.endsWith(`/${name}`));
 }
+function fileResolvesIn(name, evidence) {
+  return evidence.some((file) => file === name || file.endsWith(`/${name}`));
+}
 function collectRefs(doc) {
   const files = [];
   const names = [];
@@ -228,12 +275,15 @@ for (const node of nodes) {
   const doc = docs.get(node.id);
   if (!doc) continue;
   const evidence = node.kind === "domain"
-    ? (node.domain.modules ?? []).filter((file) => liveSet.has(file)) : topicFiles.get(node.id) ?? [];
+    ? domainFiles.get(node.slug) ?? [] : topicFiles.get(node.id) ?? [];
   const source = evidence.map((file) => {
     try { return readFileSync(join(repoRoot, file), "utf8"); } catch { return ""; }
   }).join("\n");
   const refs = collectRefs(doc);
-  for (const file of refs.files) if (!fileResolves(file)) problems.push(`page "${node.id}": referenced file no longer exists: ${file}`);
+  for (const file of refs.files) {
+    if (!fileResolves(file)) problems.push(`page "${node.id}": referenced file no longer exists: ${file}`);
+    else if (!fileResolvesIn(file, evidence)) problems.push(`page "${node.id}": referenced file is outside page evidence: ${file}`);
+  }
   for (const raw of refs.names) {
     const route = raw.match(/^(?:GET|POST|PUT|PATCH|DELETE)\s+(\S+)/);
     if (route) {
@@ -243,6 +293,7 @@ for (const node of nodes) {
     if (!/^[A-Za-z0-9_$]/.test(raw)) continue;
     if (raw.includes("/") || SOURCE_RE.test(raw)) {
       if (!fileResolves(raw)) problems.push(`page "${node.id}": referenced file no longer exists: ${raw}`);
+      else if (!fileResolvesIn(raw, evidence)) problems.push(`page "${node.id}": referenced file is outside page evidence: ${raw}`);
       continue;
     }
     const ident = raw.match(/^[A-Za-z_$][A-Za-z0-9_$]*/)?.[0];
@@ -269,9 +320,12 @@ function childParts(node) {
     return child ? [Buffer.from(child.id), Buffer.from(child.title), Buffer.from(child.purpose)] : [];
   });
 }
-const summarizeTopic = (topic) => ({
+const summarizeOwnTopic = (topic) => ({
   slug: topic.slug, title: topic.title, purpose: topic.purpose, shape: topic.shape,
-  related: topic.related ?? [], topics: (topic.topics ?? []).map(summarizeTopic),
+  aliases: topic.aliases ?? [], sources: topic.sources ?? [], related: topic.related ?? [],
+});
+const summarizeTopic = (topic) => ({
+  ...summarizeOwnTopic(topic), topics: (topic.topics ?? []).map(summarizeTopic),
 });
 function pageHash(page) {
   if (page.kind === "atlas") return hashParts([Buffer.from(JSON.stringify({
@@ -279,8 +333,17 @@ function pageHash(page) {
     domains: (config.domains ?? []).map((domain) => ({ slug: domain.slug, name: domain.name, purpose: domain.purpose, related: domain.related ?? [], topics: (domain.topics ?? []).map(summarizeTopic) })),
     topics: (config.topics ?? []).map(summarizeTopic), readingPaths,
   }))]);
-  if (page.kind === "domain") return hashParts([...fileParts((page.domain.modules ?? []).filter((file) => liveSet.has(file))), ...childParts(page)]);
-  return hashParts([...fileParts(topicFiles.get(page.id) ?? []), ...childParts(page)]);
+  if (page.kind === "domain") return hashParts([
+    Buffer.from(JSON.stringify({
+      slug: page.domain.slug, name: page.domain.name, purpose: page.domain.purpose ?? "",
+      globs: page.domain.globs ?? [], related: page.domain.related ?? [], readingPaths: page.domain.readingPaths ?? [],
+    })),
+    ...fileParts(domainFiles.get(page.slug) ?? []), ...childParts(page),
+  ]);
+  return hashParts([
+    Buffer.from(JSON.stringify(summarizeOwnTopic(page.topic))),
+    ...fileParts(topicFiles.get(page.id) ?? []), ...childParts(page),
+  ]);
 }
 function gitHead() {
   try { return execSync("git rev-parse HEAD", { cwd: repoRoot, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); }

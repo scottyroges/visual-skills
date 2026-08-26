@@ -46,6 +46,40 @@ describe("atlas CLI (render-only)", () => {
     const dom = await readFile(join(dir, "domain-sim", "domain-sim.html"), "utf8");
     expect(dom).toContain('class="topbar-back"');
   });
+
+  it("--all copies the tree config when rendering into a different directory", async () => {
+    const source = await mkdtemp(join(tmpdir(), "atlas-source-"));
+    const out = await mkdtemp(join(tmpdir(), "atlas-output-"));
+    const config = { repo: "demo", srcRoots: ["lib"], domains: [] };
+    await writeFile(join(source, "atlas.domains.json"), JSON.stringify(config));
+    await writeFile(join(source, "atlas.json"), JSON.stringify(atlasDoc));
+
+    await exec(NODE, ["--import", TSX_IMPORT, BIN, "--all", source, "--out", out]);
+
+    expect(JSON.parse(await readFile(join(out, "atlas.domains.json"), "utf8"))).toEqual(config);
+    expect(existsSync(join(out, "atlas-check.mjs"))).toBe(true);
+  });
+
+  it("renders configured page identity instead of stale JSON identity", async () => {
+    const source = await mkdtemp(join(tmpdir(), "atlas-identity-source-"));
+    const out = await mkdtemp(join(tmpdir(), "atlas-identity-output-"));
+    const config = {
+      repo: "demo", srcRoots: ["lib"],
+      domains: [{ slug: "sim", name: "Simulation", purpose: "Runs seasons", globs: [], modules: [] }],
+    };
+    await writeFile(join(source, "atlas.domains.json"), JSON.stringify(config));
+    await writeFile(join(source, "atlas.json"), JSON.stringify(atlasDoc));
+    await mkdir(join(source, "domain-sim"), { recursive: true });
+    await writeFile(join(source, "domain-sim", "domain-sim.json"), JSON.stringify({
+      ...domainDoc, slug: "stale-slug", title: "STALE TITLE",
+    }));
+
+    await exec(NODE, ["--import", TSX_IMPORT, BIN, "--all", source, "--out", out]);
+
+    const html = await readFile(join(out, "domain-sim", "domain-sim.html"), "utf8");
+    expect(html).toContain("Simulation");
+    expect(html).not.toContain("STALE TITLE");
+  });
 });
 
 it("resolves relative --blocks/--out/--repo against the cwd (README quick-start shape)", () => {

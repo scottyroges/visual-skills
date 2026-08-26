@@ -44,7 +44,8 @@ catalog at `$VISUAL_SKILLS_DIR/skills/shared/diagrams.md`, and exact JSON shapes
 4. **Reader structure is not file structure.** A topic may be grounded in one file, one folder, or
    evidence spread across folders and domains.
 5. **Progressive disclosure without dead ends.** Every page works on direct entry and links clearly
-   to its parent, children, siblings, related pages, and reading paths.
+   to its parent, children, siblings, and related pages. Curated reading paths appear on the system
+   or domain landing page that owns them, where they help readers choose a route through the atlas.
 
 ## The standard — definition of done
 
@@ -204,8 +205,9 @@ all committable and re-renderable. Paths mirror the conceptual hierarchy:
             <nested-topic-slug>.json  <nested-topic-slug>.html
 
 The renderer derives stable relative links, breadcrumbs, a current-branch sidebar, child page card
-navigation, parent/sibling links, related pages, reading paths, and structured search. Search uses
-titles, purposes, aliases, source paths, and breadcrumbs—not every prose token.
+navigation, parent/sibling links, related pages, owner-scoped reading paths on landing pages, and
+structured search. Search uses titles, purposes, aliases, source paths, and breadcrumbs—not every
+prose token.
 
 ### 1. Full scan (the main path)
 

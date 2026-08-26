@@ -52,8 +52,8 @@ checks; it never creates, moves, or mutates the authored topic tree.
 
 Top-level fields of the JSON doc (NOT blocks—they drive page chrome). Their shapes are in
 `src/atlas-blocks.ts` (`AtlasOpts`, `DomainOpts`, and `TopicOpts`). Breadcrumbs, current branch,
-children, siblings, related pages, reading paths, and search are derived from `PageNavigation`; do
-not copy them into authored prose.
+children, siblings, related pages, owner-scoped reading paths, and search are derived from
+`PageNavigation`; do not copy them into authored prose.
 
 **Atlas page** (`atlas.json`):
 
@@ -213,6 +213,8 @@ child page is the single home for detailed claims.
 
 Reading paths are ordered configured page IDs, declared on the system or a domain. They reuse
 canonical pages for goals such as “Understand one interview turn” instead of duplicating content.
+Each path renders only on the system or domain landing page where it is declared; topic pages stay
+focused on their own mechanism and nearby-page navigation.
 Related-page IDs provide curated lateral links, including across domains.
 
 ### Topic lead (`topic-tldr`)

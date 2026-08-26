@@ -30,6 +30,13 @@ interface DomainDoc extends Partial<DomainOpts> { kind: "domain"; slug: string; 
 interface TopicDoc extends Partial<TopicOpts> { kind: "topic"; pageId: string; slug: string; blocks: AtlasBlock[]; }
 type Doc = AtlasDoc | DomainDoc | TopicDoc;
 
+function configuredNodeForFile(tree: AtlasPageTree | undefined, file: string, kind: "domain" | "topic") {
+  if (!tree) return undefined;
+  const normalized = resolve(file).replace(/\\/g, "/");
+  return tree.nodes.find((node) =>
+    node.kind === kind && normalized.endsWith(`/${node.jsonPath}`));
+}
+
 async function renderFile(
   file: string,
   outDir: string,
@@ -50,12 +57,13 @@ async function renderFile(
   let html: string, outName: string, jsonName: string, pageDir: string, rel: string;
   if (kind === "domain") {
     const d = doc as DomainDoc;
-    const node = tree?.byId.get(d.slug);
+    const node = configuredNodeForFile(tree, file, "domain");
+    if (tree && !node) throw new Error(`domain document "${file}" is not at a configured page path`);
     pageDir = join(outDir, node?.outputDir ?? `domain-${d.slug}`);
     await mkdir(pageDir, { recursive: true });
-    const o: DomainOpts = { ...d, title: d.title ?? d.slug, layer: d.layer ?? "engine",
+    const o: DomainOpts = { ...d, title: node?.title ?? d.title ?? d.slug, layer: d.layer ?? "engine",
       layerLabel: d.layerLabel ?? "Engine", outDir: pageDir, onWarn, generator: d.generator ?? "visual-skills · visual-atlas",
-      navigation: tree ? buildPageNavigation(tree, d.slug) : d.navigation,
+      navigation: tree ? buildPageNavigation(tree, node!.id) : d.navigation,
       // --no-excalidraw forces the d2 floor; otherwise honor the doc's own excalidraw field.
       excalidraw: noExcalidraw ? false : d.excalidraw };
     html = await assembleDomain(d.blocks, o);
@@ -64,16 +72,16 @@ async function renderFile(
     rel = node?.htmlPath ?? `domain-${d.slug}/${outName}`;
   } else if (kind === "topic") {
     const t = doc as TopicDoc;
-    const node = tree?.byId.get(t.pageId);
-    if (tree && !node) throw new Error(`topic page "${t.pageId}" is not configured in atlas.domains.json`);
+    const node = configuredNodeForFile(tree, file, "topic");
+    if (tree && !node) throw new Error(`topic document "${file}" is not at a configured page path`);
     pageDir = join(outDir, node?.outputDir ?? `topic-${t.slug}`);
     await mkdir(pageDir, { recursive: true });
-    const navigation = tree ? buildPageNavigation(tree, t.pageId) : t.navigation;
+    const navigation = tree ? buildPageNavigation(tree, node!.id) : t.navigation;
     const o: TopicOpts = {
       ...t,
-      title: t.title ?? node?.title ?? t.slug,
-      purpose: t.purpose ?? node?.purpose ?? "",
-      shape: t.shape ?? node?.shape,
+      title: node?.title ?? t.title ?? t.slug,
+      purpose: node?.purpose ?? t.purpose ?? "",
+      shape: node?.shape ?? t.shape,
       outDir: pageDir,
       onWarn,
       navigation,
@@ -266,6 +274,9 @@ async function main() {
     await mkdir(outDir, { recursive: true });
     const sourceDir = resolve(values.all);
     const tree = await loadTree(sourceDir);
+    const sourceConfig = join(sourceDir, "atlas.domains.json");
+    if (existsSync(sourceConfig) && resolve(sourceConfig) !== resolve(outDir, "atlas.domains.json"))
+      await copyFile(sourceConfig, join(outDir, "atlas.domains.json"));
     for (const f of await listDocJsons(sourceDir, tree)) {
       const { outName, warnings } = await renderFile(f, outDir, noExcalidraw, tree);
       console.log(`wrote ${outName}${warnings ? ` (${warnings} warning(s))` : ""}`);

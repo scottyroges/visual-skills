@@ -82,7 +82,7 @@
         },
         {
           "name": "config + page tree",
-          "purpose": "`atlas-config.ts` owns domain grouping plus authored recursive topic types. `atlas-tree.ts` derives stable page paths, breadcrumbs, relationships, reading paths, and labeled file-level evidence scopes without changing the authored hierarchy.",
+          "purpose": "`atlas-config.ts` owns domain grouping plus authored recursive topic types. `atlas-tree.ts` derives stable page paths, breadcrumbs, relationships, owner-scoped landing-page reading paths, and labeled file-level evidence scopes without changing the authored hierarchy.",
           "exports": [
             {
               "name": "firstGuessConfig"
@@ -155,7 +155,7 @@
         },
         {
           "name": "render",
-          "purpose": "`assemble-atlas.ts` — renders system, domain, and topic pages in one self-contained shell. It adds breadcrumbs, current-branch navigation, child cards, reading paths, related-page navigation, offline structured search, and collapsed implementation references.",
+          "purpose": "`assemble-atlas.ts` — renders system, domain, and topic pages in one self-contained shell. It adds breadcrumbs, current-branch navigation, child cards, owner-scoped reading paths on landing pages, related-page navigation, offline structured search, and collapsed implementation references.",
           "exports": [
             {
               "name": "assembleAtlas"
@@ -175,7 +175,7 @@
         },
         {
           "name": "quality checks",
-          "purpose": "`lint-atlas.ts` keeps page-shape, density, paragraph length, card size, project-history, and topic-extraction warnings visible during rendering. The emitted checker separately fails broken tree, evidence, links, metadata, grounding, and per-page freshness.",
+          "purpose": "`lint-atlas.ts` keeps page-shape, density, paragraph length, card size, project-history, and topic-extraction warnings visible during rendering. The emitted checker separately enforces safe paths, live domain membership, page identity, evidence-scoped grounding, links, and per-page freshness.",
           "exports": [
             {
               "name": "lintAtlas"
@@ -231,7 +231,7 @@
           "name": "CLI",
           "path": "bin/atlas.ts",
           "detail": [
-            "The single entry point has three modes. **Full scan** reconciles domain coverage, validates the configured page tree, emits missing system/domain/topic drafts, and renders every configured page. **Single-domain** regenerates the selected domain plus every nested topic beneath it. **Render-only** replays committed JSON with navigation derived from the adjacent config.",
+            "The single entry point has three modes. **Full scan** reconciles domain coverage, validates the configured page tree, emits missing system/domain/topic drafts, and renders every configured page. **Single-domain** regenerates the selected domain plus every nested topic beneath it. **Render-only** replays committed JSON with navigation and page identity derived from the adjacent config; when output differs from source, it carries that config into the output so the emitted checker remains usable.",
             "`writeDraftIfAbsent` is the no-clobber guarantee for full scans; `--force` requests clean replacement. `listDocJsons` follows configuration order when a tree exists and recursively discovers standalone page JSON otherwise. `renderFile` handles `atlas`, `domain`, and `topic` documents and passes derived navigation into the shared assembler."
           ],
           "files": [
@@ -251,7 +251,7 @@
             },
             {
               "name": "--all",
-              "desc": "Re-render the atlas + every `domain-<slug>/` from committed JSON."
+              "desc": "Re-render every configured page from committed JSON and copy the adjacent config when output is elsewhere."
             },
             {
               "name": "--blocks",
@@ -279,7 +279,7 @@
           "path": "src/atlas-config.ts + src/atlas-tree.ts",
           "detail": [
             "`atlas.domains.json` is the human-owned source of truth: each `DomainConfig` carries a `slug`, `name`, and `globs` for source ownership, while optional recursive `topics` describe the reader's conceptual page tree. `firstGuessConfig` seeds domains; `reconcile` refills each domain's `modules` while preserving authored purposes, topics, source groups, and reading paths.",
-            "`atlas-tree.ts` turns the authored hierarchy into deterministic page identities, nested output paths, breadcrumbs, parent/child relationships, and related-page validation. Topic `sources` are labeled include/exclude glob groups: they may overlap and span folders because they identify evidence, not ownership. `resolveTopicSources` fingerprints at file granularity. Drift remains explicit: `reconcile` reports unassigned modules, stale paths, and empty domains without reorganizing pages."
+            "`atlas-tree.ts` turns the authored hierarchy into deterministic page identities, safe nested output paths, breadcrumbs, parent/child relationships, owner-scoped reading paths, and related-page validation. Topic `sources` are labeled include/exclude glob groups: they may overlap and span folders because they identify evidence, not ownership. `resolveTopicSources` fingerprints at file granularity. Drift remains explicit: `reconcile` reports unassigned modules, stale paths, and empty domains without reorganizing pages."
           ],
           "files": [
             {
@@ -444,7 +444,7 @@
           "name": "render",
           "path": "src/assemble-atlas.ts",
           "detail": [
-            "`assembleAtlas`, `assembleDomain`, and `assembleTopic` share one self-contained app shell and block dispatcher. Topic pages render plain leads, ordered flows, guarantees/failure behavior, and closed implementation-reference drawers. With derived navigation, the shell adds breadcrumbs, the current branch, child cards, reading paths, nearby-page links, and a compact embedded search index.",
+            "`assembleAtlas`, `assembleDomain`, and `assembleTopic` share one self-contained app shell and block dispatcher. Topic pages render plain leads, ordered flows, guarantees/failure behavior, and closed implementation-reference drawers. With derived navigation, the shell adds breadcrumbs, the current branch, child cards, owner-scoped reading paths on system/domain landings, nearby-page links, and a compact embedded search index.",
             "Search indexes structured titles, purposes, aliases, breadcrumbs, and source paths—not every prose token. `atlas-navigation.js` filters that embedded data locally and creates safe result elements. All page kinds retain the same diagram, example, responsive-shell, and theme behavior."
           ],
           "files": [
@@ -496,7 +496,9 @@
           "path": "src/lint-atlas.ts",
           "detail": [
             "`lintAtlas`, `lintDomain`, and `lintTopic` enforce the structural floor for their page kinds. A domain with child topics is orientation-first and does not need an expanded components/depth inventory; a topic needs a plain lead, ordered flow, and explicit guarantees/failure behavior.",
-            "`lintReadability` measures authored visible prose while excluding diagram source, code HTML, and collapsed implementation-file details. It warns on project-history language, paragraphs over roughly 100 words, card copy over roughly 40 words, domain pages over 1,200 words, topic pages over 2,000 words, and multiple independent flows. The emitted checker treats these as advisories while failing tree, evidence, link, grounding, derived-count, and independent fingerprint problems."
+            "`lintReadability` measures authored visible prose while excluding diagram source, code HTML, and collapsed implementation-file details. It warns on project-history language, long paragraphs or cards, oversized pages, and multiple independent flows.",
+            "The emitted checker keeps readability findings advisory while failing unsafe or contradictory page structure, domain inventory drift derived from live globs, broken links, stale derived counts, and structured references outside a page's evidence.",
+            "Each topic fingerprint covers its own config and evidence plus immediate child summaries, so deeper descendants remain independently reviewable. Stamp mode refuses all writes until structural paths and scopes are safe."
           ],
           "files": [
             {
@@ -613,8 +615,8 @@
     }
   ],
   "verifiedAgainst": {
-    "hash": "sha256:76449ae012bd1cb52229a2bcca89b7a43887d46354c7dd3d41d6f72426c2b7f2",
+    "hash": "sha256:72ab796cce6b8157243975d4ccf4e6444b3665ec6e24814a61fa3b058cb0de83",
     "date": "2026-08-26",
-    "commit": "b91a4f7ab7183a6b796068ff5897e39cc14730fb"
+    "commit": "7576d97e1045a8cdf392aedb25abf6b7af028ba4"
   }
 }

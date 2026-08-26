@@ -49,7 +49,11 @@ export interface AtlasPageTree {
   roots: AtlasPageNode[];
   nodes: AtlasPageNode[];
   byId: Map<string, AtlasPageNode>;
-  readingPaths: ReadingPathConfig[];
+  readingPaths: OwnedReadingPath[];
+}
+
+export interface OwnedReadingPath extends ReadingPathConfig {
+  ownerId: typeof SYSTEM_PAGE_ID | string;
 }
 
 export interface PageTreeValidation {
@@ -63,6 +67,7 @@ export interface ResolvedSourceGroup {
 }
 
 export const SYSTEM_PAGE_ID = "@system";
+export const SAFE_PAGE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function domainPaths(slug: string) {
   const outputDir = `domain-${slug}`;
@@ -172,9 +177,10 @@ export function buildPageTree(config: AtlasConfig): AtlasPageTree {
 
   addTopics(config.topics ?? [], undefined, undefined, true);
 
-  const readingPaths = [
-    ...(config.readingPaths ?? []),
-    ...config.domains.flatMap((domain) => domain.readingPaths ?? []),
+  const readingPaths: OwnedReadingPath[] = [
+    ...(config.readingPaths ?? []).map((path) => ({ ...path, ownerId: SYSTEM_PAGE_ID })),
+    ...config.domains.flatMap((domain) =>
+      (domain.readingPaths ?? []).map((path) => ({ ...path, ownerId: domain.slug }))),
   ];
   return { config, roots, nodes, byId, readingPaths };
 }
@@ -191,6 +197,8 @@ export function validatePageTree(tree: AtlasPageTree): PageTreeValidation {
     if (prior) problems.push(`duplicate page path "${node.htmlPath}" for "${prior}" and "${node.id}"`);
     else paths.set(node.htmlPath, node.id);
     if (!node.slug.trim() || !node.title.trim()) problems.push(`page "${node.id}" has an empty slug or title`);
+    if (!SAFE_PAGE_SLUG.test(node.slug))
+      problems.push(`page "${node.id}" has unsafe slug "${node.slug}"; use lowercase kebab-case`);
     if (node.kind === "topic" && !node.purpose.trim()) problems.push(`topic "${node.id}" has no purpose`);
     if (node.domainSlug && node.topicDepth > 2)
       warnings.push(`topic "${node.id}" is more than two topic levels beneath a domain`);
@@ -293,7 +301,9 @@ export function buildPageNavigation(tree: AtlasPageTree, currentId?: string): Pa
     const node = tree.byId.get(id);
     return node ? [linkFor(node)] : [];
   });
-  const readingPaths: AtlasReadingPath[] = tree.readingPaths.map((path) => ({
+  const visibleReadingPaths = tree.readingPaths.filter((path) =>
+    path.ownerId === (current?.kind === "domain" ? current.id : current ? "" : SYSTEM_PAGE_ID));
+  const readingPaths: AtlasReadingPath[] = visibleReadingPaths.map((path) => ({
     title: path.title,
     purpose: path.purpose,
     pages: path.pages.flatMap((id) => {

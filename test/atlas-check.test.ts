@@ -19,9 +19,9 @@ function writeJson(path: string, value: unknown): void {
   writeFileSync(path, JSON.stringify(value, null, 2));
 }
 
-function topicDoc(pageId: string, slug: string, title: string, summary: string) {
+function topicDoc(pageId: string, slug: string, title: string, summary: string, shape = "mechanism") {
   return {
-    kind: "topic", pageId, slug, title, purpose: summary, shape: "mechanism",
+    kind: "topic", pageId, slug, title, purpose: summary, shape,
     blocks: [
       { type: "topic-tldr", id: "tldr", heading: title, summary, inputs: ["stored state"], outputs: ["model input"] },
       { type: "topic-flow", id: "flow", title: "How it works", steps: [{ title: "Load", body: "Read state" }] },
@@ -77,7 +77,7 @@ function seedAtlas(): { root: string; atlas: string } {
   writeJson(join(atlas, "domain-conversation", "context-building", "context-building.json"),
     topicDoc("conversation/context-building", "context-building", "Context building", "Builds model input"));
   writeJson(join(atlas, "domain-conversation", "context-building", "compaction", "compaction.json"),
-    topicDoc("conversation/context-building/compaction", "compaction", "Compaction", "Reduces older input"));
+    topicDoc("conversation/context-building/compaction", "compaction", "Compaction", "Reduces older input", "algorithm"));
 
   writeFileSync(join(atlas, "atlas.html"), '<a href="domain-conversation/domain-conversation.html">Conversation</a>');
   writeFileSync(join(atlas, "domain-conversation", "domain-conversation.html"), '<a href="../atlas.html">Atlas</a><a href="context-building/context-building.html">Context</a>');
@@ -106,6 +106,131 @@ describe("recursive atlas checker", () => {
       expect(result.output).not.toMatch(/conversation\/context-building".*source changed/i);
       const parent = JSON.parse(readFileSync(join(atlas, "domain-conversation", "context-building", "context-building.json"), "utf8"));
       expect(parent.verifiedAgainst?.hash).toMatch(/^sha256:/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("invalidates a domain when a new live file starts matching its glob", () => {
+    const { root, atlas } = seedAtlas();
+    try {
+      const configPath = join(atlas, "atlas.domains.json");
+      const config = JSON.parse(readFileSync(configPath, "utf8"));
+      config.domains[0].globs = ["src/**"];
+      writeJson(configPath, config);
+      expect(run(root, ["--stamp"]).ok).toBe(true);
+
+      writeFileSync(join(root, "src", "new-conversation.ts"), "export const newConversation = true;\n");
+      const result = run(root);
+
+      expect(result.ok).toBe(false);
+      expect(result.output).toMatch(/domain "conversation".*module inventory.*new-conversation\.ts/i);
+      expect(result.output).toMatch(/conversation.*source changed/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects stale page identity and includes a page's own config in its fingerprint", () => {
+    const { root, atlas } = seedAtlas();
+    try {
+      expect(run(root, ["--stamp"]).ok).toBe(true);
+      const configPath = join(atlas, "atlas.domains.json");
+      const config = JSON.parse(readFileSync(configPath, "utf8"));
+      config.domains[0].topics[0].title = "Context assembly";
+      writeJson(configPath, config);
+
+      const result = run(root);
+
+      expect(result.ok).toBe(false);
+      expect(result.output).toMatch(/context-building.*title.*Context assembly/i);
+      expect(result.output).toMatch(/context-building.*source changed/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects structured file references outside the page's evidence scope", () => {
+    const { root, atlas } = seedAtlas();
+    try {
+      expect(run(root, ["--stamp"]).ok).toBe(true);
+      const path = join(atlas, "domain-conversation", "context-building", "context-building.json");
+      const doc = JSON.parse(readFileSync(path, "utf8"));
+      doc.blocks.find((block: any) => block.type === "implementation-reference").groups = [
+        { label: "Wrong scope", files: [{ name: "src/conversation.ts", desc: "Exists, but is not context evidence" }] },
+      ];
+      writeJson(path, doc);
+
+      const result = run(root);
+
+      expect(result.ok).toBe(false);
+      expect(result.output).toMatch(/context-building.*outside page evidence.*src\/conversation\.ts/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects unsafe slugs before resolving page artifacts", () => {
+    const { root, atlas } = seedAtlas();
+    try {
+      const configPath = join(atlas, "atlas.domains.json");
+      const config = JSON.parse(readFileSync(configPath, "utf8"));
+      config.domains[0].topics[0].slug = "../escape";
+      writeJson(configPath, config);
+
+      const result = run(root);
+
+      expect(result.ok).toBe(false);
+      expect(result.output).toMatch(/unsafe slug.*\.\.\/escape/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses stamp mode before an unsafe slug can write outside the atlas", () => {
+    const { root, atlas } = seedAtlas();
+    try {
+      const outside = join(root, "package.json");
+      const sentinel = JSON.stringify({ sentinel: "do not overwrite" }, null, 2);
+      writeFileSync(outside, sentinel);
+      const configPath = join(atlas, "atlas.domains.json");
+      const config = JSON.parse(readFileSync(configPath, "utf8"));
+      config.domains[0].topics[0].slug = "../../package";
+      writeJson(configPath, config);
+
+      const result = run(root, ["--stamp"]);
+
+      expect(result.ok).toBe(false);
+      expect(result.output).toMatch(/unsafe slug.*\.\.\/\.\.\/package/i);
+      expect(readFileSync(outside, "utf8")).toBe(sentinel);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("limits topic fingerprints to own evidence and immediate child summaries", () => {
+    const { root, atlas } = seedAtlas();
+    try {
+      const configPath = join(atlas, "atlas.domains.json");
+      const config = JSON.parse(readFileSync(configPath, "utf8"));
+      config.domains[0].topics[0].topics[0].topics = [{
+        slug: "trimming", title: "Trimming", purpose: "Removes redundant detail", shape: "algorithm",
+        sources: [{ label: "Policy", include: ["packages/context/compact.ts"] }],
+      }];
+      writeJson(configPath, config);
+      writeJson(join(atlas, "domain-conversation", "context-building", "compaction", "trimming", "trimming.json"),
+        topicDoc("conversation/context-building/compaction/trimming", "trimming", "Trimming", "Removes redundant detail", "algorithm"));
+      writeFileSync(join(atlas, "domain-conversation", "context-building", "compaction", "trimming", "trimming.html"),
+        '<a href="../compaction.html">Compaction</a>');
+      expect(run(root, ["--stamp"]).ok).toBe(true);
+
+      config.domains[0].topics[0].topics[0].topics[0].title = "Detail trimming";
+      writeJson(configPath, config);
+      const result = run(root);
+
+      expect(result.ok).toBe(false);
+      expect(result.output).toMatch(/conversation\/context-building\/compaction".*source changed/i);
+      expect(result.output).not.toMatch(/conversation\/context-building".*source changed/i);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

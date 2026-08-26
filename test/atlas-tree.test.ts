@@ -132,6 +132,19 @@ describe("buildPageTree", () => {
       expect.stringMatching(/more than two topic levels/i),
     ]));
   });
+
+  it("rejects slugs that are not lowercase kebab-case path segments", () => {
+    const unsafe: AtlasConfig = structuredClone(config);
+    unsafe.domains[0].topics![0].slug = "../context";
+    unsafe.topics![0].slug = "One Turn";
+
+    const result = validatePageTree(buildPageTree(unsafe));
+
+    expect(result.problems).toEqual(expect.arrayContaining([
+      expect.stringMatching(/unsafe slug.*\.\.\/context/i),
+      expect.stringMatching(/unsafe slug.*One Turn/i),
+    ]));
+  });
 });
 
 describe("buildPageNavigation", () => {
@@ -150,16 +163,25 @@ describe("buildPageNavigation", () => {
     expect(navigation.branch[0].expanded).toBe(true);
     expect(navigation.branch[0].children[0].current).toBe(true);
     expect(navigation.branch[1]).toMatchObject({ expanded: false, children: [] });
-    expect(navigation.readingPaths[0].pages.map((link) => link.href)).toEqual([
-      "../domain-conversation.html",
-      "context-building.html",
-      "compaction/compaction.html",
-    ]);
+    expect(navigation.readingPaths).toEqual([]);
     expect(navigation.searchIndex.find((entry) => entry.id.endsWith("compaction"))).toMatchObject({
       href: "compaction/compaction.html",
       breadcrumb: "System Atlas · demo / Conversation / Context building / Compaction",
       sources: ["lib/sim/engine.ts"],
     });
+  });
+
+  it("shows reading paths only on the system or owning domain landing page", () => {
+    const withDomainPath: AtlasConfig = structuredClone(config);
+    withDomainPath.domains[0].readingPaths = [{
+      title: "Context internals",
+      pages: ["conversation/context-building", "conversation/context-building/compaction"],
+    }];
+    const tree = buildPageTree(withDomainPath);
+
+    expect(buildPageNavigation(tree).readingPaths.map((path) => path.title)).toEqual(["Understand context"]);
+    expect(buildPageNavigation(tree, "conversation").readingPaths.map((path) => path.title)).toEqual(["Context internals"]);
+    expect(buildPageNavigation(tree, "conversation/context-building").readingPaths).toEqual([]);
   });
 
   it("keeps the system page distinct from a legitimate domain slugged atlas", () => {
